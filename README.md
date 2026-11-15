@@ -31,15 +31,15 @@ RTF < 1 nghĩa là tổng hợp nhanh hơn thời gian thực. Đoạn văn dài
 
 ### Nghe thử: audio sinh trực tiếp trên ESP32-P4
 
-Các file dưới đây được tạo trên board bằng lệnh `dump` của firmware: chip tổng hợp câu, gửi PCM 16-bit qua cổng serial về máy tính, rồi chỉ nén sang mp3, không xử lý gì thêm. Audio từ chip khớp với runtime C chạy trên máy tính (hệ số tương quan 0.999999, sai khác mẫu lớn nhất 0.0016).
+Bấm ▶ để phát (trình duyệt mở trình phát âm thanh). Các file được tạo trên board bằng lệnh `dump` của firmware: chip tổng hợp câu, gửi PCM 16-bit qua cổng serial về máy tính, rồi chỉ nén sang mp3, không xử lý gì thêm. Audio từ chip khớp với runtime C chạy trên máy tính (hệ số tương quan 0.999999, sai khác mẫu lớn nhất 0.0016).
 
 | Câu | M-vocos (1.73M) | S-vocos (0.77M) | Thời lượng | RTF M / S |
 |---|---|---|---:|---:|
-| Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4. | [nghe](docs/audio/p4-m-intro.mp3) | [nghe](docs/audio/p4-s-intro.mp3) | 5.4 s | 0.86 / 0.45 |
-| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [nghe](docs/audio/p4-m-news.mp3) | [nghe](docs/audio/p4-s-news.mp3) | 8.0 s | 0.82 / 0.43 |
-| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [nghe](docs/audio/p4-m-numbers.mp3) | [nghe](docs/audio/p4-s-numbers.mp3) | 6.9 s | 0.79 / 0.42 |
-| Bạn có muốn bật đèn phòng khách không? | [nghe](docs/audio/p4-m-question.mp3) | [nghe](docs/audio/p4-s-question.mp3) | 2.2 s | 0.89 / 0.45 |
-| Đoạn bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ) | [nghe](docs/audio/p4-m-paragraph.mp3) | [nghe](docs/audio/p4-s-paragraph.mp3) | 26 s | 0.76 / 0.41 |
+| Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-intro.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-intro.mp3) | 5.4 s | 0.86 / 0.45 |
+| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-news.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-news.mp3) | 8.0 s | 0.82 / 0.43 |
+| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-numbers.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-numbers.mp3) | 6.9 s | 0.79 / 0.42 |
+| Bạn có muốn bật đèn phòng khách không? | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-question.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-question.mp3) | 2.2 s | 0.89 / 0.45 |
+| Đoạn bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ) | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-paragraph.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-paragraph.mp3) | 26 s | 0.76 / 0.41 |
 
 RTF ở bảng này đo khi tổng hợp cả câu một lần. Câu càng ngắn thì RTF càng cao vì có chi phí cố định cho mỗi câu. Khi phát loa, firmware dùng streaming nên câu bắt đầu phát trước khi tổng hợp xong.
 
