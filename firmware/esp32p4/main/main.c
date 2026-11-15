@@ -1,0 +1,410 @@
+/* SPDX-License-Identifier: Apache-2.0 */
+/* main.c -- Vietnamese TTS on the ESP32-P4 panel: type a sentence on the serial console and
+ * the board speaks it. Everything runs on the chip: text -> ids (vtts_text) -> int8 student
+ * (vtts runtime) -> ES8311 speaker.
+ *
+ * Console commands (one per line):
+ *   bench        speed report on four fixed sentences (no audio), one REPORT line each
+ *   model s|m    choose the small (S-vocos) or medium (M-vocos) model
+ *   vol N        speaker volume 0..100
+ *   <text>       synthesize and speak; prints a SAID line with timings
+ */
+#include <math.h>
+#include <stdio.h>
+#include <string.h>
+
+#include "bsp/esp-bsp.h"
+#include "driver/uart.h"
+#include "esp_codec_dev.h"
+#include "esp_heap_caps.h"
+#include "esp_log.h"
+#include "esp_timer.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/stream_buffer.h"
+#include "freertos/task.h"
+#include "esp_random.h"
+#include "vtts.h"
+#include "vtts_port.h"
+#include "vtts_text.h"
+
+static const char *TAG = "vtts";
+
+extern const uint8_t model_s_start[] asm("_binary_model_s_vtts_start");
+extern const uint8_t model_s_end[] asm("_binary_model_s_vtts_end");
+extern const uint8_t model_m_start[] asm("_binary_model_m_vtts_start");
+extern const uint8_t model_m_end[] asm("_binary_model_m_vtts_end");
+
+#define MAX_CHUNK 256
+#define MAX_SECONDS 120
+#define OUT_RATE_TRY 22050
+#define OUT_RATE_FALLBACK 16000
+
+static const char *const BENCH[] = {
+    "Xin chào, tôi là trợ lý giọng nói của bạn.",
+    "Nhiệt độ trong phòng hiện là 26 độ, độ ẩm 65%.",
+    "Báo thức lúc 6:30 sáng mai đã được đặt.",
+    "Hôm nay là thứ Bảy, ngày 14/11/2026.",
+};
+
+static struct {
+    vtts_model models[2];
+    int cur; /* 0 = S, 1 = M */
+    void *arena;
+    size_t arena_bytes;
+    const char *arena_where;
+    float *pcm;      /* MAX_SECONDS of audio, PSRAM */
+    long pcm_cap, n; /* samples */
+    int64_t synth_us;
+    esp_codec_dev_handle_t spk;
+    int out_rate, vol, chunk;
+    StreamBufferHandle_t sb; /* int16 PCM at the model rate, synthesized ahead of playback */
+    int streaming;           /* 1 while a SAID command feeds the speaker */
+    int64_t t_start, t_first, t_play;
+    volatile int synth_done;  /* lets the speaker start before the prebuffer fills */
+    volatile int underruns;
+    SemaphoreHandle_t utt_start, utt_end; /* one utterance at a time between console and speaker */
+    int first;
+    float gain; /* digital gain before the codec (linear), with a soft limiter */
+    float speed; /* length_scale: > 1 reads slower */
+} g = {.vol = 70, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f};
+
+/* gain + soft limiter: linear below 0.7, smoothly saturating to 1.0 above */
+static inline float shape(float v) {
+    v *= g.gain;
+    float a = fabsf(v);
+    if (a <= 0.7f) return v;
+    float over = (a - 0.7f) / 0.3f;
+    float y = 0.7f + 0.3f * (over / (1.0f + over));
+    return v < 0 ? -y : y;
+}
+
+int64_t vtts_now_us(void) { return esp_timer_get_time(); }
+extern int64_t vtts_prof_us[8];
+extern const char *const vtts_prof_names[8];
+
+void vtts_p4_par_enable(int on);
+static vtts_text_ws s_ws; /* ~40 KB, kept off the task stack */
+
+static void stream_out(const float *pcm, long n) {
+    static int16_t buf[1024];
+    if (!g.t_first) g.t_first = esp_timer_get_time();
+    for (long i = 0; i < n;) {
+        int k = 0;
+        for (; k < 1024 && i < n; k++, i++) {
+            buf[k] = (int16_t)lrintf(shape(pcm[i]) * 32767.0f);
+        }
+        xStreamBufferSend(g.sb, buf, sizeof(int16_t) * (size_t)k, portMAX_DELAY);
+    }
+}
+
+static int on_pcm(const float *pcm, long n, void *user) {
+    (void)user;
+    if (g.streaming && g.sb) stream_out(pcm, n);
+    long keep = g.n + n > g.pcm_cap ? g.pcm_cap - g.n : n;
+    memcpy(g.pcm + g.n, pcm, sizeof(float) * (size_t)keep);
+    g.n += keep;
+    return !g.streaming && g.n >= g.pcm_cap; /* streaming never stops on the stats buffer */
+}
+
+static int on_ids(const int32_t *ids, int n, void *user) {
+    (void)user;
+    const vtts_model *m = &g.models[g.cur];
+    int64_t t0 = esp_timer_get_time();
+    /* only the first sentence needs a small first chunk; later ones play from a full buffer */
+    int first = (g.n == 0 && g.first < g.chunk) ? g.first : g.chunk;
+    long s = vtts_synthesize_stream_ex(m, ids, n, g.speed, first, g.chunk, on_pcm, NULL, g.arena, g.arena_bytes);
+    g.synth_us += esp_timer_get_time() - t0;
+    if (s < 0) { printf("ERROR synth %ld\n", s); return 1; }
+    /* 150 ms pause between chunks, like the host renderer */
+    long gap = (long)(0.15f * m->sample_rate);
+    static const float zeros[512];
+    for (long i = 0; i < gap; i += 512) on_pcm(zeros, gap - i < 512 ? gap - i : 512, NULL);
+    return 0;
+}
+
+/* text -> g.pcm; returns chunks; fills timing */
+static int synthesize(const char *text, int64_t *total_us) {
+    g.n = 0;
+    g.synth_us = 0;
+    int64_t t0 = esp_timer_get_time();
+    int chunks = vtts_text_to_ids(text, &s_ws, on_ids, NULL);
+    *total_us = esp_timer_get_time() - t0;
+    return chunks;
+}
+
+static void speaker_init(void) {
+    g.spk = bsp_audio_codec_speaker_init();
+    if (!g.spk) { ESP_LOGE(TAG, "speaker init failed"); return; }
+    int rates[2] = {OUT_RATE_TRY, OUT_RATE_FALLBACK};
+    for (int k = 0; k < 2; k++) {
+        esp_codec_dev_sample_info_t fs = {.bits_per_sample = 16, .channel = 1, .sample_rate = (uint32_t)rates[k]};
+        if (esp_codec_dev_open(g.spk, &fs) == ESP_CODEC_DEV_OK) { g.out_rate = rates[k]; break; }
+    }
+    if (!g.out_rate) { ESP_LOGE(TAG, "codec open failed"); g.spk = NULL; return; }
+    esp_codec_dev_set_out_vol(g.spk, g.vol);
+    printf("speaker: %d Hz\n", g.out_rate);
+}
+
+static void play(void) {
+    if (!g.spk || g.n == 0) return;
+    const int sr = g.models[g.cur].sample_rate;
+    static int16_t block[512];
+    double step = (double)sr / g.out_rate, pos = 0.0;
+    while (pos < g.n - 1) {
+        int k = 0;
+        for (; k < 512 && pos < g.n - 1; k++, pos += step) {
+            long i = (long)pos;
+            float f = (float)(pos - i), v = g.pcm[i] * (1.0f - f) + g.pcm[i + 1] * f; /* linear resample */
+            block[k] = (int16_t)lrintf(shape(v) * 32767.0f);
+        }
+        esp_codec_dev_write(g.spk, block, k * (int)sizeof(int16_t));
+    }
+}
+
+/* speaker task: plays whatever the synthesizer streams (requires the model rate) */
+/* prebuffer before playback starts: the next chunks must be ready before the buffer runs dry */
+static size_t prebuffer_bytes(void) {
+    float sec = g.cur ? 1.0f : 0.45f;
+    return (size_t)(sec * 22050) * sizeof(int16_t);
+}
+
+static void speaker_task(void *arg) {
+    (void)arg;
+    static int16_t block[512];
+    for (;;) {
+        xSemaphoreTake(g.utt_start, portMAX_DELAY);
+        /* buffer enough of the new utterance (or all of it) before starting */
+        while (xStreamBufferBytesAvailable(g.sb) < prebuffer_bytes() && !g.synth_done) vTaskDelay(pdMS_TO_TICKS(5));
+        g.t_play = esp_timer_get_time();
+        for (;;) {
+            size_t got = xStreamBufferReceive(g.sb, block, sizeof block, pdMS_TO_TICKS(2));
+            if (got) {
+                if (g.spk) esp_codec_dev_write(g.spk, block, (int)got);
+                continue;
+            }
+            if (g.synth_done) break;  /* utterance finished */
+            g.underruns++;           /* synthesis fell behind playback */
+            while (!xStreamBufferBytesAvailable(g.sb) && !g.synth_done) vTaskDelay(pdMS_TO_TICKS(1));
+        }
+        xSemaphoreGive(g.utt_end);
+    }
+}
+
+static void report(const char *tag, int idx, int chunks, int64_t total_us) {
+    double audio = (double)g.n / g.models[g.cur].sample_rate;
+    double rms = 0;
+    for (long i = 0; i < g.n; i++) rms += (double)g.pcm[i] * g.pcm[i];
+    rms = g.n ? sqrt(rms / g.n) : 0;
+    printf("%s model=%c chunk=%d idx=%d chunks=%d audio=%.2fs synth=%.3fs total=%.3fs RTF=%.3f rms=%.4f arena=%u(%s)\n",
+           tag, g.cur ? 'M' : 'S', g.chunk, idx, chunks, audio, g.synth_us / 1e6, total_us / 1e6,
+           audio > 0 ? (total_us / 1e6) / audio : 0.0, rms, (unsigned)g.arena_bytes, g.arena_where);
+}
+
+static void handle(char *line) {
+    while (*line && ((unsigned char)*line < 0x20 || (unsigned char)*line == 0x7f)) line++; /* noise from port open */
+    size_t len = strlen(line);
+    while (len && (line[len - 1] == '\r' || line[len - 1] == '\n' || line[len - 1] == ' ')) line[--len] = 0;
+    if (!len) return;
+    if (strcmp(line, "bench") == 0) {
+        for (int k = 0; k < 4; k++) {
+            int64_t us;
+            int c = synthesize(BENCH[k], &us);
+            report("REPORT", k, c, us);
+        }
+        printf("DONE\n");
+        return;
+    }
+    if (strncmp(line, "model ", 6) == 0) {
+        g.cur = (line[6] == 'm' || line[6] == 'M') ? 1 : 0;
+        printf("model %c\nDONE\n", g.cur ? 'M' : 'S');
+        return;
+    }
+    if (strcmp(line, "selftest") == 0) { /* PIE dot vs scalar on random aligned vectors */
+        static int8_t va[512] __attribute__((aligned(16))), vb[512] __attribute__((aligned(16)));
+        int bad = 0;
+        uint32_t r = esp_random();
+        printf("selftest: one dot of 16 -> %ld\n", (long)vtts_dot_s8s8(va, vb, 16));
+        for (int it = 0; it < 200; it++) {
+            int n = 16 * (1 + (int)((r = r * 1664525u + 1013904223u) >> 27));
+            for (int i = 0; i < n; i++) {
+                va[i] = (int8_t)((r = r * 1664525u + 1013904223u) >> 24);
+                vb[i] = (int8_t)((r = r * 1664525u + 1013904223u) >> 24);
+                if (va[i] == -128) va[i] = -127;
+                if (vb[i] == -128) vb[i] = -127;
+            }
+            int32_t ref = 0;
+            for (int i = 0; i < n; i++) ref += va[i] * vb[i];
+            if (vtts_dot_s8s8(va, vb, n) != ref) bad++;
+        }
+        printf("selftest: %d mismatches in 200 random dots\n", bad);
+        int lens[4] = {64, 112, 192, 336};
+        for (int li = 0; li < 4; li++) {
+            int64_t t0 = esp_timer_get_time();
+            volatile int32_t sink = 0;
+            for (int it = 0; it < 20000; it++) sink += vtts_dot_s8s8(va, vb, lens[li]);
+            int64_t us = esp_timer_get_time() - t0;
+            printf("SELFTEST dot%d %.1f MMAC/s\n", lens[li], 20000.0 * lens[li] / us);
+        }
+        printf("SELFTEST mismatches=%d\nDONE\n", bad);
+        return;
+    }
+    if (strncmp(line, "dump ", 5) == 0) { /* synthesize (no playback) and send int16 PCM as base64 */
+        static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+        int64_t us;
+        g.streaming = 0;
+        int c = synthesize(line + 5, &us);
+        report("DUMPED", 0, c, us);
+        printf("PCM %d %ld\n", g.models[g.cur].sample_rate, g.n);
+        static char out[1 + 4 * 64 + 2];
+        uint8_t buf[192];
+        for (long i = 0; i < g.n;) {
+            int nb = 0;
+            for (; nb < 192 && i < g.n; i++) {
+                float v = g.pcm[i] > 1.0f ? 1.0f : g.pcm[i] < -1.0f ? -1.0f : g.pcm[i];
+                int16_t q = (int16_t)lrintf(v * 32767.0f);
+                buf[nb++] = (uint8_t)(q & 0xff);
+                buf[nb++] = (uint8_t)((q >> 8) & 0xff);
+            }
+            int k = 0;
+            out[k++] = 'B';
+            for (int j = 0; j < nb; j += 3) {
+                uint32_t w = (uint32_t)buf[j] << 16 | (j + 1 < nb ? (uint32_t)buf[j + 1] << 8 : 0) | (j + 2 < nb ? buf[j + 2] : 0);
+                out[k++] = b64[(w >> 18) & 63];
+                out[k++] = b64[(w >> 12) & 63];
+                out[k++] = j + 1 < nb ? b64[(w >> 6) & 63] : '=';
+                out[k++] = j + 2 < nb ? b64[w & 63] : '=';
+            }
+            out[k] = 0;
+            puts(out);
+        }
+        printf("DONE\n");
+        return;
+    }
+    if (strcmp(line, "prof") == 0) {
+        int64_t tot = 0;
+        for (int i = 0; i < 8; i++) tot += vtts_prof_us[i];
+        for (int i = 0; i < 8; i++)
+            printf("PROF %-14s %8.3fs %5.1f%%\n", vtts_prof_names[i], vtts_prof_us[i] / 1e6,
+                   tot ? 100.0 * vtts_prof_us[i] / tot : 0.0);
+        memset(vtts_prof_us, 0, sizeof(int64_t) * 8);
+        printf("DONE\n");
+        return;
+    }
+    if (strncmp(line, "cores ", 6) == 0) {
+        int c = atoi(line + 6) >= 2;
+        vtts_p4_par_enable(c);
+        printf("cores %d\nDONE\n", c ? 2 : 1);
+        return;
+    }
+    if (strncmp(line, "first ", 6) == 0) {
+        g.first = atoi(line + 6) < 1 ? 1 : atoi(line + 6);
+        printf("first %d\nDONE\n", g.first);
+        return;
+    }
+    if (strncmp(line, "chunk ", 6) == 0) {
+        int c = atoi(line + 6);
+        g.chunk = c < 1 ? 1 : c > MAX_CHUNK ? MAX_CHUNK : c;
+        printf("chunk %d\nDONE\n", g.chunk);
+        return;
+    }
+    if (strncmp(line, "expr ", 5) == 0) { /* expressiveness for prosody models, 0.5..2.5 */
+        float e = (float)atof(line + 5);
+        e = e < 0.5f ? 0.5f : e > 2.5f ? 2.5f : e;
+        for (int k = 0; k < 2; k++) vtts_set_expressiveness(&g.models[k], e);
+        printf("expr %.2f (prosody models: S %d, M %d)\nDONE\n", e, g.models[0].prosody, g.models[1].prosody);
+        return;
+    }
+    if (strncmp(line, "speed ", 6) == 0) { /* length scale 0.7..1.6 */
+        float v = (float)atof(line + 6);
+        g.speed = v < 0.7f ? 0.7f : v > 1.6f ? 1.6f : v;
+        printf("speed %.2f\nDONE\n", g.speed);
+        return;
+    }
+    if (strncmp(line, "gain ", 5) == 0) { /* gain in dB, 0..24 */
+        float db = (float)atof(line + 5);
+        db = db < 0 ? 0 : db > 24 ? 24 : db;
+        g.gain = powf(10.0f, db / 20.0f);
+        printf("gain %.1f dB\nDONE\n", db);
+        return;
+    }
+    if (strncmp(line, "vol ", 4) == 0) {
+        g.vol = atoi(line + 4);
+        if (g.spk) esp_codec_dev_set_out_vol(g.spk, g.vol);
+        printf("vol %d\nDONE\n", g.vol);
+        return;
+    }
+    int64_t us;
+    int direct = g.sb && g.out_rate == g.models[g.cur].sample_rate;
+    g.streaming = direct;
+    g.t_first = g.t_play = 0;
+    g.underruns = 0;
+    g.synth_done = 0;
+    if (direct) xSemaphoreGive(g.utt_start);
+    int64_t t0 = esp_timer_get_time();
+    int c = synthesize(line, &us);
+    g.synth_done = 1;
+    g.streaming = 0;
+    report("SAID", 0, c, us);
+    if (direct) {
+        xSemaphoreTake(g.utt_end, portMAX_DELAY); /* playback finished */
+        printf("first chunk %.0f ms, playback started %.0f ms, underruns %d\n", (g.t_first - t0) / 1e3,
+               g.t_play ? (g.t_play - t0) / 1e3 : -1.0, g.underruns);
+    } else {
+        play();
+    }
+    printf("DONE\n");
+}
+
+static void console_task(void *arg) {
+    (void)arg;
+    const uart_port_t port = CONFIG_ESP_CONSOLE_UART_NUM;
+    uart_driver_install(port, 4096, 0, 0, NULL, 0);
+    static char line[2048];
+    size_t n = 0;
+    printf("READY (type a Vietnamese sentence, or: bench | model s|m | vol N | gain dB)\n");
+    for (;;) {
+        uint8_t ch;
+        if (uart_read_bytes(port, &ch, 1, portMAX_DELAY) != 1) continue;
+        if (ch == '\n' || ch == '\r') {
+            line[n] = 0;
+            if (n) handle(line);
+            n = 0;
+        } else if (n < sizeof(line) - 1) {
+            line[n++] = (char)ch;
+        }
+    }
+}
+
+void app_main(void) {
+    const uint8_t *starts[2] = {model_s_start, model_m_start}, *ends[2] = {model_s_end, model_m_end};
+    size_t need = 0;
+    for (int k = 0; k < 2; k++) {
+        /* weights are read many times per second: copy them from flash (XIP) to PSRAM */
+        size_t bytes = (size_t)(ends[k] - starts[k]);
+        uint8_t *blob = heap_caps_aligned_alloc(16, bytes, MALLOC_CAP_SPIRAM);
+        const uint8_t *src = starts[k];
+        if (blob) { memcpy(blob, starts[k], bytes); src = blob; }
+        printf("model %c weights in %s\n", k ? 'M' : 'S', blob ? "psram" : "flash");
+        int rc = vtts_init(&g.models[k], src, bytes);
+        size_t ab = rc ? 0 : vtts_stream_arena_bytes(&g.models[k], VTTS_TEXT_MAX_IDS, MAX_CHUNK);
+        printf("model %c: %u bytes, init %d, arena %u\n", k ? 'M' : 'S', (unsigned)(ends[k] - starts[k]), rc,
+               (unsigned)ab);
+        if (ab > need) need = ab;
+    }
+    g.arena_bytes = need;
+    g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    g.arena_where = "sram";
+    if (!g.arena) { g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_SPIRAM); g.arena_where = "psram"; }
+    g.pcm_cap = (long)MAX_SECONDS * 22050;
+    g.pcm = heap_caps_malloc(sizeof(float) * (size_t)g.pcm_cap, MALLOC_CAP_SPIRAM);
+    printf("arena %u in %s; free internal %u, psram %u\n", (unsigned)need, g.arena_where,
+           (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
+    if (!g.arena || !g.pcm) { printf("ERROR out of memory\n"); return; }
+    speaker_init();
+    g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
+    g.utt_start = xSemaphoreCreateBinary();
+    g.utt_end = xSemaphoreCreateBinary();
+    if (g.sb && g.spk) xTaskCreatePinnedToCore(speaker_task, "speaker", 4096, NULL, 10, NULL, 0);
+    xTaskCreatePinnedToCore(console_task, "console", 16384, NULL, 5, NULL, 0);
+}

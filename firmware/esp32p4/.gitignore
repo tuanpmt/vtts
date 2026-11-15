@@ -1,0 +1,6 @@
+build/
+sdkconfig
+sdkconfig.old
+main/model_*.vtts
+managed_components/
+dependencies.lock

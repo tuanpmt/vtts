@@ -1,0 +1,48 @@
+{
+ "set": "eval/sets/ood.jsonl",
+ "ids": [
+  "ood_device_06",
+  "ood_numbers_02",
+  "ood_names_02",
+  "ood_prosody_00",
+  "ood_prosody_03",
+  "ood_long_00"
+ ],
+ "systems": [
+  {
+   "key": "m",
+   "name": "Student M-vocos (int8, chip runtime)",
+   "note": "1.73M tham số, file 2.5 MB",
+   "dir": "artifacts/final/M-vocos-joint-ood",
+   "report": "artifacts/final/M-vocos-joint-ood.json"
+  },
+  {
+   "key": "s",
+   "name": "Student S-vocos (int8, chip runtime)",
+   "note": "0.77M tham số, file 1.1 MB, vừa SRAM P4",
+   "dir": "artifacts/final/S-vocos-joint-ood",
+   "report": "artifacts/final/S-vocos-joint-ood.json"
+  },
+  {
+   "key": "t",
+   "name": "Teacher B (bước 95k)",
+   "note": "VITS 23.7M tham số, trần chất lượng",
+   "dir": "artifacts/teacher/B-lessac/eval/0095000/ood",
+   "report": "artifacts/teacher/B-lessac/eval/0095000/ood.json.summary"
+  },
+  {
+   "key": "v",
+   "name": "sanoTTS vi (hiện tại)",
+   "note": "baseline 1.57M, fp32",
+   "dir": "artifacts/baselines/sanotts-vi/ood",
+   "report": "docs/reports/sanotts-vi-ood.json"
+  },
+  {
+   "key": "p",
+   "name": "Piper vi 25hours_single",
+   "note": "baseline, cùng dữ liệu InfoRe1",
+   "dir": "artifacts/baselines/piper-25h/ood",
+   "report": "docs/reports/piper-25h-ood.json"
+  }
+ ]
+}

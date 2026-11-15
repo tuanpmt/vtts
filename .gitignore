@@ -1,0 +1,12 @@
+sanoTTS/
+/data/
+/artifacts/
+.venv/
+__pycache__/
+*.wav
+*.onnx
+*.ckpt
+.pytest_cache/
+.superpowers/
+!tests/fixtures/*.wav
+runtime/build/

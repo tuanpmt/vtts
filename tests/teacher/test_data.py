@@ -1,0 +1,55 @@
+import numpy as np
+import soundfile as sf
+import torch
+
+from vtts.frontend.phoneme_set import VOCAB_SIZE
+from vtts.teacher.config import TeacherConfig
+from vtts.teacher.data import BucketSampler, TeacherDataset, collate
+
+
+def _make(tmp_path, items):
+    wavs = tmp_path / "wavs"
+    wavs.mkdir()
+    lines = []
+    for uid, text, sec in items:
+        t = np.arange(int(22050 * sec)) / 22050
+        sf.write(wavs / f"{uid}.wav", 0.3 * np.sin(2 * np.pi * 220 * t), 22050, subtype="PCM_16")
+        lines.append(f"{uid}|{text}|{sec}")
+    (tmp_path / "train.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
+    return TeacherDataset(tmp_path / "train.csv", wavs, tmp_path / "cache", TeacherConfig())
+
+
+def test_item_shapes(tmp_path):
+    ds = _make(tmp_path, [("a", "Xin chào Việt Nam.", 1.2)])
+    item = ds[0]
+    assert item["spec"].shape[0] == 513
+    assert item["spec"].shape[1] * 256 == item["wav"].shape[1]
+    assert int(item["ids"].max()) < VOCAB_SIZE and item["ids"][0] == 1 and item["ids"][-1] == 2
+
+
+def test_cache_reused(tmp_path):
+    ds = _make(tmp_path, [("a", "xin chào", 1.0)])
+    ds[0]
+    cached = tmp_path / "cache" / "a.spec.pt"
+    mtime = cached.stat().st_mtime_ns
+    ds[0]
+    assert cached.stat().st_mtime_ns == mtime
+
+
+def test_collate_pads_short_audio(tmp_path):
+    ds = _make(tmp_path, [("a", "có", 0.2), ("b", "xin chào bạn", 1.0)])
+    batch = collate([ds[0], ds[1]], segment_frames=32)
+    assert batch["spec"].shape[2] >= 32
+    assert batch["wav"].shape[2] == batch["spec"].shape[2] * 256
+    assert batch["spec_lengths"].tolist()[0] < 32  # true length kept
+    assert batch["ids"].shape[0] == 2 and batch["ids_lengths"].dtype == torch.long
+
+
+def test_bucket_sampler_covers_all_once():
+    lengths = list(range(10, 110))
+    s = BucketSampler(lengths, batch_size=8, n_buckets=5, seed=1)
+    batches = list(s)
+    flat = sorted(i for b in batches for i in b)
+    assert flat == list(range(100))
+    s.set_epoch(1)
+    assert list(s) != batches

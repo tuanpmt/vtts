@@ -1,0 +1,24 @@
+vtts — tiny Vietnamese text-to-speech for microcontrollers
+Copyright 2026 the vtts authors
+
+This product includes software developed by third parties:
+
+- src/vtts/teacher/vits/ (attentions.py, commons.py, losses.py, mel_processing.py, models.py,
+  modules.py, transforms.py): copied from rhasspy/piper (commit 73c04d8,
+  src/python/piper_train/vits/), MIT License, Copyright (c) 2022 Michael Hansen, itself based on
+  VITS (jaywalnut310/vits, MIT License). See src/vtts/teacher/vits/LICENSE-piper.md.
+  monotonic_align.py is a numba re-implementation of the VITS monotonic alignment search.
+
+- runtime/ports/esp32p4/vtts_port_p4.c: the ESP32-P4 PIE multiply-accumulate approach follows
+  espressif/esp-nn (Apache License 2.0), src/fully_connected/esp_nn_fully_connected_s8_riscv_pie.c.
+
+Data used during development (not distributed in this repository, except one short sample):
+
+- InfoRe Technology public dataset No.1 (25 hours, Vietnamese read speech), via the Hugging Face
+  mirror doof-ferb/infore1_25hours (tagged CC-BY-4.0). tests/fixtures/sample_vi.wav is one
+  utterance from this dataset, resampled.
+- Teacher warm-start checkpoints from rhasspy/piper-checkpoints (vi_VN vais1000, en_US lessac).
+- Vietnamese Wikipedia sentences (CC-BY-SA) as distillation text input only.
+
+Baselines compared against (run as black boxes, not included): sanoTTS (Ampixa) and Piper
+vi_VN-25hours_single.
