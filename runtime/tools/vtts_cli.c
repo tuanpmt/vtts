@@ -26,7 +26,7 @@ static void write_wav(const char *path, const float *pcm, long n, int sr) {
 }
 
 int main(int argc, char **argv) {
-    if (argc < 3) { fprintf(stderr, "usage: %s model out_prefix [length_scale]\n", argv[0]); return 2; }
+    if (argc < 3) { fprintf(stderr, "usage: %s model out_prefix [length_scale [expressiveness]]\n", argv[0]); return 2; }
     float ls = argc > 3 ? (float)atof(argv[3]) : 1.0f;
     FILE *mf = fopen(argv[1], "rb");
     if (!mf) return 2;
@@ -39,6 +39,7 @@ int main(int argc, char **argv) {
     vtts_model m;
     int rc = vtts_init(&m, blob, mb);
     if (rc) { fprintf(stderr, "init failed %d\n", rc); return 1; }
+    if (argc > 4) vtts_set_expressiveness(&m, (float)atof(argv[4]));
     char line[65536];
     int k = 0;
     while (fgets(line, sizeof line, stdin)) {

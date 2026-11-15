@@ -24,6 +24,8 @@ def main() -> None:
     ap.add_argument("--model", type=Path, required=True)
     ap.add_argument("--set", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--length-scale", type=float, default=1.0)
+    ap.add_argument("--expr", type=float, default=None, help="expressiveness (prosody models only)")
     a = ap.parse_args()
     subprocess.run(["make", "-s", "-C", str(CLI.parents[1]), "build/vtts_cli"], check=True)
     rows = [json.loads(x) for x in a.set.read_text(encoding="utf-8").splitlines() if x]
@@ -34,7 +36,8 @@ def main() -> None:
             lines.append(" ".join(map(str, encode(g2p(chunk)))))
             owners.append(r["id"])
     with tempfile.TemporaryDirectory() as tmp:
-        subprocess.run([str(CLI), str(a.model), f"{tmp}/c"], input="\n".join(lines) + "\n",
+        extra = [str(a.length_scale)] + ([str(a.expr)] if a.expr is not None else [])
+        subprocess.run([str(CLI), str(a.model), f"{tmp}/c", *extra], input="\n".join(lines) + "\n",
                        text=True, check=True)
         parts: dict[str, list[np.ndarray]] = {}
         for k, owner in enumerate(owners):

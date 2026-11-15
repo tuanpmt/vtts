@@ -5,8 +5,8 @@ Giọng đọc tiếng Việt nhỏ gọn, chạy hoàn toàn trên vi điều k
 > **English summary.** vtts is a tiny Vietnamese text-to-speech stack: a rule-based, dialect-ready
 > Vietnamese front-end (Python + C99, exact parity), a VITS teacher, a 0.8–1.7M-parameter distilled
 > student, and a malloc-free C99 int8 runtime with streaming synthesis. On an ESP32-P4 (360 MHz,
-> PIE SIMD, 2 cores) the 1.7M model runs at RTF ≈ 0.72 and the 0.8M model at RTF ≈ 0.42, with
-> speech starting after 0.6–2.5 s. Code is Apache-2.0. Prototype int8 models (`.vtts`) are attached to GitHub Releases for non-commercial research use only (CC BY-NC 4.0).
+> PIE SIMD, 2 cores) the 1.7M model (v0.2, with an explicit pitch/energy predictor) runs at RTF ≈ 0.79–0.90 and the
+> 0.8M model at RTF ≈ 0.42, with speech starting after 0.6–2.4 s. Code is Apache-2.0. Prototype int8 models (`.vtts`) are attached to GitHub Releases for non-commercial research use only (CC BY-NC 4.0).
 
 ## Kết quả
 
@@ -14,7 +14,8 @@ Giọng đọc tiếng Việt nhỏ gọn, chạy hoàn toàn trên vi điều k
 
 | Hệ thống | Tham số | CER ↓ | UTMOS ↑ | Tiếng rít ↓ |
 |---|---:|---:|---:|---:|
-| **vtts M-vocos** (int8) | 1.73M | **0.012** | 2.08 | 3.3 |
+| **vtts M-vocos v0.2** (int8, ngữ điệu v2) | 1.73M | **0.012** | 2.19 | 7.8 |
+| vtts M-vocos v0.1 (int8) | 1.73M | 0.012 | 2.08 | 3.3 |
 | vtts S-vocos (int8) | 0.77M | 0.023 | 1.86 | 61.5 |
 | Teacher VITS | 23.7M | 0.015 | 2.50 | 14.8 |
 | sanoTTS `vi` (baseline) | 1.57M | 0.064 | 1.49 | 1.5 |
@@ -25,21 +26,23 @@ Trên Waveshare ESP32-P4 Panel (chip rev 1.3, 360 MHz, PSRAM 32 MB):
 | Model | RTF (2 lõi, PIE SIMD) | Bắt đầu phát | Flash | RAM làm việc |
 |---|---:|---:|---:|---:|
 | S-vocos | 0.42 | 0.6–0.9 s | 1.1 MB | ~0.4 MB (streaming) |
-| M-vocos | 0.72 | 1.8–2.7 s | 2.5 MB | ~0.6 MB (streaming) |
+| M-vocos v0.2 | 0.79–0.90 | khoảng 2.4 s | 2.6 MB | ~0.6 MB (streaming) |
 
 RTF < 1 nghĩa là tổng hợp nhanh hơn thời gian thực. Đoạn văn dài 56 giây phát liền mạch, không ngắt quãng.
+
+**Ngữ điệu v0.2.** Model M có thêm bộ dự đoán cao độ và năng lượng tường minh, và sửa lỗi đọc quá nhanh. Đo trên 50 câu giữ lại: thời lượng trung bình mỗi câu 5.80 s (v0.1: 4.95 s, người đọc thật: 6.08 s), độ dao động cao độ 2.37 semitone (v0.1: 2.32, người thật: 2.60).
 
 ### Nghe thử: audio sinh trực tiếp trên ESP32-P4
 
 Bấm ▶ để phát (trình duyệt mở trình phát âm thanh). Các file được tạo trên board bằng lệnh `dump` của firmware: chip tổng hợp câu, gửi PCM 16-bit qua cổng serial về máy tính, rồi chỉ nén sang mp3, không xử lý gì thêm. Audio từ chip khớp với runtime C chạy trên máy tính (hệ số tương quan 0.999999, sai khác mẫu lớn nhất 0.0016).
 
-| Câu | M-vocos (1.73M) | S-vocos (0.77M) | Thời lượng | RTF M / S |
+| Câu | M-vocos v0.2 (1.73M) | S-vocos (0.77M) | Thời lượng M / S | RTF M / S |
 |---|---|---|---:|---:|
-| Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-intro.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-intro.mp3) | 5.4 s | 0.86 / 0.45 |
-| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-news.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-news.mp3) | 8.0 s | 0.82 / 0.43 |
-| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-numbers.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-numbers.mp3) | 6.9 s | 0.79 / 0.42 |
-| Bạn có muốn bật đèn phòng khách không? | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-question.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-question.mp3) | 2.2 s | 0.89 / 0.45 |
-| Đoạn bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ) | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-paragraph.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-paragraph.mp3) | 26 s | 0.76 / 0.41 |
+| Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-intro.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-intro.mp3) | 6.5 / 5.4 s | 0.84 / 0.45 |
+| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-news.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-news.mp3) | 9.1 / 8.2 s | 0.84 / 0.43 |
+| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-numbers.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-numbers.mp3) | 8.2 / 6.9 s | 0.82 / 0.42 |
+| Bạn có muốn bật đèn phòng khách không? | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-question.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-question.mp3) | 2.7 / 2.2 s | 0.94 / 0.45 |
+| Đoạn bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ) | [▶ Nghe M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-paragraph.mp3) | [▶ Nghe S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-paragraph.mp3) | 30 / 26 s | 0.79 / 0.41 |
 
 RTF ở bảng này đo khi tổng hợp cả câu một lần. Câu càng ngắn thì RTF càng cao vì có chi phí cố định cho mỗi câu. Khi phát loa, firmware dùng streaming nên câu bắt đầu phát trước khi tổng hợp xong.
 
@@ -88,9 +91,9 @@ uv run python -c "from vtts.frontend.text import text_to_ids; print(text_to_ids(
 Cần ESP-IDF v6.1 và hai file model int8 (`.vtts`): tải từ [Releases](https://github.com/tuanpmt/vtts/releases) hoặc tự export bằng `scripts/student/export_student.py --int8`.
 
 ```bash
-gh release download v0.1.0 -R tuanpmt/vtts -p '*.vtts' -D models
+gh release download v0.2.0 -R tuanpmt/vtts -p '*.vtts' -D models
 cd firmware/esp32p4
-./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.1.q8.vtts -p /dev/cu.usbmodemXXXX flash monitor
+./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p /dev/cu.usbmodemXXXX flash monitor
 ```
 
 Trong cửa sổ serial, gõ một câu tiếng Việt rồi Enter. Các lệnh: `model s|m`, `vol 0-100`, `gain dB`, `speed 0.7-1.6`, `expr 0.5-2.5` (độ lên xuống của ngữ điệu, với model có cao độ), `bench`, `prof`, `selftest`, `dump <câu>` (tổng hợp và gửi audio về máy tính; lưu thành WAV bằng `scripts/device/p4_say.py PORT "dump <câu>" --dump-dir out/`).
@@ -108,7 +111,8 @@ Quy trình không phụ thuộc nguồn dữ liệu: thay thư mục audio + tra
 
 - Đây là prototype kiểm chứng chất lượng, train trên InfoRe1 (25 giờ, một người đọc).
 - **Model prototype chỉ dùng phi thương mại**: hai file `.vtts` int8 (S và M) được đính kèm ở [Releases](https://github.com/tuanpmt/vtts/releases) theo giấy phép CC BY-NC 4.0, chỉ để nghiên cứu và chạy thử. Lý do: teacher được khởi tạo từ checkpoint Piper lessac (dữ liệu gốc chỉ cho dùng phi thương mại) và điều khoản thương mại của InfoRe1 chưa rõ. Checkpoint PyTorch và teacher không được phát hành. Bản dùng được cho thương mại sẽ có sau khi train lại trên bản thu âm có bản quyền.
-- Ngữ điệu đang được cải thiện (bộ dự đoán cao độ tường minh, sửa lệch thời lượng). Xem `docs/reports/`.
+- Ngữ điệu: v0.2 đã sửa tốc độ đọc và thêm bộ dự đoán cao độ; độ lên xuống vẫn còn hơi đều do người đọc InfoRe1 đọc khá đều giọng.
+- Đang train một giọng mới trên bộ dữ liệu mở VietBibleVox (CC BY-SA 4.0, khoảng 60 giờ, một người đọc) với teacher train từ đầu, hướng tới model dùng được cho thương mại. Xem `scripts/data/prepare_bible.py`.
 
 ## Giấy phép
 
