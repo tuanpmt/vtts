@@ -12,6 +12,10 @@
 
 #include "vtts.h"
 
+#ifndef M_PI /* strict C99 headers (glibc) do not define it */
+#define M_PI 3.14159265358979323846
+#endif
+
 #ifndef VTTS_ACT_MAX
 #define VTTS_ACT_MAX 127 /* int8 activations, one scale per frame (pcm corr >= 0.999 vs fp32) */
 #endif
