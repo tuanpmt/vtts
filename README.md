@@ -1,13 +1,14 @@
 # vtts
 
-Giọng đọc tiếng Việt nhỏ gọn, chạy hoàn toàn trên vi điều khiển ESP32-P4: văn bản vào, âm thanh ra loa, không cần mạng.
+Giọng đọc tiếng Việt nhỏ gọn, chạy hoàn toàn trên vi điều khiển ESP32-P4 và ESP32-S3: văn bản vào, âm thanh ra loa, không cần mạng.
 
 > **English summary.** vtts is a tiny Vietnamese text-to-speech stack: a rule-based, dialect-ready
 > Vietnamese front-end (Python + C99, exact parity), a VITS teacher, a 0.8–1.7M-parameter distilled
 > student, and a malloc-free C99 int8 runtime with streaming synthesis. On an ESP32-P4 (360 MHz,
 > PIE SIMD, 2 cores) the 1.7M model (v0.2, with an explicit pitch/energy predictor) runs at RTF ≈ 0.34–0.42 and the
-> 0.8M model at RTF ≈ 0.20–0.22, with speech starting after 0.3–1.2 s. Supported boards: Waveshare ESP32-P4-86-Panel
-> and ESP32-P4-NANO. Code is Apache-2.0. Prototype int8 models (`.vtts`) are attached to GitHub Releases for non-commercial research use only (CC BY-NC 4.0).
+> 0.8M model at RTF ≈ 0.20–0.22, with speech starting after 0.3–1.2 s. On an ESP32-S3 (240 MHz, 8 MB PSRAM)
+> both models also run faster than real time (RTF ≈ 0.42–0.47 and 0.85–0.99). Supported boards: Waveshare
+> ESP32-P4-86-Panel, ESP32-P4-NANO and ESP32-S3-Touch-LCD-2.8. Code is Apache-2.0. Prototype int8 models (`.vtts`) are attached to GitHub Releases for non-commercial research use only (CC BY-NC 4.0).
 
 ## Kết quả
 
@@ -53,6 +54,15 @@ Những thay đổi chính:
 - iSTFT dùng FFT thực nửa kích thước.
 - Depthwise conv, LayerNorm, lượng tử hoá activation và iSTFT được chia cho cả 2 lõi.
 
+**ESP32-S3.** Đo trên Waveshare ESP32-S3-Touch-LCD-2.8 (ESP32-S3R8, 240 MHz, PSRAM octal 8 MB, flash 16 MB). Firmware và hai model giống bản P4. Kernel int8 dùng lệnh SIMD 128-bit của S3 (`ee.vmulas.s8.accx`):
+
+| Model | RTF (2 lõi, SIMD) | Bắt đầu phát | CPU core0 / core1 khi phát | Phát không bị ngắt |
+|---|---:|---:|---:|---|
+| S-vocos | 0.42–0.47 | khoảng 0.8 s | 40% / 29% | Có |
+| M-vocos v0.2 | 0.85–0.99 | khoảng 2.4 s | 75% / 62% | Có |
+
+Audio từ S3 khớp với runtime trên máy tính (tương quan 1.000000 với S, 0.999992 với M). Trên S3 nên dùng S cho ứng dụng cần phản hồi nhanh hoặc phải chạy thêm việc khác. M vẫn nhanh hơn thời gian thực nhưng gần sát giới hạn. S3 cần PSRAM ít nhất 8 MB: hai model chép vào PSRAM, vùng làm việc khoảng 1.9 MB. Board PSRAM 2 MB không đủ.
+
 **Ngữ điệu v0.2.** Model M có thêm bộ dự đoán cao độ và năng lượng tường minh, và sửa lỗi đọc quá nhanh. Đo trên 50 câu giữ lại: thời lượng trung bình mỗi câu 5.80 s (v0.1: 4.95 s, người đọc thật: 6.08 s), độ dao động cao độ 2.37 semitone (v0.1: 2.32, người thật: 2.60).
 
 ### Nghe thử: audio sinh trực tiếp trên ESP32-P4
@@ -90,8 +100,8 @@ Bộ token **bám chữ viết, không gắn với một vùng miền**: `tr`/`c
 
 | Thư mục | Nội dung |
 |---|---|
-| `runtime/` | Runtime C99 không `malloc`: tổng hợp fp32/int8, streaming khớp từng bit với tổng hợp cả câu, front-end văn bản tiếng Việt (`vtts_text`). `ports/esp32p4/` có kernel PIE SIMD và chạy 2 lõi |
-| `firmware/esp32p4/` | Ứng dụng mẫu cho ESP32-P4 (86-Panel, NANO): gõ câu qua serial, board đọc ra loa |
+| `runtime/` | Runtime C99 không `malloc`: tổng hợp fp32/int8, streaming khớp từng bit với tổng hợp cả câu, front-end văn bản tiếng Việt (`vtts_text`). `ports/esp32p4/` và `ports/esp32s3/` là kernel SIMD, `ports/freertos/` chia việc cho 2 lõi |
+| `firmware/esp32p4/` | Ứng dụng mẫu cho ESP32-P4 (86-Panel, NANO) và ESP32-S3 (Touch-LCD-2.8): gõ câu qua serial, board đọc ra loa |
 | `src/vtts/` | Gói Python: front-end, chuẩn bị dữ liệu, đánh giá, teacher, student, export |
 | `scripts/` | Các bước pipeline, chia theo nhóm `data/`, `frontend/`, `teacher/`, `student/`, `eval/`, `device/` |
 | `eval/` | Tập câu đánh giá, baseline, cấu hình trang nghe A/B |
@@ -109,7 +119,7 @@ make -C runtime build/vtts_cli      # công cụ dòng lệnh C
 uv run python -c "from vtts.frontend.text import text_to_ids; print(text_to_ids('Xin chào, hôm nay là 15/11.'))"
 ```
 
-### Firmware ESP32-P4
+### Firmware ESP32-P4 và ESP32-S3
 
 Cần ESP-IDF v6.1 và hai file model int8 (`.vtts`): tải từ [Releases](https://github.com/tuanpmt/vtts/releases) hoặc tự export bằng `scripts/student/export_student.py --int8`.
 
@@ -120,11 +130,13 @@ cd firmware/esp32p4
 ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p /dev/cu.usbmodemXXXX flash monitor
 # Waveshare ESP32-P4-NANO
 BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p /dev/cu.usbmodemXXXX flash monitor
+# Waveshare ESP32-S3-Touch-LCD-2.8 (console qua cổng USB của chip)
+BOARD=s3 ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p /dev/cu.usbmodemXXXX flash monitor
 ```
 
-Âm lượng mặc định: NANO là `vol 90`, `gain 12` dB, vì loa của NANO nhỏ hơn; 86-Panel là `vol 70`, `gain 0`. Gain số có bộ giới hạn mềm nên tăng gain không làm vỡ tiếng. Có thể chỉnh lúc chạy bằng `vol` và `gain`.
+Âm lượng mặc định: NANO là `vol 90`, `gain 12` dB, vì loa của NANO nhỏ hơn; 86-Panel là `vol 70`, `gain 0`; S3-Touch-LCD-2.8 là `vol 80`, `gain 6` dB. Gain số có bộ giới hạn mềm nên tăng gain không làm vỡ tiếng. Có thể chỉnh lúc chạy bằng `vol` và `gain`.
 
-Firmware không cần BSP màn hình. Phần loa nằm trong `main/board_audio.c`: codec ES8311 qua I2C, I2S, chân bật ampli. Muốn thêm board khác thì thêm một lựa chọn trong `main/Kconfig.projbuild` và khai báo chân tương ứng.
+Firmware không cần BSP màn hình. Phần loa nằm trong `main/board_audio.c`: board P4 dùng codec ES8311 (I2C, I2S, chân bật ampli); board S3 dùng DAC PCM5101 nối thẳng I2S (BCLK 48, WS 38, DOUT 47), chạy 44,1 kHz (firmware nhân đôi mẫu từ 22,05 kHz), gửi ra cả hai kênh, âm lượng chỉnh bằng phần mềm. Muốn thêm board khác thì thêm một lựa chọn trong `main/Kconfig.projbuild` và khai báo chân tương ứng.
 
 Trong cửa sổ serial, gõ một câu tiếng Việt rồi Enter. Các lệnh: `model s|m`, `vol 0-100`, `gain dB`, `speed 0.7-1.6`, `expr 0.5-2.5` (độ lên xuống của ngữ điệu, với model có cao độ), `bench`, `prof`, `selftest`, `dump <câu>` (tổng hợp và gửi audio về máy tính; lưu thành WAV bằng `scripts/device/p4_say.py PORT "dump <câu>" --dump-dir out/`).
 

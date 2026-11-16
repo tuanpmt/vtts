@@ -7,3 +7,6 @@ dependencies.lock
 build_nano/
 sdkconfig.nano
 sdkconfig.nano.old
+build_s3/
+sdkconfig.s3
+sdkconfig.s3.old

@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* main.c -- Vietnamese TTS on the ESP32-P4 panel: type a sentence on the serial console and
- * the board speaks it. Everything runs on the chip: text -> ids (vtts_text) -> int8 student
- * (vtts runtime) -> ES8311 speaker.
+/* main.c -- Vietnamese TTS on ESP32-P4 and ESP32-S3 boards: type a sentence on the serial console
+ * and the board speaks it. Everything runs on the chip: text -> ids (vtts_text) -> int8 student
+ * (vtts runtime) -> speaker (board_audio).
  *
  * Console commands (one per line):
  *   bench        speed report on four fixed sentences (no audio), one REPORT line each
@@ -15,7 +15,8 @@
 
 #include "board_audio.h"
 #include "driver/uart.h"
-#include "esp_codec_dev.h"
+#include "driver/usb_serial_jtag.h"
+#include "driver/usb_serial_jtag_vfs.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
@@ -56,7 +57,7 @@ static struct {
     float *pcm;      /* MAX_SECONDS of audio, PSRAM */
     long pcm_cap, n; /* samples */
     int64_t synth_us;
-    esp_codec_dev_handle_t spk;
+    int spk; /* speaker available */
     int out_rate, vol, chunk;
     StreamBufferHandle_t sb; /* int16 PCM at the model rate, synthesized ahead of playback */
     int streaming;           /* 1 while a SAID command feeds the speaker */
@@ -83,7 +84,7 @@ int64_t vtts_now_us(void) { return esp_timer_get_time(); }
 extern int64_t vtts_prof_us[8];
 extern const char *const vtts_prof_names[8];
 
-void vtts_p4_par_enable(int on);
+void vtts_par_enable(int on);
 static vtts_text_ws s_ws; /* ~40 KB, kept off the task stack */
 
 static void stream_out(const float *pcm, long n) {
@@ -134,15 +135,11 @@ static int synthesize(const char *text, int64_t *total_us) {
 }
 
 static void speaker_init(void) {
-    g.spk = board_speaker_init();
-    if (!g.spk) { ESP_LOGE(TAG, "speaker init failed"); return; }
-    int rates[2] = {OUT_RATE_TRY, OUT_RATE_FALLBACK};
-    for (int k = 0; k < 2; k++) {
-        esp_codec_dev_sample_info_t fs = {.bits_per_sample = 16, .channel = 1, .sample_rate = (uint32_t)rates[k]};
-        if (esp_codec_dev_open(g.spk, &fs) == ESP_CODEC_DEV_OK) { g.out_rate = rates[k]; break; }
-    }
-    if (!g.out_rate) { ESP_LOGE(TAG, "codec open failed"); g.spk = NULL; return; }
-    esp_codec_dev_set_out_vol(g.spk, g.vol);
+    const int rates[2] = {OUT_RATE_TRY, OUT_RATE_FALLBACK};
+    g.out_rate = board_speaker_open(rates, 2);
+    if (!g.out_rate) { ESP_LOGE(TAG, "speaker init failed"); return; }
+    g.spk = 1;
+    board_speaker_set_vol(g.vol);
     printf("speaker: %d Hz\n", g.out_rate);
 }
 
@@ -158,7 +155,7 @@ static void play(void) {
             float f = (float)(pos - i), v = g.pcm[i] * (1.0f - f) + g.pcm[i + 1] * f; /* linear resample */
             block[k] = (int16_t)lrintf(shape(v) * 32767.0f);
         }
-        esp_codec_dev_write(g.spk, block, k * (int)sizeof(int16_t));
+        board_speaker_write(block, k);
     }
 }
 
@@ -180,7 +177,7 @@ static void speaker_task(void *arg) {
         for (;;) {
             size_t got = xStreamBufferReceive(g.sb, block, sizeof block, pdMS_TO_TICKS(2));
             if (got) {
-                if (g.spk) esp_codec_dev_write(g.spk, block, (int)got);
+                if (g.spk) board_speaker_write(block, (int)(got / sizeof(int16_t)));
                 continue;
             }
             if (g.synth_done) break;  /* utterance finished */
@@ -215,6 +212,19 @@ static void cpu_report(const cpu_snap_t *a) {
     double span = (double)(b.t - a->t); /* run-time counters tick in microseconds (esp_timer) */
     printf("CPU core0 %.0f%% core1 %.0f%% over %.1fs\n", 100.0 * (1.0 - (double)(b.idle[0] - a->idle[0]) / span),
            100.0 * (1.0 - (double)(b.idle[1] - a->idle[1]) / span), span / 1e6);
+}
+
+/* selftest: both cores run SIMD dots at once, 200 times per row; every repeat must match */
+static struct { const int8_t *w, *x; int len; int32_t *out; volatile int bad; } s_pt;
+static void partest_rows(int lo, int hi, void *ctx) {
+    (void)ctx;
+    for (int rep = 0; rep < 200; rep++)
+        for (int r = lo; r < hi; r++) {
+            int32_t got;
+            vtts_dots_s8s8(s_pt.w + (size_t)r * s_pt.len, s_pt.x, s_pt.len, 1, s_pt.len, &got);
+            if (rep == 0) s_pt.out[r] = got;
+            else if (got != s_pt.out[r]) s_pt.bad++;
+        }
 }
 
 static void handle(char *line) {
@@ -279,6 +289,45 @@ static void handle(char *line) {
                 printf("SELFTEST dots%d x32 %.1f MMAC/s\n", lens2[li], 500.0 * 32 * lens2[li] / us);
             }
         }
+        { /* the same kernels with weights read straight from the embedded model (flash or PSRAM) */
+            const int8_t *wf = (const int8_t *)(((uintptr_t)model_s_start + 15) & ~(uintptr_t)15);
+            static int8_t xa2[32 * 480] __attribute__((aligned(16)));
+            static int32_t o2[32];
+            int bad2 = 0;
+            for (int off = 0; off < (int)(model_s_end - model_s_start) - 512; off += 4096 * 3 + 16) {
+                vtts_dots_s8s8(wf + off, xa2, 480, 32, 480, o2);
+                for (int t = 0; t < 32; t++) {
+                    int32_t ref = 0;
+                    for (int i = 0; i < 480; i++) ref += wf[off + i] * xa2[t * 480 + i];
+                    if (o2[t] != ref) bad2++;
+                }
+            }
+            printf("selftest: %d mismatches with weights in the model blob\n", bad2);
+            bad += bad2;
+        }
+        for (int where = 0; where < 2; where++) { /* both cores at once; internal RAM, then PSRAM */
+            static int8_t wi[64 * 480] __attribute__((aligned(16))), xi[480] __attribute__((aligned(16)));
+            static int32_t out[64];
+            int8_t *w = wi, *x = xi;
+            if (where) {
+                w = heap_caps_aligned_alloc(16, 64 * 480, MALLOC_CAP_SPIRAM);
+                x = heap_caps_aligned_alloc(16, 480, MALLOC_CAP_SPIRAM);
+                if (!w || !x) { free(w); free(x); continue; }
+            }
+            for (int i = 0; i < 64 * 480; i++) w[i] = (int8_t)(((r = r * 1664525u + 1013904223u) >> 24) % 255 - 127);
+            for (int i = 0; i < 480; i++) x[i] = (int8_t)(((r = r * 1664525u + 1013904223u) >> 24) % 255 - 127);
+            s_pt.w = w; s_pt.x = x; s_pt.len = 480; s_pt.out = out; s_pt.bad = 0;
+            vtts_par_run(partest_rows, 64, NULL);
+            int wrong = 0;
+            for (int t = 0; t < 64; t++) {
+                int32_t ref = 0;
+                for (int i = 0; i < 480; i++) ref += w[t * 480 + i] * x[i];
+                if (out[t] != ref) wrong++;
+            }
+            printf("selftest: two cores (%s): %d wrong, %d unstable\n", where ? "psram" : "sram", wrong, s_pt.bad);
+            bad += wrong + s_pt.bad;
+            if (where) { free(w); free(x); }
+        }
         int lens[4] = {64, 112, 192, 336};
         for (int li = 0; li < 4; li++) {
             int64_t t0 = esp_timer_get_time();
@@ -334,7 +383,7 @@ static void handle(char *line) {
     }
     if (strncmp(line, "cores ", 6) == 0) {
         int c = atoi(line + 6) >= 2;
-        vtts_p4_par_enable(c);
+        vtts_par_enable(c);
         printf("cores %d\nDONE\n", c ? 2 : 1);
         return;
     }
@@ -353,7 +402,7 @@ static void handle(char *line) {
         float e = (float)atof(line + 5);
         e = e < 0.5f ? 0.5f : e > 2.5f ? 2.5f : e;
         for (int k = 0; k < 2; k++) vtts_set_expressiveness(&g.models[k], e);
-        printf("expr %.2f (prosody models: S %d, M %d)\nDONE\n", e, g.models[0].prosody, g.models[1].prosody);
+        printf("expr %.2f (prosody model: %d)\nDONE\n", e, g.models[g.cur].prosody);
         return;
     }
     if (strncmp(line, "speed ", 6) == 0) { /* length scale 0.7..1.6 */
@@ -371,7 +420,7 @@ static void handle(char *line) {
     }
     if (strncmp(line, "vol ", 4) == 0) {
         g.vol = atoi(line + 4);
-        if (g.spk) esp_codec_dev_set_out_vol(g.spk, g.vol);
+        if (g.spk) board_speaker_set_vol(g.vol);
         printf("vol %d\nDONE\n", g.vol);
         return;
     }
@@ -399,17 +448,29 @@ static void handle(char *line) {
     printf("DONE\n");
 }
 
+/* console input: UART (P4 boards, USB bridge) or the S3's own USB-Serial-JTAG */
+#if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
+static void console_init(void) {
+    usb_serial_jtag_driver_config_t cfg = {.rx_buffer_size = 4096, .tx_buffer_size = 4096};
+    usb_serial_jtag_driver_install(&cfg);
+    usb_serial_jtag_vfs_use_driver();
+}
+static int console_read(uint8_t *ch) { return usb_serial_jtag_read_bytes(ch, 1, portMAX_DELAY); }
+#else
+static void console_init(void) { uart_driver_install(CONFIG_ESP_CONSOLE_UART_NUM, 4096, 0, 0, NULL, 0); }
+static int console_read(uint8_t *ch) { return uart_read_bytes(CONFIG_ESP_CONSOLE_UART_NUM, ch, 1, portMAX_DELAY); }
+#endif
+
 static void console_task(void *arg) {
     (void)arg;
-    const uart_port_t port = CONFIG_ESP_CONSOLE_UART_NUM;
-    uart_driver_install(port, 4096, 0, 0, NULL, 0);
+    console_init();
     static char line[2048];
     size_t n = 0;
     printf("board %s\n", board_name());
     printf("READY (type a Vietnamese sentence, or: bench | model s|m | vol N | gain dB)\n");
     for (;;) {
         uint8_t ch;
-        if (uart_read_bytes(port, &ch, 1, portMAX_DELAY) != 1) continue;
+        if (console_read(&ch) != 1) continue;
         if (ch == '\n' || ch == '\r') {
             line[n] = 0;
             if (n) handle(line);
@@ -440,14 +501,17 @@ void app_main(void) {
     g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     g.arena_where = "sram";
     if (!g.arena) { g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_SPIRAM); g.arena_where = "psram"; }
-    g.pcm_cap = (long)MAX_SECONDS * 22050;
-    g.pcm = heap_caps_malloc(sizeof(float) * (size_t)g.pcm_cap, MALLOC_CAP_SPIRAM);
-    printf("arena %u in %s; free internal %u, psram %u\n", (unsigned)need, g.arena_where,
+    g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
+    /* up to MAX_SECONDS, or what PSRAM has left (keep 64 KB spare) */
+    long fit = ((long)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) - 65536) / (long)sizeof(float);
+    g.pcm_cap = (long)MAX_SECONDS * 22050 < fit ? (long)MAX_SECONDS * 22050 : fit;
+    g.pcm = g.pcm_cap > 22050 ? heap_caps_malloc(sizeof(float) * (size_t)g.pcm_cap, MALLOC_CAP_SPIRAM) : NULL;
+    printf("arena %u in %s; pcm %.1f s; free internal %u, psram %u\n", (unsigned)need, g.arena_where,
+           g.pcm_cap / 22050.0,
            (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     if (!g.arena || !g.pcm) { printf("ERROR out of memory\n"); return; }
     g.gain = powf(10.0f, BOARD_DEFAULT_GAIN_DB / 20.0f);
     speaker_init();
-    g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
     g.utt_start = xSemaphoreCreateBinary();
     g.utt_end = xSemaphoreCreateBinary();
     if (g.sb && g.spk) xTaskCreatePinnedToCore(speaker_task, "speaker", 4096, NULL, 10, NULL, 0);

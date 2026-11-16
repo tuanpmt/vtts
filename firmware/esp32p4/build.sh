@@ -3,6 +3,7 @@
 # usage: [BOARD=nano] ./build.sh S_MODEL.vtts M_MODEL.vtts [idf.py args...]   (default: build)
 #   BOARD=panel (default): Waveshare ESP32-P4-86-Panel, 32 MB flash, build dir build/
 #   BOARD=nano:            Waveshare ESP32-P4-NANO, 16 MB flash, build dir build_nano/
+#   BOARD=s3:              Waveshare ESP32-S3-Touch-LCD-2.8, 16 MB flash, build dir build_s3/
 set -euo pipefail
 cd "$(dirname "$0")"
 cp "$1" main/model_s.vtts
@@ -20,7 +21,9 @@ case "${BOARD:-panel}" in
     panel) CFG=sdkconfig; ARGS=(-B build) ;;
     nano) CFG=sdkconfig.nano
           ARGS=(-B build_nano -D SDKCONFIG=sdkconfig.nano -D "SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.defaults.nano") ;;
-    *) echo "unknown BOARD=$BOARD (panel | nano)" >&2; exit 2 ;;
+    s3) CFG=sdkconfig.s3; TARGET=esp32s3
+        ARGS=(-B build_s3 -D SDKCONFIG=sdkconfig.s3) ;;
+    *) echo "unknown BOARD=$BOARD (panel | nano | s3)" >&2; exit 2 ;;
 esac
-[ -f "$CFG" ] || idf.py "${ARGS[@]}" set-target esp32p4
+[ -f "$CFG" ] || idf.py "${ARGS[@]}" set-target "${TARGET:-esp32p4}"
 idf.py "${ARGS[@]}" "${@:-build}"
