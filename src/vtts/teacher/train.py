@@ -46,6 +46,12 @@ def _log(out_dir: Path, row: dict) -> None:
         f.write(json.dumps(row) + "\n")
 
 
+def _one_thread(_: int) -> None:
+    """Data workers each use one intra-op thread; otherwise every worker spawns one thread per
+    core and they starve each other (and the training process)."""
+    torch.set_num_threads(1)
+
+
 def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | None, out_dir: Path,
           warmstart: Path | None, max_steps: int, ckpt_every: int, device: str = "cuda",
           log_every: int = 50, num_workers: int = 0,
@@ -86,7 +92,7 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
     seg_frames = cfg.segment_size // cfg.hop_length
     loader = DataLoader(ds, batch_sampler=sampler, num_workers=num_workers,
                         collate_fn=lambda b: collate(b, seg_frames, cfg.hop_length),
-                        persistent_workers=num_workers > 0)
+                        persistent_workers=num_workers > 0, worker_init_fn=_one_thread)
 
     def state() -> dict:
         return {"g": g.state_dict(), "d": d.state_dict(), "opt_g": opt_g.state_dict(),
