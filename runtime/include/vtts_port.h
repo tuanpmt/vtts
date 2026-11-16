@@ -14,6 +14,10 @@ extern "C" {
  * may rely on for their fast path (and fall back to scalar code otherwise). */
 int32_t vtts_dot_s8s8(const int8_t *a, const int8_t *b, int n);
 
+/* out[t] = vtts_dot_s8s8(w, x + t * stride, len) for t in [0, n): one weight row against n
+ * activation rows, so a port can keep the per-call overhead out of the inner loop. */
+void vtts_dots_s8s8(const int8_t *w, const int8_t *x, int stride, int n, int len, int32_t *out);
+
 /* Run fn over [0, n), possibly split across cores: fn(lo, hi, ctx) for disjoint ranges that
  * together cover [0, n). The default runs fn(0, n, ctx) on the calling core. */
 typedef void (*vtts_par_fn)(int lo, int hi, void *ctx);

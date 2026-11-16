@@ -1,0 +1,3 @@
+# ESP32-P4-NANO: 16 MB flash (layered over sdkconfig.defaults)
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_VTTS_BOARD_P4_NANO=y

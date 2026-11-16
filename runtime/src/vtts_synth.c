@@ -65,16 +65,20 @@ static const float *W(const vtts_model *m, const char *fmt, ...) {
 
 /* ---------------- ops (channel-major [C, T]) ---------------- */
 
+#include "vtts_port.h"
+
 /* y[co, t] = b[co] + sum_ci,k w[co, ci, k] * x[ci, t + k*dil - pad]  (same length) */
-static void conv1d(const float *x, int ci, int T, const float *w, const float *b, int co, int K,
-                   int dil, float *y) {
-    int pad = dil * (K - 1) / 2;
-    for (int o = 0; o < co; o++) {
-        float *yo = y + (size_t)o * T;
-        for (int t = 0; t < T; t++) yo[t] = b ? b[o] : 0.0f;
+typedef struct { const float *x, *w, *b; float *y; int ci, T, K, dil; } fconv_t;
+
+static void conv1d_rows(int lo, int hi, void *arg) {
+    const fconv_t *j = arg;
+    int ci = j->ci, T = j->T, K = j->K, dil = j->dil, pad = dil * (K - 1) / 2;
+    for (int o = lo; o < hi; o++) {
+        float *yo = j->y + (size_t)o * T;
+        for (int t = 0; t < T; t++) yo[t] = j->b ? j->b[o] : 0.0f;
         for (int i = 0; i < ci; i++) {
-            const float *xi = x + (size_t)i * T;
-            const float *wk = w + ((size_t)o * ci + i) * K;
+            const float *xi = j->x + (size_t)i * T;
+            const float *wk = j->w + ((size_t)o * ci + i) * K;
             for (int k = 0; k < K; k++) {
                 int sh = k * dil - pad;
                 float wv = wk[k];
@@ -85,21 +89,33 @@ static void conv1d(const float *x, int ci, int T, const float *w, const float *b
     }
 }
 
+static void conv1d(const float *x, int ci, int T, const float *w, const float *b, int co, int K,
+                   int dil, float *y) {
+    fconv_t j = {x, w, b, y, ci, T, K, dil};
+    vtts_par_run(conv1d_rows, co, &j);
+}
+
 /* depthwise: w[c, 1, K] */
-static void dwconv1d(const float *x, int C, int T, const float *w, const float *b, int K, float *y) {
-    int pad = (K - 1) / 2;
-    for (int c = 0; c < C; c++) {
-        const float *xc = x + (size_t)c * T;
-        float *yc = y + (size_t)c * T;
+static void dwconv_rows(int lo, int hi, void *arg) {
+    const fconv_t *j = arg;
+    int T = j->T, K = j->K, pad = (K - 1) / 2;
+    for (int c = lo; c < hi; c++) {
+        const float *xc = j->x + (size_t)c * T;
+        float *yc = j->y + (size_t)c * T;
         for (int t = 0; t < T; t++) {
-            float s = b ? b[c] : 0.0f;
+            float s = j->b ? j->b[c] : 0.0f;
             for (int k = 0; k < K; k++) {
                 int tt = t + k - pad;
-                if (tt >= 0 && tt < T) s += w[(size_t)c * K + k] * xc[tt];
+                if (tt >= 0 && tt < T) s += j->w[(size_t)c * K + k] * xc[tt];
             }
             yc[t] = s;
         }
     }
+}
+
+static void dwconv1d(const float *x, int C, int T, const float *w, const float *b, int K, float *y) {
+    fconv_t j = {x, w, b, y, C, T, K, 1};
+    vtts_par_run(dwconv_rows, C, &j);
 }
 
 /* ConvTranspose1d: w[ci, co, K], stride s, padding p; out length T*s when K = 2s, p = s/2 */
@@ -130,8 +146,13 @@ static void linear_cm(const float *x, int ci, int T, const float *w, const float
 }
 
 /* LayerNorm over channels for each time step, in place */
-static void layernorm_cm(float *x, int C, int T, const float *g, const float *b) {
-    for (int t = 0; t < T; t++) {
+typedef struct { float *x; const float *g, *b; int C, T; } ln_t;
+
+static void layernorm_cols(int lo, int hi, void *arg) {
+    const ln_t *j = arg;
+    float *x = j->x;
+    int C = j->C, T = j->T;
+    for (int t = lo; t < hi; t++) {
         float mean = 0.0f, var = 0.0f;
         for (int c = 0; c < C; c++) mean += x[(size_t)c * T + t];
         mean /= (float)C;
@@ -143,23 +164,23 @@ static void layernorm_cm(float *x, int C, int T, const float *g, const float *b)
         float inv = 1.0f / sqrtf(var + 1e-5f);
         for (int c = 0; c < C; c++) {
             float *v = &x[(size_t)c * T + t];
-            *v = (*v - mean) * inv * g[c] + b[c];
+            *v = (*v - mean) * inv * j->g[c] + j->b[c];
         }
     }
+}
+
+static void layernorm_cm(float *x, int C, int T, const float *g, const float *b) {
+    ln_t j = {x, g, b, C, T};
+    vtts_par_run(layernorm_cols, T, &j);
 }
 
 static void lrelu(float *x, size_t n, float slope) {
     for (size_t i = 0; i < n; i++) if (x[i] < 0.0f) x[i] *= slope;
 }
 
-static float gelu_tanh(float x) {
-    return 0.5f * x * (1.0f + tanhf(0.7978845608028654f * (x + 0.044715f * x * x * x)));
-}
 
 
 /* ---------------- weight-generic layers (fp32 or int8 per-channel) ---------------- */
-
-#include "vtts_port.h"
 
 typedef struct {
     const float *w;    /* fp32 weights in PyTorch layout, or NULL */
@@ -193,15 +214,25 @@ typedef struct { int8_t *x; float *s; } qbuf_t;
 
 /* quantize x [ci, T] (channel-major) to time-major int8 [T][ci] with one scale per frame,
  * so results do not depend on how an utterance is split into chunks */
-static void quant_tm(const float *x, int ci, int T, qbuf_t *q) {
-    for (int t = 0; t < T; t++) {
+typedef struct { const float *x; qbuf_t *q; int ci, T; } qt_t;
+
+static void quant_cols(int lo, int hi, void *arg) {
+    const qt_t *j = arg;
+    const float *x = j->x;
+    int ci = j->ci, T = j->T;
+    for (int t = lo; t < hi; t++) {
         float amax = 0.0f;
         for (int c = 0; c < ci; c++) { float v = fabsf(x[(size_t)c * T + t]); if (v > amax) amax = v; }
-        q->s[t] = amax / (float)VTTS_ACT_MAX;
+        j->q->s[t] = amax / (float)VTTS_ACT_MAX;
         float inv = amax > 0.0f ? (float)VTTS_ACT_MAX / amax : 0.0f;
-        int8_t *row = q->x + (size_t)t * ci;
+        int8_t *row = j->q->x + (size_t)t * ci;
         for (int c = 0; c < ci; c++) row[c] = (int8_t)lrintf(x[(size_t)c * T + t] * inv);
     }
+}
+
+static void quant_tm(const float *x, int ci, int T, qbuf_t *q) {
+    qt_t j = {x, q, ci, T};
+    vtts_par_run(quant_cols, T, &j);
 }
 
 typedef struct {
@@ -211,21 +242,29 @@ typedef struct {
     int ci, T, K, dil, s, p, Tout;
 } qjob_t;
 
+#define DOT_TILE 64 /* frames per call of the multi-row dot kernel */
+
 static void lconv_rows(int lo, int hi, void *arg) {
     const qjob_t *j = arg;
     const layer_t *l = j->l;
     const qbuf_t *q = j->q;
     int ci = j->ci, T = j->T, K = j->K, dil = j->dil, pad = dil * (K - 1) / 2;
+    float acc[DOT_TILE];
+    int32_t dots[DOT_TILE];
     for (int o = lo; o < hi; o++) {
-        for (int t = 0; t < T; t++) {
-            float acc = 0.0f;
+        for (int t0 = 0; t0 < T; t0 += DOT_TILE) {
+            int nt = T - t0 < DOT_TILE ? T - t0 : DOT_TILE;
+            for (int i = 0; i < nt; i++) acc[i] = 0.0f;
             for (int k = 0; k < K; k++) {
-                int tt = t + k * dil - pad;
-                if (tt >= 0 && tt < T)
-                    acc += (float)vtts_dot_s8s8(q->x + (size_t)tt * ci, l->q + ((size_t)o * K + k) * ci, ci)
-                           * q->s[tt];
+                int sh = k * dil - pad; /* input frame = output frame + sh */
+                int a = t0, b = t0 + nt;
+                if (a + sh < 0) a = -sh;
+                if (b + sh > T) b = T - sh;
+                if (a >= b) continue;
+                vtts_dots_s8s8(l->q + ((size_t)o * K + k) * ci, q->x + (size_t)(a + sh) * ci, ci, b - a, ci, dots);
+                for (int t = a; t < b; t++) acc[t - t0] += (float)dots[t - a] * q->s[t + sh];
             }
-            j->y[(size_t)o * T + t] = l->b[o] + acc * l->qs[o];
+            for (int i = 0; i < nt; i++) j->y[(size_t)o * T + t0 + i] = l->b[o] + acc[i] * l->qs[o];
         }
     }
 }
@@ -306,6 +345,37 @@ static inline float fast_exp(float x) {
     union { float f; int32_t i; } u = {p};
     u.i += (int32_t)n * (1 << 23); /* add n to the exponent field */
     return u.f;
+}
+
+/* GELU (tanh form) by linear interpolation in a table over [-GELU_R, GELU_R]; max abs error
+ * ~1e-5, far below the int8 step of the next layer. Outside the range GELU is x or 0. */
+#define GELU_N 2048
+#define GELU_R 8.0f
+static float s_gelu[GELU_N + 2];
+static int s_gelu_ready;
+
+static void gelu_init(void) {
+    if (s_gelu_ready) return;
+    for (int i = 0; i <= GELU_N + 1; i++) {
+        double x = -GELU_R + (2.0 * GELU_R) * i / GELU_N;
+        s_gelu[i] = (float)(0.5 * x * (1.0 + tanh(0.7978845608028654 * (x + 0.044715 * x * x * x))));
+    }
+    s_gelu_ready = 1;
+}
+
+static inline float fast_gelu(float x) {
+    if (x >= GELU_R) return x;
+    if (x <= -GELU_R) return 0.0f;
+    float u = (x + GELU_R) * (GELU_N / (2.0f * GELU_R));
+    int i = (int)u; /* u >= 0, so truncation is floor */
+    float f = u - (float)i;
+    return s_gelu[i] + f * (s_gelu[i + 1] - s_gelu[i]);
+}
+
+static inline float fast_tanh(float x) {
+    float e = fast_exp(-2.0f * fabsf(x));
+    float r = (1.0f - e) / (1.0f + e);
+    return x >= 0.0f ? r : -r;
 }
 
 /* ---------------- FFT (radix-2, in place, inverse, unnormalised) ---------------- */
@@ -494,9 +564,62 @@ static long run_latent(const vtts_model *m, arena_t *a, const int32_t *ids, cons
  * frames [s, e). The ConvNeXt MLP and the head/iSTFT run one frame at a time, and only
  * frames that overlap the output region go through the head, so memory does not grow
  * with the window and whole-utterance and streaming runs compute exactly the same sums. */
+typedef struct { float *h; long n; } gelu_job_t;
+
+static void gelu_range(int lo, int hi, void *arg) {
+    const gelu_job_t *j = arg;
+    long n = j->n, a = (long)lo * 64, b = (long)hi * 64 < n ? (long)hi * 64 : n;
+    for (long i = a; i < b; i++) j->h[i] = fast_gelu(j->h[i]);
+}
+
+static void gelu_par(float *h, long n) {
+    gelu_job_t j = {h, n};
+    vtts_par_run(gelu_range, (int)((n + 63) / 64), &j);
+}
+
+/* head output [n_fft + 2, hb] -> real inverse FFT of each frame, via one complex FFT of half
+ * size: with X[N/2 + k] = conj(X[N/2 - k]),
+ *   E[k] = X[k] + conj(X[N/2 - k]),  O[k] = (X[k] - conj(X[N/2 - k])) e^{2 pi i k / N},
+ *   z = IFFT_{N/2}(E + iO)  gives  x[2m] = Re z[m], x[2m + 1] = Im z[m].
+ * Frame j uses z = buf + j * N as [Re z | Im z]; the caller windows and overlap-adds. */
+typedef struct { const float *head; float *buf; int hb, n_fft; } ifr_t;
+
+static inline void head_bin(const ifr_t *jb, int j, int k, float *xr, float *xi) {
+    int nb = jb->n_fft / 2 + 1, hb = jb->hb;
+    float hv = jb->head[(size_t)k * hb + j];
+    float mg = fast_exp(hv > 6.0f ? 6.0f : hv), sn, cs;
+    fast_sincos(jb->head[(size_t)(nb + k) * hb + j], &sn, &cs);
+    *xr = mg * cs;
+    *xi = mg * sn;
+}
+
+static void istft_frames(int lo, int hi, void *arg) {
+    const ifr_t *jb = arg;
+    int N = jb->n_fft, H = N / 2;
+    for (int j = lo; j < hi; j++) {
+        float *zr = jb->buf + (size_t)j * N, *zi = zr + H;
+        for (int k = 0; k <= H / 2; k++) {
+            float ar, ai, br, bi; /* a = X[k], b = X[H - k] */
+            head_bin(jb, j, k, &ar, &ai);
+            head_bin(jb, j, H - k, &br, &bi);
+            if (k == 0) ai = bi = 0.0f; /* like irfft: DC and Nyquist bins are taken as real */
+            float er = ar + br, ei = ai - bi, dr = ar - br, di = ai + bi, sn, cs;
+            fast_sincos(6.283185307179586f * (float)k / (float)N, &sn, &cs);
+            float orr = dr * cs - di * sn, oi = dr * sn + di * cs;
+            zr[k] = er - oi;
+            zi[k] = ei + orr;
+            if (k > 0 && k < H - k) {
+                zr[H - k] = er + oi;
+                zi[H - k] = orr - ei;
+            }
+        }
+        ifft(zr, zi, H);
+    }
+}
+
 static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long Wz, long z0, long T_all,
                          long s, long e, float *pcm) {
-    int C = m->v_dim, M = m->v_mult * C, n_fft = 4 * m->hop, nb = n_fft / 2 + 1, hop = m->hop;
+    int C = m->v_dim, M = m->v_mult * C, n_fft = 4 * m->hop, hop = m->hop;
     long f_lo = s - 2 > 0 ? s - 2 : 0, f_hi = e + 2 < T_all ? e + 2 : T_all;
     if (a->dry) { f_lo = 0; f_hi = e - s + 4; }
     long n_f = f_hi - f_lo;
@@ -508,11 +631,13 @@ static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long W
     float *o = alloc(a, (size_t)C * VTTS_BLOCK), *head = alloc(a, (size_t)(n_fft + 2) * VTTS_HEAD_BLOCK);
     qbuf_t qb = qalloc(a, (size_t)(m->latent > M ? m->latent : M) * Wz, (size_t)Wz), *xq = &qb;
     float *ola = alloc(a, (size_t)ola_len), *env = alloc(a, (size_t)ola_len);
-    float *re = alloc(a, (size_t)n_fft), *im = alloc(a, (size_t)n_fft), *win = alloc(a, (size_t)n_fft);
+    /* re/im per frame of a head block, so the frames' inverse FFTs can run on several cores */
+    float *fbuf = alloc(a, (size_t)n_fft * VTTS_HEAD_BLOCK), *win = alloc(a, (size_t)n_fft);
     if (a->dry) return e - s;
     if (a->oom) return VTTS_ERR_ARENA;
 
     PROF_T0();
+    gelu_init();
     layer_t pre = L(m, "decoder.pre"), hd = L(m, "decoder.head");
     const float *g = W(m, "decoder.norm.weight"), *be = W(m, "decoder.norm.bias");
     const float *fg = W(m, "decoder.final_norm.weight"), *fb = W(m, "decoder.final_norm.bias");
@@ -533,7 +658,7 @@ static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long W
             for (int c = 0; c < C; c++)
                 for (int j = 0; j < nb_; j++) col[(size_t)c * nb_ + j] = y[(size_t)c * Wz + t0 + j];
             lconv(&p1, col, C, nb_, M, 1, 1, h, xq);
-            for (size_t j = 0; j < (size_t)M * nb_; j++) h[j] = gelu_tanh(h[j]);
+            gelu_par(h, (long)M * nb_);
             lconv(&p2, h, M, nb_, C, 1, 1, o, xq);
             for (int c = 0; c < C; c++)
                 for (int j = 0; j < nb_; j++) x[(size_t)c * Wz + t0 + j] += o[(size_t)c * nb_ + j] * gm[c];
@@ -546,32 +671,24 @@ static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long W
     for (int i = 0; i < n_fft; i++) win[i] = 0.5f - 0.5f * cosf(2.0f * (float)M_PI * i / n_fft);
     memset(ola, 0, sizeof(float) * (size_t)ola_len);
     memset(env, 0, sizeof(float) * (size_t)ola_len);
-    int hb = 0;
-    long hb0 = f_lo;
-    for (long f = f_lo; f < f_hi; f++) {
-        if (f >= hb0 + hb) { /* compute the head for the next block of frames */
-            hb0 = f;
-            hb = (int)(f_hi - f < VTTS_HEAD_BLOCK ? f_hi - f : VTTS_HEAD_BLOCK);
-            for (int c = 0; c < C; c++)
-                for (int j = 0; j < hb; j++) col[(size_t)c * hb + j] = x[(size_t)c * Wz + (hb0 - z0) + j];
-            PROF_ADD(6);
-            lconv(&hd, col, C, hb, n_fft + 2, 1, 1, head, xq);
-            PROF_ADD(5);
-        }
-        int j = (int)(f - hb0);
-        for (int k = 0; k < nb; k++) {
-            float mg = fast_exp(head[(size_t)k * hb + j] > 6.0f ? 6.0f : head[(size_t)k * hb + j]);
-            float ph = head[(size_t)(nb + k) * hb + j], sn, cs;
-            fast_sincos(ph, &sn, &cs);
-            re[k] = mg * cs;
-            im[k] = mg * sn;
-        }
-        for (int k = nb; k < n_fft; k++) { re[k] = re[n_fft - k]; im[k] = -im[n_fft - k]; }
-        ifft(re, im, n_fft);
-        float *op = ola + (f - f_lo) * hop, *ep = env + (f - f_lo) * hop;
-        for (int i = 0; i < n_fft; i++) {
-            op[i] += re[i] / (float)n_fft * win[i];
-            ep[i] += win[i] * win[i];
+    for (long hb0 = f_lo; hb0 < f_hi; hb0 += VTTS_HEAD_BLOCK) {
+        int hb = (int)(f_hi - hb0 < VTTS_HEAD_BLOCK ? f_hi - hb0 : VTTS_HEAD_BLOCK);
+        for (int c = 0; c < C; c++)
+            for (int j = 0; j < hb; j++) col[(size_t)c * hb + j] = x[(size_t)c * Wz + (hb0 - z0) + j];
+        PROF_ADD(6);
+        lconv(&hd, col, C, hb, n_fft + 2, 1, 1, head, xq);
+        PROF_ADD(5);
+        ifr_t job = {head, fbuf, hb, n_fft};
+        vtts_par_run(istft_frames, hb, &job);
+        const float inv_n = 1.0f / (float)n_fft;
+        for (int j = 0; j < hb; j++) { /* window and overlap-add in frame order */
+            const float *zr = fbuf + (size_t)j * n_fft, *zi = zr + n_fft / 2;
+            float *op = ola + (hb0 + j - f_lo) * hop, *ep = env + (hb0 + j - f_lo) * hop;
+            for (int i = 0; i < n_fft / 2; i++) {
+                op[2 * i] += zr[i] * inv_n * win[2 * i];
+                op[2 * i + 1] += zi[i] * inv_n * win[2 * i + 1];
+            }
+            for (int i = 0; i < n_fft; i++) ep[i] += win[i] * win[i];
         }
     }
     PROF_ADD(6);
@@ -579,7 +696,7 @@ static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long W
     for (long i = 0; i < n_out; i++) {
         long jj = s * hop + i + n_fft / 2 - f_lo * hop; /* index into the local OLA buffer */
         float v = (jj >= 0 && jj < ola_len && env[jj] > 1e-11f) ? ola[jj] / env[jj] : 0.0f;
-        pcm[i] = tanhf(v);
+        pcm[i] = fast_tanh(v);
     }
     return n_out;
 }

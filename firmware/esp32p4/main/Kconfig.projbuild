@@ -1,0 +1,15 @@
+menu "vtts board"
+
+choice VTTS_BOARD
+    prompt "Target board"
+    default VTTS_BOARD_P4_86_PANEL
+    help
+        Board whose ES8311 codec and amplifier pins are used for playback.
+
+config VTTS_BOARD_P4_86_PANEL
+    bool "Waveshare ESP32-P4-86-Panel"
+config VTTS_BOARD_P4_NANO
+    bool "Waveshare ESP32-P4-NANO"
+endchoice
+
+endmenu

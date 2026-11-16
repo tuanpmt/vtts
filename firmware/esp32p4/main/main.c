@@ -13,7 +13,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "bsp/esp-bsp.h"
+#include "board_audio.h"
 #include "driver/uart.h"
 #include "esp_codec_dev.h"
 #include "esp_heap_caps.h"
@@ -134,7 +134,7 @@ static int synthesize(const char *text, int64_t *total_us) {
 }
 
 static void speaker_init(void) {
-    g.spk = bsp_audio_codec_speaker_init();
+    g.spk = board_speaker_init();
     if (!g.spk) { ESP_LOGE(TAG, "speaker init failed"); return; }
     int rates[2] = {OUT_RATE_TRY, OUT_RATE_FALLBACK};
     for (int k = 0; k < 2; k++) {
@@ -238,6 +238,29 @@ static void handle(char *line) {
             if (vtts_dot_s8s8(va, vb, n) != ref) bad++;
         }
         printf("selftest: %d mismatches in 200 random dots\n", bad);
+        for (int it = 0; it < 200; it++) { /* multi-row kernel: odd and even block counts */
+            int len = 16 * (1 + (int)((r = r * 1664525u + 1013904223u) >> 27) % 30);
+            int rows = 512 / len < 4 ? 512 / len : 4;
+            int32_t got[4];
+            vtts_dots_s8s8(va, vb, len, rows, len, got);
+            for (int t = 0; t < rows; t++) {
+                int32_t ref = 0;
+                for (int i = 0; i < len; i++) ref += va[i] * vb[t * len + i];
+                if (got[t] != ref) bad++;
+            }
+        }
+        printf("selftest: %d mismatches after multi-row dots\n", bad);
+        {
+            static int8_t xa[32 * 480] __attribute__((aligned(16)));
+            static int32_t o32[32];
+            int lens2[2] = {160, 480};
+            for (int li = 0; li < 2; li++) {
+                int64_t t0 = esp_timer_get_time();
+                for (int it = 0; it < 500; it++) vtts_dots_s8s8(va, xa, lens2[li], 32, lens2[li], o32);
+                int64_t us = esp_timer_get_time() - t0;
+                printf("SELFTEST dots%d x32 %.1f MMAC/s\n", lens2[li], 500.0 * 32 * lens2[li] / us);
+            }
+        }
         int lens[4] = {64, 112, 192, 336};
         for (int li = 0; li < 4; li++) {
             int64_t t0 = esp_timer_get_time();
@@ -362,6 +385,7 @@ static void console_task(void *arg) {
     uart_driver_install(port, 4096, 0, 0, NULL, 0);
     static char line[2048];
     size_t n = 0;
+    printf("board %s\n", board_name());
     printf("READY (type a Vietnamese sentence, or: bench | model s|m | vol N | gain dB)\n");
     for (;;) {
         uint8_t ch;

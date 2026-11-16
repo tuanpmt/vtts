@@ -1,5 +1,5 @@
 dependencies:
   idf:
     version: ">=6.1"
-  # Same BSP as the reference panel project (../ttd): ES8311 codec + NS4150B amplifier on the panel
-  waveshare/esp32_p4_wifi6_touch_lcd_4b: "~3.0.1"
+  # ES8311 codec driver; board pins live in board_audio.c
+  espressif/esp_codec_dev: "~1.5"
