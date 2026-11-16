@@ -31,7 +31,14 @@ Trên ESP32-P4 (chip rev 1.3, 360 MHz, PSRAM 32 MB), đo trên Waveshare ESP32-P
 
 RTF < 1 nghĩa là tổng hợp nhanh hơn thời gian thực. Đoạn văn dài 56 giây phát liền mạch, không ngắt quãng.
 
-So với bản trước, runtime nhanh hơn khoảng 2,3 lần mà model và audio không đổi (tương quan với bản cũ 0.9998). Những thay đổi chính:
+**Tối ưu hiệu năng.** Runtime đã được tối ưu cho ESP32-P4. Model và file `.vtts` giữ nguyên, audio gần như giống hệt bản cũ (tương quan 0.9998):
+
+| Model | RTF trước tối ưu | RTF sau tối ưu | Nhanh hơn | Bắt đầu phát (trước → sau) |
+|---|---:|---:|---:|---:|
+| S-vocos | 0.41–0.45 | 0.20–0.22 | ~2,1 lần | 0.6–0.9 s → 0.3 s |
+| M-vocos v0.2 | 0.79–0.94 | 0.34–0.42 | ~2,3 lần | 2.4 s → 1.2 s |
+
+Những thay đổi chính:
 - GELU dùng bảng tra thay cho `tanhf`.
 - Kernel int8 tính nhiều frame trong một lần gọi, vòng lặp được pipeline bằng lệnh `vmulas...ld.ip` của PIE.
 - iSTFT dùng FFT thực nửa kích thước.
