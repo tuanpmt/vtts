@@ -39,3 +39,25 @@ def token_to_id(tok: str) -> int:
 
 def id_to_token(i: int) -> str:
     return TOKENS[i]
+
+
+# ---------------- version 2: Vietnamese + English (ids 0..64 unchanged) ----------------
+# English uses the 39 ARPAbet phonemes (CMUdict); a stress token S0/S1/S2 follows each vowel,
+# the way a tone token follows each Vietnamese syllable.
+
+PHONEME_SET_VERSION_V2 = "2"
+ARPABET = ("AA", "AE", "AH", "AO", "AW", "AY", "B", "CH", "D", "DH", "EH", "ER", "EY", "F", "G",
+           "HH", "IH", "IY", "JH", "K", "L", "M", "N", "NG", "OW", "OY", "P", "R", "S", "SH", "T",
+           "TH", "UH", "UW", "V", "W", "Y", "Z", "ZH")
+ARPABET_VOWELS = frozenset(("AA", "AE", "AH", "AO", "AW", "AY", "EH", "ER", "EY", "IH", "IY",
+                            "OW", "OY", "UH", "UW"))
+STRESS = ("S0", "S1", "S2")
+
+TOKENS_V2: tuple[str, ...] = TOKENS + tuple(f"EN:{p}" for p in ARPABET) + STRESS
+VOCAB_SIZE_V2 = len(TOKENS_V2)
+
+_TOKEN_TO_ID_V2 = {tok: i for i, tok in enumerate(TOKENS_V2)}
+
+
+def token_to_id_v2(tok: str) -> int:
+    return _TOKEN_TO_ID_V2[tok]

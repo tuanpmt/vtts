@@ -1,0 +1,153 @@
+Bluetooth
+Wi-Fi
+AirPods
+iPhone
+iPad
+MacBook
+Android
+Samsung Galaxy
+Google Maps
+Google Meet
+Google Drive
+Gmail
+YouTube
+YouTube Music
+Spotify
+Netflix
+Facebook
+Messenger
+Instagram
+TikTok
+Zalo
+Grab
+Shopee
+Lazada
+Microsoft Teams
+Zoom
+Slack
+Excel
+PowerPoint
+Word
+Outlook
+Chrome
+Safari
+Firefox
+Windows
+macOS
+Linux
+GitHub
+ChatGPT
+Claude
+Siri
+Alexa
+Google Assistant
+Smart TV
+smartphone
+smartwatch
+laptop
+tablet
+router
+modem
+password
+username
+email
+online
+offline
+download
+upload
+update
+upgrade
+backup
+reset
+restart
+settings
+notification
+playlist
+podcast
+livestream
+streaming
+video call
+voice message
+dark mode
+Low Power Mode
+airplane mode
+hotspot
+QR code
+check in
+check out
+booking
+deadline
+meeting
+team
+project
+feedback
+marketing
+sales
+startup
+manager
+leader
+CEO
+designer
+developer
+coder
+freelancer
+content
+fanpage
+like
+share
+comment
+follow
+trending
+hashtag
+selfie
+vlog
+blogger
+influencer
+shopping
+voucher
+sale off
+free ship
+delivery
+order
+menu
+combo
+coffee
+cappuccino
+latte
+pizza
+burger
+sandwich
+salad
+yogurt
+smoothie
+gym
+yoga
+fitness
+running
+marathon
+football
+tennis
+badminton
+camping
+picnic
+weekend
+party
+concert
+festival
+show
+game
+online game
+esports
+console
+PlayStation
+Nintendo Switch
+headphone
+speaker
+charger
+power bank
+camera
+drone
+robot
+smart home
+air purifier
+robot vacuum

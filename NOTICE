@@ -22,3 +22,9 @@ Data used during development (not distributed in this repository, except one sho
 
 Baselines compared against (run as black boxes, not included): sanoTTS (Ampixa) and Piper
 vi_VN-25hours_single.
+
+CMU Pronouncing Dictionary (cmudict), used by the English front-end
+(src/vtts/frontend/en/cmudict.py and the lexicon blob built from it):
+Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.
+Redistributed under the BSD 2-clause license reproduced in
+https://github.com/cmusphinx/cmudict/blob/74790861f652b15e4ac49015a90074ad62a27690/LICENSE
