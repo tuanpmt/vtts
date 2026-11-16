@@ -10,20 +10,33 @@ import soundfile as sf
 import torch
 from torch.utils.data import Dataset, Sampler
 
+from vtts.data.audio import resample
 from vtts.frontend.g2p import encode, g2p
 from vtts.frontend.normalize import normalize
+from vtts.frontend.phoneme_set import BOS, EOS, token_to_id_v2
+from vtts.frontend.text import text_to_tokens
 
 from .config import TeacherConfig
 from .vits.mel_processing import spectrogram_torch
 
 
-def read_rows(csv: Path) -> list[tuple[str, str, float]]:
+def read_rows(csv: Path) -> list[tuple[str, str, float, str | None]]:
+    """uid|text|duration[|lang]; lang (vi, en, mixed) selects phoneme set v2."""
     rows = []
     for line in Path(csv).read_text(encoding="utf-8").splitlines():
         if line.strip():
-            uid, text, dur = line.split("|")
-            rows.append((uid, text, float(dur)))
+            uid, text, dur, *lang = line.split("|")
+            rows.append((uid, text, float(dur), lang[0] if lang else None))
     return rows
+
+
+def encode_text(text: str, lang: str | None) -> list[int]:
+    """One id sequence for a training sentence: v1 when lang is None, else v2."""
+    if lang is None:
+        return encode(g2p(normalize(text)))
+    mode = "en" if lang == "en" else "vi"
+    toks = [t for chunk in text_to_tokens(text, mode) for t in chunk]
+    return [token_to_id_v2(BOS), *(token_to_id_v2(t) for t in toks), token_to_id_v2(EOS)]
 
 
 class TeacherDataset(Dataset):
@@ -39,14 +52,19 @@ class TeacherDataset(Dataset):
         return len(self.rows)
 
     def frame_lengths(self) -> list[int]:
-        return [int(d * self.cfg.sample_rate / self.cfg.hop_length) for _, _, d in self.rows]
+        return [int(d * self.cfg.sample_rate / self.cfg.hop_length) for _, _, d, _ in self.rows]
 
     def __getitem__(self, i: int) -> dict:
-        uid, text, _ = self.rows[i]
-        ids = torch.tensor(encode(g2p(normalize(text))), dtype=torch.long)
-        x, sr = sf.read(self.wav_dir / f"{uid}.wav", dtype="float32")
+        uid, text, _, lang = self.rows[i]
+        ids = torch.tensor(encode_text(text, lang), dtype=torch.long)
+        path = self.wav_dir / f"{uid}.wav"
+        if not path.exists():
+            path = self.wav_dir / f"{uid}.flac"
+        x, sr = sf.read(path, dtype="float32")
+        if x.ndim > 1:
+            x = x.mean(axis=1)
         if sr != self.cfg.sample_rate:
-            raise ValueError(f"{uid}: sample rate {sr} != {self.cfg.sample_rate}")
+            x = resample(x, sr, self.cfg.sample_rate)
         wav = torch.from_numpy(np.clip(x, -1.0, 1.0))[None]
         cache = self.cache_dir / f"{uid}.spec.pt" if self.cache_dir is not None else None
         if cache is not None and cache.exists():

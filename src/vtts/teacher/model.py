@@ -29,7 +29,13 @@ def build_discriminator(cfg: TeacherConfig) -> MultiPeriodDiscriminator:
 
 
 def load_warmstart(g: SynthesizerTrn, d: MultiPeriodDiscriminator, ckpt: Path) -> None:
-    """Load a Piper Lightning checkpoint (keys model_g.* / model_d.*), strictly."""
-    sd = torch.load(ckpt, map_location="cpu", weights_only=False)["state_dict"]
+    """Load weights only (fresh optimizer and step), strictly: a project checkpoint
+    (keys g / d) or a Piper Lightning checkpoint (keys model_g.* / model_d.*)."""
+    raw = torch.load(ckpt, map_location="cpu", weights_only=False)
+    if "g" in raw and "d" in raw:
+        g.load_state_dict(raw["g"], strict=True)
+        d.load_state_dict(raw["d"], strict=True)
+        return
+    sd = raw["state_dict"]
     g.load_state_dict({k[8:]: v for k, v in sd.items() if k.startswith("model_g.")}, strict=True)
     d.load_state_dict({k[8:]: v for k, v in sd.items() if k.startswith("model_d.")}, strict=True)

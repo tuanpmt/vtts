@@ -60,3 +60,17 @@ def test_bucket_sampler_covers_all_once():
     assert flat == list(range(100))
     s.set_epoch(1)
     assert list(s) != batches
+
+
+def test_bilingual_rows_and_flac_resampled(tmp_path):
+    wavs = tmp_path / "wavs"
+    wavs.mkdir()
+    t = np.arange(24000) / 24000
+    sf.write(wavs / "en1.flac", 0.3 * np.sin(2 * np.pi * 220 * t), 24000, subtype="PCM_16")
+    sf.write(wavs / "vi1.flac", 0.3 * np.sin(2 * np.pi * 220 * t), 24000, subtype="PCM_16")
+    (tmp_path / "train.csv").write_text("en1|Hello world.|1.0|en\nvi1|Xin chào.|1.0|vi\n", encoding="utf-8")
+    ds = TeacherDataset(tmp_path / "train.csv", wavs, None, TeacherConfig())
+    en, vi = ds[0], ds[1]
+    assert int(en["ids"].max()) >= 65 and int(en["ids"].max()) < 107
+    assert int(vi["ids"].max()) < 65
+    assert abs(en["wav"].shape[1] - 22050) <= 256
