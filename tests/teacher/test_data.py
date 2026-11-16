@@ -74,3 +74,12 @@ def test_bilingual_rows_and_flac_resampled(tmp_path):
     assert int(en["ids"].max()) >= 65 and int(en["ids"].max()) < 107
     assert int(vi["ids"].max()) < 65
     assert abs(en["wav"].shape[1] - 22050) <= 256
+
+
+def test_bucket_sampler_frame_budget():
+    lengths = [100] * 40 + [1000] * 40
+    s = BucketSampler(lengths, batch_size=16, n_buckets=2, seed=0, max_frames=4000)
+    batches = list(s)
+    assert sorted(i for b in batches for i in b) == list(range(80))
+    assert all(len(b) * max(lengths[i] for i in b) <= 4000 for b in batches)
+    assert max(len(b) for b in batches) == 16  # short items still fill whole batches

@@ -103,10 +103,15 @@ def collate(batch: list[dict], segment_frames: int = 32, hop: int = 256) -> dict
 
 
 class BucketSampler(Sampler[list[int]]):
-    """Batches of similar length; buckets and batch order reshuffled every epoch."""
+    """Batches of similar length; buckets and batch order reshuffled every epoch.
 
-    def __init__(self, lengths: list[int], batch_size: int, n_buckets: int = 10, seed: int = 1234):
+    With max_frames, a batch also stops growing before (items x longest item) would exceed it,
+    so buckets of long utterances get smaller batches instead of running out of GPU memory."""
+
+    def __init__(self, lengths: list[int], batch_size: int, n_buckets: int = 10, seed: int = 1234,
+                 max_frames: int | None = None):
         self.lengths, self.batch_size, self.n_buckets, self.seed = lengths, batch_size, n_buckets, seed
+        self.max_frames = max_frames
         self.epoch = 0
 
     def set_epoch(self, epoch: int) -> None:
@@ -120,7 +125,18 @@ class BucketSampler(Sampler[list[int]]):
         for b in range(0, len(order), size):
             bucket = order[b: b + size]
             rnd.shuffle(bucket)
-            batches += [bucket[i: i + self.batch_size] for i in range(0, len(bucket), self.batch_size)]
+            cur: list[int] = []
+            longest = 0
+            for i in bucket:
+                grow = max(longest, self.lengths[i])
+                if cur and (len(cur) == self.batch_size or
+                            (self.max_frames and (len(cur) + 1) * grow > self.max_frames)):
+                    batches.append(cur)
+                    cur, grow = [], self.lengths[i]
+                cur.append(i)
+                longest = grow
+            if cur:
+                batches.append(cur)
         rnd.shuffle(batches)
         return batches
 

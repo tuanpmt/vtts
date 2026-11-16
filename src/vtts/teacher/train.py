@@ -55,7 +55,7 @@ def _one_thread(_: int) -> None:
 def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | None, out_dir: Path,
           warmstart: Path | None, max_steps: int, ckpt_every: int, device: str = "cuda",
           log_every: int = 50, num_workers: int = 0,
-          nan_steps: frozenset[int] = frozenset()) -> None:
+          nan_steps: frozenset[int] = frozenset(), max_batch_frames: int | None = None) -> None:
     """Train until `max_steps`; resumes from the newest checkpoint in out_dir if any.
 
     `nan_steps` is a testing aid: the generator loss is replaced by NaN at those steps.
@@ -88,7 +88,7 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
         load_warmstart(g, d, warmstart)
 
     ds = TeacherDataset(train_csv, wav_dir, cache_dir, cfg)
-    sampler = BucketSampler(ds.frame_lengths(), cfg.batch_size)
+    sampler = BucketSampler(ds.frame_lengths(), cfg.batch_size, max_frames=max_batch_frames)
     seg_frames = cfg.segment_size // cfg.hop_length
     loader = DataLoader(ds, batch_sampler=sampler, num_workers=num_workers,
                         collate_fn=lambda b: collate(b, seg_frames, cfg.hop_length),
