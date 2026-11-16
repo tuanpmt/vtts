@@ -27,10 +27,13 @@ def read_rows(csv: Path) -> list[tuple[str, str, float]]:
 
 
 class TeacherDataset(Dataset):
-    def __init__(self, csv: Path, wav_dir: Path, cache_dir: Path, cfg: TeacherConfig):
+    def __init__(self, csv: Path, wav_dir: Path, cache_dir: Path | None, cfg: TeacherConfig):
+        """cache_dir=None computes spectrograms on the fly (for corpora too large to cache)."""
         self.rows = read_rows(csv)
-        self.wav_dir, self.cache_dir, self.cfg = Path(wav_dir), Path(cache_dir), cfg
-        self.cache_dir.mkdir(parents=True, exist_ok=True)
+        self.wav_dir, self.cfg = Path(wav_dir), cfg
+        self.cache_dir = Path(cache_dir) if cache_dir is not None else None
+        if self.cache_dir is not None:
+            self.cache_dir.mkdir(parents=True, exist_ok=True)
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -45,14 +48,15 @@ class TeacherDataset(Dataset):
         if sr != self.cfg.sample_rate:
             raise ValueError(f"{uid}: sample rate {sr} != {self.cfg.sample_rate}")
         wav = torch.from_numpy(np.clip(x, -1.0, 1.0))[None]
-        cache = self.cache_dir / f"{uid}.spec.pt"
-        if cache.exists():
+        cache = self.cache_dir / f"{uid}.spec.pt" if self.cache_dir is not None else None
+        if cache is not None and cache.exists():
             spec = torch.load(cache)
         else:
             c = self.cfg
             spec = spectrogram_torch(wav, c.filter_length, c.sample_rate, c.hop_length,
                                      c.win_length, center=False)[0]
-            torch.save(spec, cache)
+            if cache is not None:
+                torch.save(spec, cache)
         n = spec.shape[1]
         wav = wav[:, : n * self.cfg.hop_length]
         if wav.shape[1] < n * self.cfg.hop_length:

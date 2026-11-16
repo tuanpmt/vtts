@@ -46,7 +46,7 @@ def _log(out_dir: Path, row: dict) -> None:
         f.write(json.dumps(row) + "\n")
 
 
-def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path, out_dir: Path,
+def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | None, out_dir: Path,
           warmstart: Path | None, max_steps: int, ckpt_every: int, device: str = "cuda",
           log_every: int = 50, num_workers: int = 0,
           nan_steps: frozenset[int] = frozenset()) -> None:

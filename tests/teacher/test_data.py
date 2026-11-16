@@ -7,7 +7,7 @@ from vtts.teacher.config import TeacherConfig
 from vtts.teacher.data import BucketSampler, TeacherDataset, collate
 
 
-def _make(tmp_path, items):
+def _make(tmp_path, items, cache="cache"):
     wavs = tmp_path / "wavs"
     wavs.mkdir()
     lines = []
@@ -16,7 +16,7 @@ def _make(tmp_path, items):
         sf.write(wavs / f"{uid}.wav", 0.3 * np.sin(2 * np.pi * 220 * t), 22050, subtype="PCM_16")
         lines.append(f"{uid}|{text}|{sec}")
     (tmp_path / "train.csv").write_text("\n".join(lines) + "\n", encoding="utf-8")
-    return TeacherDataset(tmp_path / "train.csv", wavs, tmp_path / "cache", TeacherConfig())
+    return TeacherDataset(tmp_path / "train.csv", wavs, cache and tmp_path / cache, TeacherConfig())
 
 
 def test_item_shapes(tmp_path):
@@ -34,6 +34,13 @@ def test_cache_reused(tmp_path):
     mtime = cached.stat().st_mtime_ns
     ds[0]
     assert cached.stat().st_mtime_ns == mtime
+
+
+def test_no_cache_writes_nothing(tmp_path):
+    ds = _make(tmp_path, [("a", "xin chào", 1.0)], cache=None)
+    item = ds[0]
+    assert item["spec"].shape[0] == 513
+    assert sorted(p.name for p in tmp_path.iterdir()) == ["train.csv", "wavs"]
 
 
 def test_collate_pads_short_audio(tmp_path):

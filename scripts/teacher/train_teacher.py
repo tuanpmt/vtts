@@ -19,6 +19,7 @@ def main() -> None:
     ap.add_argument("--wavs", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--cache", type=Path, default=None)
+    ap.add_argument("--no-cache", action="store_true", help="compute spectrograms on the fly")
     ap.add_argument("--warmstart", type=Path, default=None)
     ap.add_argument("--max-steps", type=int, default=100_000)
     ap.add_argument("--ckpt-every", type=int, default=5000)
@@ -27,7 +28,7 @@ def main() -> None:
     ap.add_argument("--device", default="cuda")
     args = ap.parse_args()
     cfg = TeacherConfig(batch_size=args.batch_size)
-    train(cfg, args.data / "train.csv", args.wavs, args.cache or args.data / "spec_cache", args.out,
+    train(cfg, args.data / "train.csv", args.wavs, None if args.no_cache else (args.cache or args.data / "spec_cache"), args.out,
           args.warmstart, args.max_steps, args.ckpt_every, device=args.device,
           num_workers=args.num_workers)
 
