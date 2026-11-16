@@ -3,6 +3,17 @@
 #pragma once
 
 #include "esp_codec_dev.h"
+#include "sdkconfig.h"
+
+/* Default codec volume and digital gain (dB, before a soft limiter): the model peaks near
+ * -8 dBFS, and the NANO's speaker path is quieter than the panel's. */
+#if defined(CONFIG_VTTS_BOARD_P4_NANO)
+#define BOARD_DEFAULT_VOL 90
+#define BOARD_DEFAULT_GAIN_DB 12.0f
+#else
+#define BOARD_DEFAULT_VOL 70
+#define BOARD_DEFAULT_GAIN_DB 0.0f
+#endif
 
 /* Board name, for the boot log. */
 const char *board_name(void);

@@ -67,7 +67,7 @@ static struct {
     int first;
     float gain; /* digital gain before the codec (linear), with a soft limiter */
     float speed; /* length_scale: > 1 reads slower */
-} g = {.vol = 70, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f};
+} g = {.vol = BOARD_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f};
 
 /* gain + soft limiter: linear below 0.7, smoothly saturating to 1.0 above */
 static inline float shape(float v) {
@@ -201,8 +201,26 @@ static void report(const char *tag, int idx, int chunks, int64_t total_us) {
            audio > 0 ? (total_us / 1e6) / audio : 0.0, rms, (unsigned)g.arena_bytes, g.arena_where);
 }
 
+/* CPU load per core over an interval, from the FreeRTOS idle tasks' run-time counters */
+typedef struct { int64_t t; configRUN_TIME_COUNTER_TYPE idle[2]; } cpu_snap_t;
+
+static cpu_snap_t cpu_snap(void) {
+    cpu_snap_t s = {esp_timer_get_time(), {0, 0}};
+    for (int c = 0; c < 2; c++) s.idle[c] = ulTaskGetIdleRunTimeCounterForCore(c);
+    return s;
+}
+
+static void cpu_report(const cpu_snap_t *a) {
+    cpu_snap_t b = cpu_snap();
+    double span = (double)(b.t - a->t); /* run-time counters tick in microseconds (esp_timer) */
+    printf("CPU core0 %.0f%% core1 %.0f%% over %.1fs\n", 100.0 * (1.0 - (double)(b.idle[0] - a->idle[0]) / span),
+           100.0 * (1.0 - (double)(b.idle[1] - a->idle[1]) / span), span / 1e6);
+}
+
 static void handle(char *line) {
-    while (*line && ((unsigned char)*line < 0x20 || (unsigned char)*line == 0x7f)) line++; /* noise from port open */
+    /* skip noise from port open or reset: control bytes and bytes that cannot start UTF-8 */
+    for (unsigned char ch; (ch = (unsigned char)*line) && (ch < 0x20 || ch == 0x7f || (ch >= 0x80 && ch < 0xc2) || ch >= 0xf5);)
+        line++;
     size_t len = strlen(line);
     while (len && (line[len - 1] == '\r' || line[len - 1] == '\n' || line[len - 1] == ' ')) line[--len] = 0;
     if (!len) return;
@@ -363,6 +381,7 @@ static void handle(char *line) {
     g.t_first = g.t_play = 0;
     g.underruns = 0;
     g.synth_done = 0;
+    cpu_snap_t cs = cpu_snap();
     if (direct) xSemaphoreGive(g.utt_start);
     int64_t t0 = esp_timer_get_time();
     int c = synthesize(line, &us);
@@ -373,6 +392,7 @@ static void handle(char *line) {
         xSemaphoreTake(g.utt_end, portMAX_DELAY); /* playback finished */
         printf("first chunk %.0f ms, playback started %.0f ms, underruns %d\n", (g.t_first - t0) / 1e3,
                g.t_play ? (g.t_play - t0) / 1e3 : -1.0, g.underruns);
+        cpu_report(&cs); /* synthesis and playback of the whole utterance */
     } else {
         play();
     }
@@ -425,6 +445,7 @@ void app_main(void) {
     printf("arena %u in %s; free internal %u, psram %u\n", (unsigned)need, g.arena_where,
            (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
     if (!g.arena || !g.pcm) { printf("ERROR out of memory\n"); return; }
+    g.gain = powf(10.0f, BOARD_DEFAULT_GAIN_DB / 20.0f);
     speaker_init();
     g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
     g.utt_start = xSemaphoreCreateBinary();

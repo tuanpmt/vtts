@@ -31,6 +31,15 @@ Trên ESP32-P4 (chip rev 1.3, 360 MHz, PSRAM 32 MB), đo trên Waveshare ESP32-P
 
 RTF < 1 nghĩa là tổng hợp nhanh hơn thời gian thực. Đoạn văn dài 56 giây phát liền mạch, không ngắt quãng.
 
+**Tải CPU khi vừa tổng hợp vừa phát loa** (đoạn bản tin thời tiết 5 câu, tính trung bình suốt thời gian phát; core0 gồm cả task console và task đẩy audio ra loa):
+
+| Model | Core 0 | Core 1 | Phát không bị ngắt |
+|---|---:|---:|---|
+| S-vocos | 21% | 16% | Có (0 lần ngắt) |
+| M-vocos v0.2 | 35% | 28% | Có (0 lần ngắt) |
+
+Hai core còn hơn 60% thời gian rảnh cho các việc khác của ứng dụng, như wake word, Wi-Fi hay giao diện. Firmware in dòng `CPU core0 ..% core1 ..%` sau mỗi câu phát.
+
 **Tối ưu hiệu năng.** Runtime đã được tối ưu cho ESP32-P4. Model và file `.vtts` giữ nguyên, audio gần như giống hệt bản cũ (tương quan 0.9998):
 
 | Model | RTF trước tối ưu | RTF sau tối ưu | Nhanh hơn | Bắt đầu phát (trước → sau) |
@@ -112,6 +121,8 @@ cd firmware/esp32p4
 # Waveshare ESP32-P4-NANO
 BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p /dev/cu.usbmodemXXXX flash monitor
 ```
+
+Âm lượng mặc định: NANO là `vol 90`, `gain 12` dB, vì loa của NANO nhỏ hơn; 86-Panel là `vol 70`, `gain 0`. Gain số có bộ giới hạn mềm nên tăng gain không làm vỡ tiếng. Có thể chỉnh lúc chạy bằng `vol` và `gain`.
 
 Firmware không cần BSP màn hình. Phần loa nằm trong `main/board_audio.c`: codec ES8311 qua I2C, I2S, chân bật ampli. Muốn thêm board khác thì thêm một lựa chọn trong `main/Kconfig.projbuild` và khai báo chân tương ứng.
 

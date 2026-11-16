@@ -60,6 +60,11 @@ def main() -> None:
         time.sleep(0.1)
         ser.rts = False
         read_until(ser, "READY", 30)
+    time.sleep(0.2)
+    ser.reset_input_buffer()
+    ser.write(b"\n")  # terminate any noise the port open left in the board's line buffer
+    time.sleep(0.2)
+    ser.reset_input_buffer()
     n_dump = 0
     for c in a.cmds:
         ser.write((c + "\n").encode("utf-8"))
