@@ -1,6 +1,6 @@
-"""Talk to the ESP32-P4 TTS firmware over serial.
+"""Talk to the vtts firmware (ESP32-P4 / ESP32-S3) over serial.
 
-Usage: uv run --with pyserial python scripts/device/p4_say.py PORT [--reset] ["command or sentence" ...]
+Usage: uv run --with pyserial python scripts/device/say.py PORT [--reset] ["command or sentence" ...]
 Prints the board output until each command's DONE line (or the timeout).
 """
 

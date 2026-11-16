@@ -56,7 +56,7 @@ Cần ESP-IDF v6.1 và hai file model trong [Releases](https://github.com/tuanpm
 
 ```bash
 gh release download v0.3.0 -R tuanpmt/vtts -p '*.vtts' -D models
-cd firmware/esp32p4
+cd firmware/esp32
 BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
 ```
 
@@ -66,7 +66,7 @@ BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m
 | `nano` | ESP32-P4-NANO | ES8311 | `vol 90`, `gain 12` |
 | `s3` | ESP32-S3-Touch-LCD-2.8 | PCM5101 | `vol 80`, `gain 6` |
 
-Phần loa của mỗi board nằm trong `firmware/esp32p4/main/board_audio.c`. Muốn thêm board thì thêm một lựa chọn trong `main/Kconfig.projbuild` và khai báo chân. Chi tiết trong [firmware/esp32p4/README.md](firmware/esp32p4/README.md).
+Phần loa của mỗi board nằm trong `firmware/esp32/main/board_audio.c`. Muốn thêm board thì thêm một lựa chọn trong `main/Kconfig.projbuild` và khai báo chân. Chi tiết trong [firmware/esp32/README.md](firmware/esp32/README.md).
 
 ### Lệnh trên cổng serial
 
@@ -80,7 +80,7 @@ Gõ một câu tiếng Việt rồi Enter để board đọc ra loa. Các lệnh
 | `expr 0.5-2.5` | Độ lên xuống của ngữ điệu (model M) |
 | `bench`, `prof` | Đo RTF trên 4 câu cố định; thời gian theo từng tầng |
 | `selftest` | Kiểm tra kernel SIMD với kết quả tính bằng C |
-| `dump <câu>` | Tổng hợp và gửi audio về máy tính: `scripts/device/p4_say.py PORT "dump <câu>" --dump-dir out/` |
+| `dump <câu>` | Tổng hợp và gửi audio về máy tính: `scripts/device/say.py PORT "dump <câu>" --dump-dir out/` |
 
 ### Trên máy tính
 
@@ -114,7 +114,7 @@ Chi tiết thiết kế trong `docs/design/`, định dạng file model trong `d
 | Thư mục | Nội dung |
 |---|---|
 | `runtime/` | Runtime C99 không `malloc`: tổng hợp fp32/int8, streaming khớp từng bit với tổng hợp cả câu, front-end văn bản (`vtts_text`). `ports/` chứa kernel SIMD cho ESP32-P4 và ESP32-S3, và phần chia việc cho 2 lõi |
-| `firmware/esp32p4/` | Ứng dụng mẫu cho các board ESP32-P4 và ESP32-S3: gõ câu qua serial, board đọc ra loa |
+| `firmware/esp32/` | Ứng dụng mẫu cho các board ESP32-P4 và ESP32-S3: gõ câu qua serial, board đọc ra loa |
 | `src/vtts/` | Gói Python: front-end, dữ liệu, đánh giá, teacher, student, export |
 | `scripts/` | Các bước pipeline: `data/`, `frontend/`, `teacher/`, `student/`, `eval/`, `device/` |
 | `eval/` | Tập câu đánh giá, baseline, cấu hình trang nghe A/B |
