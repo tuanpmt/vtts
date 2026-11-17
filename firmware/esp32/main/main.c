@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* main.c -- Vietnamese TTS on ESP32-P4 and ESP32-S3 boards: type a sentence on the serial console
  * and the board speaks it. Everything runs on the chip: text -> ids (vtts_text) -> int8 student
- * (vtts runtime) -> speaker (board_audio).
+ * (vtts runtime) -> speaker (board support in bsp/ and boards/<id>/).
  *
  * Console commands (one per line):
  *   bench        speed report on four fixed sentences (no audio), one REPORT line each
@@ -14,7 +14,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "board_audio.h"
+#include "bsp.h"
 #include "driver/uart.h"
 #include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
@@ -82,7 +82,7 @@ static struct {
     float speed; /* length_scale: > 1 reads slower */
     int64_t blocked_us; /* time the synthesizer waited on a full playback buffer */
     float rtf[2];       /* measured RTF per model (synthesis only), sets the prebuffer */
-} g = {.vol = BOARD_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f, .rtf = {RTF_INIT_S, RTF_INIT_M}};
+} g = {.vol = BSP_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f, .rtf = {RTF_INIT_S, RTF_INIT_M}};
 
 /* gain + soft limiter: linear below 0.7, smoothly saturating to 1.0 above */
 static inline float shape(float v) {
@@ -100,7 +100,7 @@ extern const int vtts_prof_n;
 extern const char *const vtts_prof_names[];
 
 void vtts_par_enable(int on);
-static vtts_text_ws s_ws; /* ~40 KB, kept off the task stack */
+static vtts_text_ws *s_ws; /* ~140 KB text front-end workspace, in PSRAM (internal RAM stays free) */
 
 static void stream_out(const float *pcm, long n) {
     static int16_t buf[1024];
@@ -171,17 +171,17 @@ static int synthesize(const char *text, int64_t *total_us) {
     g.n = 0;
     g.synth_us = 0;
     int64_t t0 = esp_timer_get_time();
-    int chunks = strncmp(text, "ids ", 4) == 0 ? synth_ids(text + 4) : vtts_text_to_ids(text, &s_ws, on_ids, NULL);
+    int chunks = strncmp(text, "ids ", 4) == 0 ? synth_ids(text + 4) : vtts_text_to_ids(text, s_ws, on_ids, NULL);
     *total_us = esp_timer_get_time() - t0;
     return chunks;
 }
 
 static void speaker_init(void) {
     const int rates[2] = {OUT_RATE_TRY, OUT_RATE_FALLBACK};
-    g.out_rate = board_speaker_open(rates, 2);
+    g.out_rate = bsp_speaker_open(rates, 2);
     if (!g.out_rate) { ESP_LOGE(TAG, "speaker init failed"); return; }
     g.spk = 1;
-    board_speaker_set_vol(g.vol);
+    bsp_speaker_set_vol(g.vol);
     printf("speaker: %d Hz\n", g.out_rate);
 }
 
@@ -197,7 +197,7 @@ static void play(void) {
             float f = (float)(pos - i), v = g.pcm[i] * (1.0f - f) + g.pcm[i + 1] * f; /* linear resample */
             block[k] = (int16_t)lrintf(shape(v) * 32767.0f);
         }
-        board_speaker_write(block, k);
+        bsp_speaker_write(block, k);
     }
 }
 
@@ -249,7 +249,7 @@ static void speaker_task(void *arg) {
         for (;;) {
             size_t got = xStreamBufferReceive(g.sb, block, sizeof block, pdMS_TO_TICKS(2));
             if (got) {
-                if (g.spk) board_speaker_write(block, (int)(got / sizeof(int16_t)));
+                if (g.spk) bsp_speaker_write(block, (int)(got / sizeof(int16_t)));
                 continue;
             }
             if (g.synth_done) break;  /* utterance finished */
@@ -527,7 +527,7 @@ static void handle(char *line) {
     }
     if (strncmp(line, "vol ", 4) == 0) {
         g.vol = atoi(line + 4);
-        if (g.spk) board_speaker_set_vol(g.vol);
+        if (g.spk) bsp_speaker_set_vol(g.vol);
         printf("vol %d\nDONE\n", g.vol);
         return;
     }
@@ -580,7 +580,7 @@ static void console_task(void *arg) {
     console_init();
     static char line[2048];
     size_t n = 0;
-    printf("board %s\n", board_name());
+    printf("board %s\n", bsp_name());
     printf("READY (type a Vietnamese sentence, or: bench | model s|m | vol N | gain dB)\n");
     for (;;) {
         uint8_t ch;
@@ -596,7 +596,7 @@ static void console_task(void *arg) {
 }
 
 void app_main(void) {
-    board_early_init();
+    bsp_early_init();
     const uint8_t *starts[2] = {model_s_start, model_m_start}, *ends[2] = {model_s_end, model_m_end};
     size_t need = 0;
     for (int k = 0; k < 2; k++) {
@@ -625,6 +625,7 @@ void app_main(void) {
         printf("fast scratch %u bytes in sram\n", fast ? (unsigned)fast_n : 0u);
     }
     g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
+    s_ws = heap_caps_malloc(sizeof *s_ws, MALLOC_CAP_SPIRAM); /* before the PCM buffer takes the rest */
     /* up to MAX_SECONDS, or what PSRAM has left (keep 64 KB spare) */
     long fit = ((long)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) - 65536) / (long)sizeof(float);
     g.pcm_cap = (long)MAX_SECONDS * 22050 < fit ? (long)MAX_SECONDS * 22050 : fit;
@@ -632,8 +633,8 @@ void app_main(void) {
     printf("arena %u in %s; pcm %.1f s; free internal %u, psram %u\n", (unsigned)need, g.arena_where,
            g.pcm_cap / 22050.0,
            (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-    if (!g.arena || !g.pcm) { printf("ERROR out of memory\n"); return; }
-    g.gain = powf(10.0f, BOARD_DEFAULT_GAIN_DB / 20.0f);
+    if (!g.arena || !g.pcm || !s_ws) { printf("ERROR out of memory\n"); return; }
+    g.gain = powf(10.0f, BSP_DEFAULT_GAIN_DB / 20.0f);
     speaker_init();
     g.utt_start = xSemaphoreCreateBinary();
     g.utt_end = xSemaphoreCreateBinary();

@@ -106,7 +106,7 @@ BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m
 | `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
 <!-- END:boards -->
 
-Each board's speaker code lives in `firmware/esp32/main/board_audio.c`; adding a board means one Kconfig choice and a pin block. See [firmware/esp32/README.md](firmware/esp32/README.md).
+Each board is a folder in `firmware/esp32/boards/` (pins, defaults, chip and speaker driver); adding a board means adding a folder. See [firmware/esp32/boards/README.md](firmware/esp32/boards/README.md).
 
 ### Serial console
 

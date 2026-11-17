@@ -150,10 +150,10 @@ static void g2p(const vtts_lex *lx, const char *word, tb_t *b, int depth) {
     int a = 0, z = n;
     while (a < z && word[a] == '\'') a++;  /* strip("'") */
     while (z > a && word[z - 1] == '\'') z--;
-    if (a == z) return;
+    if (a >= z || z - a >= EN_WORD_MAX) return;
     n = z - a;
-    memcpy(w, word + a, (size_t)n);
-    w[n] = 0;
+    memcpy(w, word + a, (size_t)(z - a));
+    w[z - a] = 0;
     for (int i = 0; i <= n; i++) low[i] = is_upper(w[i]) ? (char)(w[i] - 'A' + 'a') : w[i];
     if (lex_get(lx, low, b)) return;
     if (strchr(w, '-')) {

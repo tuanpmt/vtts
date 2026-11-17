@@ -26,9 +26,9 @@ The front-end layout, rule precedence and the steps for changing a reading are i
 
 ## Adding a board
 
-1. Add a choice to `firmware/esp32/main/Kconfig.projbuild` and a block with pins, codec and default volume/gain in `firmware/esp32/main/board_audio.c`.
-2. Add `sdkconfig.defaults.<board>` if the board needs settings beyond `sdkconfig.defaults` and the chip file, and a `BOARD=` value in `build.sh`.
-3. Run `selftest`, `bench` and a long paragraph with playback (check for zero underruns), and add the numbers to [docs/reports/performance.md](docs/reports/performance.md).
+1. Add a folder `firmware/esp32/boards/<id>/` with `board.h` (name, pins, default volume and gain), `board.cmake` (chip and speaker driver) and `sdkconfig.defaults`; `BOARD=<id>` then works with `build.sh`. See [firmware/esp32/boards/README.md](firmware/esp32/boards/README.md).
+2. A speaker chip without a driver needs `firmware/esp32/main/bsp/speaker_<driver>.c` implementing the `bsp_speaker_*` functions of `bsp.h`.
+3. Run `selftest`, `bench` and a long paragraph with playback (check for zero underruns), and add the numbers to [docs/reports/performance.md](docs/reports/performance.md) and the board to `boards` in `docs/site.json`.
 
 A new chip family also needs SIMD kernels in `runtime/ports/` that pass `selftest` against the reference C kernels; see [runtime/README.md](runtime/README.md#porting).
 

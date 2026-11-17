@@ -1,6 +1,6 @@
-# Waveshare ESP32-P4-86-Panel and ESP32-P4-NANO: P4 revision v1.3 (IDF 6.x builds for rev3 by default)
+# ESP32-P4 boards (chip settings; board settings are in boards/<id>/sdkconfig.defaults).
+# Chip revision v1.3 (IDF 6.x builds for rev3 by default)
 CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
-CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y
 # console on UART0 behind the CH343 USB bridge
 CONFIG_ESP_CONSOLE_UART_DEFAULT=y
 CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"

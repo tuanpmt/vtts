@@ -108,7 +108,7 @@ BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m
 | `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
 <!-- END:boards -->
 
-Phần loa của mỗi board nằm trong `firmware/esp32/main/board_audio.c`; thêm board chỉ cần một lựa chọn Kconfig và một khối khai báo chân. Xem [firmware/esp32/README.md](firmware/esp32/README.md).
+Mỗi board là một thư mục trong `firmware/esp32/boards/` (chân GPIO, giá trị mặc định, chip và driver loa); thêm board chỉ cần thêm một thư mục. Xem [firmware/esp32/boards/README.md](firmware/esp32/boards/README.md).
 
 ### Lệnh trên cổng serial
 

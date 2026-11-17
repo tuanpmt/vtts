@@ -1,0 +1,2 @@
+set(BSP_TARGET esp32s3)
+set(BSP_SPEAKER es8311)

@@ -1,0 +1,58 @@
+# Boards
+
+Each folder here is one board; `BOARD=<folder>` selects it (`./build.sh` builds in `build_<id>/` with `sdkconfig.<id>`). Adding a board means adding a folder. Code changes are needed only for a speaker chip without a driver yet.
+
+| `BOARD=` | Board | Chip | Speaker driver |
+|---|---|---|---|
+| `panel` | Waveshare ESP32-P4-86-Panel | ESP32-P4 | `es8311` |
+| `nano` | Waveshare ESP32-P4-NANO | ESP32-P4 | `es8311` |
+| `s3` | Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3 | `i2s_dac` (PCM5101) |
+| `echoear` | EchoEar 2.0 | ESP32-S3 | `es8311` |
+
+## Layout
+
+```mermaid
+flowchart LR
+    B["build.sh BOARD=id"] --> D["boards/id/"]
+    D --> H["board.h<br/>name, pins, defaults"]
+    D --> C["board.cmake<br/>chip, speaker driver"]
+    D --> K["sdkconfig.defaults<br/>flash, console, PSRAM"]
+    C --> S["main/bsp/speaker_driver.c"]
+    H --> S
+    S --> I["main/bsp/bsp.h<br/>bsp_speaker_open / set_vol / write"]
+    I --> M["main.c"]
+```
+
+Kconfig is layered: `sdkconfig.defaults` (all boards), then `sdkconfig.defaults.<chip>` (loaded by ESP-IDF for the target), then `boards/<id>/sdkconfig.defaults`.
+
+## A board folder
+
+`board.cmake`:
+
+```cmake
+set(BSP_TARGET esp32s3)   # esp32p4 | esp32s3
+set(BSP_SPEAKER es8311)   # a driver in main/bsp/speaker_<driver>.c
+```
+
+`board.h`, with the macros the driver uses:
+
+| Macro | Meaning | Drivers |
+|---|---|---|
+| `BSP_NAME` | Name printed at boot | all |
+| `BSP_DEFAULT_VOL`, `BSP_DEFAULT_GAIN_DB` | Default volume 0..100 and digital gain in dB (before a soft limiter) | all |
+| `BSP_POWER_HOLD_GPIO` | Optional: driven high first thing at boot (power self-latch) | all |
+| `BSP_I2S_PORT`, `BSP_I2S_MCLK`, `BSP_I2S_BCLK`, `BSP_I2S_WS`, `BSP_I2S_DOUT` | I2S port and pins (`I2S_GPIO_UNUSED` for no MCLK) | all |
+| `BSP_I2C_PORT`, `BSP_I2C_SDA`, `BSP_I2C_SCL` | Codec control bus | `es8311` |
+| `BSP_PA_EN` | Amplifier enable pin | `es8311` |
+| `BSP_DAC_UPSAMPLE` | DAC rate as a multiple of the model rate (default 2) | `i2s_dac` |
+
+`sdkconfig.defaults`: what differs from the chip defaults, typically the flash size and the PSRAM mode.
+
+## Adding a board
+
+1. Copy the folder of the most similar board to `boards/<id>/` and set the pins from the schematic.
+2. If the speaker chip has no driver yet, add `main/bsp/speaker_<driver>.c` implementing `bsp_speaker_open`, `bsp_speaker_set_vol` and `bsp_speaker_write` (see `bsp.h`), and add its component to `main/idf_component.yml` if needed.
+3. `BOARD=<id> ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor`, then run `selftest`, `bench` and a long paragraph with playback (no underruns), and adjust the default volume and gain by ear.
+4. Add a row to the table above and to `boards` in `docs/site.json` (README and website follow), and the numbers to `docs/reports/performance.md`.
+
+A new chip family also needs SIMD kernels in `runtime/ports/` that pass `selftest`; see [runtime/README.md](../../../runtime/README.md#porting).

@@ -33,4 +33,4 @@ Each sentence prints a `REPORT` line: audio duration, synthesis time and RTF (be
 
 ## Adding a board
 
-Each board's speaker code lives in `main/board_audio.c`. A new board needs one choice in `main/Kconfig.projbuild` and a block of pin and codec settings; see [CONTRIBUTING.md](../../CONTRIBUTING.md#adding-a-board).
+Each board is a folder in [`boards/`](boards/README.md) (`board.h` with pins and defaults, `board.cmake` with the chip and speaker driver, `sdkconfig.defaults`); speaker drivers are shared in `main/bsp/`. A new board is a new folder; see [boards/README.md](boards/README.md).
