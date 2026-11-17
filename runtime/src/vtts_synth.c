@@ -623,6 +623,84 @@ static void gelu_par(float *h, long n) {
     vtts_par_run(gelu_range, (int)((n + 63) / 64), &j);
 }
 
+/* Fused ConvNeXt front for frames [off, off + n) of a channel-major window x [C][Win]:
+ * depthwise conv (K = 7) -> LayerNorm -> int8 quantization, one frame at a time, written
+ * time-major to q (row t = frame off + t). Same arithmetic, in the same order, as dwconv1d +
+ * layernorm_cm + quant_tm, so the result is bit-identical; it skips the window halo and the
+ * strided channel-major passes. vbuf [T][C] is per-frame float scratch (rows are disjoint, so
+ * cores never share one; no large arrays on the worker stacks). */
+typedef struct {
+    const float *x, *w, *b, *g, *be;
+    int C, Win, off, K;
+    qbuf_t *q;
+    float *vbuf;
+} dlq_t;
+
+static void dw_ln_q_frames(int lo, int hi, void *arg) {
+    const dlq_t *j = arg;
+    int C = j->C, Win = j->Win, K = j->K, pad = (K - 1) / 2;
+    for (int t = lo; t < hi; t++) {
+        float *v = j->vbuf + (size_t)t * C;
+        int tw = j->off + t; /* frame in the window */
+        float mean = 0.0f;
+        for (int c = 0; c < C; c++) {
+            const float *xc = j->x + (size_t)c * Win;
+            const float *wc = j->w + (size_t)c * K;
+            float s = j->b[c];
+            for (int k = 0; k < K; k++) {
+                int tt = tw + k - pad;
+                if (tt >= 0 && tt < Win) s += wc[k] * xc[tt];
+            }
+            v[c] = s;
+            mean += s;
+        }
+        mean /= (float)C;
+        float var = 0.0f;
+        for (int c = 0; c < C; c++) { float d = v[c] - mean; var += d * d; }
+        var /= (float)C;
+        float inv = 1.0f / sqrtf(var + 1e-5f), amax = 0.0f;
+        for (int c = 0; c < C; c++) {
+            v[c] = (v[c] - mean) * inv * j->g[c] + j->be[c];
+            float a = fabsf(v[c]);
+            if (a > amax) amax = a;
+        }
+        j->q->s[t] = amax / (float)VTTS_ACT_MAX;
+        float qi = amax > 0.0f ? (float)VTTS_ACT_MAX / amax : 0.0f;
+        int8_t *row = j->q->x + (size_t)t * C;
+        for (int c = 0; c < C; c++) row[c] = (int8_t)(int32_t)round_ne(v[c] * qi);
+    }
+}
+
+/* GELU in place on time-major rows h [T][M], then per-frame int8 quantization into q
+ * (bit-identical to gelu_par on channel-major h followed by quant_tm). */
+typedef struct { float *h; int M; qbuf_t *q; } gq_t;
+
+static void gelu_q_frames(int lo, int hi, void *arg) {
+    const gq_t *j = arg;
+    int M = j->M;
+    for (int t = lo; t < hi; t++) {
+        float *r = j->h + (size_t)t * M, amax = 0.0f;
+        for (int c = 0; c < M; c++) {
+            float g = fast_gelu(r[c]);
+            r[c] = g;
+            float a = fabsf(g);
+            if (a > amax) amax = a;
+        }
+        j->q->s[t] = amax / (float)VTTS_ACT_MAX;
+        float qi = amax > 0.0f ? (float)VTTS_ACT_MAX / amax : 0.0f;
+        int8_t *row = j->q->x + (size_t)t * M;
+        for (int c = 0; c < M; c++) row[c] = (int8_t)(int32_t)round_ne(r[c] * qi);
+    }
+}
+
+/* int8 linear on an already quantized time-major input (T frames of ci); out_tm selects
+ * time-major [T][co] or channel-major [co][T] output */
+static void lin_q(const layer_t *l, const qbuf_t *q, int ci, int T, int co, float *y, int out_tm) {
+    qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = 1, .dil = 1, .out_tm = out_tm, .ldy = co,
+                .t_lo = 0, .t_n = T};
+    vtts_par_run(lconv_rows, co, &j);
+}
+
 /* head output [n_fft + 2, hb] -> real inverse FFT of each frame, via one complex FFT of half
  * size: with X[N/2 + k] = conj(X[N/2 - k]),
  *   E[k] = X[k] + conj(X[N/2 - k]),  O[k] = (X[k] - conj(X[N/2 - k])) e^{2 pi i k / N},
@@ -951,7 +1029,7 @@ typedef struct {
     sl_t *fin;
     long head_need;          /* first frame the iSTFT may still read from the final layer */
     float *win, *tmp, *aux, *out, *col, *h, *o, *feat;
-    qbuf_t q;
+    qbuf_t q, q2; /* q2: pw2 input of the vocoder blocks */
 } st_t;
 
 static sl_t *sl_add(st_t *st, int kind, int C, sl_t *in, int r) {
@@ -1081,18 +1159,18 @@ static int sl_compute(st_t *st, sl_t *ly, long a, long b, float *out) {
         layer_t p1 = L(m, "decoder.blocks.%d.pw1", i), p2 = L(m, "decoder.blocks.%d.pw2", i);
         const float *gm = W(m, "decoder.blocks.%d.gamma", i);
         if (!dw || !db || !ng || !nbb || !layer_ok(&p1) || !layer_ok(&p2) || !gm) return VTTS_ERR_MISSING;
-        dwconv1d(st->win, C, Win, dw, db, 7, st->tmp);
-        for (int ch = 0; ch < C; ch++)
-            memcpy(st->aux + (size_t)ch * n, st->tmp + (size_t)ch * Win + off, sizeof(float) * (size_t)n);
-        layernorm_cm(st->aux, C, (int)n, ng, nbb);
+        if (p1.w || p2.w) return VTTS_ERR_ARGS; /* fused path: int8 pw layers only */
+        dlq_t dj = {.x = st->win, .w = dw, .b = db, .g = ng, .be = nbb, .C = C, .Win = Win, .off = off, .K = 7,
+                    .q = &st->q, .vbuf = st->aux}; /* aux holds cmax * nmax floats */
+        vtts_par_run(dw_ln_q_frames, (int)n, &dj);
         PROF_ADD(3);
         for (long t0 = 0; t0 < n; t0 += VTTS_BLOCK) {
             int nb_ = (int)(n - t0 < VTTS_BLOCK ? n - t0 : VTTS_BLOCK);
-            for (int ch = 0; ch < C; ch++)
-                for (int j = 0; j < nb_; j++) st->col[(size_t)ch * nb_ + j] = st->aux[(size_t)ch * n + t0 + j];
-            lconv(&p1, st->col, C, nb_, M, 1, 1, st->h, &st->q);
-            gelu_par(st->h, (long)M * nb_);
-            lconv(&p2, st->h, M, nb_, C, 1, 1, st->o, &st->q);
+            qbuf_t q1 = {st->q.x + (size_t)t0 * C, st->q.s + t0};
+            lin_q(&p1, &q1, C, nb_, M, st->h, 1);
+            gq_t gj = {st->h, M, &st->q2};
+            vtts_par_run(gelu_q_frames, nb_, &gj);
+            lin_q(&p2, &st->q2, M, nb_, C, st->o, 0);
             for (int ch = 0; ch < C; ch++)
                 for (int j = 0; j < nb_; j++)
                     out[(size_t)ch * n + t0 + j] = st->win[(size_t)ch * Win + off + t0 + j] + st->o[(size_t)ch * nb_ + j] * gm[ch];
@@ -1254,6 +1332,7 @@ static long stream_run(const vtts_model *m, arena_t *a, const int32_t *ids, int 
     st.h = alloc(a, (size_t)M * VTTS_BLOCK);
     st.o = alloc(a, (size_t)C * VTTS_BLOCK);
     st.q = qalloc(a, (size_t)(cmax > M ? cmax : M) * wcap, (size_t)wcap);
+    st.q2 = qalloc(a, (size_t)M * VTTS_BLOCK, VTTS_BLOCK);
     long nf_max = chunk + 4;
     float *head = st.win, *fbuf = st.tmp, *win = alloc(a, (size_t)n_fft);
     long ola_cap = (long)n_fft + (long)hop * (nf_max - 1);
