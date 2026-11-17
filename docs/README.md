@@ -36,6 +36,7 @@ Design documents record the decisions as they were made. Each one starts with a 
 | [Plan 4: ESP32-P4](design/plans/2026-11-14-p4-esp32p4.md) | Completed, with changes noted |
 | [Spec: bilingual Vietnamese–English](design/specs/2026-11-16-bilingual-vi-en-design.md) | In progress |
 | [Plan: bilingual Vietnamese–English](design/plans/2026-11-16-bilingual-vi-en.md) | In progress |
+| [Plan: runtime optimization for ESP32-S3 and ESP32-P4](design/plans/2026-11-17-runtime-optimization.md) | In progress (task 1 done) |
 
 ## Project
 
