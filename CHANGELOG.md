@@ -10,10 +10,11 @@ All notable changes to this project are documented here. Model files for each re
 - **Evaluation of bilingual teachers:** English and mixed out-of-domain sets, language-aware CER/WER, Whisper with a forced language; `nam-1` at 100k: CER 0.005 (vi), 0.015 (en), 0.033 (mixed).
 - **Bilingual distillation:** v2 distill packs from a `{text, lang}` corpus, presets `M-vocos-p-bi`, `S-vocos-p-bi` and `M-vocos-p-bi-s3`, `run_bilingual_chain.sh`.
 - Firmware command `ids ...` and `say.py --lang` to play token ids from a host front-end.
+- **On-device bilingual text:** the firmware embeds the VLEX lexicon (read in place from flash) and uses the bilingual front-end for models with token set v2; `lang vi|en|auto` sets the mode. Same audio as the host front-end on ESP32-P4.
 
 ### In progress
 - Teachers for the bilingual voices `nam-1` and `nu-10`; first `nam-1` student.
-- Firmware support for bilingual models (VLEX blob on flash, `lang` command); user pronunciation dictionary.
+- User pronunciation dictionary.
 
 ## v0.3.2 (2026-11-17)
 

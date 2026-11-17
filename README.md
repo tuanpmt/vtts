@@ -115,6 +115,7 @@ Type a sentence and press Enter; the board speaks it. Other commands:
 | Command | Effect |
 |---|---|
 | `model s` / `model m` | Lite or quality model |
+| `lang vi` / `en` / `auto` | Text mode of bilingual models; `vi` also reads English words in Vietnamese sentences |
 | `vol 0-100`, `gain dB` | Volume; the digital gain has a soft limiter |
 | `speed 0.7-1.6` | Speaking rate (higher is slower) |
 | `expr 0.5-2.5` | Intonation range (models with a pitch predictor) |

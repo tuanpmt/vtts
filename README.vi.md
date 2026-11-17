@@ -117,6 +117,7 @@ Gõ một câu rồi Enter để board đọc ra loa. Các lệnh khác:
 | Lệnh | Tác dụng |
 |---|---|
 | `model s` / `model m` | Chọn model nhẹ hoặc model chất lượng |
+| `lang vi` / `en` / `auto` | Chế độ đọc của model song ngữ; `vi` vẫn đọc được từ tiếng Anh trong câu tiếng Việt |
 | `vol 0-100`, `gain dB` | Âm lượng; gain số có bộ giới hạn mềm |
 | `speed 0.7-1.6` | Tốc độ đọc (lớn hơn là chậm hơn) |
 | `expr 0.5-2.5` | Độ lên xuống của ngữ điệu (model có bộ dự đoán cao độ) |
