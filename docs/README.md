@@ -17,7 +17,7 @@ Start with the [project README](../README.md) for the voice catalog, hardware su
 
 | Report | Contents |
 |---|---|
-| [On-chip performance](reports/performance.md) | RTF, latency, CPU load and memory on ESP32-P4 and ESP32-S3; v0.3.0 runtime speedups |
+| [On-chip performance](reports/performance.md) | RTF, latency, CPU load and memory on ESP32-P4 and ESP32-S3, and how the runtime got there |
 | [Runtime optimization research](reports/runtime-optimization-research.md) | Compute budget, bottlenecks and a prioritized optimization plan for both chips (in progress) |
 | [Baselines](reports/baseline.md) | sanoTTS and Piper Vietnamese voices on the out-of-domain set; the derived teacher gate |
 | [InfoRe1 dataset](reports/dataset-infore1.md) | Preparation and filtering of the corpus behind the Vietnamese prototype |

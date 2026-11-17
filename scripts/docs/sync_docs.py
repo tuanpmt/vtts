@@ -26,9 +26,8 @@ T = {
     "en": {
         "voices_head": ["Voice", "Languages", "Quality model (M)", "Lite model (S)", "Status"],
         "cs": "code-switching",
-        "hw_head": ["Board", "Chip", "Lite RTF", "Quality RTF", "Release v0.3.0 (lite / quality)"],
-        "hw_note": "Both models run on both chips. RTF below 1 means faster than real time. Numbers are for "
-                   "the current main branch; the last column is the v0.3.0 release.",
+        "hw_head": ["Board", "Chip", "Lite model RTF", "Quality model RTF"],
+        "hw_note": "Both models run on both chips. RTF below 1 means faster than real time.",
         "boards_head": ["`BOARD=`", "Board", "Speaker path", "Default volume"],
         "default": " (default)",
         "sentence": "Sentence",
@@ -36,9 +35,8 @@ T = {
     "vi": {
         "voices_head": ["Giọng", "Ngôn ngữ", "Model chất lượng (M)", "Model nhẹ (S)", "Trạng thái"],
         "cs": "đọc câu trộn",
-        "hw_head": ["Board", "Chip", "RTF model nhẹ", "RTF model chất lượng", "Bản v0.3.0 (nhẹ / chất lượng)"],
-        "hw_note": "Cả hai model đều chạy trên cả hai chip. RTF dưới 1 nghĩa là nhanh hơn thời gian thực. "
-                   "Số đo của nhánh main hiện tại; cột cuối là bản phát hành v0.3.0.",
+        "hw_head": ["Board", "Chip", "RTF model nhẹ", "RTF model chất lượng"],
+        "hw_note": "Cả hai model đều chạy trên cả hai chip. RTF dưới 1 nghĩa là nhanh hơn thời gian thực.",
         "boards_head": ["`BOARD=`", "Board", "Loa", "Âm lượng mặc định"],
         "default": " (mặc định)",
         "sentence": "Câu",
@@ -74,8 +72,7 @@ def md_voices(site: dict, samples: dict, lang: str) -> str:
 
 
 def md_hardware(site: dict, samples: dict, lang: str) -> str:
-    rows = [[h["boards"], h["chip"], h["rtf_lite"], h["rtf_quality"], f"{h['release_lite']} / {h['release_quality']}"]
-            for h in site["hardware"]]
+    rows = [[h["boards"], h["chip"], h["rtf_lite"], h["rtf_quality"]] for h in site["hardware"]]
     return md_table(T[lang]["hw_head"], rows) + "\n\n" + T[lang]["hw_note"]
 
 
@@ -146,9 +143,8 @@ def h_voices(site: dict, samples: dict) -> str:
 
 
 def h_hardware(site: dict, samples: dict) -> str:
-    head = [("Board", ""), ("Chip", ""), ("RTF lite", "num"), ("RTF quality", "num"), ("v0.3.0 lite / quality", "num")]
-    rows = [[(h_inline(h["boards"]), "wrap"), (h_inline(h["chip"]), "wrap"), (h["rtf_lite"], "num"), (h["rtf_quality"], "num"),
-             (f"{h['release_lite']} / {h['release_quality']}", "num")] for h in site["hardware"]]
+    head = [("Board", ""), ("Chip", ""), ("RTF lite", "num"), ("RTF quality", "num")]
+    rows = [[(h_inline(h["boards"]), "wrap"), (h_inline(h["chip"]), "wrap"), (h["rtf_lite"], "num"), (h["rtf_quality"], "num")] for h in site["hardware"]]
     return h_table(head, rows) + f'\n<p class="muted">{h_inline(T["en"]["hw_note"])}</p>'
 
 

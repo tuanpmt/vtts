@@ -31,7 +31,7 @@ One folder per voice. Each voice comes in two sizes, and both run on the ESP32-P
 
 | Folder | Voice | Languages | Status |
 |---|---|---|---|
-| `vi/` | Vietnamese prototype | Vietnamese | **Released** (v0.3.0): `vtts-vi-m-v0.2.q8.vtts`, `vtts-vi-s-v0.1.q8.vtts` |
+| `vi/` | Vietnamese prototype | Vietnamese | **Released** (v0.3.1): `vtts-vi-m-v0.2.q8.vtts`, `vtts-vi-s-v0.1.q8.vtts` |
 | `vi-en-nam-1/` | `nam-1` (male) | Vietnamese + English, code-switching | Training (teacher in progress); not uploaded yet |
 | `vi-en-nu-10/` | `nu-10` (female) | Vietnamese + English, code-switching | Training (teacher in progress); not uploaded yet |
 | `en/` | English | English | Planned |
@@ -70,7 +70,7 @@ git clone https://github.com/tuanpmt/vtts && cd vtts/firmware/esp32
 BOARD=nano ./build.sh ../../../models/vi/vtts-vi-s-v0.1.q8.vtts ../../../models/vi/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
 ```
 
-Type a Vietnamese sentence on the serial console and the board speaks it. The same files are attached to the [GitHub release v0.3.0](https://github.com/tuanpmt/vtts/releases/tag/v0.3.0).
+Type a Vietnamese sentence on the serial console and the board speaks it. The same files are attached to the [GitHub release v0.3.1](https://github.com/tuanpmt/vtts/releases/tag/v0.3.1).
 
 ## How the models are made
 

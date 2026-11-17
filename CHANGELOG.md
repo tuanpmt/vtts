@@ -4,25 +4,27 @@ All notable changes to this project are documented here. Model files for each re
 
 ## Unreleased
 
+### In progress
+- Teachers for the bilingual voices `nam-1` and `nu-10`.
+- C port of the English front-end for the device; user pronunciation dictionary.
+
+## v0.3.1 (2026-11-17)
+
+Same model files as v0.3.0; faster runtime, new board, front-end and documentation updates.
+
 ### Added
 - **Bilingual Vietnamese + English front-end (Python):** token set v2 (v1 + English ARPAbet phonemes and stress, 107 tokens; v1 ids unchanged), CMU Pronouncing Dictionary lexicon, letter-to-sound rules learned from CMUdict for out-of-vocabulary words, English text normalization, and per-word language tagging (modes `vi`, `en`, `auto`).
 - **Synthetic training data:** VoxCPM2 synthesis client and bilingual corpus builder (sentences chosen to cover rare Vietnamese syllables, English and code-switched text). About 98 h of speech per voice for `nam-1` (male) and `nu-10` (female).
 - **Teacher:** bilingual training lists (`lang` column, token set v2), FLAC input resampled on load, warm-start from project checkpoints, a frame budget per batch for long utterances.
-- **Documentation:** English README with a multilingual voice catalog (Vietnamese translation in `README.vi.md`), [website](https://tuanpmt.github.io/vtts/) with on-chip audio samples, Hugging Face model repository with one folder per voice, runtime optimization research for ESP32-S3 and ESP32-P4, documentation index, runtime README, this changelog and contributing guide. All design documents and reports translated to English.
-
+- **Website and documentation:** language dropdown with one table per language (model size and RTF per chip), shared content in `docs/site.json` synced into the READMEs, self-hosted fonts; English README with a multilingual voice catalog (Vietnamese translation in `README.vi.md`), [website](https://tuanpmt.github.io/vtts/) with on-chip audio samples, Hugging Face model repository with one folder per voice, runtime optimization research for ESP32-S3 and ESP32-P4, documentation index, runtime README, this changelog and contributing guide. All design documents and reports translated to English.
 - **Pronunciation data per language:** Vietnamese tables moved from code to `src/vtts/frontend/lexicons/vi/*.tsv`, with a data test and [docs/frontend/pronunciation-rules.md](docs/frontend/pronunciation-rules.md) (layout, precedence, how to change a reading or add a language).
-- **Runtime speedups (ESP32-P4-NANO, everything in PSRAM):** exact streaming with per-layer state; fused depthwise conv + LayerNorm + quantization and GELU + quantization; 64-frame MLP blocks; cached iSTFT window and two-core overlap-add. RTF S 0.21–0.24 → 0.166, M 0.38–0.40 → 0.269. Optional `vtts_set_fast_scratch()` for internal SRAM (off in the firmware).
+- **Runtime speedups (everything in PSRAM):** exact streaming with per-layer state; fused depthwise conv + LayerNorm + quantization and GELU + quantization; 64-frame MLP blocks; cached iSTFT window and two-core overlap-add. ESP32-P4: S 0.21–0.24 → 0.17, M 0.38–0.40 → 0.27. ESP32-S3: S 0.42–0.47 → 0.28, M 0.86–0.96 → 0.51, so the quality model is practical on the S3 too. Optional `vtts_set_fast_scratch()` for internal SRAM (off in the firmware). A correct fused `ld.ip` kernel for the S3 behind `vtts_s3_kernel`, with a `fusetest` command.
 - **EchoEar 2.0** board support (`BOARD=echoear`).
 
 ### Changed
 - Product codes (upper-case letters + digits such as ESP32, S3, U23, VN123) read their digits one by one: "ESP32-P4" → "e ét pê ba hai pê bốn" / "E S P three two P four" (Python and C).
 - Vietnamese letter `s` reads "ét" (was "ét xì"); `smartphone` → "sờ mát phôn"; added `smarthome` → "sờ mát hôm".
 - `firmware/esp32p4/` renamed to `firmware/esp32/` (it builds for both chips); `scripts/device/p4_say.py` renamed to `say.py`.
-
-### In progress
-- Teachers for the bilingual voices `nam-1` and `nu-10`.
-- C port of the English front-end for the device.
-- Runtime speedups following [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).
 
 ## v0.3.0 (2026-11-16)
 

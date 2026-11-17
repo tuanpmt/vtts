@@ -10,8 +10,8 @@
       "quality": "M-vocos v0.2 (1.73M params, 2.6 MB)",
       "lite": "S-vocos v0.1 (0.77M params, 1.1 MB)",
       "status": "released",
-      "status_text": "Released in v0.3.0 (non-commercial)",
-      "status_text_vi": "Đã phát hành trong v0.3.0 (phi thương mại)",
+      "status_text": "Released in v0.3.1 (non-commercial)",
+      "status_text_vi": "Đã phát hành trong v0.3.1 (phi thương mại)",
       "quality_vi": "M-vocos v0.2 (1.73M tham số, 2.6 MB)",
       "lite_vi": "S-vocos v0.1 (0.77M tham số, 1.1 MB)"
     },
@@ -87,17 +87,13 @@
       "boards": "Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO",
       "chip": "ESP32-P4, 360 MHz, PIE SIMD",
       "rtf_lite": "0.17",
-      "rtf_quality": "0.27",
-      "release_lite": "0.20–0.24",
-      "release_quality": "0.34–0.42"
+      "rtf_quality": "0.27"
     },
     {
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
       "rtf_lite": "0.28",
-      "rtf_quality": "0.51",
-      "release_lite": "0.42–0.47",
-      "release_quality": "0.85–0.99"
+      "rtf_quality": "0.51"
     }
   ],
   "boards": [

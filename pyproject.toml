@@ -1,6 +1,6 @@
 [project]
 name = "vtts"
-version = "0.1.0"
+version = "0.3.1"
 description = "Tiny Vietnamese text-to-speech: front-end, distillation pipeline, C runtime for ESP32-P4"
 license = "Apache-2.0"
 readme = "README.md"
