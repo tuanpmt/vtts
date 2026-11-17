@@ -29,12 +29,13 @@
 /* ---------------- optional profiling (compile with -DVTTS_PROFILE) ---------------- */
 #ifdef VTTS_PROFILE
 int64_t vtts_now_us(void);
-#define VTTS_PROF_N 11
+#define VTTS_PROF_N 13
 int64_t vtts_prof_us[VTTS_PROF_N];
 const int vtts_prof_n = VTTS_PROF_N;
 const char *const vtts_prof_names[VTTS_PROF_N] = {"durations", "tokens", "acoustic", "voc_pre_dw_ln",
                                                   "voc_mlp_rest", "voc_head", "istft", "other",
-                                                  "voc_mlp_pw1", "voc_mlp_gelu_q", "voc_mlp_pw2"};
+                                                  "voc_mlp_pw1", "voc_mlp_gelu_q", "voc_mlp_pw2", "voc_pre_conv",
+                                                  "voc_final_ln"};
 #define PROF_T0() int64_t _pt = vtts_now_us()
 #define PROF_ADD(i) do { int64_t _n = vtts_now_us(); vtts_prof_us[i] += _n - _pt; _pt = _n; } while (0)
 #else
@@ -1212,7 +1213,7 @@ static int sl_compute(st_t *st, sl_t *ly, long a, long b, float *out) {
         if (!layer_ok(&pre) || !g || !be) return VTTS_ERR_MISSING;
         lconv_range(&pre, st->win, ly->in->C, Win, C, 7, off, (int)n, out, &st->q, st->tmp);
         layernorm_cm(out, C, (int)n, g, be);
-        PROF_ADD(3);
+        PROF_ADD(11);
         return VTTS_OK;
     }
     case SL_DBLK: {
@@ -1249,7 +1250,7 @@ static int sl_compute(st_t *st, sl_t *ly, long a, long b, float *out) {
         if (!fg || !fb) return VTTS_ERR_MISSING;
         memcpy(out, st->win, sizeof(float) * (size_t)C * n);
         layernorm_cm(out, C, (int)n, fg, fb);
-        PROF_ADD(3);
+        PROF_ADD(12);
         return VTTS_OK;
     }
     }
