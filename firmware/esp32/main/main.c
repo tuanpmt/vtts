@@ -80,14 +80,11 @@ void app_main(void) {
         printf("fast scratch %u bytes in sram\n", fast ? (unsigned)fast_n : 0u);
     }
     g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
-    g.ws = heap_caps_malloc(sizeof *g.ws, MALLOC_CAP_SPIRAM); /* before the PCM buffer takes the rest */
-    /* up to MAX_SECONDS, or what PSRAM has left (keep 64 KB spare) */
-    long fit = ((long)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) - 65536) / (long)sizeof(float);
-    g.pcm_cap = (long)MAX_SECONDS * 22050 < fit ? (long)MAX_SECONDS * 22050 : fit;
-    g.pcm = g.pcm_cap > 22050 ? heap_caps_malloc(sizeof(float) * (size_t)g.pcm_cap, MALLOC_CAP_SPIRAM) : NULL;
-    printf("arena %u in %s; pcm %.1f s; free internal %u, psram %u\n", (unsigned)need, g.arena_where, g.pcm_cap / 22050.0,
+    g.ws = heap_caps_malloc(sizeof *g.ws, MALLOC_CAP_SPIRAM);
+    /* no PCM buffer while speaking: audio streams to the speaker; `dump` allocates one when needed */
+    printf("arena %u in %s; free internal %u, psram %u\n", (unsigned)need, g.arena_where,
            (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL), (unsigned)heap_caps_get_free_size(MALLOC_CAP_SPIRAM));
-    if (!g.arena || !g.pcm || !g.ws) { printf("ERROR out of memory\n"); return; }
+    if (!g.arena || !g.ws) { printf("ERROR out of memory\n"); return; }
     g.gain = powf(10.0f, BSP_DEFAULT_GAIN_DB / 20.0f);
     speaker_init();
     speaker_start();

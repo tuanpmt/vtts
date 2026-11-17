@@ -18,7 +18,7 @@
 #include "vtts_text.h"
 
 #define MAX_CHUNK 256    /* frames per streaming chunk, upper bound */
-#define MAX_SECONDS 120  /* PCM kept per utterance (stats, dump, resampled playback) */
+#define KEEP_SECONDS 60  /* PCM kept by `dump` and resampled playback (allocated only for them) */
 
 typedef struct {
     vtts_model models[2];
@@ -26,8 +26,9 @@ typedef struct {
     void *arena;
     size_t arena_bytes;
     const char *arena_where;
-    float *pcm;      /* MAX_SECONDS of audio, PSRAM */
-    long pcm_cap, n; /* samples */
+    int16_t *pcm;    /* NULL, or KEEP_SECONDS of audio while `dump` or resampled playback needs it */
+    long pcm_cap, n; /* samples kept, samples synthesized */
+    double sumsq;    /* for the RMS on the report line, accumulated while synthesizing */
     int64_t synth_us;
     int spk; /* speaker available */
     int out_rate, vol, chunk, first;
@@ -57,7 +58,7 @@ extern const uint8_t lex_en_start[] asm("_binary_lex_en_bin_start");
 extern const uint8_t lex_en_end[] asm("_binary_lex_en_bin_end");
 
 /* synth.c */
-int synth_text(const char *text, int64_t *total_us); /* text or "ids ..." -> g.pcm; chunks */
+int synth_text(const char *text, int64_t *total_us); /* text or "ids ..." -> PCM; chunks */
 void synth_report(const char *tag, int idx, int chunks, int64_t total_us);
 void synth_say(const char *text);  /* speak, then SAID / timing / CPU lines */
 void synth_dump(const char *text); /* PCM as base64 lines, no playback */
@@ -68,6 +69,8 @@ void speaker_init(void);
 void speaker_start(void);                     /* playback task, when the speaker runs at the model rate */
 void speaker_stream(const float *pcm, long n); /* queue model-rate PCM for playback */
 void speaker_play_buffer(void);               /* play g.pcm resampled (speaker at another rate) */
+int pcm_keep(void);                           /* allocate g.pcm (PSRAM) for the next utterance */
+void pcm_release(void);
 int speaker_chunk_cap(void);
 size_t speaker_prebuffer_bytes(void);
 

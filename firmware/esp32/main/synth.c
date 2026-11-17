@@ -7,6 +7,7 @@
 #include <string.h>
 
 #include "app.h"
+#include "esp_heap_caps.h"
 #include "esp_timer.h"
 #include "freertos/task.h"
 
@@ -17,13 +18,36 @@ static const char *const BENCH[] = {
     "Hôm nay là thứ Bảy, ngày 14/11/2026.",
 };
 
+/* PCM kept only while `dump` or resampled playback needs it: up to KEEP_SECONDS of int16 in PSRAM,
+ * or less if PSRAM is short (keep 64 KB spare) */
+int pcm_keep(void) {
+    if (g.pcm) return 1;
+    long want = (long)KEEP_SECONDS * g.models[g.cur].sample_rate;
+    long fit = ((long)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) - 65536) / (long)sizeof(int16_t);
+    g.pcm_cap = want < fit ? want : fit;
+    g.pcm = g.pcm_cap > 22050 ? heap_caps_malloc(sizeof(int16_t) * (size_t)g.pcm_cap, MALLOC_CAP_SPIRAM) : NULL;
+    if (!g.pcm) { g.pcm_cap = 0; printf("ERROR no PSRAM for the PCM buffer\n"); }
+    return g.pcm != NULL;
+}
+
+void pcm_release(void) {
+    heap_caps_free(g.pcm);
+    g.pcm = NULL;
+    g.pcm_cap = 0;
+}
+
 static int on_pcm(const float *pcm, long n, void *user) {
     (void)user;
     if (g.streaming && g.sb) speaker_stream(pcm, n);
-    long keep = g.n + n > g.pcm_cap ? g.pcm_cap - g.n : n;
-    memcpy(g.pcm + g.n, pcm, sizeof(float) * (size_t)keep);
-    g.n += keep;
-    return !g.streaming && g.n >= g.pcm_cap; /* streaming never stops on the stats buffer */
+    for (long i = 0; i < n; i++) g.sumsq += (double)pcm[i] * pcm[i];
+    if (g.pcm) {
+        for (long i = 0; i < n && g.n + i < g.pcm_cap; i++) {
+            float v = pcm[i] > 1.0f ? 1.0f : pcm[i] < -1.0f ? -1.0f : pcm[i];
+            g.pcm[g.n + i] = (int16_t)lrintf(v * 32767.0f);
+        }
+    }
+    g.n += n;
+    return !g.streaming && g.pcm && g.n >= g.pcm_cap; /* a dump stops when its buffer is full */
 }
 
 static int on_ids(const int32_t *ids, int n, void *user) {
@@ -67,6 +91,7 @@ static int synth_ids(const char *s) {
 
 int synth_text(const char *text, int64_t *total_us) {
     g.n = 0;
+    g.sumsq = 0;
     g.synth_us = 0;
     int64_t t0 = esp_timer_get_time();
     int chunks;
@@ -81,9 +106,7 @@ int synth_text(const char *text, int64_t *total_us) {
 
 void synth_report(const char *tag, int idx, int chunks, int64_t total_us) {
     double audio = (double)g.n / g.models[g.cur].sample_rate;
-    double rms = 0;
-    for (long i = 0; i < g.n; i++) rms += (double)g.pcm[i] * g.pcm[i];
-    rms = g.n ? sqrt(rms / g.n) : 0;
+    double rms = g.n ? sqrt(g.sumsq / g.n) : 0;
     printf("%s model=%c chunk=%d idx=%d chunks=%d audio=%.2fs synth=%.3fs total=%.3fs RTF=%.3f rms=%.4f arena=%u(%s)\n",
            tag, g.cur ? 'M' : 'S', g.chunk, idx, chunks, audio, g.synth_us / 1e6, total_us / 1e6,
            audio > 0 ? (total_us / 1e6) / audio : 0.0, rms, (unsigned)g.arena_bytes, g.arena_where);
@@ -116,6 +139,7 @@ static void cpu_report(const cpu_snap_t *a) {
 void synth_say(const char *text) {
     int64_t us;
     int direct = g.sb && g.out_rate == g.models[g.cur].sample_rate; /* stream to the speaker task */
+    if (!direct && !pcm_keep()) return; /* the speaker runs at another rate: resample a kept copy */
     g.streaming = direct;
     g.t_first = g.t_play = 0;
     g.blocked_us = 0;
@@ -141,6 +165,7 @@ void synth_say(const char *text) {
         cpu_report(&cs); /* synthesis and playback of the whole utterance */
     } else {
         speaker_play_buffer();
+        pcm_release();
     }
 }
 
@@ -149,16 +174,17 @@ void synth_dump(const char *text) {
     static const char b64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     int64_t us;
     g.streaming = 0;
+    if (!pcm_keep()) return;
     int c = synth_text(text, &us);
     synth_report("DUMPED", 0, c, us);
-    printf("PCM %d %ld\n", g.models[g.cur].sample_rate, g.n);
+    long n = g.n < g.pcm_cap ? g.n : g.pcm_cap;
+    printf("PCM %d %ld\n", g.models[g.cur].sample_rate, n);
     static char out[1 + 4 * 64 + 2];
     uint8_t buf[192];
-    for (long i = 0; i < g.n;) {
+    for (long i = 0; i < n;) {
         int nb = 0;
-        for (; nb < 192 && i < g.n; i++) {
-            float v = g.pcm[i] > 1.0f ? 1.0f : g.pcm[i] < -1.0f ? -1.0f : g.pcm[i];
-            int16_t q = (int16_t)lrintf(v * 32767.0f);
+        for (; nb < 192 && i < n; i++) {
+            int16_t q = g.pcm[i];
             buf[nb++] = (uint8_t)(q & 0xff);
             buf[nb++] = (uint8_t)((q >> 8) & 0xff);
         }
@@ -174,4 +200,5 @@ void synth_dump(const char *text) {
         out[k] = 0;
         puts(out);
     }
+    pcm_release();
 }

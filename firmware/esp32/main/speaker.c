@@ -46,15 +46,16 @@ void speaker_stream(const float *pcm, long n) {
 }
 
 void speaker_play_buffer(void) {
-    if (!g.spk || g.n == 0) return;
+    long n = g.n < g.pcm_cap ? g.n : g.pcm_cap;
+    if (!g.spk || !g.pcm || n == 0) return;
     const int sr = g.models[g.cur].sample_rate;
     static int16_t block[512];
     double step = (double)sr / g.out_rate, pos = 0.0;
-    while (pos < g.n - 1) {
+    while (pos < n - 1) {
         int k = 0;
-        for (; k < 512 && pos < g.n - 1; k++, pos += step) {
+        for (; k < 512 && pos < n - 1; k++, pos += step) {
             long i = (long)pos;
-            float f = (float)(pos - i), v = g.pcm[i] * (1.0f - f) + g.pcm[i + 1] * f; /* linear resample */
+            float f = (float)(pos - i), v = (g.pcm[i] * (1.0f - f) + g.pcm[i + 1] * f) / 32767.0f; /* linear resample */
             block[k] = (int16_t)lrintf(shape(v) * 32767.0f);
         }
         bsp_speaker_write(block, k);
