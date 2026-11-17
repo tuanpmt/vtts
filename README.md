@@ -2,7 +2,7 @@
 
 **Tiny multilingual text-to-speech that runs entirely on ESP32 microcontrollers.** Text in, speech out of the speaker: no cloud, no network, no Linux. A C99 int8 runtime with streaming synthesis, a rule-based front-end per language, and distilled voices small enough for 1-3 MB of flash.
 
-[Tiếng Việt](README.vi.md)
+🇻🇳 [Tiếng Việt](README.vi.md) · 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/)
 
 - **On the chip, end to end:** text normalization, grapheme-to-phoneme, an int8 acoustic model and an iSTFT vocoder all run on the MCU.
 - **Faster than real time with streaming:** speech starts after 0.3-2.4 s depending on chip and model.
@@ -13,12 +13,12 @@
 
 | Voice | Languages | Quality (ESP32-P4) | Lite (ESP32-S3) | Status |
 |---|---|---|---|---|
-| Vietnamese prototype | vi | M-vocos v0.2 (1.7M params, 2.6 MB) | S-vocos v0.1 (0.8M, 1.1 MB) | **Released** (v0.3.0, non-commercial) |
-| `nam-1` (male) | vi + en, code-switching | M | S | **Training**: data done (98 h), teacher in progress |
-| `nu-10` (female) | vi + en, code-switching | M | S | **Training**: data generating, teacher in progress |
-| English | en | M | S | Planned |
-| Chinese (Mandarin) | zh | M | S | Planned |
-| Chinese + English | zh + en | M | S | Planned |
+| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.7M params, 2.6 MB) | S-vocos v0.1 (0.8M, 1.1 MB) | **Released** (v0.3.0, non-commercial) |
+| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training**: data done (98 h), teacher in progress |
+| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training**: data generating, teacher in progress |
+| English | 🇺🇸 en | M | S | Planned |
+| Chinese (Mandarin) | 🇨🇳 zh | M | S | Planned |
+| Chinese + English | 🇨🇳 zh + 🇺🇸 en | M | S | Planned |
 
 Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" in one voice. The device picks the language per word (`lang vi | en | auto`).
 
