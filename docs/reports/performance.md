@@ -47,6 +47,24 @@ Waveshare ESP32-S3-Touch-LCD-2.8: ESP32-S3R8, 240 MHz, 8 MB octal PSRAM, 16 MB f
 - At least 8 MB of PSRAM is required: both models are copied into PSRAM and the working area is about 1.9 MB. Boards with 2 MB of PSRAM are not enough.
 - The fused instruction `ee.vmulas.s8.accx.ld.ip` is not used. When both cores run it at the same time the accumulated sum is occasionally wrong; on one core it is always correct. The current kernel loads first and then multiply-accumulates, which is correct on both cores. The firmware `selftest` includes a test that runs the kernel on both cores at once.
 
+## Runtime optimization (main branch, after v0.3.0)
+
+Plan: [2026-11-17-runtime-optimization.md](../design/plans/2026-11-17-runtime-optimization.md). Same model files. Everything lives in PSRAM (arena, weights, activations); internal SRAM stays free for DMA. Each step is bit-exact on a PC built with `-ffp-contract=off`; with the compiler's default FMA contraction a few int8 roundings can differ (min correlation 0.99999).
+
+| Board | Model | v0.3.0 | Inline rounding, time-major head | Exact streaming | Fusion, 64-frame blocks, iSTFT | 
+|---|---|---:|---:|---:|---:|
+| ESP32-P4-NANO | S | 0.212–0.239 | 0.200–0.227 | 0.182–0.194 | **0.166** |
+| ESP32-P4-NANO | M | 0.379–0.399 | 0.369–0.390 | 0.303–0.304 | **0.269** |
+| EchoEar 2.0 (S3) | S | 0.42–0.47 | 0.34–0.38 | 0.305–0.322 | **0.281–0.283** |
+| EchoEar 2.0 (S3) | M | 0.86–0.96 | 0.72–0.83 | 0.550 | **0.505–0.510** |
+
+The stream arena grows from 1.47 to 1.96 MB with 64-frame steps (PSRAM).
+
+Tried and not kept:
+- **Fast scratch in internal SRAM** (`vtts_set_fast_scratch`): about 2% faster on the P4 with 96 KB. Available in the API, off in the firmware (`FAST_SCRATCH_MAX 0`).
+- **Software-pipelined S3 kernel** (two register pairs): slower in the kernel benchmark (773 → 690 MMAC/s at 160, 1048 → 846 at 480). The plain load + MAC loop already reaches about 4.4 MAC per cycle.
+- **`-O3`** on the S3: no gain (M 0.508–0.513).
+
 ## How to measure
 
 - `bench`: synthesizes 4 fixed sentences without playback and prints the RTF per sentence.

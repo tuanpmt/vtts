@@ -1,6 +1,6 @@
 # Runtime optimization for ESP32-S3 and ESP32-P4 — implementation plan
 
-> Status: in progress. Task 1 is done (2026-11-17); the remaining tasks follow in order.
+> Status: Tasks 1, 2 and 3 are done; Task 4 found no gain with plain loads; Task 5 partly tried (2026-11-17). Results: [performance.md](../../reports/performance.md#runtime-optimization-main-branch-after-v030).
 
 **Goal:** lower the RTF of both models on both chips without changing the model files:
 - ESP32-S3: M from about 0.92 to ≤ 0.5.
@@ -26,14 +26,16 @@
 - The head writes time-major output `[t][n_fft + 2]`, so the iSTFT reads each frame contiguously instead of walking columns.
 - Result on ESP32-P4-NANO: bit-exact. iSTFT time -25%. RTF S 0.212–0.239 → 0.200–0.227, M 0.379–0.399 → 0.369–0.390.
 
-## Task 2: Time-major fusion and fast scratch memory (bit-exact)
+## Task 2: Time-major fusion and fast scratch memory (bit-exact) — done
 
 - Fuse "depthwise conv → LayerNorm → quantize" into one pass per frame.
 - Fuse the pw1 epilogue with GELU and quantization, so the float `h` buffer goes away.
 - Split the residual and `col` copy loops across both cores.
 - Add `vtts_set_fast_scratch(void *p, size_t n)` so the hot tiles (`col`, int8 `h`, `o`, `head`, `fbuf`, `win`) live in internal SRAM. The firmware passes about 130 KB.
+- Result: fusion, 64-frame MLP blocks and a cached window with two-core overlap-add. P4 S 0.182 → 0.166, M 0.303 → 0.269; S3 S 0.31 → 0.28, M 0.55 → 0.505. Fast scratch gave about 2% and is off in the firmware, because real applications keep internal SRAM for DMA.
+- Gate ruling: the PC harness compares with `-ffp-contract=off` (bit-exact); clang's default FMA contraction makes a few int8 roundings differ (min corr 0.99999 on M), which only reflects where the compiler fuses multiply-adds.
 
-## Task 3: Exact streaming with per-layer state
+## Task 3: Exact streaming with per-layer state — done
 
 - Every convolution layer keeps the K−1 input frames it needs from the previous chunk. Each frame is computed exactly once, which removes the halo and the ramp-up overhead.
 - **Gate:** streaming must match whole-utterance synthesis, with a dedicated test.
@@ -43,8 +45,10 @@
 - Use two register pairs (load one pair while multiplying the other) and move the frame loop into the assembly.
 - Add a `selftest` matrix to find the root cause of the fused `ld.ip` failure: interrupts on/off × SRAM/PSRAM × what the other core is doing.
 - **Gate:** the two-core `selftest` shows 0 mismatches, and the output is bit-exact.
+- Result so far: the two-register-pair loop is correct but slower (kernel benchmark 773 → 690 MMAC/s), so the plain loop stays. The remaining lever is the fused `ld.ip` form, which needs the root cause of the two-core failure first.
 
 ## Task 5: Build
 
 - Add a `VTTS_HOT` macro that places hot functions in IRAM on the S3.
 - Try `-O3` and the PSRAM options. Keep only the changes that measure better.
+- Result so far: `-O3` gives no gain on the S3. The S3 already uses a 64 KB data cache with 64-byte lines and octal PSRAM at 80 MHz.
