@@ -2,7 +2,7 @@
 
 Giọng đọc tiếng Việt nhỏ gọn, chạy hoàn toàn trên vi điều khiển ESP32-P4 và ESP32-S3: văn bản vào, âm thanh ra loa, không cần mạng.
 
-🇺🇸 [English](README.md) · 🌐 [Trang nghe thử](https://tuanpmt.github.io/vtts/)
+🇺🇸 [English](README.md) · 🌐 [Trang nghe thử](https://tuanpmt.github.io/vtts/) · 🤗 [Model trên Hugging Face](https://huggingface.co/tuanpm/vtts-vi)
 
 - **Chạy trên chip:** từ văn bản đến âm thanh đều chạy trên chip: chuẩn hoá văn bản, G2P, model int8, iSTFT. Không cần server hay mạng.
 - **Nhanh hơn thời gian thực:** streaming, bắt đầu phát sau 0.3–2.4 s tuỳ chip và model.

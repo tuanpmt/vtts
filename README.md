@@ -2,7 +2,7 @@
 
 **Tiny multilingual text-to-speech that runs entirely on ESP32 microcontrollers.** Text in, speech out of the speaker: no cloud, no network, no Linux. A C99 int8 runtime with streaming synthesis, a rule-based front-end per language, and distilled voices small enough for 1-3 MB of flash.
 
-🇻🇳 [Tiếng Việt](README.vi.md) · 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/)
+🇻🇳 [Tiếng Việt](README.vi.md) · 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/) · 🤗 [Models on Hugging Face](https://huggingface.co/tuanpm/vtts-vi)
 
 - **On the chip, end to end:** text normalization, grapheme-to-phoneme, an int8 acoustic model and an iSTFT vocoder all run on the MCU.
 - **Faster than real time with streaming:** speech starts after 0.3-2.4 s depending on chip and model.
@@ -57,7 +57,7 @@ RTF below 1 means faster than real time. Both chips use two cores and int8 SIMD 
 
 ### Flash a board
 
-You need ESP-IDF v6.1 and the two model files from [Releases](https://github.com/tuanpmt/vtts/releases).
+You need ESP-IDF v6.1 and the two model files from [Releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts-vi).
 
 ```bash
 gh release download v0.3.0 -R tuanpmt/vtts -p '*.vtts' -D models

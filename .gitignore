@@ -10,3 +10,4 @@ __pycache__/
 .superpowers/
 !tests/fixtures/*.wav
 runtime/build/
+/.playwright-mcp/
