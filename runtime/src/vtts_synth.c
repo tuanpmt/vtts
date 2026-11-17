@@ -258,6 +258,7 @@ typedef struct {
     int ci, T, K, dil, s, p, Tout;
     int out_tm; /* 1: y is time-major [T][co] (co = ldy) instead of channel-major [co][T] */
     int ldy;
+    int t_lo, t_n; /* output frames [t_lo, t_lo + t_n) of the window; y holds only those */
 } qjob_t;
 
 #define DOT_TILE 64 /* frames per call of the multi-row dot kernel */
@@ -269,9 +270,10 @@ static void lconv_rows(int lo, int hi, void *arg) {
     int ci = j->ci, T = j->T, K = j->K, dil = j->dil, pad = dil * (K - 1) / 2;
     float acc[DOT_TILE];
     int32_t dots[DOT_TILE];
+    int t_end = j->t_lo + j->t_n;
     for (int o = lo; o < hi; o++) {
-        for (int t0 = 0; t0 < T; t0 += DOT_TILE) {
-            int nt = T - t0 < DOT_TILE ? T - t0 : DOT_TILE;
+        for (int t0 = j->t_lo; t0 < t_end; t0 += DOT_TILE) {
+            int nt = t_end - t0 < DOT_TILE ? t_end - t0 : DOT_TILE;
             for (int i = 0; i < nt; i++) acc[i] = 0.0f;
             for (int k = 0; k < K; k++) {
                 int sh = k * dil - pad; /* input frame = output frame + sh */
@@ -282,10 +284,11 @@ static void lconv_rows(int lo, int hi, void *arg) {
                 vtts_dots_s8s8(l->q + ((size_t)o * K + k) * ci, q->x + (size_t)(a + sh) * ci, ci, b - a, ci, dots);
                 for (int t = a; t < b; t++) acc[t - t0] += (float)dots[t - a] * q->s[t + sh];
             }
+            int r0 = t0 - j->t_lo; /* row of t0 in y */
             if (j->out_tm)
-                for (int i = 0; i < nt; i++) j->y[(size_t)(t0 + i) * j->ldy + o] = l->b[o] + acc[i] * l->qs[o];
+                for (int i = 0; i < nt; i++) j->y[(size_t)(r0 + i) * j->ldy + o] = l->b[o] + acc[i] * l->qs[o];
             else
-                for (int i = 0; i < nt; i++) j->y[(size_t)o * T + t0 + i] = l->b[o] + acc[i] * l->qs[o];
+                for (int i = 0; i < nt; i++) j->y[(size_t)o * j->t_n + r0 + i] = l->b[o] + acc[i] * l->qs[o];
         }
     }
 }
@@ -295,14 +298,29 @@ static void lconv(const layer_t *l, const float *x, int ci, int T, int co, int K
                   qbuf_t *q) {
     if (l->w) { conv1d(x, ci, T, l->w, l->b, co, K, dil, y); return; }
     quant_tm(x, ci, T, q);
-    qjob_t j = {l, q, y, ci, T, K, dil, 0, 0, 0, 0, 0};
+    qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = K, .dil = dil, .t_lo = 0, .t_n = T};
+    vtts_par_run(lconv_rows, co, &j);
+}
+
+/* lconv for output frames [t_lo, t_lo + n) of an input window [ci, Win] (zero padded at the
+ * window edges); y is [co, n]. A float layer computes the whole window into tmp [co, Win]. */
+static void lconv_range(const layer_t *l, const float *x, int ci, int Win, int co, int K, int t_lo,
+                        int n, float *y, qbuf_t *q, float *tmp) {
+    if (l->w) {
+        conv1d(x, ci, Win, l->w, l->b, co, K, 1, tmp);
+        for (int o = 0; o < co; o++) memcpy(y + (size_t)o * n, tmp + (size_t)o * Win + t_lo, sizeof(float) * (size_t)n);
+        return;
+    }
+    quant_tm(x, ci, Win, q);
+    qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = Win, .K = K, .dil = 1, .t_lo = t_lo, .t_n = n};
     vtts_par_run(lconv_rows, co, &j);
 }
 
 /* int8 linear (K = 1) writing time-major output [T][co]; float layers are not supported */
 static void lconv_tm(const layer_t *l, const float *x, int ci, int T, int co, float *y, qbuf_t *q) {
     quant_tm(x, ci, T, q);
-    qjob_t j = {l, q, y, ci, T, 1, 1, 0, 0, 0, 1, co};
+    qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = 1, .dil = 1, .out_tm = 1, .ldy = co,
+                .t_lo = 0, .t_n = T};
     vtts_par_run(lconv_rows, co, &j);
 }
 
@@ -330,7 +348,7 @@ static void lconvT(const layer_t *l, const float *x, int ci, int T, int co, int 
                    float *y, int Tout, qbuf_t *q) {
     if (l->w) { convT1d(x, ci, T, l->w, l->b, co, K, s, p, y, Tout); return; }
     quant_tm(x, ci, T, q);
-    qjob_t j = {l, q, y, ci, T, K, 0, s, p, Tout, 0, 0};
+    qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = K, .s = s, .p = p, .Tout = Tout};
     vtts_par_run(lconvT_rows, co, &j);
 }
 
@@ -898,19 +916,275 @@ long vtts_synthesize(const vtts_model *m, const int32_t *ids, int n, float ls, f
 
 /* ---------------- streaming (vocos) ---------------- */
 
-static int stream_radius_dec(const vtts_model *m) { return 3 * (1 + m->v_blocks) + 4; }
-static int stream_radius_ac(const vtts_model *m) {
-    int r = m->a_frame_depth * (m->a_kernel - 1) / 2;
-    if (m->prosody) r += m->p_depth * (m->a_kernel - 1) / 2 + 1; /* pitch blocks + k3 embedding */
-    return r;
+/* ---------------- streaming with per-layer state ----------------
+ * Every layer keeps the frames it has produced in a small buffer and is advanced on demand:
+ * to produce frames [a, b) it first advances its input to b + radius, then reads the input
+ * window [a - radius, b + radius) clipped to [0, T) (zero padding only at the utterance edges,
+ * as in whole-utterance synthesis). Each frame of each layer is computed exactly once, so a
+ * chunk costs its own frames only, with no recomputed halo. Per-frame arithmetic is unchanged,
+ * so the result is identical to whole-utterance synthesis. */
+
+enum { SL_SRC, SL_CONVBLK, SL_PITCHOUT, SL_PITCHADD, SL_LINEAR, SL_DPRE, SL_DBLK, SL_DFIN };
+#define SL_MAX 40
+#define SL_RMAX 4 /* largest layer radius handled by the window buffers */
+#ifndef VTTS_STREAM_STEP
+#define VTTS_STREAM_STEP 16 /* frames a layer computes per step; bounds every layer buffer */
+#endif
+
+typedef struct sl {
+    int kind, C, idx;
+    const char *prefix;  /* weight prefix for SL_CONVBLK */
+    struct sl *in, *in2; /* inputs; in2 only for SL_PITCHADD */
+    int r, r2;           /* radius on in / in2 */
+    float *d;            /* [C][cap], frames [base, hi) */
+    long cap, base, hi;
+} sl_t;
+
+typedef struct {
+    const vtts_model *m;
+    long T, nmax;            /* utterance frames; frames computed per layer step */
+    const float *tok;
+    const int32_t *dur;
+    int n;
+    sl_t L[SL_MAX];
+    int nl;
+    sl_t *fin;
+    long head_need;          /* first frame the iSTFT may still read from the final layer */
+    float *win, *tmp, *aux, *out, *col, *h, *o, *feat;
+    qbuf_t q;
+} st_t;
+
+static sl_t *sl_add(st_t *st, int kind, int C, sl_t *in, int r) {
+    sl_t *L = &st->L[st->nl++];
+    memset(L, 0, sizeof *L);
+    L->kind = kind; L->C = C; L->in = in; L->r = r;
+    return L;
+}
+
+/* earliest frame of L that some consumer may still read */
+static long sl_need(const st_t *st, const sl_t *L) {
+    long need = L->hi;
+    for (int i = 0; i < st->nl; i++) {
+        const sl_t *K = &st->L[i];
+        if (K->in == L && K->hi - K->r < need) need = K->hi - K->r;
+        if (K->in2 == L && K->hi - K->r2 < need) need = K->hi - K->r2;
+    }
+    if (L == st->fin && st->head_need < need) need = st->head_need;
+    return need < L->base ? L->base : need;
+}
+
+static int sl_append(st_t *st, sl_t *L, const float *src, long n) {
+    if (L->hi - L->base + n > L->cap) {
+        long keep = sl_need(st, L), live = L->hi - keep;
+        if (live + n > L->cap) return VTTS_ERR_ARENA;
+        for (int c = 0; c < L->C; c++)
+            memmove(L->d + (size_t)c * L->cap, L->d + (size_t)c * L->cap + (keep - L->base), sizeof(float) * (size_t)live);
+        L->base = keep;
+    }
+    long off = L->hi - L->base;
+    for (int c = 0; c < L->C; c++)
+        memcpy(L->d + (size_t)c * L->cap + off, src + (size_t)c * n, sizeof(float) * (size_t)n);
+    L->hi += n;
+    return VTTS_OK;
+}
+
+static void sl_gather(const sl_t *L, long w0, long w1, float *dst) {
+    for (int c = 0; c < L->C; c++)
+        memcpy(dst + (size_t)c * (w1 - w0), L->d + (size_t)c * L->cap + (w0 - L->base), sizeof(float) * (size_t)(w1 - w0));
+}
+
+/* acoustic input frames [a, b): token features + position encoding */
+static int sl_source(st_t *st, long a, long b, float *x) {
+    const vtts_model *m = st->m;
+    int H = m->a_hidden;
+    long n = b - a, start = 0;
+    float *feat = st->feat;
+    for (int i = 0; i < st->n && start < b; i++) {
+        for (int k = 0; k < st->dur[i]; k++) {
+            long f = start + k;
+            if (f < a || f >= b) continue;
+            long t = f - a;
+            for (int c = 0; c < H; c++) x[(size_t)c * n + t] = st->tok[(size_t)c * st->n + i];
+            feat[t] = ((float)k + 0.5f) / (float)st->dur[i];
+            feat[n + t] = logf((float)st->dur[i]);
+        }
+        start += st->dur[i];
+    }
+    const float *pw = W(m, "acoustic.pos.weight"), *pbias = W(m, "acoustic.pos.bias");
+    if (!pw || !pbias) return VTTS_ERR_MISSING;
+    linear_cm(feat, 2, (int)n, pw, pbias, H, st->tmp);
+    for (size_t j = 0; j < (size_t)H * n; j++) x[j] += st->tmp[j];
+    return VTTS_OK;
+}
+
+static int sl_compute(st_t *st, sl_t *ly, long a, long b, float *out) {
+    const vtts_model *m = st->m;
+    long n = b - a, w0 = a - ly->r < 0 ? 0 : a - ly->r, w1 = b + ly->r > st->T ? st->T : b + ly->r;
+    int Win = (int)(w1 - w0), off = (int)(a - w0), C = ly->C;
+    PROF_T0();
+    if (ly->in) sl_gather(ly->in, w0, w1, st->win);
+    switch (ly->kind) {
+    case SL_SRC: {
+        int rc = sl_source(st, a, b, out);
+        PROF_ADD(2);
+        return rc;
+    }
+    case SL_CONVBLK: { /* x + LN(relu(conv(x))) */
+        layer_t c = L(m, "%s.%d.conv", ly->prefix, ly->idx);
+        const float *g = W(m, "%s.%d.norm.weight", ly->prefix, ly->idx), *be = W(m, "%s.%d.norm.bias", ly->prefix, ly->idx);
+        if (!layer_ok(&c) || !g || !be) return VTTS_ERR_MISSING;
+        lconv_range(&c, st->win, C, Win, C, m->a_kernel, off, (int)n, out, &st->q, st->tmp);
+        for (size_t j = 0; j < (size_t)C * n; j++) if (out[j] < 0.0f) out[j] = 0.0f;
+        layernorm_cm(out, C, (int)n, g, be);
+        for (int ch = 0; ch < C; ch++)
+            for (long t = 0; t < n; t++) out[(size_t)ch * n + t] += st->win[(size_t)ch * Win + off + t];
+        PROF_ADD(2);
+        return VTTS_OK;
+    }
+    case SL_PITCHOUT: {
+        layer_t po = L(m, "acoustic.pitch_out");
+        if (!layer_ok(&po)) return VTTS_ERR_MISSING;
+        lconv(&po, st->win, ly->in->C, (int)n, 2, 1, 1, out, &st->q);
+        for (long t = 0; t < n; t++) out[t] *= m->expressiveness;
+        PROF_ADD(2);
+        return VTTS_OK;
+    }
+    case SL_PITCHADD: { /* x0 + pitch_emb(pitch) */
+        layer_t pe = L(m, "acoustic.pitch_emb");
+        if (!layer_ok(&pe)) return VTTS_ERR_MISSING;
+        lconv_range(&pe, st->win, 2, Win, C, 3, off, (int)n, out, &st->q, st->tmp);
+        sl_gather(ly->in2, a, b, st->aux);
+        for (size_t j = 0; j < (size_t)C * n; j++) out[j] = st->aux[j] + out[j];
+        PROF_ADD(2);
+        return VTTS_OK;
+    }
+    case SL_LINEAR: {
+        layer_t lo = L(m, "acoustic.out");
+        if (!layer_ok(&lo)) return VTTS_ERR_MISSING;
+        lconv(&lo, st->win, ly->in->C, (int)n, C, 1, 1, out, &st->q);
+        PROF_ADD(2);
+        return VTTS_OK;
+    }
+    case SL_DPRE: {
+        layer_t pre = L(m, "decoder.pre");
+        const float *g = W(m, "decoder.norm.weight"), *be = W(m, "decoder.norm.bias");
+        if (!layer_ok(&pre) || !g || !be) return VTTS_ERR_MISSING;
+        lconv_range(&pre, st->win, ly->in->C, Win, C, 7, off, (int)n, out, &st->q, st->tmp);
+        layernorm_cm(out, C, (int)n, g, be);
+        PROF_ADD(3);
+        return VTTS_OK;
+    }
+    case SL_DBLK: {
+        int i = ly->idx, M = m->v_mult * C;
+        const float *dw = W(m, "decoder.blocks.%d.dw.weight", i), *db = W(m, "decoder.blocks.%d.dw.bias", i);
+        const float *ng = W(m, "decoder.blocks.%d.norm.weight", i), *nbb = W(m, "decoder.blocks.%d.norm.bias", i);
+        layer_t p1 = L(m, "decoder.blocks.%d.pw1", i), p2 = L(m, "decoder.blocks.%d.pw2", i);
+        const float *gm = W(m, "decoder.blocks.%d.gamma", i);
+        if (!dw || !db || !ng || !nbb || !layer_ok(&p1) || !layer_ok(&p2) || !gm) return VTTS_ERR_MISSING;
+        dwconv1d(st->win, C, Win, dw, db, 7, st->tmp);
+        for (int ch = 0; ch < C; ch++)
+            memcpy(st->aux + (size_t)ch * n, st->tmp + (size_t)ch * Win + off, sizeof(float) * (size_t)n);
+        layernorm_cm(st->aux, C, (int)n, ng, nbb);
+        PROF_ADD(3);
+        for (long t0 = 0; t0 < n; t0 += VTTS_BLOCK) {
+            int nb_ = (int)(n - t0 < VTTS_BLOCK ? n - t0 : VTTS_BLOCK);
+            for (int ch = 0; ch < C; ch++)
+                for (int j = 0; j < nb_; j++) st->col[(size_t)ch * nb_ + j] = st->aux[(size_t)ch * n + t0 + j];
+            lconv(&p1, st->col, C, nb_, M, 1, 1, st->h, &st->q);
+            gelu_par(st->h, (long)M * nb_);
+            lconv(&p2, st->h, M, nb_, C, 1, 1, st->o, &st->q);
+            for (int ch = 0; ch < C; ch++)
+                for (int j = 0; j < nb_; j++)
+                    out[(size_t)ch * n + t0 + j] = st->win[(size_t)ch * Win + off + t0 + j] + st->o[(size_t)ch * nb_ + j] * gm[ch];
+        }
+        PROF_ADD(4);
+        return VTTS_OK;
+    }
+    case SL_DFIN: {
+        const float *fg = W(m, "decoder.final_norm.weight"), *fb = W(m, "decoder.final_norm.bias");
+        if (!fg || !fb) return VTTS_ERR_MISSING;
+        memcpy(out, st->win, sizeof(float) * (size_t)C * n);
+        layernorm_cm(out, C, (int)n, fg, fb);
+        PROF_ADD(3);
+        return VTTS_OK;
+    }
+    }
+    return VTTS_ERR_ARGS;
+}
+
+static int sl_advance(st_t *st, sl_t *L, long target) {
+    if (target > st->T) target = st->T;
+    while (L->hi < target) {
+        long a = L->hi, b = target - a > st->nmax ? a + st->nmax : target;
+        int rc;
+        if (L->in && (rc = sl_advance(st, L->in, b + L->r))) return rc;
+        if (L->in2 && (rc = sl_advance(st, L->in2, b + L->r2))) return rc;
+        if ((rc = sl_compute(st, L, a, b, st->out))) return rc;
+        if ((rc = sl_append(st, L, st->out, b - a))) return rc;
+    }
+    return VTTS_OK;
+}
+
+/* head + iSTFT for output frames [s, e) from final decoder frames [f_lo, f_lo + nf) in xh */
+static long head_region(const vtts_model *m, const float *xh, long ldx, long nf, long f_lo, long s, long e,
+                        float *col, float *head, float *fbuf, float *win, float *ola,
+                        qbuf_t *xq, float *pcm) {
+    int C = m->v_dim, n_fft = 4 * m->hop, hop = m->hop;
+    long f_hi = f_lo + nf, ola_len = (long)n_fft + (long)hop * (nf - 1);
+    PROF_T0();
+    layer_t hd = L(m, "decoder.head");
+    if (!layer_ok(&hd)) return VTTS_ERR_MISSING;
+    for (int i = 0; i < n_fft; i++) win[i] = 0.5f - 0.5f * cosf(2.0f * (float)M_PI * i / n_fft);
+    memset(ola, 0, sizeof(float) * (size_t)ola_len);
+    for (long hb0 = f_lo; hb0 < f_hi; hb0 += VTTS_HEAD_BLOCK) {
+        int hb = (int)(f_hi - hb0 < VTTS_HEAD_BLOCK ? f_hi - hb0 : VTTS_HEAD_BLOCK);
+        for (int c = 0; c < C; c++)
+            for (int j = 0; j < hb; j++) col[(size_t)c * hb + j] = xh[(size_t)c * ldx + (hb0 - f_lo) + j];
+        PROF_ADD(6);
+        if (hd.w) {
+            lconv(&hd, col, C, hb, n_fft + 2, 1, 1, fbuf, xq);
+            for (int k = 0; k < n_fft + 2; k++)
+                for (int j = 0; j < hb; j++) head[(size_t)j * (n_fft + 2) + k] = fbuf[(size_t)k * hb + j];
+        } else {
+            lconv_tm(&hd, col, C, hb, n_fft + 2, head, xq);
+        }
+        PROF_ADD(5);
+        ifr_t job = {head, fbuf, hb, n_fft, twiddles(n_fft)};
+        vtts_par_run(istft_frames, hb, &job);
+        const float inv_n = 1.0f / (float)n_fft;
+        for (int j = 0; j < hb; j++) {
+            const float *zr = fbuf + (size_t)j * n_fft, *zi = zr + n_fft / 2;
+            float *op = ola + (hb0 + j - f_lo) * hop;
+            for (int i = 0; i < n_fft / 2; i++) {
+                op[2 * i] += zr[i] * inv_n * win[2 * i];
+                op[2 * i + 1] += zi[i] * inv_n * win[2 * i + 1];
+            }
+        }
+    }
+    PROF_ADD(6);
+    /* window envelope: the squared windows of the frames covering each sample, summed in frame
+     * order (as an accumulated buffer would be), computed per output sample */
+    long n_out = (e - s) * hop;
+    for (long i = 0; i < n_out; i++) {
+        long jj = s * hop + i + n_fft / 2 - f_lo * hop;
+        float v = 0.0f;
+        if (jj >= 0 && jj < ola_len) {
+            long fa = jj >= n_fft ? (jj - n_fft) / hop + 1 : 0, fb = jj / hop < nf - 1 ? jj / hop : nf - 1;
+            float env = 0.0f;
+            for (long f = fa; f <= fb; f++) { float w = win[jj - f * hop]; env += w * w; }
+            if (env > 1e-11f) v = ola[jj] / env;
+        }
+        pcm[i] = fast_tanh(v);
+    }
+    return n_out;
 }
 
 static long stream_run(const vtts_model *m, arena_t *a, const int32_t *ids, int n, float ls,
                        int first, int chunk, vtts_pcm_cb cb, void *user, long T_dry) {
-    int H = m->a_hidden, Rd = stream_radius_dec(m), Ra = stream_radius_ac(m);
+    int H = m->a_hidden, C = m->v_dim, M = m->v_mult * m->v_dim, n_fft = 4 * m->hop, hop = m->hop;
     int32_t *dur = alloc(a, (size_t)n);
     float *tok = alloc(a, (size_t)H * n);
-    float *pcm = alloc(a, (size_t)chunk * m->hop);
+    float *pcm = alloc(a, (size_t)chunk * hop);
     if (!a->dry && a->oom) return VTTS_ERR_ARENA;
     size_t mark = a->used;
     PROF_T0();
@@ -922,35 +1196,84 @@ static long stream_run(const vtts_model *m, arena_t *a, const int32_t *ids, int 
     if (rc) return rc;
     a->used = mark;
     PROF_ADD(1);
+
+    static st_t st; /* large; one synthesis at a time */
+    memset(&st, 0, sizeof st);
+    st.m = m; st.T = T; st.tok = tok; st.dur = dur; st.n = n;
+    st.nmax = VTTS_STREAM_STEP;
+    int ra = (m->a_kernel - 1) / 2;
+    if (ra > SL_RMAX) return VTTS_ERR_ARGS;
+    sl_t *x0 = sl_add(&st, SL_SRC, H, NULL, 0), *x = x0;
+    if (m->prosody) {
+        sl_t *pb = x0;
+        for (int i = 0; i < m->p_depth; i++) {
+            pb = sl_add(&st, SL_CONVBLK, H, pb, ra);
+            pb->prefix = "acoustic.pitch_blocks"; pb->idx = i;
+        }
+        sl_t *pp = sl_add(&st, SL_PITCHOUT, 2, pb, 0);
+        x = sl_add(&st, SL_PITCHADD, H, pp, 1);
+        x->in2 = x0; x->r2 = 0;
+    }
+    for (int i = 0; i < m->a_frame_depth; i++) {
+        x = sl_add(&st, SL_CONVBLK, H, x, ra);
+        x->prefix = "acoustic.frame_blocks"; x->idx = i;
+    }
+    sl_t *z = sl_add(&st, SL_LINEAR, m->latent, x, 0);
+    sl_t *d = sl_add(&st, SL_DPRE, C, z, 3);
+    for (int i = 0; i < m->v_blocks; i++) { d = sl_add(&st, SL_DBLK, C, d, 3); d->idx = i; }
+    st.fin = sl_add(&st, SL_DFIN, C, d, 0);
+
+    int cmax = H > C ? H : C;
+    if (m->latent > cmax) cmax = m->latent;
+    long wcap = st.nmax + 2 * SL_RMAX;
+    /* win and tmp also serve as the head and FFT buffers (the iSTFT runs between layer steps) */
+    size_t wbuf = (size_t)cmax * wcap;
+    if (wbuf < (size_t)(n_fft + 2) * VTTS_HEAD_BLOCK) wbuf = (size_t)(n_fft + 2) * VTTS_HEAD_BLOCK;
+    /* A layer keeps the frames its consumers still read plus one step: consumer window
+     * (2 * radius) + step. The source x0 also feeds the pitch-embedding add, which runs
+     * 1 + ra * p_depth frames behind the pitch blocks; the final layer feeds the iSTFT, which
+     * reads chunk + 4 frames. */
+    for (int i = 0; i < st.nl; i++) {
+        sl_t *ly = &st.L[i];
+        long r = 0;
+        for (int k = 0; k < st.nl; k++) {
+            if (st.L[k].in == ly && st.L[k].r > r) r = st.L[k].r;
+            if (st.L[k].in2 == ly && st.L[k].r2 > r) r = st.L[k].r2;
+        }
+        ly->cap = st.nmax + 2 * r + 2;
+        if (ly == x0 && m->prosody) ly->cap += 2 + (long)ra * m->p_depth;
+        if (ly == st.fin) ly->cap = (chunk + 4) + st.nmax;
+        ly->d = alloc(a, (size_t)ly->C * ly->cap);
+    }
+    st.win = alloc(a, wbuf);
+    st.tmp = alloc(a, wbuf);
+    st.aux = alloc(a, (size_t)cmax * st.nmax);
+    st.out = alloc(a, (size_t)cmax * st.nmax);
+    st.feat = alloc(a, (size_t)2 * st.nmax);
+    st.col = alloc(a, (size_t)C * (VTTS_BLOCK > VTTS_HEAD_BLOCK ? VTTS_BLOCK : VTTS_HEAD_BLOCK));
+    st.h = alloc(a, (size_t)M * VTTS_BLOCK);
+    st.o = alloc(a, (size_t)C * VTTS_BLOCK);
+    st.q = qalloc(a, (size_t)(cmax > M ? cmax : M) * wcap, (size_t)wcap);
+    long nf_max = chunk + 4;
+    float *head = st.win, *fbuf = st.tmp, *win = alloc(a, (size_t)n_fft);
+    long ola_cap = (long)n_fft + (long)hop * (nf_max - 1);
+    float *ola = alloc(a, (size_t)ola_cap);
+    if (a->dry) return 1;
+    if (a->oom) return VTTS_ERR_ARENA;
+    gelu_init();
+
     long total = 0;
     for (long s = 0, step = first; s < T; s += step, step = step * 2 < chunk ? step * 2 : chunk) {
         long e = s + step < T ? s + step : T;
-        long z0 = s - Rd > 0 ? s - Rd : 0, z1 = e + Rd < T ? e + Rd : T;
-        long a0 = z0 - Ra > 0 ? z0 - Ra : 0, a1 = z1 + Ra < T ? z1 + Ra : T;
-        if (a->dry) { z0 = 0; z1 = chunk + 2L * Rd; a0 = 0; a1 = z1 + 2L * Ra; e = s + chunk; }
-        long Wz = z1 - z0;
-        float *zw = alloc(a, (size_t)m->latent * Wz);
-        size_t mark2 = a->used;
-        float *za = alloc(a, (size_t)m->latent * (a1 - a0));
-#ifdef VTTS_PROFILE
-        _pt = vtts_now_us();
-#endif
-        long w = latent_window(m, a, tok, dur, n, a0, a1, za);
-        if (w < 0) return w;
-        PROF_ADD(2);
-        if (!a->dry) {
-            if (a->oom) return VTTS_ERR_ARENA;
-            for (int c = 0; c < m->latent; c++)
-                memcpy(zw + (size_t)c * Wz, za + (size_t)c * (a1 - a0) + (z0 - a0), sizeof(float) * (size_t)Wz);
-        }
-        a->used = mark2; /* the acoustic window is no longer needed */
-        long n_out = vocos_region(m, a, zw, Wz, z0, T, s, e, pcm);
+        long f_lo = s - 2 > 0 ? s - 2 : 0, f_hi = e + 2 < T ? e + 2 : T;
+        st.head_need = f_lo;
+        if ((rc = sl_advance(&st, st.fin, f_hi))) return rc;
+        const float *xh = st.fin->d + (f_lo - st.fin->base);
+        long n_out = head_region(m, xh, st.fin->cap, f_hi - f_lo, f_lo, s, e, st.col, head, fbuf, win, ola, &st.q, pcm);
         if (n_out < 0) return n_out;
-        if (a->oom) return VTTS_ERR_ARENA;
-        if (a->dry) return 1;
+        st.head_need = e - 2 > 0 ? e - 2 : 0;
         if (cb && cb(pcm, n_out, user)) return VTTS_ERR_ARGS;
         total += n_out;
-        a->used = mark;
     }
     return total;
 }
