@@ -13,4 +13,4 @@ idf_component_register(
                   esp_driver_usb_serial_jtag
     EMBED_FILES "model_s.vtts" "model_m.vtts")
 target_compile_options(${COMPONENT_LIB} PRIVATE -O2 -fno-math-errno -Wno-unused-function -DVTTS_PROFILE
-                       -DVTTS_BLOCK=32 -DVTTS_HEAD_BLOCK=16 -DVTTS_STREAM_STEP=32)
+                       -DVTTS_BLOCK=64 -DVTTS_HEAD_BLOCK=16 -DVTTS_STREAM_STEP=64)
