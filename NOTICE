@@ -31,3 +31,7 @@ CMU Pronouncing Dictionary (cmudict), used by the English front-end
 Copyright (C) 1993-2015 Carnegie Mellon University. All rights reserved.
 Redistributed under the BSD 2-clause license reproduced in
 https://github.com/cmusphinx/cmudict/blob/74790861f652b15e4ac49015a90074ad62a27690/LICENSE
+
+Development tools: much of the code, the training and data pipelines, the firmware and the
+documentation were written with Claude Code (Anthropic, https://claude.com/claude-code), directed
+and reviewed by the maintainer. Commits made this way carry a "Co-Authored-By: Claude" trailer.
