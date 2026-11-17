@@ -11,3 +11,4 @@ __pycache__/
 !tests/fixtures/*.wav
 runtime/build/
 /.playwright-mcp/
+/reports/
