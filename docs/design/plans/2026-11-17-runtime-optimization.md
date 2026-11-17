@@ -1,6 +1,6 @@
 # Runtime optimization for ESP32-S3 and ESP32-P4 — implementation plan
 
-> Status: Tasks 1, 2 and 3 are done; Task 4 found no gain with plain loads; Task 5 partly tried (2026-11-17). Results: [performance.md](../../reports/performance.md#runtime-optimization-main-branch-after-v030).
+> Status: closed (2026-11-17). Tasks 1–3 done; Tasks 4–5 tried, kept only what measured better; follow-ups (adaptive prebuffer, tiled fp32 conv, lighter int8 epilogue) done. Remaining S3 time is spread over many stages; an int16 FFT would save about 3% (FFT is ~5% of the time), so further speedups move to a smaller vocoder variant (bilingual plan, Task 15 Step 8). Results: [performance.md](../../reports/performance.md).
 
 **Goal:** lower the RTF of both models on both chips without changing the model files:
 - ESP32-S3: M from about 0.92 to ≤ 0.5.

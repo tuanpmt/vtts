@@ -425,6 +425,7 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
 - [ ] **Step 7: Capacity gate** (spec 5.4).
   - If the Task 16 criteria are not met because of quality, try the preset `M-vocos-p-bi-L` (about 1.5 times the parameters).
   - Check RTF with `bench` on P4 and S3 before choosing.
+- [ ] **Step 8: Smaller vocoder variant for the ESP32-S3** (decision of 2026-11-17: the runtime is near its limit on the S3, see [performance.md](../../reports/performance.md)). Distill, alongside the quality student, one variant with a cheaper vocoder, e.g. MLP ratio 3 → 2 (`v_mult = 2`, estimated S3 RTF ~0.40) and/or 4 instead of 6 blocks or `v_dim` 160 → 128 (~0.33–0.35). Compare CER, UTMOS and `bench` RTF on the EchoEar against the quality student, and keep it only if quality holds.
 
 ### Task 16: Bilingual evaluation
 
