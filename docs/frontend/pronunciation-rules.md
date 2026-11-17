@@ -68,7 +68,9 @@ Every reading must be valid Vietnamese syllables; `tests/frontend/test_lexicons.
 
 ## English
 
-English uses CMUdict (pinned commit, BSD) and letter-to-sound rules learned from it, plus rules in `en/normalize_en.py` (numbers, money, dates, times, units, abbreviations, acronyms of up to 4 letters spelled). Its small tables will move to `lexicons/en/*.tsv` with the C port of the English front-end.
+English uses CMUdict (pinned commit, BSD) and letter-to-sound rules learned from it, plus rules in `en/normalize_en.py` (numbers, money, dates, times, units, abbreviations, acronyms of up to 4 letters spelled).
+
+On the device, the lexicon and the letter-to-sound table ship as one `VLEX` blob (about 1.9 MB, built by `scripts/frontend/build_lexicon.py`): CMUdict front-coded in blocks of 32 words with phoneme and stress packed in one byte, and the letter-to-sound window table pruned without changing any prediction (493k to 58k keys). The C normalizer and G2P (`runtime/src/vtts_text_en.c`) match Python exactly, including the regex backtracking of the normalizer; numbers of any length are read like Python.
 
 ## Changing a rule or an entry
 
@@ -84,11 +86,35 @@ Existing models keep working after a change: the token set does not change, only
 
 ## Adding a language
 
-1. Create `lexicons/<lang>/` with at least `letters.tsv`, and the other tables the language needs.
-2. Write the normalizer (numbers, dates, codes using the shared `PRODUCT_CODE` pattern, with the language's digit names) and the G2P, adding the language's tokens to `phoneme_set.py` (new ids only, never renumber).
-3. Teach `lang.py` how to recognize the language for bilingual mode.
-4. Add tests in the same style as `tests/frontend/test_normalize*.py` and a data test in `test_lexicons.py`.
-5. Port to C what devices need, with generated tables and a parity fixture.
+The bilingual front-end (phoneme set v2) is built from **language modules**, the same in Python and C, around a shared core: sentence splitting, language runs, punctuation handling, chunk packing (at most 40 words and 318 tokens per chunk) and the device protocol. Adding a language touches only its own module, one tagging rule and its tests.
+
+```mermaid
+flowchart LR
+    T["Sentence"] --> W["Tag each word<br/>(script rules, then Latin rules)"]
+    W --> R["Runs of one language"]
+    R --> M{"Language module"}
+    M -->|vi| VI["normalize + word_tokens"]
+    M -->|en| EN["normalize + word_tokens"]
+    M -->|new| NEW["normalize + word_tokens"]
+    VI & EN & NEW --> P["Shared: items, chunks, ids"]
+```
+
+A module provides two functions:
+
+| | Python (`src/vtts/frontend/languages.py`) | C (`runtime/src/vtts_text.c`, `LANGS`) |
+|---|---|---|
+| Normalize a run | `normalize(text) -> str`: lower-case words and the marks `, . ? ! ; :` separated by spaces | `normalize(ctx, run, n, lex)`: pushes the same words into the workspace |
+| Pronounce a word | `word_tokens(word) -> list[str]`: v2 tokens, `[]` to skip the word | `word_ids(word, lex, out, cap)`: the same ids, `0` to skip |
+
+Steps:
+
+1. **Tokens.** Add the language's phonemes as new ids at the end of the token set (a new token set version, e.g. v3 = v2 + new phonemes). Never renumber existing ids: models store them.
+2. **Data tables.** Put readings in `src/vtts/frontend/lexicons/<lang>/*.tsv` (one `key<TAB>reading` per line) and large dictionaries in a blob like `VLEX` (built by a script, read in place on the device).
+3. **Python module.** Write `normalize` and `word_tokens`, register them in `LANGUAGES`, and add the language's code to the modes `text_to_ids` accepts.
+4. **Tagging.** In `lang.py`, a language with its own script adds a rule to `SCRIPT_RULES` *before* `vi` (for example Han characters for `zh`), so its words are recognized in any mode. A Latin-script language needs a rule in `word_lang` for plain Latin words, and the `auto` mode decides between the sentence languages.
+5. **Tests.** Normalization cases, a data test for the tables, and the shared parity fixtures: `export_text_parity.py --v2` gets sentences of the new language and mixed sentences.
+6. **C module.** Port `normalize` and `word_ids` (tables generated from Python by `runtime/tools/gen_text_tables.py`), add an entry to `LANGS` and the tag rule to `word_tag`, then run `uv run pytest tests/export`: the C front-end must match Python exactly.
+7. **Voices.** Synthesize or record data with the new token set, train a teacher, distill the students, and add the language to `docs/site.json` (the website and README tables follow).
 
 ## User dictionary (planned)
 
@@ -98,4 +124,5 @@ Applications will be able to add their own entries without rebuilding the firmwa
 
 | Date | Change |
 |---|---|
+| 2026-11-17 | Bilingual device front-end in C (`vtts_text_to_ids_ex`, VLEX blob), language modules in Python and C. |
 | 2026-11-17 | Tables moved from code to `lexicons/vi/*.tsv`. Product codes read digits one by one (vi, en, C). Letter `s` reads "ét" (was "ét xì"). `smartphone` → "sờ mát phôn" (was the invalid "xmát phôn"); added `smarthome` → "sờ mát hôm". |

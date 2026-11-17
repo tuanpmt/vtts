@@ -4,9 +4,16 @@ All notable changes to this project are documented here. Model files for each re
 
 ## Unreleased
 
+### Added
+- **Bilingual device front-end (C):** `vtts_text_to_ids_ex` with modes vi, en and auto (phoneme set v2): English normalization and G2P, per-word language tagging and chunk packing, exactly matching Python (2,018 fixture cases, 13,023 in a larger run, fuzz clean). The English lexicon and letter-to-sound rules ship as a 1.9 MB `VLEX` blob read in place (`scripts/frontend/build_lexicon.py`, `vtts_lex_*`).
+- **Language modules** in Python (`src/vtts/frontend/languages.py`) and C (`LANGS`): a new language plugs in a normalizer, a word-to-token function and a tagging rule; see docs/frontend/pronunciation-rules.md.
+- **Evaluation of bilingual teachers:** English and mixed out-of-domain sets, language-aware CER/WER, Whisper with a forced language; `nam-1` at 100k: CER 0.005 (vi), 0.015 (en), 0.033 (mixed).
+- **Bilingual distillation:** v2 distill packs from a `{text, lang}` corpus, presets `M-vocos-p-bi`, `S-vocos-p-bi` and `M-vocos-p-bi-s3`, `run_bilingual_chain.sh`.
+- Firmware command `ids ...` and `say.py --lang` to play token ids from a host front-end.
+
 ### In progress
-- Teachers for the bilingual voices `nam-1` and `nu-10`.
-- C port of the English front-end for the device; user pronunciation dictionary.
+- Teachers for the bilingual voices `nam-1` and `nu-10`; first `nam-1` student.
+- Firmware support for bilingual models (VLEX blob on flash, `lang` command); user pronunciation dictionary.
 
 ## v0.3.2 (2026-11-17)
 

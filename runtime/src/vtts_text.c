@@ -894,7 +894,7 @@ static int ascii_syllable(const uint32_t *w, int n) { /* parse_syllable(p.lower(
     return parse_syl(&L, &s);
 }
 
-enum { TAG_NEUTRAL = 0, TAG_VI = 1, TAG_EN = 2 };
+enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1 }; /* indices into LANGS */
 
 static int key_eq(const uint32_t *w, int n, const char *k, int lower) {
     int i = 0;
@@ -957,13 +957,57 @@ static void add_item(vtts_text_ws *ws, const uint8_t *ids, int n, int punct) {
 
 static int last_is_word(const vtts_text_ws *ws) { return ws->n_items && !ws->item_punct[ws->n_items - 1]; }
 
-static void add_word_or_mark(vtts_text_ws *ws, const char *w, int en, const vtts_lex *lex) {
+/* ---- language modules (mirror src/vtts/frontend/languages.py) ----
+ * normalize: the words of one same-language run into ws->words (punctuation marks included);
+ * word_ids: token ids (set v2) of one normalized word, 0 if it cannot be pronounced.
+ * Adding a language: one entry here, its tag rule in word_tag(), its tables and tests. */
+typedef struct {
+    const char *code;
+    void (*normalize)(ctx_t *c, uint32_t *run, int n, const vtts_lex *lex);
+    int (*word_ids)(const char *w, const vtts_lex *lex, uint8_t *out, int cap);
+} lang_mod_t;
+
+static void vi_normalize(ctx_t *c, uint32_t *run, int n, const vtts_lex *lex) {
+    (void)lex;
+    c->collect = 1;
+    scan_vi(c, run, c->ws->date_start, n);
+    c->collect = 0;
+}
+
+static int vi_word_ids(const char *w, const vtts_lex *lex, uint8_t *out, int cap) {
+    (void)lex;
+    return cap >= 8 ? syl_ids(w, out) : 0;
+}
+
+static void en_normalize(ctx_t *c, uint32_t *run, int n, const vtts_lex *lex) {
+    vtts_text_ws *ws = c->ws;
+    (void)lex;
+    if (vtts_en_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, ws->en_out, (int)sizeof ws->en_out) < 0) return;
+    for (char *w = ws->en_out; *w;) { /* split on single spaces */
+        char *sp = strchr(w, ' ');
+        if (sp) *sp = 0;
+        if (*w) push_raw(c, w);
+        if (!sp) break;
+        w = sp + 1;
+    }
+}
+
+static int en_word_ids(const char *w, const vtts_lex *lex, uint8_t *out, int cap) {
+    return vtts_en_g2p(lex, w, out, cap);
+}
+
+static const lang_mod_t LANGS[] = {
+    {"vi", vi_normalize, vi_word_ids},
+    {"en", en_normalize, en_word_ids},
+};
+
+static void add_word_or_mark(vtts_text_ws *ws, const char *w, const lang_mod_t *m, const vtts_lex *lex) {
     uint8_t ids[256];
     if (is_punct_word(w)) {
         if (last_is_word(ws)) { ids[0] = (uint8_t)token_id("", w); add_item(ws, ids, 1, 1); }
         return;
     }
-    int n = en ? vtts_en_g2p(lex, w, ids, (int)sizeof ids) : syl_ids(w, ids);
+    int n = m->word_ids(w, lex, ids, (int)sizeof ids);
     if (n > 0) add_item(ws, ids, n, 0);
 }
 
@@ -1076,23 +1120,13 @@ static void v2_sentence(ctx_t *c, int s, int e, int mode, const vtts_lex *lex) {
             for (int q = cs[k1]; q < ce[k1] && len < VTTS_TEXT_MAX_CP; q++) ws->run[len++] = cp[q];
             k1++;
         }
-        if (tag[k] == TAG_VI) {
-            ws->n_words = ws->words_used = 0;
-            c->collect = 1;
-            scan_vi(c, ws->run, ws->date_start, len);
-            c->collect = 0;
-            for (int w = 0; w < ws->n_words; w++) add_word_or_mark(ws, ws->words + ws->word_off[w], 0, lex);
-            ws->n_words = ws->words_used = 0;
-        } else if (vtts_en_normalize(ws->run, len, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, ws->en_out,
-                                     (int)sizeof ws->en_out) >= 0) {
-            for (char *w = ws->en_out; *w;) { /* split on single spaces */
-                char *sp = strchr(w, ' ');
-                if (sp) *sp = 0;
-                if (*w) add_word_or_mark(ws, w, 1, lex);
-                if (!sp) break;
-                w = sp + 1;
-            }
-        }
+        const lang_mod_t *m = &LANGS[tag[k]];
+        ws->n_words = ws->words_used = 0;
+        c->collect = 1;
+        m->normalize(c, ws->run, len, lex);
+        for (int w = 0; w < ws->n_words; w++) add_word_or_mark(ws, ws->words + ws->word_off[w], m, lex);
+        ws->n_words = ws->words_used = 0;
+        c->collect = 0;
         k = k1;
     }
     pack_items(c);

@@ -81,28 +81,20 @@ _V2_MAX_TOKENS = 318  # + BOS/EOS <= VTTS_TEXT_MAX_IDS (320)
 
 def _items(sentence: str, mode: str) -> list[tuple[str, list[str]]]:
     """("w", tokens) per word and ("p", [mark]) per punctuation mark, in order."""
-    from .en.g2p_en import g2p_word_en
-    from .en.normalize_en import normalize_en
-    from .g2p import syllable_tokens
+    from .languages import LANGUAGES
     from .lang import runs
-    from .syllable import parse_syllable
 
     items: list[tuple[str, list[str]]] = []
     for text, lang in runs(sentence, mode):
-        words = normalize(text).split() if lang == "vi" else normalize_en(text).split()
-        for w in words:
+        module = LANGUAGES[lang]
+        for w in module.normalize(text).split():
             if w in PUNCTUATION:
                 if items and items[-1][0] == "w":
                     items.append(("p", [w]))
                 continue
-            if lang == "vi":
-                syl = parse_syllable(w)
-                if syl is not None:
-                    items.append(("w", syllable_tokens(syl)))
-            else:
-                toks = g2p_word_en(w)
-                if toks:
-                    items.append(("w", toks))
+            toks = module.word_tokens(w)
+            if toks:
+                items.append(("w", toks))
     return items
 
 

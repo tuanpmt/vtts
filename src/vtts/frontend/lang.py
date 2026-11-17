@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import re
 import unicodedata
+from collections.abc import Callable
 
 from .lexicon import ABBREVIATIONS, LOANWORDS
 from .syllable import parse_syllable
@@ -46,9 +47,18 @@ def sentence_lang(sentence: str, mode: str) -> str:
     return "vi" if ratio >= VI_RATIO else "en"
 
 
+# Words written in a language's own script or letters belong to it whatever the mode. A new
+# language with its own script (e.g. "zh" for Han characters) adds its rule before "vi", whose
+# rule is "any non-ASCII letter". Plain Latin words are decided by the rules below.
+SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [("vi", _has_vietnamese_letters)]
+
+
 def word_lang(core: str, mode: str) -> str:
-    if not core or _has_vietnamese_letters(core):
-        return "vi" if core else "neutral"
+    if not core:
+        return "neutral"
+    for code, rule in SCRIPT_RULES:
+        if rule(core):
+            return code
     if not _is_plain_latin(core):
         return "neutral"
     if mode == "en":
