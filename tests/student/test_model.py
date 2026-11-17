@@ -66,3 +66,11 @@ def test_prosody_preset_predicts_and_conditions():
     assert not torch.allclose(z_forced, z)  # conditioning changes the latent
     m.expressiveness = 1.5
     assert not torch.allclose(m.forward_latent(ids, dur), z)
+
+
+def test_bilingual_presets():
+    from vtts.frontend.phoneme_set import VOCAB_SIZE_V2
+    from vtts.student.config import PRESETS
+    for name in ("M-vocos-p-bi", "S-vocos-p-bi", "M-vocos-p-bi-s3"):
+        assert PRESETS[name].vocab == VOCAB_SIZE_V2 and PRESETS[name].prosody
+    assert PRESETS["M-vocos-p-bi-s3"].v_mult == 2 and PRESETS["M-vocos-p-bi"].v_mult == 3

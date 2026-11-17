@@ -62,3 +62,7 @@ PRESETS: dict[str, StudentConfig] = {
 }
 PRESETS["S-vocos-p"] = replace(PRESETS["S-vocos"], prosody=True)
 PRESETS["M-vocos-p"] = replace(PRESETS["M-vocos"], prosody=True)
+# bilingual Vietnamese + English (token set v2); -s3 halves the vocoder MLP for the ESP32-S3
+PRESETS["M-vocos-p-bi"] = replace(PRESETS["M-vocos-p"], vocab=107)
+PRESETS["S-vocos-p-bi"] = replace(PRESETS["S-vocos-p"], vocab=107)
+PRESETS["M-vocos-p-bi-s3"] = replace(PRESETS["M-vocos-p-bi"], v_mult=2)

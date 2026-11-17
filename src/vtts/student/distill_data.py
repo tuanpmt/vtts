@@ -10,6 +10,32 @@ import torch
 from vtts.teacher.infer import Teacher
 
 
+def pack_inputs(path: Path, limit: int | None, seed: int = 0) -> list[list[int]]:
+    """Id sequences to distill, one per chunk.
+
+    A .jsonl file has one {"text", "lang"} object per line (bilingual corpus): token set v2,
+    with "mixed" read in "vi" mode as in teacher training; with a limit, a seeded random sample
+    of whole sentences keeps the language mix. Any other file is plain text, one sentence per
+    line, encoded with token set v1 (the first `limit` lines).
+    """
+    path = Path(path)
+    lines = [ln for ln in path.read_text(encoding="utf-8").splitlines() if ln.strip()]
+    if path.suffix != ".jsonl":
+        from vtts.frontend.g2p import encode, g2p
+        from vtts.frontend.text import split_sentences
+
+        return [encode(g2p(c)) for text in lines[:limit] for c in split_sentences(text)]
+    import json
+    import random
+
+    from vtts.frontend.text import text_to_ids
+
+    rows = [json.loads(ln) for ln in lines]
+    if limit is not None and limit < len(rows):
+        rows = random.Random(seed).sample(rows, limit)
+    return [ids for r in rows for ids in text_to_ids(r["text"], "en" if r.get("lang") == "en" else "vi")]
+
+
 @torch.inference_mode()
 def teacher_targets(teacher: Teacher, ids: list[int], seed: int, noise_scale: float,
                     noise_w: float) -> dict:

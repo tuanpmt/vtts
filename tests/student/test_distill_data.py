@@ -79,3 +79,41 @@ def test_prosody_added_to_mmap_pack(tmp_path):
         x = ds[k]
         t = int(x["dur"].sum())
         assert x["lf0"].shape == x["vuv"].shape == x["energy"].shape == (t,)
+
+
+def test_pack_inputs_bilingual_jsonl(tmp_path):
+    import json
+
+    from vtts.frontend.phoneme_set import VOCAB_SIZE_V2
+    from vtts.frontend.text import text_to_ids
+    from vtts.student.distill_data import pack_inputs
+    rows = [{"text": "Xin chào bạn.", "lang": "vi"}, {"text": "Play some music.", "lang": "en"},
+            {"text": "Mở Spotify nhé.", "lang": "mixed"}]
+    p = tmp_path / "s.jsonl"
+    p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    seqs = pack_inputs(p, limit=None, seed=0)
+    assert sorted(map(tuple, seqs)) == sorted(map(tuple, [
+        *text_to_ids("Xin chào bạn.", "vi"), *text_to_ids("Play some music.", "en"),
+        *text_to_ids("Mở Spotify nhé.", "vi")]))  # mixed text in vi mode, as in teacher training
+    assert max(max(s) for s in seqs) < VOCAB_SIZE_V2
+
+
+def test_pack_inputs_limit_keeps_language_mix(tmp_path):
+    import json
+
+    from vtts.student.distill_data import pack_inputs
+    rows = [{"text": f"câu số {i}.", "lang": "vi"} for i in range(60)] + \
+           [{"text": f"sentence {i}.", "lang": "en"} for i in range(40)]
+    p = tmp_path / "s.jsonl"
+    p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
+    a, b = pack_inputs(p, limit=50, seed=1), pack_inputs(p, limit=50, seed=1)
+    assert a == b and len(a) == 50  # deterministic sample of whole sentences
+
+
+def test_plain_text_input_still_v1(tmp_path):
+    from vtts.frontend.g2p import encode, g2p
+    from vtts.frontend.text import split_sentences
+    from vtts.student.distill_data import pack_inputs
+    p = tmp_path / "s.txt"
+    p.write_text("xin chào bạn\n", encoding="utf-8")
+    assert pack_inputs(p, limit=None, seed=0) == [encode(g2p(c)) for c in split_sentences("xin chào bạn")]
