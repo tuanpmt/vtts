@@ -216,6 +216,18 @@ static int layer_ok(const layer_t *l) { return (l->w || l->q) && l->b; }
 
 typedef struct { int8_t *x; float *s; } qbuf_t;
 
+/* Inline replacements for nearbyintf/floorf/lrintf in hot loops (library calls on Xtensa and
+ * RISC-V). Adding and subtracting 1.5 * 2^23 rounds to nearest-even in the default rounding
+ * mode, exactly like nearbyintf, for |x| < 2^22; floor truncates and corrects. */
+static inline float round_ne(float x) {
+    const float big = 12582912.0f; /* not folded: IEEE arithmetic without -ffast-math */
+    return (x + big) - big;
+}
+static inline float floor_f(float x) {
+    float t = (float)(int32_t)x;
+    return t > x ? t - 1.0f : t;
+}
+
 /* quantize x [ci, T] (channel-major) to time-major int8 [T][ci] with one scale per frame,
  * so results do not depend on how an utterance is split into chunks */
 typedef struct { const float *x; qbuf_t *q; int ci, T; } qt_t;
@@ -230,7 +242,7 @@ static void quant_cols(int lo, int hi, void *arg) {
         j->q->s[t] = amax / (float)VTTS_ACT_MAX;
         float inv = amax > 0.0f ? (float)VTTS_ACT_MAX / amax : 0.0f;
         int8_t *row = j->q->x + (size_t)t * ci;
-        for (int c = 0; c < ci; c++) row[c] = (int8_t)lrintf(x[(size_t)c * T + t] * inv);
+        for (int c = 0; c < ci; c++) row[c] = (int8_t)(int32_t)round_ne(x[(size_t)c * T + t] * inv);
     }
 }
 
@@ -244,6 +256,8 @@ typedef struct {
     const qbuf_t *q;
     float *y;
     int ci, T, K, dil, s, p, Tout;
+    int out_tm; /* 1: y is time-major [T][co] (co = ldy) instead of channel-major [co][T] */
+    int ldy;
 } qjob_t;
 
 #define DOT_TILE 64 /* frames per call of the multi-row dot kernel */
@@ -268,7 +282,10 @@ static void lconv_rows(int lo, int hi, void *arg) {
                 vtts_dots_s8s8(l->q + ((size_t)o * K + k) * ci, q->x + (size_t)(a + sh) * ci, ci, b - a, ci, dots);
                 for (int t = a; t < b; t++) acc[t - t0] += (float)dots[t - a] * q->s[t + sh];
             }
-            for (int i = 0; i < nt; i++) j->y[(size_t)o * T + t0 + i] = l->b[o] + acc[i] * l->qs[o];
+            if (j->out_tm)
+                for (int i = 0; i < nt; i++) j->y[(size_t)(t0 + i) * j->ldy + o] = l->b[o] + acc[i] * l->qs[o];
+            else
+                for (int i = 0; i < nt; i++) j->y[(size_t)o * T + t0 + i] = l->b[o] + acc[i] * l->qs[o];
         }
     }
 }
@@ -278,7 +295,14 @@ static void lconv(const layer_t *l, const float *x, int ci, int T, int co, int K
                   qbuf_t *q) {
     if (l->w) { conv1d(x, ci, T, l->w, l->b, co, K, dil, y); return; }
     quant_tm(x, ci, T, q);
-    qjob_t j = {l, q, y, ci, T, K, dil, 0, 0, 0};
+    qjob_t j = {l, q, y, ci, T, K, dil, 0, 0, 0, 0, 0};
+    vtts_par_run(lconv_rows, co, &j);
+}
+
+/* int8 linear (K = 1) writing time-major output [T][co]; float layers are not supported */
+static void lconv_tm(const layer_t *l, const float *x, int ci, int T, int co, float *y, qbuf_t *q) {
+    quant_tm(x, ci, T, q);
+    qjob_t j = {l, q, y, ci, T, 1, 1, 0, 0, 0, 1, co};
     vtts_par_run(lconv_rows, co, &j);
 }
 
@@ -306,7 +330,7 @@ static void lconvT(const layer_t *l, const float *x, int ci, int T, int co, int 
                    float *y, int Tout, qbuf_t *q) {
     if (l->w) { convT1d(x, ci, T, l->w, l->b, co, K, s, p, y, Tout); return; }
     quant_tm(x, ci, T, q);
-    qjob_t j = {l, q, y, ci, T, K, 0, s, p, Tout};
+    qjob_t j = {l, q, y, ci, T, K, 0, s, p, Tout, 0, 0};
     vtts_par_run(lconvT_rows, co, &j);
 }
 
@@ -324,7 +348,7 @@ static qbuf_t qalloc(arena_t *a, size_t n, size_t frames) {
 
 static inline void fast_sincos(float x, float *s_out, float *c_out) {
     const float inv_half_pi = 0.63661977236758134f;
-    float q = nearbyintf(x * inv_half_pi);
+    float q = round_ne(x * inv_half_pi);
     /* Cody-Waite reduction with pi/2 split in three parts */
     float r = x - q * 1.5707963705062866f;
     r = r - q * -4.3711388286737929e-08f;
@@ -343,7 +367,7 @@ static inline void fast_sincos(float x, float *s_out, float *c_out) {
 static inline float fast_exp(float x) {
     if (x < -87.0f) return 0.0f;
     const float log2e = 1.4426950408889634f;
-    float t = x * log2e, n = floorf(t), f = t - n; /* 2^t = 2^n * 2^f, f in [0,1) */
+    float t = x * log2e, n = floor_f(t), f = t - n; /* 2^t = 2^n * 2^f, f in [0,1) */
     float p = 1.0f + f * (6.9314718056e-1f + f * (2.4022650695e-1f + f * (5.5504108665e-2f +
               f * (9.6181291076e-3f + f * (1.3333558146e-3f + f * 1.5403530393e-4f)))));
     union { float f; int32_t i; } u = {p};
@@ -586,29 +610,47 @@ static void gelu_par(float *h, long n) {
  *   E[k] = X[k] + conj(X[N/2 - k]),  O[k] = (X[k] - conj(X[N/2 - k])) e^{2 pi i k / N},
  *   z = IFFT_{N/2}(E + iO)  gives  x[2m] = Re z[m], x[2m + 1] = Im z[m].
  * Frame j uses z = buf + j * N as [Re z | Im z]; the caller windows and overlap-adds. */
-typedef struct { const float *head; float *buf; int hb, n_fft; } ifr_t;
+typedef struct { const float *head; float *buf; int hb, n_fft; const float *tw; } ifr_t;
 
-static inline void head_bin(const ifr_t *jb, int j, int k, float *xr, float *xi) {
-    int nb = jb->n_fft / 2 + 1, hb = jb->hb;
-    float hv = jb->head[(size_t)k * hb + j];
+/* head is time-major: frame j is the row head + j * (n_fft + 2) = [log-magnitude | phase] */
+static inline void head_bin(const float *row, int nb, int k, float *xr, float *xi) {
+    float hv = row[k];
     float mg = fast_exp(hv > 6.0f ? 6.0f : hv), sn, cs;
-    fast_sincos(jb->head[(size_t)(nb + k) * hb + j], &sn, &cs);
+    fast_sincos(row[nb + k], &sn, &cs);
     *xr = mg * cs;
     *xi = mg * sn;
+}
+
+/* twiddles sin/cos(2 pi k / N) for k <= N/4, computed once with fast_sincos (same values as
+ * computing them per frame) */
+#define TW_MAX 1024
+static float s_tw[2 * (TW_MAX / 4 + 1)];
+static int s_tw_n;
+
+static const float *twiddles(int N) {
+    if (s_tw_n != N && N <= TW_MAX) {
+        for (int k = 0; k <= N / 4; k++)
+            fast_sincos(6.283185307179586f * (float)k / (float)N, &s_tw[2 * k], &s_tw[2 * k + 1]);
+        s_tw_n = N;
+    }
+    return N <= TW_MAX ? s_tw : NULL;
 }
 
 static void istft_frames(int lo, int hi, void *arg) {
     const ifr_t *jb = arg;
     int N = jb->n_fft, H = N / 2;
+    int nb = N / 2 + 1;
     for (int j = lo; j < hi; j++) {
         float *zr = jb->buf + (size_t)j * N, *zi = zr + H;
+        const float *row = jb->head + (size_t)j * (N + 2);
         for (int k = 0; k <= H / 2; k++) {
             float ar, ai, br, bi; /* a = X[k], b = X[H - k] */
-            head_bin(jb, j, k, &ar, &ai);
-            head_bin(jb, j, H - k, &br, &bi);
+            head_bin(row, nb, k, &ar, &ai);
+            head_bin(row, nb, H - k, &br, &bi);
             if (k == 0) ai = bi = 0.0f; /* like irfft: DC and Nyquist bins are taken as real */
             float er = ar + br, ei = ai - bi, dr = ar - br, di = ai + bi, sn, cs;
-            fast_sincos(6.283185307179586f * (float)k / (float)N, &sn, &cs);
+            if (jb->tw) { sn = jb->tw[2 * k]; cs = jb->tw[2 * k + 1]; }
+            else fast_sincos(6.283185307179586f * (float)k / (float)N, &sn, &cs);
             float orr = dr * cs - di * sn, oi = dr * sn + di * cs;
             zr[k] = er - oi;
             zi[k] = ei + orr;
@@ -636,7 +678,7 @@ static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long W
     qbuf_t qb = qalloc(a, (size_t)(m->latent > M ? m->latent : M) * Wz, (size_t)Wz), *xq = &qb;
     float *ola = alloc(a, (size_t)ola_len), *env = alloc(a, (size_t)ola_len);
     /* re/im per frame of a head block, so the frames' inverse FFTs can run on several cores */
-    float *fbuf = alloc(a, (size_t)n_fft * VTTS_HEAD_BLOCK), *win = alloc(a, (size_t)n_fft);
+    float *fbuf = alloc(a, (size_t)(n_fft + 2) * VTTS_HEAD_BLOCK), *win = alloc(a, (size_t)n_fft);
     if (a->dry) return e - s;
     if (a->oom) return VTTS_ERR_ARENA;
 
@@ -680,9 +722,15 @@ static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long W
         for (int c = 0; c < C; c++)
             for (int j = 0; j < hb; j++) col[(size_t)c * hb + j] = x[(size_t)c * Wz + (hb0 - z0) + j];
         PROF_ADD(6);
-        lconv(&hd, col, C, hb, n_fft + 2, 1, 1, head, xq);
+        if (hd.w) { /* float head: channel-major result, transposed to time-major */
+            lconv(&hd, col, C, hb, n_fft + 2, 1, 1, fbuf, xq);
+            for (int k = 0; k < n_fft + 2; k++)
+                for (int j = 0; j < hb; j++) head[(size_t)j * (n_fft + 2) + k] = fbuf[(size_t)k * hb + j];
+        } else {
+            lconv_tm(&hd, col, C, hb, n_fft + 2, head, xq);
+        }
         PROF_ADD(5);
-        ifr_t job = {head, fbuf, hb, n_fft};
+        ifr_t job = {head, fbuf, hb, n_fft, twiddles(n_fft)};
         vtts_par_run(istft_frames, hb, &job);
         const float inv_n = 1.0f / (float)n_fft;
         for (int j = 0; j < hb; j++) { /* window and overlap-add in frame order */
