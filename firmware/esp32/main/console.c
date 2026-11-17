@@ -86,6 +86,13 @@ static int cmd_cores(int argc, char **argv) {
     return 0;
 }
 
+static int cmd_lang(int argc, char **argv) {
+    if (argc > 1) g.lang = strcmp(argv[1], "en") == 0 ? VTTS_LANG_EN : strcmp(argv[1], "auto") == 0 ? VTTS_LANG_AUTO : VTTS_LANG_VI;
+    printf("lang %s (model %c: token set v%d)\n", g.lang == VTTS_LANG_EN ? "en" : g.lang == VTTS_LANG_AUTO ? "auto" : "vi",
+           g.cur ? 'M' : 'S', g.models[g.cur].vocab > 65 ? 2 : 1);
+    return 0;
+}
+
 static int cmd_prof(int argc, char **argv) {
     (void)argc; (void)argv;
     int64_t tot = 0;
@@ -100,6 +107,7 @@ static const esp_console_cmd_t CMDS[] = {
     {.command = "bench", .help = "RTF on four fixed sentences, no audio (REPORT lines)", .func = cmd_bench},
     {.command = "prof", .help = "time per synthesis stage since the last prof", .func = cmd_prof},
     {.command = "model", .help = "lite (s) or quality (m) model", .hint = "s|m", .func = cmd_model},
+    {.command = "lang", .help = "text mode of bilingual models (vi also reads English words)", .hint = "vi|en|auto", .func = cmd_lang},
     {.command = "vol", .help = "speaker volume", .hint = "0-100", .func = cmd_vol},
     {.command = "gain", .help = "digital gain in dB before a soft limiter", .hint = "0-24", .func = cmd_gain},
     {.command = "speed", .help = "speaking rate (length scale, higher is slower)", .hint = "0.7-1.6", .func = cmd_speed},

@@ -69,7 +69,12 @@ int synth_text(const char *text, int64_t *total_us) {
     g.n = 0;
     g.synth_us = 0;
     int64_t t0 = esp_timer_get_time();
-    int chunks = strncmp(text, "ids ", 4) == 0 ? synth_ids(text + 4) : vtts_text_to_ids(text, g.ws, on_ids, NULL);
+    int chunks;
+    if (strncmp(text, "ids ", 4) == 0) chunks = synth_ids(text + 4);
+    else if (g.models[g.cur].vocab > 65) { /* bilingual model: token set v2 */
+        vtts_text_opts o = {g.lang, g.has_lex ? &g.lex : NULL};
+        chunks = vtts_text_to_ids_ex(text, g.ws, &o, on_ids, NULL);
+    } else chunks = vtts_text_to_ids(text, g.ws, on_ids, NULL); /* Vietnamese model: token set v1 */
     *total_us = esp_timer_get_time() - t0;
     return chunks;
 }

@@ -16,6 +16,6 @@ idf_component_register(
          "${RT}/src/vtts_text.c" "${RT}/src/vtts_text_en.c" "${RT}/src/vtts_lex.c"
     INCLUDE_DIRS "." "${RT}/include" "${RT}/src"
     PRIV_REQUIRES ${REQS}
-    EMBED_FILES "model_s.vtts" "model_m.vtts")
+    EMBED_FILES "model_s.vtts" "model_m.vtts" "lex_en.bin")
 target_compile_options(${COMPONENT_LIB} PRIVATE -O2 -fno-math-errno -Wno-unused-function -DVTTS_PROFILE
                        -DVTTS_BLOCK=64 -DVTTS_HEAD_BLOCK=16 -DVTTS_STREAM_STEP=64)

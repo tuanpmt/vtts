@@ -14,6 +14,7 @@
 #include "freertos/semphr.h"
 #include "freertos/stream_buffer.h"
 #include "vtts.h"
+#include "vtts_lex.h"
 #include "vtts_text.h"
 
 #define MAX_CHUNK 256    /* frames per streaming chunk, upper bound */
@@ -41,6 +42,9 @@ typedef struct {
     int64_t blocked_us; /* time the synthesizer waited on a full playback buffer */
     float rtf[2];       /* measured RTF per model (synthesis only), sets the prebuffer */
     vtts_text_ws *ws;   /* text front-end workspace, PSRAM */
+    vtts_lex lex;       /* English lexicon (VLEX blob in flash) */
+    int has_lex;
+    vtts_lang lang;     /* mode for bilingual models (token set v2): VI, EN or AUTO */
 } app_t;
 
 extern app_t g;
@@ -49,6 +53,8 @@ extern const uint8_t model_s_start[] asm("_binary_model_s_vtts_start");
 extern const uint8_t model_s_end[] asm("_binary_model_s_vtts_end");
 extern const uint8_t model_m_start[] asm("_binary_model_m_vtts_start");
 extern const uint8_t model_m_end[] asm("_binary_model_m_vtts_end");
+extern const uint8_t lex_en_start[] asm("_binary_lex_en_bin_start");
+extern const uint8_t lex_en_end[] asm("_binary_lex_en_bin_end");
 
 /* synth.c */
 int synth_text(const char *text, int64_t *total_us); /* text or "ids ..." -> g.pcm; chunks */

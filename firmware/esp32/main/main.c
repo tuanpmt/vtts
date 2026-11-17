@@ -18,6 +18,7 @@
  *   selftest, fusetest    SIMD kernels against plain C, including both cores at once
  *   dump <sentence>       synthesize and send the PCM as base64 (scripts/device/say.py --dump-dir)
  *   ids <ids;ids...>      speak token ids from a host front-end (scripts/device/say.py --lang)
+ *   lang vi|en|auto       text mode of bilingual models (token set v2); vi reads English words too
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments
  */
 #include <math.h>
@@ -43,7 +44,8 @@
 #define RTF_INIT_M 0.29f
 #endif
 
-app_t g = {.vol = BSP_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f, .rtf = {RTF_INIT_S, RTF_INIT_M}};
+app_t g = {.vol = BSP_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f, .rtf = {RTF_INIT_S, RTF_INIT_M},
+           .lang = VTTS_LANG_VI};
 
 int64_t vtts_now_us(void) { return esp_timer_get_time(); } /* runtime profiling clock */
 
@@ -63,6 +65,9 @@ void app_main(void) {
         printf("model %c: %u bytes, init %d, arena %u\n", k ? 'M' : 'S', (unsigned)bytes, rc, (unsigned)ab);
         if (ab > need) need = ab;
     }
+    /* English lexicon for bilingual models, read in place from flash */
+    g.has_lex = vtts_lex_init(&g.lex, lex_en_start, (size_t)(lex_en_end - lex_en_start)) == 0;
+    printf("lexicon %u bytes, %s\n", (unsigned)(lex_en_end - lex_en_start), g.has_lex ? "ok" : "missing");
     g.arena_bytes = need;
     g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     g.arena_where = "sram";

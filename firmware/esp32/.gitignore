@@ -6,5 +6,6 @@ sdkconfig.*
 !sdkconfig.defaults
 !sdkconfig.defaults.*
 main/model_*.vtts
+main/lex_en.bin
 managed_components/
 dependencies.lock

@@ -15,6 +15,8 @@ TARGET=$(sed -n 's/^set(BSP_TARGET \([a-z0-9]*\))$/\1/p' "$BDIR/board.cmake")
 cp "$1" main/model_s.vtts
 cp "$2" main/model_m.vtts
 shift 2
+# English lexicon for bilingual models (VLEX, ~1.9 MB): built once from the pinned CMUdict
+[ -f main/lex_en.bin ] || (cd ../.. && uv run python scripts/frontend/build_lexicon.py --out firmware/esp32/main/lex_en.bin)
 ACTIVATE="$HOME/.espressif/tools/activate_idf_v6.1.sh"
 while IFS='=' read -r key value; do
     case "$key" in
