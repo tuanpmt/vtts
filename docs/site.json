@@ -92,8 +92,8 @@
     {
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
-      "rtf_lite": "0.28",
-      "rtf_quality": "0.51"
+      "rtf_lite": "0.26",
+      "rtf_quality": "0.49"
     }
   ],
   "boards": [
@@ -188,7 +188,7 @@
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.27",
-            "s3": "0.51"
+            "s3": "0.49"
           }
         },
         {
@@ -199,7 +199,7 @@
           "size": "1.1 MB",
           "rtf": {
             "p4": "0.17",
-            "s3": "0.28"
+            "s3": "0.26"
           }
         }
       ],

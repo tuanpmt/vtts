@@ -4,6 +4,11 @@ All notable changes to this project are documented here. Model files for each re
 
 ## Unreleased
 
+### Changed
+- Firmware: playback starts as soon as the next chunks are sure to be ready, based on each model's measured RTF, and a slower model streams in smaller chunks. ESP32-S3: M starts speaking after 0.40–0.43 s (was 1.2–1.3 s), S after 0.21–0.27 s.
+- Runtime: register-tiled fp32 conv for the token and duration blocks (about 40% faster), lighter int8 epilogue; bit-exact. ESP32-S3 RTF: S 0.28 → 0.26, M 0.51 → 0.49.
+- `prof` splits the vocoder into input conv, depthwise + LayerNorm, MLP (pw1, GELU + quantization, pw2), head and iSTFT.
+
 ### In progress
 - Teachers for the bilingual voices `nam-1` and `nu-10`.
 - C port of the English front-end for the device; user pronunciation dictionary.
