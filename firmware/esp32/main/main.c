@@ -94,8 +94,9 @@ static inline float shape(float v) {
 }
 
 int64_t vtts_now_us(void) { return esp_timer_get_time(); }
-extern int64_t vtts_prof_us[8];
-extern const char *const vtts_prof_names[8];
+extern int64_t vtts_prof_us[];
+extern const int vtts_prof_n;
+extern const char *const vtts_prof_names[];
 
 void vtts_par_enable(int on);
 static vtts_text_ws s_ws; /* ~40 KB, kept off the task stack */
@@ -455,11 +456,11 @@ static void handle(char *line) {
     }
     if (strcmp(line, "prof") == 0) {
         int64_t tot = 0;
-        for (int i = 0; i < 8; i++) tot += vtts_prof_us[i];
-        for (int i = 0; i < 8; i++)
+        for (int i = 0; i < vtts_prof_n; i++) tot += vtts_prof_us[i];
+        for (int i = 0; i < vtts_prof_n; i++)
             printf("PROF %-14s %8.3fs %5.1f%%\n", vtts_prof_names[i], vtts_prof_us[i] / 1e6,
                    tot ? 100.0 * vtts_prof_us[i] / tot : 0.0);
-        memset(vtts_prof_us, 0, sizeof(int64_t) * 8);
+        memset(vtts_prof_us, 0, sizeof(int64_t) * (size_t)vtts_prof_n);
         printf("DONE\n");
         return;
     }

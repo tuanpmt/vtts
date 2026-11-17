@@ -29,9 +29,12 @@
 /* ---------------- optional profiling (compile with -DVTTS_PROFILE) ---------------- */
 #ifdef VTTS_PROFILE
 int64_t vtts_now_us(void);
-int64_t vtts_prof_us[8];
-const char *const vtts_prof_names[8] = {"durations", "tokens", "acoustic", "voc_pre_dw_ln",
-                                        "voc_mlp", "voc_head", "istft", "other"};
+#define VTTS_PROF_N 11
+int64_t vtts_prof_us[VTTS_PROF_N];
+const int vtts_prof_n = VTTS_PROF_N;
+const char *const vtts_prof_names[VTTS_PROF_N] = {"durations", "tokens", "acoustic", "voc_pre_dw_ln",
+                                                  "voc_mlp_rest", "voc_head", "istft", "other",
+                                                  "voc_mlp_pw1", "voc_mlp_gelu_q", "voc_mlp_pw2"};
 #define PROF_T0() int64_t _pt = vtts_now_us()
 #define PROF_ADD(i) do { int64_t _n = vtts_now_us(); vtts_prof_us[i] += _n - _pt; _pt = _n; } while (0)
 #else
@@ -291,14 +294,28 @@ typedef struct {
 static void lconv_rows(int lo, int hi, void *arg) {
     const qjob_t *j = arg;
     const layer_t *l = j->l;
-    const qbuf_t *q = j->q;
+    const int8_t *qx = j->q->x;
+    const float *qsc = j->q->s;
     int ci = j->ci, T = j->T, K = j->K, dil = j->dil, pad = dil * (K - 1) / 2;
+    int out_tm = j->out_tm, ldy = j->ldy, t_lo = j->t_lo, t_n = j->t_n, t_end = t_lo + t_n;
+    float *y = j->y;
     float acc[DOT_TILE];
     int32_t dots[DOT_TILE];
-    int t_end = j->t_lo + j->t_n;
     for (int o = lo; o < hi; o++) {
-        for (int t0 = j->t_lo; t0 < t_end; t0 += DOT_TILE) {
+        /* locals: the stores to y cannot alias them, so they are loaded once per row */
+        const float bo = l->b[o], so = l->qs[o];
+        const int8_t *wo = l->q + (size_t)o * K * ci;
+        float *yo = out_tm ? y + o : y + (size_t)o * t_n;
+        const size_t ys = out_tm ? (size_t)ldy : 1;
+        for (int t0 = t_lo; t0 < t_end; t0 += DOT_TILE) {
             int nt = t_end - t0 < DOT_TILE ? t_end - t0 : DOT_TILE;
+            float *yt = yo + (size_t)(t0 - t_lo) * ys;
+            if (K == 1) { /* linear: y = b + (dot * s) * qs, the same arithmetic as acc = 0 + dot * s */
+                vtts_dots_s8s8(wo, qx + (size_t)t0 * ci, ci, nt, ci, dots);
+                const float *st = qsc + t0;
+                for (int i = 0; i < nt; i++) yt[(size_t)i * ys] = bo + ((float)dots[i] * st[i]) * so;
+                continue;
+            }
             for (int i = 0; i < nt; i++) acc[i] = 0.0f;
             for (int k = 0; k < K; k++) {
                 int sh = k * dil - pad; /* input frame = output frame + sh */
@@ -306,14 +323,11 @@ static void lconv_rows(int lo, int hi, void *arg) {
                 if (a + sh < 0) a = -sh;
                 if (b + sh > T) b = T - sh;
                 if (a >= b) continue;
-                vtts_dots_s8s8(l->q + ((size_t)o * K + k) * ci, q->x + (size_t)(a + sh) * ci, ci, b - a, ci, dots);
-                for (int t = a; t < b; t++) acc[t - t0] += (float)dots[t - a] * q->s[t + sh];
+                vtts_dots_s8s8(wo + (size_t)k * ci, qx + (size_t)(a + sh) * ci, ci, b - a, ci, dots);
+                const float *st = qsc + sh;
+                for (int t = a; t < b; t++) acc[t - t0] += (float)dots[t - a] * st[t];
             }
-            int r0 = t0 - j->t_lo; /* row of t0 in y */
-            if (j->out_tm)
-                for (int i = 0; i < nt; i++) j->y[(size_t)(r0 + i) * j->ldy + o] = l->b[o] + acc[i] * l->qs[o];
-            else
-                for (int i = 0; i < nt; i++) j->y[(size_t)o * j->t_n + r0 + i] = l->b[o] + acc[i] * l->qs[o];
+            for (int i = 0; i < nt; i++) yt[(size_t)i * ys] = bo + acc[i] * so;
         }
     }
 }
@@ -1217,9 +1231,12 @@ static int sl_compute(st_t *st, sl_t *ly, long a, long b, float *out) {
             int nb_ = (int)(n - t0 < VTTS_BLOCK ? n - t0 : VTTS_BLOCK);
             qbuf_t q1 = {st->q.x + (size_t)t0 * C, st->q.s + t0};
             lin_q(&p1, &q1, C, nb_, M, st->h, 1);
+            PROF_ADD(8);
             gq_t gj = {st->h, M, &st->q2};
             vtts_par_run(gelu_q_frames, nb_, &gj);
+            PROF_ADD(9);
             lin_q(&p2, &st->q2, M, nb_, C, st->o, 0);
+            PROF_ADD(10);
             for (int ch = 0; ch < C; ch++)
                 for (int j = 0; j < nb_; j++)
                     out[(size_t)ch * n + t0 + j] = st->win[(size_t)ch * Win + off + t0 + j] + st->o[(size_t)ch * nb_ + j] * gm[ch];

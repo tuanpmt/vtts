@@ -75,13 +75,41 @@ int32_t vtts_dot_s8s8(const int8_t *a, const int8_t *b, int n) {
     return dot_simd(a, b, n >> 4);
 }
 
+/* n dots of one weight row against n frames (x, x + stride, ...), with the frame loop in assembly:
+ * per frame only the ACCX reset, the block loop, the read-back and the store remain. */
+static void dots_frames(const int8_t *w, const int8_t *x, int stride, int n, int32_t blocks, int32_t *out) {
+    asm volatile(
+        "movi a11, 0\n\t"
+        "1:\n\t"
+        "mov a9, %[w]\n\t"
+        "mov a10, %[x]\n\t"
+        "ee.zero.accx\n\t"
+        "loopnez %[k], 2f\n\t"
+        "ee.vld.128.ip q0, a9, 16\n\t"
+        "ee.vld.128.ip q1, a10, 16\n\t"
+        "ee.vmulas.s8.accx q0, q1\n\t"
+        "2:\n\t"
+        "ee.srs.accx a12, a11, 0\n\t"
+        "s32i a12, %[o], 0\n\t"
+        "addi %[o], %[o], 4\n\t"
+        "add %[x], %[x], %[s]\n\t"
+        "addi %[n], %[n], -1\n\t"
+        "bnez %[n], 1b\n\t"
+        : [x] "+r"(x), [o] "+r"(out), [n] "+r"(n)
+        : [w] "r"(w), [k] "r"(blocks), [s] "r"(stride)
+        : "a9", "a10", "a11", "a12", "memory");
+}
+
 void vtts_dots_s8s8(const int8_t *w, const int8_t *x, int stride, int n, int len, int32_t *out) {
+    if (n <= 0) return;
     if ((((uintptr_t)w | (uintptr_t)x) & 15) || (len & 15) || (stride & 15) || len == 0) {
         for (int t = 0; t < n; t++) out[t] = dot_scalar(w, x + (long)t * stride, len);
         return;
     }
     if (vtts_s3_kernel == 1)
         for (int t = 0; t < n; t++) out[t] = dot_fused(w, x + (long)t * stride, len >> 4);
-    else
+    else if (vtts_s3_kernel == 2)
         for (int t = 0; t < n; t++) out[t] = dot_simd(w, x + (long)t * stride, len >> 4);
+    else
+        dots_frames(w, x, stride, n, len >> 4, out);
 }
