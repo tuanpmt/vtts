@@ -32,7 +32,7 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 <!-- BEGIN:hardware -->
 | Board | Chip | Lite model RTF | Quality model RTF |
 |---|---|---|---|
-| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.15 | 0.24 |
+| Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.15 | 0.24 |
 | EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.26 | 0.49 |
 
 Both models run on both chips. RTF below 1 means faster than real time.
@@ -94,15 +94,15 @@ You need ESP-IDF v6.1 and the two model files from [Releases](https://github.com
 ```bash
 gh release download v0.3.2 -R tuanpmt/vtts -p '*.vtts' -D models
 cd firmware/esp32
-BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
 ```
 
 <!-- BEGIN:boards -->
 | `BOARD=` | Board | Speaker path | Default volume |
 |---|---|---|---|
-| `panel` (default) | ESP32-P4-86-Panel | ES8311 | `vol 70`, `gain 0` |
-| `nano` | ESP32-P4-NANO | ES8311 | `vol 90`, `gain 12` |
-| `s3` | ESP32-S3-Touch-LCD-2.8 | PCM5101 | `vol 80`, `gain 6` |
+| `esp32-p4-86-panel-eth-2ro` (default) | ESP32-P4-86-Panel-ETH-2RO | ES8311 | `vol 70`, `gain 0` |
+| `esp32-p4-nano` | ESP32-P4-NANO | ES8311 | `vol 90`, `gain 12` |
+| `esp32-s3-touch-lcd-2.8` | ESP32-S3-Touch-LCD-2.8 | PCM5101 | `vol 80`, `gain 6` |
 | `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
 <!-- END:boards -->
 

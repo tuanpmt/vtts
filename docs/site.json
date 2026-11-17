@@ -84,7 +84,7 @@
   ],
   "hardware": [
     {
-      "boards": "Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO",
+      "boards": "Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO",
       "chip": "ESP32-P4, 360 MHz, PIE SIMD",
       "rtf_lite": "0.15",
       "rtf_quality": "0.24"
@@ -98,20 +98,20 @@
   ],
   "boards": [
     {
-      "id": "panel",
-      "name": "ESP32-P4-86-Panel",
+      "id": "esp32-p4-86-panel-eth-2ro",
+      "name": "ESP32-P4-86-Panel-ETH-2RO",
       "speaker": "ES8311",
       "volume": "`vol 70`, `gain 0`",
       "default": true
     },
     {
-      "id": "nano",
+      "id": "esp32-p4-nano",
       "name": "ESP32-P4-NANO",
       "speaker": "ES8311",
       "volume": "`vol 90`, `gain 12`"
     },
     {
-      "id": "s3",
+      "id": "esp32-s3-touch-lcd-2.8",
       "name": "ESP32-S3-Touch-LCD-2.8",
       "speaker": "PCM5101",
       "volume": "`vol 80`, `gain 6`"

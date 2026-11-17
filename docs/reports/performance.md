@@ -6,7 +6,7 @@ Everything lives in PSRAM: the models, the working arena and the activations. In
 
 ## ESP32-P4
 
-Chip rev 1.3, 360 MHz, 32 MB PSRAM. Measured on a Waveshare ESP32-P4-NANO; the ESP32-P4-86-Panel uses the same chip and firmware.
+Chip rev 1.3, 360 MHz, 32 MB PSRAM. Measured on a Waveshare ESP32-P4-NANO; the ESP32-P4-86-Panel-ETH-2RO uses the same chip and firmware.
 
 | Model | RTF (`bench`) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
 |---|---:|---:|---:|---:|---:|

@@ -4,9 +4,9 @@ An ESP-IDF component with the speaker drivers shared by all boards (`drivers/`) 
 
 | `BOARD=` | Board | Chip | Speaker driver |
 |---|---|---|---|
-| `panel` | Waveshare ESP32-P4-86-Panel | ESP32-P4 | `es8311` |
-| `nano` | Waveshare ESP32-P4-NANO | ESP32-P4 | `es8311` |
-| `s3` | Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3 | `i2s_dac` (PCM5101) |
+| `esp32-p4-86-panel-eth-2ro` | Waveshare ESP32-P4-86-Panel-ETH-2RO | ESP32-P4 | `es8311` |
+| `esp32-p4-nano` | Waveshare ESP32-P4-NANO | ESP32-P4 | `es8311` |
+| `esp32-s3-touch-lcd-2.8` | Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3 | `i2s_dac` (PCM5101) |
 | `echoear` | EchoEar 2.0 | ESP32-S3 | `es8311` |
 
 ## Layout

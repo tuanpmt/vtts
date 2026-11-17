@@ -6,9 +6,9 @@ Supported boards:
 
 | Board | Chip | Flash / PSRAM | Speaker path | `BOARD=` |
 |---|---|---|---|---|
-| Waveshare ESP32-P4-86-Panel | ESP32-P4 | 32 MB / 32 MB | ES8311 | `panel` (default) |
-| Waveshare ESP32-P4-NANO | ESP32-P4 | 16 MB / 32 MB | ES8311 | `nano` |
-| Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3R8 | 16 MB / 8 MB (octal) | PCM5101 | `s3` |
+| Waveshare ESP32-P4-86-Panel-ETH-2RO | ESP32-P4 | 32 MB / 32 MB | ES8311 | `esp32-p4-86-panel-eth-2ro` (default) |
+| Waveshare ESP32-P4-NANO | ESP32-P4 | 16 MB / 32 MB | ES8311 | `esp32-p4-nano` |
+| Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3R8 | 16 MB / 8 MB (octal) | PCM5101 | `esp32-s3-touch-lcd-2.8` |
 
 ## Source layout
 
@@ -26,8 +26,8 @@ Supported boards:
 ```bash
 # needs ESP-IDF v6.1; build.sh sources the IDF environment and copies both models into main/
 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor             # 86-Panel
-BOARD=nano ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor  # NANO
-BOARD=s3 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor    # S3-Touch-LCD-2.8
+BOARD=esp32-p4-nano ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor  # NANO
+BOARD=esp32-s3-touch-lcd-2.8 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor    # S3-Touch-LCD-2.8
 ```
 
 The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts) (folder `vi/`). The serial console commands are listed in the [main README](../../README.md#serial-console).

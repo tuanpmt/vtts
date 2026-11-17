@@ -217,16 +217,16 @@ first chunk 199 ms, playback started 274 ms, underruns 0</div>
     <h2>Get started</h2>
     <pre class="code">gh release download v0.3.2 -R tuanpmt/vtts -p '*.vtts' -D models
 cd firmware/esp32
-BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts \
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts \
   ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor</pre>
 <!-- BEGIN:boards -->
 <div class="tablewrap">
   <table>
     <thead><tr><th>BOARD=</th><th>Board</th><th>Speaker path</th><th>Default volume</th></tr></thead>
     <tbody>
-      <tr><td><code>panel</code></td><td>ESP32-P4-86-Panel</td><td>ES8311</td><td><code>vol 70</code>, <code>gain 0</code></td></tr>
-      <tr><td><code>nano</code></td><td>ESP32-P4-NANO</td><td>ES8311</td><td><code>vol 90</code>, <code>gain 12</code></td></tr>
-      <tr><td><code>s3</code></td><td>ESP32-S3-Touch-LCD-2.8</td><td>PCM5101</td><td><code>vol 80</code>, <code>gain 6</code></td></tr>
+      <tr><td><code>esp32-p4-86-panel-eth-2ro</code></td><td>ESP32-P4-86-Panel-ETH-2RO</td><td>ES8311</td><td><code>vol 70</code>, <code>gain 0</code></td></tr>
+      <tr><td><code>esp32-p4-nano</code></td><td>ESP32-P4-NANO</td><td>ES8311</td><td><code>vol 90</code>, <code>gain 12</code></td></tr>
+      <tr><td><code>esp32-s3-touch-lcd-2.8</code></td><td>ESP32-S3-Touch-LCD-2.8</td><td>PCM5101</td><td><code>vol 80</code>, <code>gain 6</code></td></tr>
       <tr><td><code>echoear</code></td><td>EchoEar 2.0 (ESP32-S3)</td><td>ES8311</td><td><code>vol 75</code>, <code>gain 6</code></td></tr>
     </tbody>
   </table>

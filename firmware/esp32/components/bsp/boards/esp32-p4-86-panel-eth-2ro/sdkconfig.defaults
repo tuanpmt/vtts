@@ -1,0 +1,2 @@
+# Waveshare ESP32-P4-86-Panel-ETH-2RO: 32 MB flash (the chip defaults in sdkconfig.defaults.esp32p4 apply)
+CONFIG_ESPTOOLPY_FLASHSIZE_32MB=y

@@ -12,7 +12,7 @@ uv run pytest -q -m slow     # needs the gpu extra and downloads ASR/MOS models
 uv run ruff check .
 ```
 
-The Python tests also build and run the C tests in `runtime/` (golden, streaming and text parity), so a C compiler and `make` are required. Firmware changes should be built for every board (`BOARD=panel`, `nano`, `s3`) and checked on hardware with `selftest` and `bench`; please include the `bench` output in the pull request.
+The Python tests also build and run the C tests in `runtime/` (golden, streaming and text parity), so a C compiler and `make` are required. Firmware changes should be built for every board (every folder in `firmware/esp32/components/bsp/boards/`) and checked on hardware with `selftest` and `bench`; please include the `bench` output in the pull request.
 
 ## Adding a language
 

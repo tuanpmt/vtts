@@ -47,7 +47,7 @@ The license above applies to the files released so far (`vi/`). Each future voic
 | `vtts-vi-m-v0.2.q8.vtts` | Quality (M-vocos v0.2) | 1.73M | 2.6 MB | 0.34–0.42 | 0.85–0.99 |
 | `vtts-vi-s-v0.1.q8.vtts` | Lite (S-vocos v0.1) | 0.77M | 1.1 MB | 0.20–0.24 | 0.42–0.47 |
 
-RTF below 1 is faster than real time; speech starts after 0.3–1.2 s on the ESP32-P4 and 0.8–2.4 s on the ESP32-S3 (streaming). Measured on Waveshare ESP32-P4-NANO / ESP32-P4-86-Panel and ESP32-S3-Touch-LCD-2.8 (8 MB PSRAM required on the S3). Details: [performance report](https://github.com/tuanpmt/vtts/blob/main/docs/reports/performance.md).
+RTF below 1 is faster than real time; speech starts after 0.3–1.2 s on the ESP32-P4 and 0.8–2.4 s on the ESP32-S3 (streaming). Measured on Waveshare ESP32-P4-NANO / ESP32-P4-86-Panel-ETH-2RO and ESP32-S3-Touch-LCD-2.8 (8 MB PSRAM required on the S3). Details: [performance report](https://github.com/tuanpmt/vtts/blob/main/docs/reports/performance.md).
 
 Quality on 50 out-of-domain Vietnamese sentences (CER from PhoWhisper-large transcripts, tones included; audio from the int8 C runtime):
 
@@ -65,9 +65,9 @@ Quality on 50 out-of-domain Vietnamese sentences (CER from PhoWhisper-large tran
 # download the released Vietnamese models
 huggingface-cli download tuanpm/vtts --include "vi/*" --local-dir models
 
-# flash an ESP32-P4-NANO (ESP-IDF v6.1); BOARD can be panel, nano or s3
+# flash an ESP32-P4-NANO (ESP-IDF v6.1); BOARD can be esp32-p4-86-panel-eth-2ro, esp32-p4-nano, esp32-s3-touch-lcd-2.8 or echoear
 git clone https://github.com/tuanpmt/vtts && cd vtts/firmware/esp32
-BOARD=nano ./build.sh ../../../models/vi/vtts-vi-s-v0.1.q8.vtts ../../../models/vi/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
+BOARD=esp32-p4-nano ./build.sh ../../../models/vi/vtts-vi-s-v0.1.q8.vtts ../../../models/vi/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
 ```
 
 Type a Vietnamese sentence on the serial console and the board speaks it. The same files are attached to the [GitHub release v0.3.2](https://github.com/tuanpmt/vtts/releases/tag/v0.3.2).
