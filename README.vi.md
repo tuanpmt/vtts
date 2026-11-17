@@ -7,7 +7,7 @@
 🇺🇸 [English](README.md) · 🌐 [Trang nghe thử](https://tuanpmt.github.io/vtts/) · 🤗 [Model trên Hugging Face](https://huggingface.co/tuanpm/vtts) · 📚 [Tài liệu](docs/README.md)
 
 - **Chạy trọn trên chip:** chuẩn hoá văn bản, G2P, model âm học int8 và vocoder iSTFT đều chạy trên MCU.
-- **Nhanh hơn thời gian thực, streaming:** bắt đầu phát sau 0.2–0.9 s tuỳ chip và model.
+- **Nhanh hơn thời gian thực, streaming:** bắt đầu phát sau 0.1–0.45 s tuỳ chip và model.
 - **Hai cỡ model cho mỗi giọng, chạy trên cả hai chip:** *chất lượng* (M) cho âm thanh tốt nhất và *nhẹ* (S), nhanh hơn khoảng 1,7 lần, tốn ít CPU và flash hơn. Cả hai đều nhanh hơn thời gian thực trên ESP32-P4 và ESP32-S3; chọn theo chất lượng hay độ dư CPU, không theo chip.
 - **Nhỏ và dự đoán được:** model 1.1–2.6 MB, runtime C99 không dùng `malloc` (caller cấp một arena có kích thước biết trước).
 - **Dễ mở rộng:** mỗi ngôn ngữ là một module front-end trên bộ token có đánh phiên bản, nên các giọng đơn ngữ và song ngữ mới dùng chung runtime, firmware và quy trình train.
@@ -34,7 +34,7 @@ File model được đính kèm ở [GitHub Releases](https://github.com/tuanpmt
 <!-- BEGIN:hardware -->
 | Board | Chip | RTF model nhẹ | RTF model chất lượng |
 |---|---|---|---|
-| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17 | 0.27 |
+| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.15 | 0.24 |
 | EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.26 | 0.49 |
 
 Cả hai model đều chạy trên cả hai chip. RTF dưới 1 nghĩa là nhanh hơn thời gian thực.

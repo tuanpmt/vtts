@@ -8,10 +8,10 @@ Everything lives in PSRAM: the models, the working arena and the activations. In
 
 Chip rev 1.3, 360 MHz, 32 MB PSRAM. Measured on a Waveshare ESP32-P4-NANO; the ESP32-P4-86-Panel uses the same chip and firmware.
 
-| Model | RTF (`bench`) | First audio chunk | Playback starts | Underruns |
-|---|---:|---:|---:|---:|
-| S (lite) | 0.166–0.18 | ~0.1 s | ~0.24 s | 0 |
-| M (quality) | 0.267–0.27 | 0.27–0.42 s | 0.74–0.90 s | 0 |
+| Model | RTF (`bench`) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---:|---:|---:|---:|---:|
+| S (lite) | 0.15 | 0.08–0.09 s | 0.08–0.09 s | 17–18% / 12% | 0 |
+| M (quality) | 0.24–0.25 | 0.15–0.20 s | 0.23–0.27 s | 26–27% / 19–20% | 0 |
 
 ## ESP32-S3
 
@@ -43,7 +43,7 @@ The models and `.vtts` files have not changed since the first prototype release;
 | Inline rounding, twiddle table, time-major head | 0.20–0.23 | 0.37–0.39 | 0.34–0.38 | 0.72–0.83 |
 | Exact streaming with per-layer state | 0.18–0.19 | 0.30 | 0.31–0.32 | 0.55 |
 | Fused dw conv + LayerNorm + quantization, 64-frame blocks, cached iSTFT window, two-core overlap-add | 0.166 | 0.27 | 0.28 | 0.51 |
-| Register-tiled fp32 conv (token and duration blocks), lighter int8 epilogue | not yet measured | not yet measured | **0.26** | **0.49** |
+| Register-tiled fp32 conv (token and duration blocks), lighter int8 epilogue | **0.15** | **0.24** | **0.26** | **0.49** |
 
 Tried and not kept:
 - **Fast scratch in internal SRAM** (`vtts_set_fast_scratch`): about 2% faster on the P4 with 96 KB. Available in the API, off in the firmware (`FAST_SCRATCH_MAX 0`) so SRAM stays free for DMA.

@@ -5,7 +5,7 @@
 🇻🇳 [Tiếng Việt](README.vi.md) · 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/) · 🤗 [Models on Hugging Face](https://huggingface.co/tuanpm/vtts) · 📚 [Documentation](docs/README.md)
 
 - **On the chip, end to end:** text normalization, grapheme-to-phoneme, an int8 acoustic model and an iSTFT vocoder all run on the MCU.
-- **Faster than real time, streaming:** speech starts after 0.2–0.9 s depending on chip and model.
+- **Faster than real time, streaming:** speech starts after 0.1–0.45 s depending on chip and model.
 - **Two model sizes per voice, on both chips:** *quality* (M) for the best sound and *lite* (S), about 1.7× faster with less CPU load and flash. Both run faster than real time on the ESP32-P4 and the ESP32-S3; pick by sound versus headroom, not by chip.
 - **Small and predictable:** 1.1–2.6 MB models, a C99 runtime with no `malloc` (the caller provides one arena whose size is known up front).
 - **Built to grow:** languages plug in as front-end modules on a versioned token set, so new single-language and bilingual voices reuse the same runtime, firmware and training pipeline.
@@ -32,7 +32,7 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 <!-- BEGIN:hardware -->
 | Board | Chip | Lite model RTF | Quality model RTF |
 |---|---|---|---|
-| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17 | 0.27 |
+| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.15 | 0.24 |
 | EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.26 | 0.49 |
 
 Both models run on both chips. RTF below 1 means faster than real time.
