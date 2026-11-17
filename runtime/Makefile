@@ -25,8 +25,8 @@ build/stream_test: $(SRC) test/stream_test.c include/vtts.h
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) $(SRC) test/stream_test.c -lm -o $@
 
-TEXT_SRC = src/vtts_text.c
-build/text_test: $(TEXT_SRC) test/text_test.c include/vtts_text.h src/vtts_text_tables.h
+TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_lex.c
+build/text_test: $(TEXT_SRC) test/text_test.c include/vtts_text.h include/vtts_lex.h src/vtts_text_en.h src/vtts_text_tables.h
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
 

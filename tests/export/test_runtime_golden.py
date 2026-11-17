@@ -95,3 +95,19 @@ def test_c_english_normalizer_parity():
     r = subprocess.run([str(RUNTIME / "build" / "en_norm_test"), str(RUNTIME / "test" / "en_norm.tsv")],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+
+
+def test_c_bilingual_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex (phoneme set v2) gives exactly text_to_ids(text, mode) for vi, en and
+    auto mode, and survives the fuzz run in every mode."""
+    from vtts.frontend.en.vlex import build_vlex
+
+    blob = tmp_path / "lex_en.bin"
+    blob.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    r = subprocess.run([exe, "--lex", str(blob), str(RUNTIME / "test" / "text_parity_v2.tsv")],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz", "--lex", str(blob)], capture_output=True, text=True)
+    assert f.returncode == 0, f.stdout + f.stderr[-2000:]

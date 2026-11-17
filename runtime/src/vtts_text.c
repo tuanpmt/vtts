@@ -263,6 +263,7 @@ typedef struct {
     vtts_ids_cb cb;
     void *user;
     int chunks, stop;
+    int collect; /* v2: only collect normalized words (the caller assembles chunks) */
 } ctx_t;
 
 static void emit_sentence(ctx_t *c);
@@ -274,8 +275,10 @@ static const char *last_word(vtts_text_ws *ws) {
 static void push_raw(ctx_t *c, const char *w) {
     vtts_text_ws *ws = c->ws;
     size_t len = strlen(w);
-    if (ws->n_words >= VTTS_TEXT_MAX_WORDS || ws->words_used + (int)len + 1 > VTTS_TEXT_WORD_BYTES)
+    if (ws->n_words >= VTTS_TEXT_MAX_WORDS || ws->words_used + (int)len + 1 > VTTS_TEXT_WORD_BYTES) {
+        if (c->collect) return; /* v2: drop the rest of an oversized run (pathological input) */
         emit_sentence(c); /* overflow: flush early (only for pathological input) */
+    }
     ws->word_off[ws->n_words++] = ws->words_used;
     memcpy(ws->words + ws->words_used, w, len + 1);
     ws->words_used += (int)len + 1;
@@ -291,7 +294,7 @@ static void push_word(ctx_t *c, const char *w) {
             return;
         }
         push_raw(c, w);
-        if (strchr(".!?;", w[0])) emit_sentence(c);
+        if (!c->collect && strchr(".!?;", w[0])) emit_sentence(c);
         return;
     }
     push_raw(c, w);
@@ -648,29 +651,28 @@ static void read_date(ctx_t *c, long d, long mo, long y, int had_ngay) {
     if (y >= 0) read_int_v(c, y);
 }
 
-int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *user) {
-    if (!utf8 || !ws) return -1;
-    ctx_t ctx = {ws, cb, user, 0, 0}, *c = &ctx;
-    ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
-    ws->n_words = ws->words_used = 0;
-    /* like normalize(): map the ellipsis and dashes before anything else */
-    for (int k = 0; k < ws->n_cp; k++) {
-        if (ws->cp[k] == 0x2026) ws->cp[k] = '.';
-        else if (ws->cp[k] == 0x2013 || ws->cp[k] == 0x2014) ws->cp[k] = ',';
+/* normalize() of n code points (modified in place: ellipsis and dashes mapped first, like
+ * normalize()); fl is a flag array of n bytes (dates, product codes). Pushes words into ctx. */
+static void scan_vi(ctx_t *c, uint32_t *cpm, uint8_t *fl, int n) {
+    vtts_text_ws *ws = c->ws;
+    (void)ws;
+    for (int k = 0; k < n; k++) {
+        if (cpm[k] == 0x2026) cpm[k] = '.';
+        else if (cpm[k] == 0x2013 || cpm[k] == 0x2014) cpm[k] = ',';
     }
-    const uint32_t *cp = ws->cp;
-    int n = ws->n_cp, i = 0;
+    const uint32_t *cp = cpm;
+    int i = 0;
     for (int q = 0; q < n; q++) {
-        ws->date_start[q] = 0;
+        fl[q] = 0;
         int dl = digits_at(cp, n, q);
         if (dl < 1 || dl > 2 || prev_is(cp, q, is_digit_cp) || q + dl >= n || cp[q + dl] != '/') continue;
         int m0 = q + dl + 1, ml = digits_at(cp, n, m0);
         if (ml < 1 || ml > 2) continue;
         int yl = (m0 + ml < n && cp[m0 + ml] == '/') ? digits_at(cp, n, m0 + ml + 1) : 0;
         int y_end = m0 + ml + 1 + 4;
-        if (yl == 4 && !(y_end < n && is_digit_cp(cp[y_end]))) ws->date_start[q] = 1;
+        if (yl == 4 && !(y_end < n && is_digit_cp(cp[y_end]))) fl[q] = 1;
         else if (!prev_is(cp, q, is_digit_or_slash) && !(m0 + ml < n && is_digit_or_slash(cp[m0 + ml])))
-            ws->date_start[q] = 1;
+            fl[q] = 1;
     }
     /* product codes (normalize.PRODUCT_CODE): a standalone run of A-Z and 0-9 with at least one
      * of each, e.g. ESP32, S3, RTX3060. Bit 1 marks its digits, which are read one by one. */
@@ -679,7 +681,7 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
         int j = q, up = 0, dg = 0;
         while (j < n && is_code_cp(cp[j])) { up |= cp[j] >= 'A' && cp[j] <= 'Z'; dg |= is_digit_cp(cp[j]); j++; }
         if (up && dg && !(j < n && is_word_cp(cp[j])))
-            for (int k = q; k < j; k++) if (is_digit_cp(cp[k])) ws->date_start[k] |= 2;
+            for (int k = q; k < j; k++) if (is_digit_cp(cp[k])) fl[k] |= 2;
         q = j;
     }
     while (i < n && !c->stop) {
@@ -698,11 +700,11 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
             }
             if (hit) continue;
         }
-        if (is_digit_cp(ch) && (ws->date_start[i] & 2)) { /* digits of a product code */
+        if (is_digit_cp(ch) && (fl[i] & 2)) { /* digits of a product code */
             int j = i;
             char d[64];
             int k = 0;
-            while (j < n && (ws->date_start[j] & 2) && k < 63) d[k++] = (char)cp[j++];
+            while (j < n && (fl[j] & 2) && k < 63) d[k++] = (char)cp[j++];
             read_digits(c, d, (size_t)k);
             i = j;
             continue;
@@ -750,7 +752,7 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
             }
             /* number token -?\d+([.,]\d+)* */
             int j = d0 + dl;
-            while (j + 1 < n && (cp[j] == '.' || cp[j] == ',') && is_digit_cp(cp[j + 1]) && !(ws->date_start[j + 1] & 1))
+            while (j + 1 < n && (cp[j] == '.' || cp[j] == ',') && is_digit_cp(cp[j + 1]) && !(fl[j + 1] & 1))
                 j += 1 + digits_at(cp, n, j + 1);
             char buf[128];
             int k = 0;
@@ -830,6 +832,290 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
         }
         i++;
     }
+}
+
+int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *user) {
+    if (!utf8 || !ws) return -1;
+    ctx_t ctx = {ws, cb, user, 0, 0, 0}, *c = &ctx;
+    ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
+    ws->n_words = ws->words_used = 0;
+    scan_vi(c, ws->cp, ws->date_start, ws->n_cp);
     if (!c->stop && ws->n_words) emit_sentence(c);
+    return c->chunks;
+}
+
+/* =================== bilingual front-end (phoneme set v2), mirrors text.py =================== */
+
+#include "vtts_text_en.h"
+
+#define V2_MAX_WORDS 40
+#define V2_MAX_TOKENS 318
+
+/* lang.py: EDGE characters stripped from a chunk before tagging */
+static int is_edge(uint32_t c) {
+    static const uint32_t E[] = {'.', ',', ';', ':', '!', '?', '"', '\'', '(', ')', '[', ']', '{', '}',
+                                 0x2026, 0x201C, 0x201D, 0x2018, 0x2019, 0x00AB, 0x00BB, 0x2013, 0x2014};
+    for (size_t i = 0; i < sizeof E / sizeof *E; i++) if (E[i] == c) return 1;
+    return 0;
+}
+
+static int ascii_alpha(uint32_t c) { return (c | 32) >= 'a' && (c | 32) <= 'z'; }
+
+/* _has_vietnamese_letters: a non-ASCII letter after NFC (a combining mark on a Latin letter composes) */
+static int has_vi_letters(const uint32_t *w, int n) {
+    for (int i = 0; i < n; i++) {
+        if (w[i] >= 0x80 && is_letter_cp(w[i])) return 1;
+        if (is_combining(w[i]) && i > 0 && ascii_alpha(w[i - 1])) return 1;
+    }
+    return 0;
+}
+
+static int any_alpha(const uint32_t *w, int n) {
+    for (int i = 0; i < n; i++) if (is_letter_cp(w[i])) return 1;
+    return 0;
+}
+
+static int plain_latin(const uint32_t *w, int n) {
+    int alpha = 0;
+    for (int i = 0; i < n; i++) {
+        if (w[i] >= 0x80 || !(ascii_alpha(w[i]) || w[i] == '-' || w[i] == '\'')) return 0;
+        alpha |= ascii_alpha(w[i]);
+    }
+    return n > 0 && alpha;
+}
+
+static int ascii_syllable(const uint32_t *w, int n) { /* parse_syllable(p.lower()) is not None */
+    uint32_t low[WORD_CAP];
+    if (n <= 0 || n > WORD_CAP) return 0;
+    for (int i = 0; i < n; i++) low[i] = w[i] | 32;
+    letters_t L;
+    to_letters(low, n, &L);
+    syl_t s;
+    return parse_syl(&L, &s);
+}
+
+enum { TAG_NEUTRAL = 0, TAG_VI = 1, TAG_EN = 2 };
+
+static int key_eq(const uint32_t *w, int n, const char *k, int lower) {
+    int i = 0;
+    for (; k[i]; i++) if (i >= n || (lower ? (w[i] | 32) : w[i]) != (unsigned char)k[i]) return 0;
+    return i == n;
+}
+
+/* word_lang(core, mode) */
+static int word_tag(const uint32_t *w, int n, int sent_en) {
+    if (n == 0) return TAG_NEUTRAL;
+    if (has_vi_letters(w, n)) return TAG_VI;
+    if (!plain_latin(w, n)) return TAG_NEUTRAL;
+    if (sent_en) return TAG_EN;
+    int all_syl = 1, all_caps = 1, parts = 0;
+    for (int a = 0; a < n;) {
+        int b = a;
+        while (b < n && w[b] != '-' && w[b] != '\'') b++;
+        if (b > a) {
+            parts++;
+            all_syl &= ascii_syllable(w + a, b - a);
+            int up = b - a <= 5;
+            for (int k = a; k < b; k++) up &= w[k] >= 'A' && w[k] <= 'Z';
+            all_caps &= up;
+        }
+        a = b + 1;
+    }
+    if (parts && all_syl) return TAG_VI;
+    for (int k = 0; k < VTTS_N_LOANWORDS; k++) if (key_eq(w, n, VTTS_LOANWORDS[k][0], 1)) return TAG_VI;
+    for (int k = 0; k < VTTS_N_ABBREVIATIONS; k++) if (key_eq(w, n, VTTS_ABBREVIATIONS[k][0], 0)) return TAG_VI;
+    if (parts && all_caps) return TAG_VI;
+    return TAG_EN;
+}
+
+/* syllable tokens of a normalized Vietnamese word into out; 0 if not a syllable */
+static int syl_ids(const char *word, uint8_t *out) {
+    uint32_t cp[WORD_CAP];
+    int m = utf8_decode(word, cp, WORD_CAP), n = 0;
+    letters_t L;
+    to_letters(cp, m, &L);
+    syl_t s;
+    if (!parse_syl(&L, &s)) return 0;
+    if (s.onset) out[n++] = (uint8_t)token_id("O:", s.onset);
+    if (s.glide) out[n++] = (uint8_t)token_id("", "G:w");
+    out[n++] = (uint8_t)token_id("N:", s.nucleus);
+    if (s.coda) out[n++] = (uint8_t)token_id("C:", s.coda);
+    char t[4] = {'T', (char)('0' + s.tone), 0};
+    out[n++] = (uint8_t)token_id("", t);
+    return n;
+}
+
+static void add_item(vtts_text_ws *ws, const uint8_t *ids, int n, int punct) {
+    if (ws->n_items >= VTTS_TEXT_MAX_ITEMS || ws->pool_used + n > VTTS_TEXT_POOL) return;
+    ws->item_off[ws->n_items] = (uint16_t)ws->pool_used;
+    ws->item_len[ws->n_items] = (uint8_t)n;
+    ws->item_punct[ws->n_items] = (uint8_t)(punct ? ids[0] : 0);
+    memcpy(ws->pool + ws->pool_used, ids, (size_t)n);
+    ws->pool_used += n;
+    ws->n_items++;
+}
+
+static int last_is_word(const vtts_text_ws *ws) { return ws->n_items && !ws->item_punct[ws->n_items - 1]; }
+
+static void add_word_or_mark(vtts_text_ws *ws, const char *w, int en, const vtts_lex *lex) {
+    uint8_t ids[256];
+    if (is_punct_word(w)) {
+        if (last_is_word(ws)) { ids[0] = (uint8_t)token_id("", w); add_item(ws, ids, 1, 1); }
+        return;
+    }
+    int n = en ? vtts_en_g2p(lex, w, ids, (int)sizeof ids) : syl_ids(w, ids);
+    if (n > 0) add_item(ws, ids, n, 0);
+}
+
+/* _assemble size of items [a, b): (tokens, words) */
+static void part_size(const vtts_text_ws *ws, int a, int b, int *tok, int *words) {
+    int t = 0, w = 0, last_punct = 0;
+    for (int i = a; i < b; i++) {
+        if (ws->item_punct[i]) { if (t) { t++; last_punct = 1; } continue; }
+        if (t && !last_punct) t++;
+        t += ws->item_len[i];
+        last_punct = 0;
+        w++;
+    }
+    *tok = t;
+    *words = w;
+}
+
+static void emit_part(ctx_t *c, int a, int b) {
+    vtts_text_ws *ws = c->ws;
+    int n = 0, last_punct = 0, words = 0;
+    if (c->stop) return;
+    ws->ids[n++] = VTTS_V2_BOS;
+    for (int i = a; i < b && n < VTTS_TEXT_MAX_IDS - 1; i++) {
+        const uint8_t *t = ws->pool + ws->item_off[i];
+        if (ws->item_punct[i]) {
+            if (n > 1) { ws->ids[n++] = t[0]; last_punct = 1; }
+            continue;
+        }
+        if (n > 1 && !last_punct) ws->ids[n++] = VTTS_V2_SPACE;
+        for (int k = 0; k < ws->item_len[i] && n < VTTS_TEXT_MAX_IDS - 1; k++) ws->ids[n++] = t[k];
+        last_punct = 0;
+        words++;
+    }
+    if (!words) return; /* only punctuation */
+    ws->ids[n++] = VTTS_V2_EOS;
+    c->chunks++;
+    if (c->cb && c->cb(ws->ids, n, c->user)) c->stop = 1;
+}
+
+static int fits(const vtts_text_ws *ws, int a, int b) {
+    int t, w;
+    part_size(ws, a, b, &t, &w);
+    return t <= V2_MAX_TOKENS && w <= V2_MAX_WORDS;
+}
+
+/* _pack_items: pieces end after ',' or ':'; pack whole pieces, hard-cut a piece that is too long */
+static void pack_items(ctx_t *c) {
+    vtts_text_ws *ws = c->ws;
+    int N = ws->n_items, ca = -1, cb = -1, i = 0;
+    int comma = token_id("", ","), colon = token_id("", ":");
+    while (i < N && !c->stop) {
+        int p0 = i;
+        while (i < N) {
+            int pm = ws->item_punct[i++];
+            if (pm && (pm == comma || pm == colon)) break;
+        }
+        int p1 = i;
+        if (fits(ws, ca < 0 ? p0 : ca, p1)) { if (ca < 0) ca = p0; cb = p1; continue; }
+        if (ca >= 0) { emit_part(c, ca, cb); ca = -1; }
+        for (int k = p0; k < p1; k++) {
+            if (ca >= 0 && !fits(ws, ca, k + 1)) { emit_part(c, ca, cb); ca = -1; }
+            if (ca < 0) ca = k;
+            cb = k + 1;
+        }
+    }
+    if (ca >= 0) emit_part(c, ca, cb);
+}
+
+/* one sentence (code points [s, e) of ws->cp): tags, runs, normalization, items, chunks */
+static void v2_sentence(ctx_t *c, int s, int e, int mode, const vtts_lex *lex) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *cp = ws->cp;
+    enum { MAXCH = 1024 };
+    static int cs[MAXCH], ce[MAXCH], tag[MAXCH];
+    int nc = 0;
+    for (int i = s; i < e && nc < MAXCH;) { /* sentence.split() */
+        while (i < e && is_space_cp(cp[i])) i++;
+        if (i >= e) break;
+        int j = i;
+        while (j < e && !is_space_cp(cp[j])) j++;
+        cs[nc] = i; ce[nc] = j; nc++;
+        i = j;
+    }
+    if (!nc) return;
+    int sent_en = mode == VTTS_LANG_EN;
+    if (mode == VTTS_LANG_AUTO) { /* share of words with Vietnamese letters >= 0.2 -> vi */
+        int words = 0, vi = 0;
+        for (int k = 0; k < nc; k++) {
+            int a = cs[k], b = ce[k];
+            while (a < b && is_edge(cp[a])) a++;
+            while (b > a && is_edge(cp[b - 1])) b--;
+            if (!any_alpha(cp + a, b - a)) continue;
+            words++;
+            vi += has_vi_letters(cp + a, b - a);
+        }
+        sent_en = words && !((double)vi / words >= 0.2);
+    }
+    for (int k = 0; k < nc; k++) {
+        int a = cs[k], b = ce[k];
+        while (a < b && is_edge(cp[a])) a++;
+        while (b > a && is_edge(cp[b - 1])) b--;
+        int t = word_tag(cp + a, b - a, sent_en);
+        tag[k] = t == TAG_NEUTRAL ? (sent_en ? TAG_EN : TAG_VI) : t;
+    }
+    ws->n_items = ws->pool_used = 0;
+    for (int k = 0; k < nc && !c->stop;) { /* runs of one language, chunks joined by single spaces */
+        int k1 = k, len = 0;
+        while (k1 < nc && tag[k1] == tag[k]) {
+            if (k1 > k && len < VTTS_TEXT_MAX_CP) ws->run[len++] = ' ';
+            for (int q = cs[k1]; q < ce[k1] && len < VTTS_TEXT_MAX_CP; q++) ws->run[len++] = cp[q];
+            k1++;
+        }
+        if (tag[k] == TAG_VI) {
+            ws->n_words = ws->words_used = 0;
+            c->collect = 1;
+            scan_vi(c, ws->run, ws->date_start, len);
+            c->collect = 0;
+            for (int w = 0; w < ws->n_words; w++) add_word_or_mark(ws, ws->words + ws->word_off[w], 0, lex);
+            ws->n_words = ws->words_used = 0;
+        } else if (vtts_en_normalize(ws->run, len, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, ws->en_out,
+                                     (int)sizeof ws->en_out) >= 0) {
+            for (char *w = ws->en_out; *w;) { /* split on single spaces */
+                char *sp = strchr(w, ' ');
+                if (sp) *sp = 0;
+                if (*w) add_word_or_mark(ws, w, 1, lex);
+                if (!sp) break;
+                w = sp + 1;
+            }
+        }
+        k = k1;
+    }
+    pack_items(c);
+}
+
+int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts *o, vtts_ids_cb cb, void *user) {
+    if (!o || o->lang == VTTS_LANG_V1) return vtts_text_to_ids(utf8, ws, cb, user);
+    if (!utf8 || !ws) return -1;
+    ctx_t ctx = {ws, cb, user, 0, 0, 0}, *c = &ctx;
+    int n = ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
+    int a = 0, z = n;
+    while (a < z && is_space_cp(ws->cp[a])) a++; /* text.strip() */
+    while (z > a && is_space_cp(ws->cp[z - 1])) z--;
+    int s = a;
+    for (int i = a; i < z && !c->stop; i++) { /* split at whitespace after . ! ? ; */
+        uint32_t pc = i > s ? ws->cp[i - 1] : 0;
+        if (is_space_cp(ws->cp[i]) && (pc == '.' || pc == '!' || pc == '?' || pc == ';')) {
+            v2_sentence(c, s, i, o->lang, o->lex);
+            while (i < z && is_space_cp(ws->cp[i])) i++;
+            s = i;
+            i--;
+        }
+    }
+    if (s < z && !c->stop) v2_sentence(c, s, z, o->lang, o->lex);
     return c->chunks;
 }
