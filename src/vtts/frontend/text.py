@@ -81,8 +81,8 @@ _V2_MAX_TOKENS = 318  # + BOS/EOS <= VTTS_TEXT_MAX_IDS (320)
 
 def _items(sentence: str, mode: str) -> list[tuple[str, list[str]]]:
     """("w", tokens) per word and ("p", [mark]) per punctuation mark, in order."""
-    from .languages import LANGUAGES
     from .lang import runs
+    from .languages import LANGUAGES
 
     items: list[tuple[str, list[str]]] = []
     for text, lang in runs(sentence, mode):
