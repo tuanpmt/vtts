@@ -15,7 +15,7 @@
 <!-- BEGIN:voices -->
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
-| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.1 (non-commercial)** |
+| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.2 (non-commercial)** |
 | `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: ~98 h of data, teacher in progress** |
 | `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: ~98 h of data, teacher in progress** |
 | English | 🇺🇸 en | M | S | Planned |
@@ -92,7 +92,7 @@ Audio is produced on the chip with the firmware's `dump` command, sent to a PC o
 You need ESP-IDF v6.1 and the two model files from [Releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts).
 
 ```bash
-gh release download v0.3.1 -R tuanpmt/vtts -p '*.vtts' -D models
+gh release download v0.3.2 -R tuanpmt/vtts -p '*.vtts' -D models
 cd firmware/esp32
 BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
 ```

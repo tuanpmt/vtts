@@ -17,7 +17,7 @@
 <!-- BEGIN:voices -->
 | Giọng | Ngôn ngữ | Model chất lượng (M) | Model nhẹ (S) | Trạng thái |
 |---|---|---|---|---|
-| Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.1 (phi thương mại)** |
+| Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.2 (phi thương mại)** |
 | `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: ~98 giờ dữ liệu, đang train teacher** |
 | `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: ~98 giờ dữ liệu, đang train teacher** |
 | Tiếng Anh | 🇺🇸 en | M | S | Dự kiến |
@@ -94,7 +94,7 @@ Audio sinh trực tiếp trên chip bằng lệnh `dump` của firmware, gửi v
 Cần ESP-IDF v6.1 và hai file model từ [Releases](https://github.com/tuanpmt/vtts/releases) hoặc [Hugging Face](https://huggingface.co/tuanpm/vtts).
 
 ```bash
-gh release download v0.3.1 -R tuanpmt/vtts -p '*.vtts' -D models
+gh release download v0.3.2 -R tuanpmt/vtts -p '*.vtts' -D models
 cd firmware/esp32
 BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
 ```
