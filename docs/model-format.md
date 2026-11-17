@@ -1,37 +1,39 @@
-# Định dạng file model `VTTS` (version 1)
+# `VTTS` model file format (version 1)
 
-Một file chứa cả ba khối của student (duration, âm học, decoder). Mọi số đều little-endian. Runtime C chỉ đọc file này; không hardcode shape nào.
+One file holds all three blocks of a student model (duration, acoustic, decoder). All numbers are little-endian. The C runtime reads only this file and hard-codes no shapes.
 
-## Bố cục
+## Layout
 
-| Vùng | Kích thước | Nội dung |
+| Region | Size | Contents |
 |---|---|---|
-| Header | 20 byte | `magic` = `"VTTS"` (4 byte), `version` u32 = 1, `n_dims` u32, `n_tensors` u32, `payload_offset` u32 |
-| Dims | `n_dims` × 36 byte | `key` char[32] (đệm NUL), `value` i32 |
-| Bảng tensor | `n_tensors` × 80 byte | xem dưới |
-| Payload | còn lại | dữ liệu tensor, mỗi tensor căn lề 16 byte |
+| Header | 20 bytes | `magic` = `"VTTS"` (4 bytes), `version` u32 = 1, `n_dims` u32, `n_tensors` u32, `payload_offset` u32 |
+| Dims | `n_dims` × 36 bytes | `key` char[32] (NUL-padded), `value` i32 |
+| Tensor table | `n_tensors` × 80 bytes | see below |
+| Payload | the rest | tensor data, each tensor aligned to 16 bytes |
 
-Mỗi dòng trong bảng tensor (80 byte):
+Each tensor table entry (80 bytes):
 
-| Trường | Kiểu | Ý nghĩa |
+| Field | Type | Meaning |
 |---|---|---|
-| `name` | char[48] | tên tensor, ví dụ `dur.blocks.0.conv.weight` |
+| `name` | char[48] | tensor name, e.g. `dur.blocks.0.conv.weight` |
 | `dtype` | u8 | 0 = f32, 1 = i8 |
 | `ndim` | u8 | 1–4 |
 | `_pad` | u16 | 0 |
-| `shape` | i32[4] | các chiều không dùng = 1 |
-| `offset` | u32 | vị trí payload tính từ đầu file |
-| `nbytes` | u32 | kích thước payload |
-| `scale_offset` | u32 | với i8: vị trí mảng f32 scale theo kênh ra (chiều 0); với f32: 0 |
+| `shape` | i32[4] | unused dimensions = 1 |
+| `offset` | u32 | payload position from the start of the file |
+| `nbytes` | u32 | payload size |
+| `scale_offset` | u32 | for i8: position of the f32 array of per-output-channel scales (dimension 0); for f32: 0 |
 
-## Dims bắt buộc
+## Required dims
 
-`vocab`, `latent`, `hop`, `sample_rate`, `max_duration`, `d_hidden`, `d_depth`, `d_kernel`, `a_hidden`, `a_token_depth`, `a_frame_depth`, `a_kernel`, `decoder` (0 = hifigan, 1 = istft, 2 = vocos), cùng các dims riêng của decoder: `c0`, `n_up`, `up0..up3`, `upk0..upk3`, `n_res`, `res_d0..res_d3`, `res_kernel`, `n_fft`, `istft_hop`, `v_dim`, `v_blocks`, `v_mult`. Các giá trị số thực (scale lượng tử hoá activation) nằm ở tensor f32 riêng tên `act_scales`.
+`vocab`, `latent`, `hop`, `sample_rate`, `max_duration`, `d_hidden`, `d_depth`, `d_kernel`, `a_hidden`, `a_token_depth`, `a_frame_depth`, `a_kernel`, `decoder` (0 = hifigan, 1 = istft, 2 = vocos), plus the decoder-specific dims: `c0`, `n_up`, `up0..up3`, `upk0..upk3`, `n_res`, `res_d0..res_d3`, `res_kernel`, `n_fft`, `istft_hop`, `v_dim`, `v_blocks`, `v_mult`. Floating-point values (activation quantization scales) live in a separate f32 tensor named `act_scales`.
 
-## Tên tensor
+`vocab` is the size of the token set the model was trained with (65 for token set v1, 107 for v2), so a model for a new language needs no runtime change.
 
-Giữ nguyên tên `state_dict` của PyTorch (`duration.*`, `acoustic.*`, `decoder.*`). Riêng conv có weight norm thì phải gộp weight trước khi export.
+## Tensor names
 
-## Kiểm tra khi nạp
+Tensor names are the PyTorch `state_dict` names (`duration.*`, `acoustic.*`, `decoder.*`). Convolutions with weight normalization must have their weights folded before export.
 
-`vtts_init` trả về mã lỗi âm khi: magic sai, version khác 1, bảng tensor hoặc payload vượt kích thước file, `offset + nbytes` vượt kích thước file, thiếu dims bắt buộc, hoặc thiếu tensor mà đồ thị cần.
+## Load-time checks
+
+`vtts_init` returns a negative error code when: the magic is wrong, the version is not 1, the tensor table or payload exceeds the file size, `offset + nbytes` exceeds the file size, a required dim is missing, or a tensor needed by the graph is missing.

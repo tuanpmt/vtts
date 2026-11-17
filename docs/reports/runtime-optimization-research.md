@@ -1,6 +1,8 @@
 # On-device TTS performance research: ESP32-S3 and ESP32-P4
 
-I did not modify any files. I disassembled the existing builds (`firmware/esp32/build_s3/vtts_bench.elf` and `build/vtts_bench.elf`) to check for library calls and code placement. The speedup figures below are estimates from arithmetic and code inspection, not measurements.
+> **Status:** research report (2026-11-17); the optimization work it proposes is in progress. Measured numbers for the current runtime are in [performance.md](performance.md).
+
+This report is based on code inspection and on disassembly of the existing firmware builds for the ESP32-S3 and ESP32-P4 (`firmware/esp32/build_s3/vtts_bench.elf` and `build/vtts_bench.elf`), used to check for library calls and code placement. The speedup figures below are estimates from arithmetic and code inspection, not measurements.
 
 ## 1. Compute per second of audio, and what the measured RTF implies
 

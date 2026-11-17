@@ -1,45 +1,45 @@
-# Báo cáo baseline
+# Baseline report
 
-Hai giọng tiếng Việt có sẵn, chạy như hộp đen (`eval/baselines/render.py`). Đầu vào cho cả hai là văn bản đã chuẩn hoá bằng `vtts.frontend.normalize`, để cách đọc số và viết tắt giống nhau.
+Two existing Vietnamese voices, run as black boxes (`eval/baselines/render.py`). Both receive text already normalized by `vtts.frontend.normalize`, so numbers and abbreviations are read the same way.
 
-- ASR chấm điểm: `vinai/PhoWhisper-large`. CER/WER giữ nguyên dấu thanh, nên đọc sai thanh cũng tính là lỗi.
-- UTMOS (`utmos22_strong`) và DNSMOS (OVRL) là chỉ số dự đoán độ tự nhiên/độ sạch, được huấn luyện chủ yếu trên tiếng Anh. Chỉ dùng để so sánh giữa các hệ thống tiếng Việt với nhau.
-- Chỉ số rít: số ô phổ thuộc các vệt âm sắc đứng yên, tính trên mỗi giây (thấp là tốt).
+- Scoring ASR: `vinai/PhoWhisper-large`. CER/WER keep tone marks, so a wrong tone counts as an error.
+- UTMOS (`utmos22_strong`) and DNSMOS (OVRL) predict naturalness/cleanliness and were trained mostly on English. Use them only to compare Vietnamese systems with each other.
+- Whistle index: the number of spectrogram cells that belong to stationary tonal streaks, per second (lower is better).
 
-## Tập ngoài miền (`eval/sets/ood.jsonl`, 50 câu)
+## Out-of-domain set (`eval/sets/ood.jsonl`, 50 sentences)
 
-| Hệ thống | CER | WER | UTMOS | DNSMOS | Rít |
+| System | CER | WER | UTMOS | DNSMOS | Whistle |
 |---|---:|---:|---:|---:|---:|
-| sanoTTS `vi` (1.57M, Piper VAIS1000 làm teacher) | 0.064 | 0.127 | 1.49 | 2.83 | 1.5 |
+| sanoTTS `vi` (1.57M, Piper VAIS1000 as teacher) | 0.064 | 0.127 | 1.49 | 2.83 | 1.5 |
 | Piper `vi_VN-25hours_single-low` (InfoRe1) | 0.089 | 0.197 | 2.06 | 2.43 | 1.1 |
 
-CER theo nhóm câu:
+CER by sentence group:
 
-| Nhóm | sanoTTS `vi` | Piper 25h |
+| Group | sanoTTS `vi` | Piper 25h |
 |---|---:|---:|
-| device (thông báo thiết bị) | 0.117 | 0.109 |
-| numbers (số, ngày, giờ, tiền) | 0.032 | 0.081 |
-| names (tên người, địa danh) | 0.125 | 0.143 |
-| prosody (câu hỏi, cảm thán) | 0.072 | 0.111 |
-| long (> 30 âm tiết) | 0.046 | 0.068 |
+| device (device prompts) | 0.117 | 0.109 |
+| numbers (numbers, dates, times, money) | 0.032 | 0.081 |
+| names (people and place names) | 0.125 | 0.143 |
+| prosody (questions, exclamations) | 0.072 | 0.111 |
+| long (> 30 syllables) | 0.046 | 0.068 |
 
-Ví dụ lỗi điển hình (tham chiếu → ASR nghe được):
+Typical errors (reference → what the ASR heard):
 
-- sanoTTS `vi`: "Phố cổ Hội An lung linh đèn lồng về đêm" → "phố cổ hội an lũng nghinh đằng lùng về đằng kia"; "Pin yếu, vui lòng cắm sạc ngay" → mất hai âm tiết đầu.
+- sanoTTS `vi`: "Phố cổ Hội An lung linh đèn lồng về đêm" → "phố cổ hội an lũng nghinh đằng lùng về đằng kia"; "Pin yếu, vui lòng cắm sạc ngay" → the first two syllables are lost.
 - Piper 25h: "Cẩn thận, sàn nhà đang ướt!" → "thân thân xanh nhả nặng ruột"; "Chúc bạn ngủ ngon" → "chúc bạn hy vọng".
 
-## Nhận xét
+## Observations
 
-- Câu ngắn kiểu thông báo thiết bị (nhóm `device`) là điểm yếu chung của cả hai. Đây chính là kiểu câu sản phẩm ESP32 sẽ đọc nhiều nhất.
-- sanoTTS `vi` rõ chữ hơn Piper 25h, nhưng UTMOS thấp hơn (1.49 so với 2.06): đọc rõ hơn nhưng nghe kém tự nhiên hơn.
-- CER được tính sau khi chuẩn hoá vị trí dấu thanh (`hoà` và `hòa` coi là một), để không phạt khác biệt chính tả thuần tuý.
-- WER 0.127 của sanoTTS `vi` ở đây thấp hơn con số 0.468 trong README của sanoTTS, vì khác ASR (PhoWhisper so với Whisper) và khác tập câu. Chỉ so sánh các con số trong cùng một báo cáo.
+- Short device-prompt sentences (the `device` group) are a common weakness of both. These are exactly the sentences an ESP32 product will speak most.
+- sanoTTS `vi` is more intelligible than Piper 25h but has a lower UTMOS (1.49 vs 2.06): clearer, but less natural.
+- CER is computed after normalizing tone-mark placement (`hoà` and `hòa` count as the same), so purely orthographic differences are not penalized.
+- The sanoTTS `vi` WER of 0.127 here is lower than the 0.468 in the sanoTTS README because the ASR (PhoWhisper vs Whisper) and the sentence set differ. Only compare numbers within one report.
 
-## Cổng teacher suy ra (theo spec mục 6)
+## Derived teacher gate (spec section 6)
 
-Trên tập ngoài miền, teacher của dự án phải đạt:
+On the out-of-domain set the project's teacher must reach:
 
-- CER ≤ 50% của sanoTTS `vi`, tức **CER ≤ 0.032**;
-- và CER ≤ Piper 25h (0.089). Điều kiện này tự thoả khi đã đạt điều kiện trên.
+- CER ≤ 50% of sanoTTS `vi`, i.e. **CER ≤ 0.032**;
+- and CER ≤ Piper 25h (0.089), which follows from the first condition.
 
-Số đo trên tập held-out (50 câu InfoRe1) sẽ được bổ sung sau khi lọc dữ liệu xong.
+The teacher that was later trained reached an OOD CER of 0.015 (see the quality table in the [README](../../README.md)).

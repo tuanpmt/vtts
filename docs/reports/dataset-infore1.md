@@ -1,55 +1,57 @@
-# Báo cáo dữ liệu InfoRe1
+# InfoRe1 dataset report
 
-## Tóm tắt
+Dataset used for the Vietnamese prototype voice.
 
-| Bước | Số câu | Số giờ |
+## Summary
+
+| Step | Utterances | Hours |
 |---|---:|---:|
-| Gốc (`doof-ferb/infore1_25hours`) | 14,935 | 24.54 |
-| Sau lọc | 13,780 | ~22.7 |
+| Source (`doof-ferb/infore1_25hours`) | 14,935 | 24.54 |
+| After filtering | 13,780 | ~22.7 |
 | Train | 13,455 | 22.20 |
 | Validation | 275 | 0.43 |
-| Held-out (đánh giá, 3–10 giây/câu) | 50 | 0.08 |
+| Held-out (evaluation, 3–10 s per utterance) | 50 | 0.08 |
 
-Chuẩn bị audio: chuyển sang 22,050 Hz mono, cắt khoảng lặng hai đầu (ngưỡng −40 dB, đệm 50 ms), chuẩn hoá RMS về −23 dBFS với đỉnh tối đa −1 dBFS. Không có câu nào hỏng audio hoặc thiếu transcript.
+Audio preparation: convert to 22,050 Hz mono, trim leading and trailing silence (−40 dB threshold, 50 ms padding), normalize RMS to −23 dBFS with peaks at most −1 dBFS. No utterance had broken audio or a missing transcript.
 
-## Lọc
+## Filtering
 
-Chấm điểm: ASR `vinai/PhoWhisper-small` (bản small nhanh gấp 6 lần bản large, đủ dùng cho việc lọc) và DNSMOS OVRL cho từng câu.
+Scoring: ASR `vinai/PhoWhisper-small` (6 times faster than the large model and good enough for filtering) and DNSMOS OVRL per utterance.
 
-| Lý do loại | Số câu | Ngưỡng |
+| Reason for removal | Utterances | Threshold |
 |---|---:|---|
-| DNSMOS thấp | 623 | OVRL < 2.42 (phân vị 5%) |
-| Chứa từ phải đánh vần từng chữ cái | 357 | từ không phải âm tiết tiếng Việt và không có trong bảng từ mượn |
-| Transcript lệch ASR | 174 | CER > 0.10 |
-| Quá ngắn | 1 | < 1 giây |
+| Low DNSMOS | 623 | OVRL < 2.42 (5th percentile) |
+| Contains a word that must be spelled letter by letter | 357 | a word that is not a Vietnamese syllable and not in the loanword table |
+| Transcript disagrees with ASR | 174 | CER > 0.10 |
+| Too short | 1 | < 1 s |
 
-**Ngưỡng DNSMOS được hạ từ 3.0 (kế hoạch) xuống 2.42.** DNSMOS của toàn bộ InfoRe1 có trung vị chỉ 2.88, nên ngưỡng 3.0 sẽ loại khoảng 60% dữ liệu. Ngưỡng mới chỉ loại 5% câu tệ nhất.
+**The DNSMOS threshold was lowered from 3.0 (as planned) to 2.42.** The median DNSMOS of all of InfoRe1 is only 2.88, so a 3.0 threshold would have removed about 60% of the data. The new threshold removes only the worst 5%.
 
-**Từ phải đánh vần**: dòng có từ như `hlv`, `usd` đứng một mình, hay tên riêng nước ngoài viết liền bị loại, vì nhãn đánh vần ("hát e lờ vê") không khớp với điều người đọc thực sự nói ("huấn luyện viên").
+**Words that must be spelled out**: lines containing standalone words such as `hlv` or `usd`, or foreign proper names written as one word, are removed, because the spelled-out label ("hát e lờ vê") does not match what the speaker actually said ("huấn luyện viên").
 
-## Câu bị loại vì CER (10 ví dụ)
+## Utterances removed by CER (10 examples)
 
-Phần lớn là **loại oan**: ASR viết từ mượn theo chính tả tiếng Anh, trong khi transcript viết theo cách đọc tiếng Việt. Một số ít là lỗi thật: audio bị cắt cụt, hoặc transcript lặp câu.
+Most are **false rejections**: the ASR writes loanwords in English spelling while the transcript writes them as they are read in Vietnamese. A few are real errors: truncated audio or a repeated transcript.
 
-| CER | ID | Transcript | ASR nghe được | Nhận định |
+| CER | ID | Transcript | ASR output | Verdict |
 |---:|---|---|---|---|
-| 0.54 | infore_13364 | hiện tại rô nan đô và men đét chưa đưa ra bình luận… | hiện tại ronaldo và mandel chưa đưa ra bình luận… | loại oan |
-| 0.52 | infore_11723 | nên mua ghế mát xa loại nào… | nên mua ghế massage loại nào… | loại oan |
-| 0.51 | infore_08252 | làm sạch đồng hồ mạ vàng… (lặp hai lần) | làm sạch đồng hồ mạ vàng… (một lần) | transcript lặp, loại đúng |
-| 0.47 | infore_13727 | …có thể ghé đến nha khoa kim để được… | …có thể ghé đến. | audio cụt, loại đúng |
-| 0.46 | infore_12176 | …người khác mát xa lưng… | …người khác massage lưng… | loại oan |
-| 0.44 | infore_14021 | …phải ký cam mổ mở thì mới phẫu thuật… | …phải ký cam mổ. | audio cụt, loại đúng |
-| 0.42 | infore_02939 | trước khi mát xa mặt… các cơ | trước khi massage mặt… các cô | phần lớn oan |
-| 0.41 | infore_04271 | …bao cao su đôn dên | …bao cao su donetsk | loại oan |
-| 0.41 | infore_12616 | …vi ta min e và vi ta min c… | …vitamin e và vitamin c… | loại oan |
-| 0.38 | infore_05505 | sửa ti vi sam sung… | sửa tivi samsung… | loại oan |
+| 0.54 | infore_13364 | hiện tại rô nan đô và men đét chưa đưa ra bình luận… | hiện tại ronaldo và mandel chưa đưa ra bình luận… | false rejection |
+| 0.52 | infore_11723 | nên mua ghế mát xa loại nào… | nên mua ghế massage loại nào… | false rejection |
+| 0.51 | infore_08252 | làm sạch đồng hồ mạ vàng… (repeated twice) | làm sạch đồng hồ mạ vàng… (once) | repeated transcript, correct rejection |
+| 0.47 | infore_13727 | …có thể ghé đến nha khoa kim để được… | …có thể ghé đến. | truncated audio, correct rejection |
+| 0.46 | infore_12176 | …người khác mát xa lưng… | …người khác massage lưng… | false rejection |
+| 0.44 | infore_14021 | …phải ký cam mổ mở thì mới phẫu thuật… | …phải ký cam mổ. | truncated audio, correct rejection |
+| 0.42 | infore_02939 | trước khi mát xa mặt… các cơ | trước khi massage mặt… các cô | mostly false |
+| 0.41 | infore_04271 | …bao cao su đôn dên | …bao cao su donetsk | false rejection |
+| 0.41 | infore_12616 | …vi ta min e và vi ta min c… | …vitamin e và vitamin c… | false rejection |
+| 0.38 | infore_05505 | sửa ti vi sam sung… | sửa tivi samsung… | false rejection |
 
-Vì chỉ mất 1.2% dữ liệu nên không cần sửa ngay. Cải tiến sau này: thêm các từ mượn phổ biến (massage, vitamin, samsung…) vào bảng từ mượn để cả transcript lẫn ASR quy về cùng một cách đọc.
+Since only 1.2% of the data is lost, no immediate fix is needed. A later improvement: add common loanwords (massage, vitamin, samsung…) to the loanword table so that both the transcript and the ASR map to the same reading.
 
-## Phân bố thanh điệu (tập train, số âm tiết)
+## Tone distribution (train set, syllable counts)
 
-| ngang | huyền | sắc | hỏi | ngã | nặng |
+| ngang (level) | huyền (falling) | sắc (rising) | hỏi (dipping) | ngã (broken) | nặng (heavy) |
 |---:|---:|---:|---:|---:|---:|
 | 70,946 | 51,431 | 62,666 | 28,002 | 14,287 | 47,446 |
 
-Thanh ngã ít nhất (5.5%) nhưng vẫn có hơn 14 nghìn mẫu, đủ để học.
+The ngã tone is the rarest (5.5%) but still has more than 14 thousand samples, enough to learn.
