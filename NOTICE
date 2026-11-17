@@ -1,4 +1,4 @@
-vtts — tiny Vietnamese text-to-speech for microcontrollers
+vtts — tiny multilingual text-to-speech for microcontrollers
 Copyright 2026 the vtts authors
 
 This product includes software developed by third parties:
@@ -19,6 +19,9 @@ Data used during development (not distributed in this repository, except one sho
   utterance from this dataset, resampled.
 - Teacher warm-start checkpoints from rhasspy/piper-checkpoints (vi_VN vais1000, en_US lessac).
 - Vietnamese Wikipedia sentences (CC-BY-SA) as distillation text input only.
+- English Wikipedia sentences (CC-BY-SA) as text input for speech synthesis only.
+- Speech synthesized with VoxCPM2 (Apache-2.0) from designed voices, as training data for the
+  bilingual Vietnamese-English voices (not distributed).
 
 Baselines compared against (run as black boxes, not included): sanoTTS (Ampixa) and Piper
 vi_VN-25hours_single.
