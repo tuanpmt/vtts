@@ -5,94 +5,138 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>vtts — speech on a microcontroller</title>
 <meta name="description" content="Tiny multilingual text-to-speech that runs entirely on ESP32-P4 and ESP32-S3. Listen to audio generated on the chip.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Space+Grotesk:wght@500;700&display=swap">
+<link rel="stylesheet" href="fonts/fonts.css">
 <style>
-/* Layout: one reading column; a hero with the chip-side numbers, then sample rows (sentence + two players) */
+/* Neobrutalism (after neobrutalism.dev): 2px black borders, hard 4px offset shadows, flat colors,
+   5px radius, DM Sans 500/700. Layout: one column; hero, then a language-tabbed sample grid where
+   each sentence is a chat bubble and each model is a column of square play buttons. */
 :root {
-  --bg: #f3f5f2; --surface: #ffffff; --fg: #17201b; --muted: #59655e; --line: #d6ddd8;
-  --accent: #0f7b5f; --accent-soft: #e2f1eb; --chip: #26332c; --chip-fg: #d8f3e7;
-  --display: "Space Grotesk", "IBM Plex Sans", system-ui, sans-serif;
-  --sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace;
+  --bg: #dcebfe; --surface: #ffffff; --fg: #000000; --muted: #2b3445; --border: #000000;
+  --main: #5294ff; --main-fg: #000000; --yellow: #facc00; --green: #05e17a; --red: #ff4d50; --violet: #a388ee;
+  --radius: 5px; --sx: 4px; --sy: 4px; --shadow: var(--sx) var(--sy) 0 0 var(--border);
+  --sans: "DM Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "DM Mono", ui-monospace, Menlo, monospace;
   color-scheme: light;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #101512; --surface: #171e1a; --fg: #e3ebe6; --muted: #93a39a; --line: #2a342e;
-          --accent: #4fcfa2; --accent-soft: #1b2d25; --chip: #0b100d; --chip-fg: #9ff0cd; color-scheme: dark; }
+  :root:not([data-theme="light"]) { --bg: #1b2232; --surface: #2a3347; --fg: #f4f7ff; --muted: #c3cbe0; --border: #000000; color-scheme: dark; }
 }
+:root[data-theme="dark"] { --bg: #1b2232; --surface: #2a3347; --fg: #f4f7ff; --muted: #c3cbe0; --border: #000000; color-scheme: dark; }
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--fg); font: 16px/1.6 var(--sans);
+body { margin: 0; background: var(--bg); color: var(--fg); font: 500 16px/1.6 var(--sans);
   padding: 0 max(16px, env(safe-area-inset-right, 0px)) 64px max(16px, env(safe-area-inset-left, 0px)); }
-main { max-width: 920px; margin: 0 auto; display: grid; gap: 56px; }
-a { color: var(--accent); }
-h1, h2 { font-family: var(--display); letter-spacing: -0.01em; text-wrap: balance; margin: 0; }
-h1 { font-size: clamp(2rem, 5vw, 3.2rem); line-height: 1.1; }
-h2 { font-size: 1.5rem; }
+main { max-width: 960px; margin: 0 auto; display: grid; gap: 48px; }
+a { color: inherit; text-decoration-thickness: 2px; text-underline-offset: 3px; }
+h1, h2 { font-weight: 800; letter-spacing: -0.02em; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2.1rem, 5.5vw, 3.6rem); line-height: 1.05; }
+h2 { font-size: 1.7rem; }
 p { margin: 0; max-width: 68ch; }
 .muted { color: var(--muted); }
-nav { display: flex; gap: 20px; justify-content: space-between; align-items: center; padding: 20px 0; max-width: 920px; margin: 0 auto; flex-wrap: wrap; }
-nav .brand { font-family: var(--display); font-weight: 700; font-size: 1.2rem; text-decoration: none; color: var(--fg); }
-nav .links { display: flex; gap: 18px; font-size: 0.95rem; flex-wrap: wrap; }
-.hero { display: grid; gap: 20px; padding-top: 24px; }
-.serial { background: var(--chip); color: var(--chip-fg); font: 0.88rem/1.7 var(--mono); border-radius: 12px; padding: 18px 20px; overflow-x: auto; white-space: pre; }
-.serial .dim { opacity: 0.6; }
-.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
-.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
-.stat b { display: block; font-family: var(--display); font-size: 1.6rem; }
-.stat span { color: var(--muted); font-size: 0.9rem; }
+.box { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+code { font-family: var(--mono); font-size: 0.9em; background: var(--surface); border: 2px solid var(--border); border-radius: 4px; padding: 0 5px; }
+
+nav { max-width: 960px; margin: 20px auto 0; display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap;
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 10px 14px; }
+nav .brand { font-weight: 800; font-size: 1.3rem; text-decoration: none; background: var(--main); color: var(--main-fg); border: 2px solid var(--border); border-radius: var(--radius); padding: 0 10px; }
+nav .links { display: flex; gap: 6px; flex-wrap: wrap; }
+nav .links a { text-decoration: none; font-weight: 700; padding: 4px 10px; border: 2px solid transparent; border-radius: var(--radius); }
+nav .links a:hover { border-color: var(--border); background: var(--yellow); color: #000; }
+
+.hero { display: grid; gap: 22px; padding-top: 28px; }
+.hero h1 mark { background: var(--main); color: var(--main-fg); padding: 0 8px; border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); -webkit-box-decoration-break: clone; box-decoration-break: clone; }
+.serial { background: #111; color: #9ff0cd; font: 0.86rem/1.7 var(--mono); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 16px 18px; overflow-x: auto; white-space: pre; }
+.serial .dim { color: #8a93a8; }
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 16px; }
+.stat { border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; color: #000; }
+.stat b { display: block; font-size: 1.7rem; font-weight: 800; line-height: 1.2; }
+.stat span { font-size: 0.92rem; }
+.stat:nth-child(1) { background: var(--main); } .stat:nth-child(2) { background: var(--yellow); }
+.stat:nth-child(3) { background: var(--green); } .stat:nth-child(4) { background: var(--violet); }
+
 section { display: grid; gap: 18px; }
-.samples { display: grid; gap: 12px; }
-.sample { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px 18px; display: grid; gap: 12px; }
-.sample .text { font-size: 1.02rem; }
-.players { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-@media (max-width: 620px) { .players { grid-template-columns: 1fr; } }
-.player { display: grid; gap: 4px; min-width: 0; }
-.tag { font: 500 0.75rem var(--mono); letter-spacing: 0.04em; color: var(--accent); text-transform: uppercase; }
-audio { width: 100%; }
-.tablewrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; font-size: 0.95rem; }
-th, td { padding: 10px 14px; border-bottom: 1px solid var(--line); text-align: left; white-space: nowrap; }
-td.wrap { white-space: normal; min-width: 180px; }
-th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); font-weight: 600; }
-tbody tr:last-child td { border-bottom: 0; }
-.num { text-align: right; }
-.flag { width: 21px; height: 14px; border-radius: 2px; vertical-align: -2px; box-shadow: 0 0 0 1px var(--line); margin-right: 4px; }
-.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
-.tab { font: 500 0.95rem var(--sans); background: transparent; color: var(--muted); border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-bottom: -1px; }
-.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
-.tab .pill { font-size: 0.65rem; padding: 1px 6px; }
-.tabnote { margin-top: -4px; }
-.grid { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
-.grid table { min-width: 560px; }
-.grid th.model { white-space: normal; min-width: 110px; vertical-align: bottom; }
-.grid th.model small { display: block; font: 400 0.72rem var(--sans); text-transform: none; letter-spacing: 0; color: var(--muted); }
-.grid td.sent { white-space: normal; min-width: 260px; max-width: 460px; }
+
+.picker { position: relative; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.picker label { font-weight: 800; }
+.select { font: 700 1rem var(--sans); color: var(--main-fg); background: var(--main); border: 2px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 8px 12px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; min-width: 260px;
+  transition: transform .1s, box-shadow .1s; }
+.select:hover, .select[aria-expanded="true"] { transform: translate(var(--sx), var(--sy)); box-shadow: none; }
+.select .cur { flex: 1; display: inline-flex; align-items: center; gap: 6px; text-align: left; }
+.select .chev { width: 14px; height: 14px; fill: currentColor; transition: transform .15s; }
+.select[aria-expanded="true"] .chev { transform: rotate(180deg); }
+.menu { position: absolute; top: calc(100% + 10px); left: 0; z-index: 10; margin: 0; padding: 6px; list-style: none; min-width: 300px; max-height: 60vh; overflow-y: auto;
+  background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.menu:focus-visible { outline: none; }
+.menu .group { font: 500 0.7rem var(--mono); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); padding: 8px 8px 4px; }
+.menu [role="option"] { display: flex; align-items: center; gap: 6px; padding: 7px 8px; border: 2px solid transparent; border-radius: var(--radius); cursor: pointer; font-weight: 700; }
+.menu [role="option"] .n { margin-left: auto; font: 500 0.75rem var(--mono); color: var(--muted); }
+.menu [role="option"].active { border-color: var(--border); background: var(--yellow); color: #000; }
+.menu [role="option"].active .n { color: #000; }
+.menu [role="option"][aria-selected="true"] { background: var(--main); color: var(--main-fg); }
+.tag { font: 500 0.68rem var(--mono); text-transform: uppercase; letter-spacing: .04em; border: 2px solid var(--border); border-radius: 999px; padding: 0 7px; background: var(--yellow); color: #000; }
+.tag.plan { background: var(--surface); color: var(--fg); }
+.tag.ok { background: var(--green); }
+
+.grid { overflow-x: auto; padding: 2px var(--sx) var(--sy) 2px; }
+.grid table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 560px; background: var(--surface);
+  border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); }
+.grid th, .grid td { padding: 12px 14px; border-bottom: 2px solid var(--border); text-align: left; vertical-align: middle; }
+.grid tbody tr:last-child td { border-bottom: 0; }
+.grid th { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; background: var(--yellow); color: #000; }
+.grid th:first-child { border-top-left-radius: 3px; } .grid th:last-child { border-top-right-radius: 3px; }
+.grid th.model { text-align: center; min-width: 112px; }
+.grid th.model small { display: block; font: 500 0.7rem var(--sans); text-transform: none; letter-spacing: 0; }
 .grid td.cell { text-align: center; }
-.play { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--accent); cursor: pointer; display: inline-grid; place-items: center; }
-.play:hover { border-color: var(--accent); }
-.play.on { background: var(--accent); color: var(--surface); border-color: var(--accent); }
-.play svg { width: 13px; height: 13px; fill: currentColor; }
-.soon { color: var(--muted); font-size: 0.8rem; }
-.empty { padding: 28px 20px; color: var(--muted); text-align: center; }
+.bubble { position: relative; display: inline-block; max-width: 460px; background: var(--main); color: var(--main-fg);
+  border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px 12px; margin-left: 10px; }
+.bubble::before { content: ""; position: absolute; left: -10px; top: 10px; border-style: solid; border-width: 7px 10px 7px 0; border-color: transparent var(--border) transparent transparent; }
+.bubble::after { content: ""; position: absolute; left: -6px; top: 12px; border-style: solid; border-width: 5px 7px 5px 0; border-color: transparent var(--main) transparent transparent; }
+.play { width: 40px; height: 40px; border-radius: var(--radius); border: 2px solid var(--border); background: var(--surface); color: var(--fg);
+  box-shadow: var(--shadow); cursor: pointer; display: inline-grid; place-items: center; transition: transform .1s, box-shadow .1s; }
+.play:hover { transform: translate(var(--sx), var(--sy)); box-shadow: none; }
+.play.on { background: var(--red); color: #000; transform: translate(var(--sx), var(--sy)); box-shadow: none; }
+.play svg { width: 14px; height: 14px; fill: currentColor; }
+.soon { font: 500 0.75rem var(--mono); color: var(--muted); border: 2px dashed var(--border); border-radius: var(--radius); padding: 3px 8px; }
+.empty { padding: 28px 20px; text-align: center; font-weight: 700; }
+
+.tablewrap { overflow-x: auto; padding: 2px var(--sx) var(--sy) 2px; }
+.tablewrap table { border-collapse: separate; border-spacing: 0; width: 100%; background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); font-variant-numeric: tabular-nums; }
+.tablewrap th, .tablewrap td { padding: 10px 14px; border-bottom: 2px solid var(--border); text-align: left; white-space: nowrap; }
+.tablewrap tbody tr:last-child td { border-bottom: 0; }
+.tablewrap th { font-size: 0.78rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; background: var(--main); color: #000; }
+.tablewrap td.wrap { white-space: normal; min-width: 180px; }
+.num { text-align: right !important; }
+.pipeline { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 10px 0; counter-reset: step; }
+.pipeline li { display: flex; align-items: center; font-weight: 700; font-size: 0.92rem; }
+.pipeline li::before { counter-increment: step; content: counter(step); font: 500 0.75rem var(--mono); background: var(--yellow); color: #000;
+  border: 2px solid var(--border); border-radius: 999px; width: 22px; height: 22px; display: inline-grid; place-items: center; margin-right: 6px; }
+.pipeline li { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 6px 10px; margin-right: 22px; position: relative; }
+.pipeline li:not(:last-child)::after { content: "→"; position: absolute; right: -19px; font-weight: 800; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 16px; }
+.card { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; display: grid; gap: 6px; align-content: start; }
+.card h3 { margin: 0; font-size: 1.05rem; font-weight: 800; }
+.card p { font-size: 0.94rem; }
+
+pre.code { margin: 0; background: #111; color: #e8ecf5; font: 0.85rem/1.65 var(--mono); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 14px 16px; overflow-x: auto; }
+.flag { width: 21px; height: 14px; border-radius: 2px; vertical-align: -2px; outline: 2px solid var(--border); }
+footer { display: grid; gap: 6px; font-size: 0.9rem; border-top: 2px solid var(--border); padding-top: 18px; }
+:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
 @media (max-width: 620px) {
-  .grid { border: 0; background: transparent; }
+  .grid { padding: 0; overflow: visible; }
   .grid table, .grid thead, .grid tbody, .grid tr, .grid td { display: block; min-width: 0; }
+  .grid table { border: 0; box-shadow: none; background: transparent; }
   .grid thead { display: none; }
-  .grid tr { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
-  .grid td { border: 0; padding: 4px 0; white-space: normal; }
+  .grid tr { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; margin-bottom: 16px; }
+  .grid td { border: 0 !important; padding: 5px 0; }
   .grid td.cell { display: flex; align-items: center; gap: 10px; text-align: left; }
-  .grid td.cell::before { content: attr(data-label); flex: 1; color: var(--muted); font-size: 0.85rem; }
+  .grid td.cell::before { content: attr(data-label); flex: 1; font-weight: 700; font-size: 0.9rem; }
+  .bubble { max-width: none; }
 }
-.pill { display: inline-block; font: 500 0.75rem var(--mono); padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
-.pill.plan { background: transparent; border: 1px solid var(--line); color: var(--muted); }
-pre.code { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 0.85rem/1.6 var(--mono); margin: 0; }
-footer { color: var(--muted); font-size: 0.88rem; display: grid; gap: 6px; border-top: 1px solid var(--line); padding-top: 20px; }
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 </style>
 </head>
 <body>
-
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
   <defs>
     <symbol id="flag-vi" viewBox="0 0 30 20"><rect width="30" height="20" fill="#da251d"/><polygon fill="#ffff00" points="15,4 16.18,7.63 20,7.63 16.91,9.87 18.09,13.5 15,11.26 11.91,13.5 13.09,9.87 10,7.63 13.82,7.63"/></symbol>
@@ -105,6 +149,7 @@ footer { color: var(--muted); font-size: 0.88rem; display: grid; gap: 6px; borde
   <div class="links">
     <a href="#listen">Listen</a>
     <a href="#voices">Voices</a>
+    <a href="#how">How it works</a>
     <a href="#hardware">Hardware</a>
     <a href="#start">Get started</a>
     <a href="https://github.com/tuanpmt/vtts">GitHub</a>
@@ -113,59 +158,95 @@ footer { color: var(--muted); font-size: 0.88rem; display: grid; gap: 6px; borde
 </nav>
 <main>
   <header class="hero">
-    <h1>Text-to-speech that runs on a microcontroller</h1>
-    <p class="muted">vtts turns text into speech entirely on an ESP32: text normalization, pronunciation, an int8 neural voice and the vocoder all run on the chip. No cloud, no network, no Linux. Every clip on this page was generated by an ESP32-P4 and sent back over its serial port.</p>
+    <h1>Text-to-speech that runs on a <mark>microcontroller</mark></h1>
+    <p class="muted">vtts turns text into speech entirely on an ESP32: text normalization, pronunciation, an int8 neural voice and the vocoder all run on the chip. No cloud, no network, no Linux. Every clip on this page was generated by the chip and sent back over its serial port.</p>
     <div class="serial" aria-label="Serial console example"><span class="dim">vtts&gt;</span> Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4.
-SAID model=M audio=6.50s synth=2.41s RTF=0.37
+SAID model=M audio=6.50s synth=1.97s RTF=0.30
 first chunk 516 ms, playback started 1275 ms, underruns 0
 CPU core0 34% core1 28%</div>
     <div class="stats">
-      <div class="stat"><b>0.20–0.42</b><span>real-time factor on ESP32-P4</span></div>
+      <div class="stat"><b>0.18–0.30</b><span>real-time factor on ESP32-P4</span></div>
       <div class="stat"><b>1.1–2.6 MB</b><span>model size in flash (int8)</span></div>
-      <div class="stat"><b>0.3–1.2 s</b><span>until speech starts (streaming)</span></div>
+      <div class="stat"><b>0.31–0.55</b><span>real-time factor on ESP32-S3</span></div>
       <div class="stat"><b>0.012</b><span>character error rate, Vietnamese</span></div>
     </div>
   </header>
 
   <section id="listen">
     <h2>Listen</h2>
-    <p class="muted">Every clip is the chip's own PCM output, sent back over the serial port and only compressed to MP3. Pick a language, then play any model on any sentence.</p>
-    <div class="tabs" role="tablist" id="tabs"></div>
-    <p class="muted tabnote" id="tabnote"></p>
+    <p class="muted">Pick a language or language pair, then play any model on any sentence. Every clip is the chip's own PCM output, only compressed to MP3.</p>
+    <div class="picker">
+      <label id="langlabel" for="langbtn">Language</label>
+      <button class="select" id="langbtn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="langlabel langbtn">
+        <span class="cur" id="langcur">Loading…</span>
+        <svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 5.5 8 11l5.5-5.5z"/></svg>
+      </button>
+      <ul class="menu" id="langlist" role="listbox" aria-labelledby="langlabel" tabindex="-1" hidden></ul>
+    </div>
+    <p class="muted" id="tabnote"></p>
     <div class="grid" id="grid"></div>
   </section>
 
   <section id="voices">
     <h2>Voices</h2>
     <p class="muted">Every voice comes in two tiers. New languages plug in as front-end modules on a shared, versioned token set, so the runtime and firmware stay the same.</p>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Voice</th><th>Languages</th><th>Quality (P4)</th><th>Lite (S3)</th><th>Status</th></tr></thead>
-        <tbody>
-          <tr><td>Vietnamese prototype</td><td><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi</td><td>M · 2.6 MB</td><td>S · 1.1 MB</td><td><span class="pill">released</span></td></tr>
-          <tr><td>nam-1 (male)</td><td><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td>M</td><td>S</td><td><span class="pill">training</span></td></tr>
-          <tr><td>nu-10 (female)</td><td><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td>M</td><td>S</td><td><span class="pill">training</span></td></tr>
-          <tr><td>English</td><td><svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td>M</td><td>S</td><td><span class="pill plan">planned</span></td></tr>
-          <tr><td>Mandarin Chinese</td><td><svg class="flag" role="img" aria-label="Chinese"><use href="#flag-zh"/></svg> zh</td><td>M</td><td>S</td><td><span class="pill plan">planned</span></td></tr>
-          <tr><td>Chinese + English</td><td><svg class="flag" role="img" aria-label="Chinese"><use href="#flag-zh"/></svg> zh + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td>M</td><td>S</td><td><span class="pill plan">planned</span></td></tr>
-        </tbody>
-      </table>
-    </div>
+<!-- BEGIN:voices -->
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Voice</th><th>Languages</th><th>Quality (P4)</th><th>Lite (S3)</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>Vietnamese prototype</td><td class="wrap"><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi</td><td class="wrap">M-vocos v0.2 (1.73M params, 2.6 MB)</td><td class="wrap">S-vocos v0.1 (0.77M params, 1.1 MB)</td><td><span class="tag ok">released</span></td></tr>
+      <tr><td><code>nam-1</code> (male)</td><td class="wrap"><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag">training</span></td></tr>
+      <tr><td><code>nu-10</code> (female)</td><td class="wrap"><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag">training</span></td></tr>
+      <tr><td>English</td><td class="wrap"><svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag plan">planned</span></td></tr>
+      <tr><td>Chinese (Mandarin)</td><td class="wrap"><svg class="flag" role="img" aria-label="Chinese"><use href="#flag-zh"/></svg> zh</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag plan">planned</span></td></tr>
+      <tr><td>Chinese + English</td><td class="wrap"><svg class="flag" role="img" aria-label="Chinese"><use href="#flag-zh"/></svg> zh + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag plan">planned</span></td></tr>
+    </tbody>
+  </table>
+</div>
+<!-- END:voices -->
     <p class="muted">Bilingual voices read mixed sentences in one voice, for example <q>Đã kết nối Bluetooth với AirPods</q>.</p>
+  </section>
+
+  <section id="how">
+    <h2>How it works</h2>
+    <p class="muted">Everything below runs on the microcontroller, from the raw text to the samples sent to the speaker.</p>
+<!-- BEGIN:tech -->
+<ol class="pipeline">
+  <li>UTF-8 text</li>
+  <li>Language tag per word</li>
+  <li>Normalizer (numbers, dates, units)</li>
+  <li>G2P</li>
+  <li>Duration + acoustic model (int8)</li>
+  <li>Vocos decoder + iSTFT</li>
+  <li>PCM 22.05 kHz → I2S speaker</li>
+</ol>
+<div class="cards">
+  <div class="card"><h3>Runtime</h3><p>C99, no malloc: the caller passes one arena whose size is known up front. Int8 weights with per-channel scales, int8 activations with one scale per frame. Streaming keeps per-layer state, so every frame is computed once.</p></div>
+  <div class="card"><h3>On the chip</h3><p>Int8 SIMD kernels for the ESP32-P4 (PIE) and the ESP32-S3 (128-bit SIMD), work split over both cores with FreeRTOS. Chip audio matches the reference C runtime on a PC.</p></div>
+  <div class="card"><h3>Models</h3><p>A VITS teacher (~24M params) is distilled into 0.8–1.7M-param students: duration predictor, acoustic model with pitch and energy, Vocos-style ConvNeXt decoder with an iSTFT head.</p></div>
+  <div class="card"><h3>Front-ends</h3><p>One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. English: CMUdict plus letter-to-sound rules learned from it.</p></div>
+  <div class="card"><h3>Data</h3><p>The Vietnamese prototype uses a public single-speaker corpus. Bilingual voices use about 98 h each of speech synthesized with VoxCPM2 (Apache-2.0) from designed voices.</p></div>
+  <div class="card"><h3>Tooling</h3><p>PyTorch for training, ESP-IDF v6.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness.</p></div>
+</div>
+<!-- END:tech -->
   </section>
 
   <section id="hardware">
     <h2>Hardware</h2>
-    <div class="tablewrap">
-      <table>
-        <thead><tr><th>Board</th><th>Chip</th><th class="num">RTF lite</th><th class="num">RTF quality</th><th class="num">Speech starts</th></tr></thead>
-        <tbody>
-          <tr><td class="wrap">Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO</td><td>ESP32-P4, 360 MHz</td><td class="num">0.20–0.24</td><td class="num">0.34–0.42</td><td class="num">0.3 / 1.2 s</td></tr>
-          <tr><td class="wrap">Waveshare ESP32-S3-Touch-LCD-2.8</td><td>ESP32-S3R8, 240 MHz, 8 MB PSRAM</td><td class="num">0.42–0.47</td><td class="num">0.85–0.99</td><td class="num">0.8 / 2.4 s</td></tr>
-        </tbody>
-      </table>
-    </div>
-    <p class="muted">RTF below 1 means faster than real time. Both chips use two cores and int8 SIMD kernels; chip output matches the reference C runtime (correlation ≥ 0.99999).</p>
+<!-- BEGIN:hardware -->
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>Board</th><th>Chip</th><th class="num">RTF lite</th><th class="num">RTF quality</th><th class="num">v0.3.0 lite / quality</th></tr></thead>
+    <tbody>
+      <tr><td class="wrap">Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO</td><td class="wrap">ESP32-P4, 360 MHz, PIE SIMD</td><td class="num">0.18–0.19</td><td class="num">0.30</td><td class="num">0.20–0.24 / 0.34–0.42</td></tr>
+      <tr><td class="wrap">EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8</td><td class="wrap">ESP32-S3, 240 MHz, 8 MB PSRAM</td><td class="num">0.31–0.32</td><td class="num">0.55</td><td class="num">0.42–0.47 / 0.85–0.99</td></tr>
+    </tbody>
+  </table>
+</div>
+<p class="muted">RTF below 1 means faster than real time. Numbers are for the current main branch; the last column is the v0.3.0 release.</p>
+<!-- END:hardware -->
+    <p class="muted">Both chips use two cores and int8 SIMD kernels; chip output matches the reference C runtime.</p>
   </section>
 
   <section id="start">
@@ -174,7 +255,20 @@ CPU core0 34% core1 28%</div>
 cd firmware/esp32
 BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts \
   ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor</pre>
-    <p class="muted"><code>BOARD</code> is <code>panel</code>, <code>nano</code> or <code>s3</code>. Type a sentence on the serial console and the board speaks it. Full instructions are in the <a href="https://github.com/tuanpmt/vtts#readme">README</a>.</p>
+<!-- BEGIN:boards -->
+<div class="tablewrap">
+  <table>
+    <thead><tr><th>BOARD=</th><th>Board</th><th>Speaker path</th><th>Default volume</th></tr></thead>
+    <tbody>
+      <tr><td><code>panel</code></td><td>ESP32-P4-86-Panel</td><td>ES8311</td><td><code>vol 70</code>, <code>gain 0</code></td></tr>
+      <tr><td><code>nano</code></td><td>ESP32-P4-NANO</td><td>ES8311</td><td><code>vol 90</code>, <code>gain 12</code></td></tr>
+      <tr><td><code>s3</code></td><td>ESP32-S3-Touch-LCD-2.8</td><td>PCM5101</td><td><code>vol 80</code>, <code>gain 6</code></td></tr>
+      <tr><td><code>echoear</code></td><td>EchoEar 2.0 (ESP32-S3)</td><td>ES8311</td><td><code>vol 75</code>, <code>gain 6</code></td></tr>
+    </tbody>
+  </table>
+</div>
+<!-- END:boards -->
+    <p class="muted">Type a sentence on the serial console and the board speaks it. Full instructions are in the <a href="https://github.com/tuanpmt/vtts#readme">README</a>.</p>
   </section>
 
   <footer>
@@ -185,14 +279,13 @@ BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts \
 <script>
 // Samples come from samples.json: tabs (languages or language pairs) -> models (columns) -> sentences (rows).
 const FLAG_NAMES = { vi: "Vietnamese", en: "English", zh: "Chinese" };
-const STATUS = { released: "", training: "training", planned: "planned" };
 const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>';
 const STOP = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"/></svg>';
 const audio = new Audio();
 let playing = null, data = null;
 
 const flag = c => `<svg class="flag" role="img" aria-label="${FLAG_NAMES[c] || c}"><use href="#flag-${c}"/></svg>`;
-const esc = t => t.replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+const esc = t => String(t).replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
 
 function stop() {
   audio.pause();
@@ -209,25 +302,31 @@ function play(btn) {
     .catch(() => {});
 }
 
+const tagFor = s => s === "training" ? ' <span class="tag">training</span>' : s === "planned" ? ' <span class="tag plan">planned</span>' : "";
+const tabLabel = t => `${t.flags.map(flag).join("")} ${esc(t.label)}${tagFor(t.status)}`;
+const btn = document.getElementById("langbtn"), list = document.getElementById("langlist");
+let current = null, active = -1;
+
 function render(id) {
   const tab = data.tabs.find(t => t.id === id) || data.tabs[0];
+  current = tab.id;
   stop();
-  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.id === tab.id ? "true" : "false"));
+  document.getElementById("langcur").innerHTML = tabLabel(tab);
+  list.querySelectorAll('[role="option"]').forEach(o => o.setAttribute("aria-selected", o.dataset.id === tab.id ? "true" : "false"));
   document.getElementById("tabnote").textContent = tab.note || "";
   const grid = document.getElementById("grid");
   if (!tab.models.length || !tab.samples.length) {
-    grid.innerHTML = `<div class="empty">${tab.status === "planned" ? "Planned. Samples will appear here when the voice is trained." : "No samples yet."}</div>`;
+    grid.innerHTML = `<div class="box empty">${tab.status === "planned" ? "Planned. Samples will appear here when the voice is trained." : "No samples yet."}</div>`;
     return;
   }
   const head = tab.models.map(m => `<th class="model">${esc(m.name)}<small>${esc(m.detail || "")}</small></th>`).join("");
   const rows = tab.samples.map(sm => {
     const cells = tab.models.map(m => {
       const src = (sm.audio || {})[m.id];
-      const label = esc(m.name);
-      return `<td class="cell" data-label="${label}">` +
+      return `<td class="cell" data-label="${esc(m.name)}">` +
         (src ? `<button class="play" data-src="${esc(src)}" aria-label="Play">${PLAY}</button>` : `<span class="soon">soon</span>`) + `</td>`;
     }).join("");
-    return `<tr><td class="sent">${esc(sm.text)}</td>${cells}</tr>`;
+    return `<tr><td><span class="bubble">${esc(sm.text)}</span></td>${cells}</tr>`;
   }).join("");
   grid.innerHTML = `<table><thead><tr><th>Sentence</th>${head}</tr></thead><tbody>${rows}</tbody></table>`;
   grid.querySelectorAll(".play").forEach(b => b.addEventListener("click", () => play(b)));
@@ -238,18 +337,50 @@ function select(id) {
   render(id);
 }
 
+// Dropdown (listbox pattern): grouped into single-language and multilingual voices, keyboard friendly.
+const options = () => [...list.querySelectorAll('[role="option"]')];
+function setActive(i) {
+  const o = options(); if (!o.length) return;
+  active = (i + o.length) % o.length;
+  o.forEach((el, k) => el.classList.toggle("active", k === active));
+  list.setAttribute("aria-activedescendant", o[active].id);
+  o[active].scrollIntoView({ block: "nearest" });
+}
+function openMenu() {
+  list.hidden = false; btn.setAttribute("aria-expanded", "true");
+  setActive(Math.max(0, options().findIndex(o => o.dataset.id === current))); list.focus();
+}
+function closeMenu(focusBtn = true) {
+  if (list.hidden) return;
+  list.hidden = true; btn.setAttribute("aria-expanded", "false"); if (focusBtn) btn.focus();
+}
+function choose(i) { const o = options()[i]; if (o) select(o.dataset.id); closeMenu(); }
+btn.addEventListener("click", () => list.hidden ? openMenu() : closeMenu());
+btn.addEventListener("keydown", e => { if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); openMenu(); } });
+list.addEventListener("keydown", e => {
+  if (e.key === "ArrowDown") { e.preventDefault(); setActive(active + 1); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); setActive(active - 1); }
+  else if (e.key === "Home") { e.preventDefault(); setActive(0); }
+  else if (e.key === "End") { e.preventDefault(); setActive(-1); }
+  else if (e.key === "Enter" || e.key === " ") { e.preventDefault(); choose(active); }
+  else if (e.key === "Escape" || e.key === "Tab") { closeMenu(e.key === "Escape"); }
+});
+list.addEventListener("click", e => { const o = e.target.closest('[role="option"]'); if (o) choose(options().indexOf(o)); });
+document.addEventListener("click", e => { if (!e.target.closest(".picker")) closeMenu(false); });
+
 fetch("samples.json").then(r => r.json()).then(d => {
   data = d;
-  document.getElementById("tabs").innerHTML = d.tabs.map(t =>
-    `<button class="tab" role="tab" data-id="${t.id}">${t.flags.map(flag).join("")} ${esc(t.label)}` +
-    (STATUS[t.status] ? ` <span class="pill${t.status === "planned" ? " plan" : ""}">${STATUS[t.status]}</span>` : "") + `</button>`).join("");
-  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => select(b.dataset.id)));
+  const groups = [["Single language", d.tabs.filter(t => t.flags.length === 1)], ["Multilingual", d.tabs.filter(t => t.flags.length > 1)]];
+  list.innerHTML = groups.filter(g => g[1].length).map(([name, tabs]) =>
+    `<li class="group" role="presentation">${name}</li>` + tabs.map(t =>
+      `<li role="option" id="opt-${t.id}" data-id="${t.id}" aria-selected="false">${tabLabel(t)}` +
+      `<span class="n">${t.samples.filter(s => Object.keys(s.audio || {}).length).length || ""}</span></li>`).join("")).join("");
   const start = location.hash.slice(1);
   render(d.tabs.some(t => t.id === start) ? start : d.tabs[0].id);
 }).catch(() => {
-  document.getElementById("grid").innerHTML = '<div class="empty">Could not load the sample list (samples.json).</div>';
+  document.getElementById("grid").innerHTML = '<div class="box empty">Could not load the sample list (samples.json).</div>';
 });
-window.addEventListener("hashchange", () => data && render(location.hash.slice(1)));
+window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if (data && data.tabs.some(t => t.id === id)) render(id); });
 </script>
 </body>
 </html>

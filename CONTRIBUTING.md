@@ -54,3 +54,13 @@ git grep -nE "[1]92\.168\.|[r]oot@|[/]Users[/]|[/]home[/]|[/]root[/]|[h]f_[A-Za-
 ## License
 
 By contributing you agree that your contributions are licensed under the Apache License 2.0 (see [LICENSE](LICENSE)). Model files are licensed separately; see the README.
+
+## README and website
+
+The voice catalog, hardware table, board list and technology summary are shared by `README.md`, `README.vi.md` and the website (`docs/index.html`). Edit them in `docs/site.json` (audio samples: `docs/samples.json`), then run:
+
+```bash
+uv run python scripts/docs/sync_docs.py
+```
+
+The script rewrites only the blocks between `<!-- BEGIN:name -->` and `<!-- END:name -->`; everything else stays hand-written. `tests/docs/test_docs_sync.py` fails when a generated block is out of date. The website loads no third-party resources (fonts are self-hosted in `docs/fonts/`), so it also works where Google services are blocked.

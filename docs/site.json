@@ -1,0 +1,177 @@
+{
+  "_comment": "Single source for content shared by README.md, README.vi.md and docs/index.html. Edit here, then run: uv run python scripts/docs/sync_docs.py. tests/docs/test_docs_sync.py fails if a generated block is out of date. Fields ending in _vi are used by README.vi.md. Audio samples live in docs/samples.json.",
+  "voices": [
+    {
+      "name": "Vietnamese prototype",
+      "name_vi": "Prototype tiếng Việt",
+      "langs": [
+        "vi"
+      ],
+      "quality": "M-vocos v0.2 (1.73M params, 2.6 MB)",
+      "lite": "S-vocos v0.1 (0.77M params, 1.1 MB)",
+      "status": "released",
+      "status_text": "Released in v0.3.0 (non-commercial)",
+      "status_text_vi": "Đã phát hành trong v0.3.0 (phi thương mại)",
+      "quality_vi": "M-vocos v0.2 (1.73M tham số, 2.6 MB)",
+      "lite_vi": "S-vocos v0.1 (0.77M tham số, 1.1 MB)"
+    },
+    {
+      "name": "`nam-1` (male)",
+      "name_vi": "`nam-1` (nam)",
+      "langs": [
+        "vi",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "training",
+      "status_text": "Training: ~98 h of data, teacher in progress",
+      "status_text_vi": "Đang train: ~98 giờ dữ liệu, đang train teacher"
+    },
+    {
+      "name": "`nu-10` (female)",
+      "name_vi": "`nu-10` (nữ)",
+      "langs": [
+        "vi",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "training",
+      "status_text": "Training: ~98 h of data, teacher in progress",
+      "status_text_vi": "Đang train: ~98 giờ dữ liệu, đang train teacher"
+    },
+    {
+      "name": "English",
+      "name_vi": "Tiếng Anh",
+      "langs": [
+        "en"
+      ],
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Chinese (Mandarin)",
+      "name_vi": "Tiếng Trung (phổ thông)",
+      "langs": [
+        "zh"
+      ],
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Chinese + English",
+      "name_vi": "Trung + Anh",
+      "langs": [
+        "zh",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    }
+  ],
+  "hardware": [
+    {
+      "boards": "Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO",
+      "chip": "ESP32-P4, 360 MHz, PIE SIMD",
+      "rtf_lite": "0.18–0.19",
+      "rtf_quality": "0.30",
+      "release_lite": "0.20–0.24",
+      "release_quality": "0.34–0.42"
+    },
+    {
+      "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
+      "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
+      "rtf_lite": "0.31–0.32",
+      "rtf_quality": "0.55",
+      "release_lite": "0.42–0.47",
+      "release_quality": "0.85–0.99"
+    }
+  ],
+  "boards": [
+    {
+      "id": "panel",
+      "name": "ESP32-P4-86-Panel",
+      "speaker": "ES8311",
+      "volume": "`vol 70`, `gain 0`",
+      "default": true
+    },
+    {
+      "id": "nano",
+      "name": "ESP32-P4-NANO",
+      "speaker": "ES8311",
+      "volume": "`vol 90`, `gain 12`"
+    },
+    {
+      "id": "s3",
+      "name": "ESP32-S3-Touch-LCD-2.8",
+      "speaker": "PCM5101",
+      "volume": "`vol 80`, `gain 6`"
+    },
+    {
+      "id": "echoear",
+      "name": "EchoEar 2.0 (ESP32-S3)",
+      "speaker": "ES8311",
+      "volume": "`vol 75`, `gain 6`"
+    }
+  ],
+  "pipeline": [
+    "UTF-8 text",
+    "Language tag per word",
+    "Normalizer (numbers, dates, units)",
+    "G2P",
+    "Duration + acoustic model (int8)",
+    "Vocos decoder + iSTFT",
+    "PCM 22.05 kHz → I2S speaker"
+  ],
+  "tech": [
+    {
+      "title": "Runtime",
+      "text": "C99, no malloc: the caller passes one arena whose size is known up front. Int8 weights with per-channel scales, int8 activations with one scale per frame. Streaming keeps per-layer state, so every frame is computed once.",
+      "title_vi": "Runtime",
+      "text_vi": "C99, không malloc: bên gọi cấp một arena có kích thước biết trước. Trọng số int8 với scale theo kênh, activation int8 với một scale mỗi frame. Streaming giữ state theo từng layer nên mỗi frame chỉ tính một lần."
+    },
+    {
+      "title": "On the chip",
+      "text": "Int8 SIMD kernels for the ESP32-P4 (PIE) and the ESP32-S3 (128-bit SIMD), work split over both cores with FreeRTOS. Chip audio matches the reference C runtime on a PC.",
+      "title_vi": "Trên chip",
+      "text_vi": "Kernel int8 SIMD cho ESP32-P4 (PIE) và ESP32-S3 (SIMD 128-bit), chia việc cho cả hai core bằng FreeRTOS. Audio trên chip khớp với C runtime tham chiếu chạy trên PC."
+    },
+    {
+      "title": "Models",
+      "text": "A VITS teacher (~24M params) is distilled into 0.8–1.7M-param students: duration predictor, acoustic model with pitch and energy, Vocos-style ConvNeXt decoder with an iSTFT head.",
+      "title_vi": "Model",
+      "text_vi": "Teacher VITS (~24M tham số) được distill thành student 0,8–1,7M tham số: bộ dự đoán duration, acoustic model có pitch và energy, decoder ConvNeXt kiểu Vocos với head iSTFT."
+    },
+    {
+      "title": "Front-ends",
+      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. English: CMUdict plus letter-to-sound rules learned from it.",
+      "title_vi": "Front-end",
+      "text_vi": "Mỗi ngôn ngữ một front-end, viết bằng Python cho train và C cho thiết bị, có test bảo đảm ra cùng token id. Tiếng Việt: G2P theo quy tắc chính tả, 6 thanh. Tiếng Anh: CMUdict cùng quy tắc letter-to-sound học từ CMUdict."
+    },
+    {
+      "title": "Data",
+      "text": "The Vietnamese prototype uses a public single-speaker corpus. Bilingual voices use about 98 h each of speech synthesized with VoxCPM2 (Apache-2.0) from designed voices.",
+      "title_vi": "Dữ liệu",
+      "text_vi": "Bản tiếng Việt prototype dùng một corpus công khai một người đọc. Các giọng song ngữ dùng khoảng 98 giờ mỗi giọng, sinh bằng VoxCPM2 (Apache-2.0) từ giọng thiết kế."
+    },
+    {
+      "title": "Tooling",
+      "text": "PyTorch for training, ESP-IDF v6.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness.",
+      "title_vi": "Công cụ",
+      "text_vi": "PyTorch để train, ESP-IDF v6.1 cho firmware, PhoWhisper và Whisper đo độ dễ hiểu, UTMOS và DNSMOS đo độ tự nhiên và độ sạch."
+    }
+  ]
+}

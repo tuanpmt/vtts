@@ -14,14 +14,16 @@
 
 ## Danh mục giọng
 
+<!-- BEGIN:voices -->
 | Giọng | Ngôn ngữ | Chất lượng (ESP32-P4) | Nhẹ (ESP32-S3) | Trạng thái |
 |---|---|---|---|---|
-| Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M, 1.1 MB) | **Đã phát hành** trong v0.3.0 (phi thương mại) |
-| `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train**: ~98 giờ dữ liệu, đang train teacher |
-| `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train**: ~98 giờ dữ liệu, đang train teacher |
+| Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.0 (phi thương mại)** |
+| `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: ~98 giờ dữ liệu, đang train teacher** |
+| `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: ~98 giờ dữ liệu, đang train teacher** |
 | Tiếng Anh | 🇺🇸 en | M | S | Dự kiến |
 | Tiếng Trung (phổ thông) | 🇨🇳 zh | M | S | Dự kiến |
-| Trung + Anh | 🇨🇳 zh + 🇺🇸 en | M | S | Dự kiến |
+| Trung + Anh | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+<!-- END:voices -->
 
 Giọng song ngữ đọc được câu một thứ tiếng và câu trộn như "Đã kết nối Bluetooth với AirPods" bằng cùng một giọng; front-end chọn ngôn ngữ cho từng từ. Front-end tiếng Anh đã xong bản Python; bước tiếp theo trước khi phát hành giọng song ngữ là port sang C để chạy trên chip.
 
@@ -29,12 +31,31 @@ File model được đính kèm ở [GitHub Releases](https://github.com/tuanpmt
 
 ## Phần cứng và hiệu năng
 
-| Board | Chip | RTF model nhẹ | RTF model chất lượng | Bắt đầu phát (nhẹ / chất lượng) |
-|---|---|---:|---:|---:|
-| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.20–0.24 | 0.34–0.42 | 0.3 s / 1.2 s |
-| Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3R8, 240 MHz, PSRAM 8 MB | 0.42–0.47 | 0.85–0.99 | 0.8 s / 2.4 s |
+<!-- BEGIN:hardware -->
+| Board | Chip | RTF model nhẹ | RTF model chất lượng | Bản v0.3.0 (nhẹ / chất lượng) |
+|---|---|---|---|---|
+| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.18–0.19 | 0.30 | 0.20–0.24 / 0.34–0.42 |
+| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.31–0.32 | 0.55 | 0.42–0.47 / 0.85–0.99 |
 
-RTF (real-time factor) dưới 1 nghĩa là tổng hợp nhanh hơn thời gian thực. Cả hai chip đều dùng 2 lõi và kernel SIMD int8. Audio sinh trên chip khớp với runtime C chạy trên máy tính (tương quan ≥ 0.99999). ESP32-S3 cần PSRAM ít nhất 8 MB. Số đo chi tiết, tải CPU và các bước tối ưu: [docs/reports/performance.md](docs/reports/performance.md). Việc tăng tốc runtime đang tiếp tục: [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).
+RTF dưới 1 nghĩa là nhanh hơn thời gian thực. Số đo của nhánh main hiện tại; cột cuối là bản phát hành v0.3.0.
+<!-- END:hardware -->
+
+Cả hai chip đều dùng 2 lõi và kernel SIMD int8. Audio sinh trên chip khớp với runtime C chạy trên máy tính (tương quan ≥ 0.99999). ESP32-S3 cần PSRAM ít nhất 8 MB. Số đo chi tiết, tải CPU và các bước tối ưu: [docs/reports/performance.md](docs/reports/performance.md). Việc tăng tốc runtime đang tiếp tục: [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).
+
+## Công nghệ
+
+<!-- BEGIN:tech -->
+`UTF-8 text → Language tag per word → Normalizer (numbers, dates, units) → G2P → Duration + acoustic model (int8) → Vocos decoder + iSTFT → PCM 22.05 kHz → I2S speaker`
+
+- **Runtime:** C99, không malloc: bên gọi cấp một arena có kích thước biết trước. Trọng số int8 với scale theo kênh, activation int8 với một scale mỗi frame. Streaming giữ state theo từng layer nên mỗi frame chỉ tính một lần.
+- **Trên chip:** Kernel int8 SIMD cho ESP32-P4 (PIE) và ESP32-S3 (SIMD 128-bit), chia việc cho cả hai core bằng FreeRTOS. Audio trên chip khớp với C runtime tham chiếu chạy trên PC.
+- **Model:** Teacher VITS (~24M tham số) được distill thành student 0,8–1,7M tham số: bộ dự đoán duration, acoustic model có pitch và energy, decoder ConvNeXt kiểu Vocos với head iSTFT.
+- **Front-end:** Mỗi ngôn ngữ một front-end, viết bằng Python cho train và C cho thiết bị, có test bảo đảm ra cùng token id. Tiếng Việt: G2P theo quy tắc chính tả, 6 thanh. Tiếng Anh: CMUdict cùng quy tắc letter-to-sound học từ CMUdict.
+- **Dữ liệu:** Bản tiếng Việt prototype dùng một corpus công khai một người đọc. Các giọng song ngữ dùng khoảng 98 giờ mỗi giọng, sinh bằng VoxCPM2 (Apache-2.0) từ giọng thiết kế.
+- **Công cụ:** PyTorch để train, ESP-IDF v6.1 cho firmware, PhoWhisper và Whisper đo độ dễ hiểu, UTMOS và DNSMOS đo độ tự nhiên và độ sạch.
+<!-- END:tech -->
+
+Chi tiết hơn ở phần [Kiến trúc](#kiến-trúc).
 
 ## Chất lượng (prototype tiếng Việt)
 
@@ -54,13 +75,17 @@ Model M-vocos v0.2 có bộ dự đoán cao độ và năng lượng. Trên 50 c
 
 Audio sinh trực tiếp trên chip bằng lệnh `dump` của firmware, gửi về máy tính qua serial, chỉ nén sang mp3. Thêm mẫu trên [trang web](https://tuanpmt.github.io/vtts/).
 
-| Câu | Chất lượng (M) | Nhẹ (S) |
+<!-- BEGIN:samples -->
+🇻🇳 **Tiếng Việt**
+
+| Câu | Quality | Lite |
 |---|---|---|
-| Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4. | [▶ M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-intro.mp3) | [▶ S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-intro.mp3) |
-| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-news.mp3) | [▶ S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-news.mp3) |
-| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-numbers.mp3) | [▶ S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-numbers.mp3) |
-| Bạn có muốn bật đèn phòng khách không? | [▶ M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-question.mp3) | [▶ S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-question.mp3) |
-| Đoạn bản tin thời tiết 5 câu, dài khoảng 30 giây | [▶ M](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-paragraph.mp3) | [▶ S](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-paragraph.mp3) |
+| Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-intro.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-intro.mp3) |
+| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-news.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-news.mp3) |
+| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-numbers.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-numbers.mp3) |
+| Bạn có muốn bật đèn phòng khách không? | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-question.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-question.mp3) |
+| Bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ), khoảng 30 giây. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-paragraph.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-paragraph.mp3) |
+<!-- END:samples -->
 
 ## Bắt đầu nhanh
 
@@ -74,11 +99,14 @@ cd firmware/esp32
 BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
 ```
 
+<!-- BEGIN:boards -->
 | `BOARD=` | Board | Loa | Âm lượng mặc định |
 |---|---|---|---|
 | `panel` (mặc định) | ESP32-P4-86-Panel | ES8311 | `vol 70`, `gain 0` |
 | `nano` | ESP32-P4-NANO | ES8311 | `vol 90`, `gain 12` |
 | `s3` | ESP32-S3-Touch-LCD-2.8 | PCM5101 | `vol 80`, `gain 6` |
+| `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
+<!-- END:boards -->
 
 Phần loa của mỗi board nằm trong `firmware/esp32/main/board_audio.c`; thêm board chỉ cần một lựa chọn Kconfig và một khối khai báo chân. Xem [firmware/esp32/README.md](firmware/esp32/README.md).
 
