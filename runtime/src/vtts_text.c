@@ -73,6 +73,8 @@ static int is_space_cp(uint32_t cp) {
            cp == 0x205F || cp == 0x3000;
 }
 static int is_word_cp(uint32_t cp) { return is_letter_cp(cp) || is_digit_cp(cp) || cp == '_'; }
+int vtts_cp_is_word(uint32_t cp) { return is_word_cp(cp); } /* Python \w, for vtts_text_en.c */
+int vtts_cp_is_space(uint32_t cp) { return is_space_cp(cp); }
 
 /* ---------------- UTF-8 ---------------- */
 

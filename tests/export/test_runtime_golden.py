@@ -87,3 +87,11 @@ def test_c_lexicon_parity(tmp_path):
     r = subprocess.run([str(RUNTIME / "build" / "lex_test"), str(blob), str(RUNTIME / "test" / "lex_expect.tsv")],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+
+
+def test_c_english_normalizer_parity():
+    """vtts_en_normalize gives exactly normalize_en (sentences, edge cases, regex fuzz)."""
+    subprocess.run(["make", "-s", "build/en_norm_test"], cwd=RUNTIME, check=True)
+    r = subprocess.run([str(RUNTIME / "build" / "en_norm_test"), str(RUNTIME / "test" / "en_norm.tsv")],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
