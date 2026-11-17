@@ -360,6 +360,30 @@ static qbuf_t qalloc(arena_t *a, size_t n, size_t frames) {
     return q;
 }
 
+/* Optional fast scratch (internal SRAM on the ESP32): streaming synthesis puts its most reused
+ * buffers here, in priority order, and the rest in the main arena. A dry run (arena sizing)
+ * ignores it, so vtts_stream_arena_bytes stays an upper bound. */
+static void *s_fast;
+static size_t s_fast_n;
+
+void vtts_set_fast_scratch(void *p, size_t n) {
+    s_fast = n ? p : NULL;
+    s_fast_n = p ? n : 0;
+}
+
+static void *alloc2(arena_t *fast, arena_t *a, size_t n_floats) {
+    size_t bytes = (n_floats * sizeof(float) + 15u) & ~(size_t)15u;
+    if (fast->base && fast->used + bytes <= fast->cap) return alloc(fast, n_floats);
+    return alloc(a, n_floats);
+}
+
+static qbuf_t qalloc2(arena_t *fast, arena_t *a, size_t n, size_t frames) {
+    qbuf_t q;
+    q.x = (int8_t *)alloc2(fast, a, (n + 3) / 4);
+    q.s = (float *)alloc2(fast, a, frames);
+    return q;
+}
+
 /* ---------------- fast transcendental functions for the iSTFT head ----------------
  * Range-reduced polynomials (max abs error ~2e-7 for sin/cos on any phase, ~1e-6 relative
  * for exp on [-87, 6]). The head evaluates them for every bin of every frame. */
@@ -1323,18 +1347,21 @@ static long stream_run(const vtts_model *m, arena_t *a, const int32_t *ids, int 
         if (ly == st.fin) ly->cap = (chunk + 4) + st.nmax;
         ly->d = alloc(a, (size_t)ly->C * ly->cap);
     }
-    st.win = alloc(a, wbuf);
-    st.tmp = alloc(a, wbuf);
-    st.aux = alloc(a, (size_t)cmax * st.nmax);
-    st.out = alloc(a, (size_t)cmax * st.nmax);
-    st.feat = alloc(a, (size_t)2 * st.nmax);
-    st.col = alloc(a, (size_t)C * (VTTS_BLOCK > VTTS_HEAD_BLOCK ? VTTS_BLOCK : VTTS_HEAD_BLOCK));
-    st.h = alloc(a, (size_t)M * VTTS_BLOCK);
-    st.o = alloc(a, (size_t)C * VTTS_BLOCK);
-    st.q = qalloc(a, (size_t)(cmax > M ? cmax : M) * wcap, (size_t)wcap);
-    st.q2 = qalloc(a, (size_t)M * VTTS_BLOCK, VTTS_BLOCK);
+    /* most reused first: int8 activations (read once per output channel), then the float tiles */
+    arena_t fast = mk(a->dry ? NULL : s_fast, a->dry ? 0 : s_fast_n);
+    st.q = qalloc2(&fast, a, (size_t)(cmax > M ? cmax : M) * wcap, (size_t)wcap);
+    st.q2 = qalloc2(&fast, a, (size_t)M * VTTS_BLOCK, VTTS_BLOCK);
+    st.o = alloc2(&fast, a, (size_t)C * VTTS_BLOCK);
+    st.aux = alloc2(&fast, a, (size_t)cmax * st.nmax);
+    st.out = alloc2(&fast, a, (size_t)cmax * st.nmax);
+    float *win = alloc2(&fast, a, (size_t)n_fft);
+    st.win = alloc2(&fast, a, wbuf);
+    st.tmp = alloc2(&fast, a, wbuf);
+    st.h = alloc2(&fast, a, (size_t)M * VTTS_BLOCK);
+    st.col = alloc2(&fast, a, (size_t)C * (VTTS_BLOCK > VTTS_HEAD_BLOCK ? VTTS_BLOCK : VTTS_HEAD_BLOCK));
+    st.feat = alloc2(&fast, a, (size_t)2 * st.nmax);
     long nf_max = chunk + 4;
-    float *head = st.win, *fbuf = st.tmp, *win = alloc(a, (size_t)n_fft);
+    float *head = st.win, *fbuf = st.tmp;
     long ola_cap = (long)n_fft + (long)hop * (nf_max - 1);
     float *ola = alloc(a, (size_t)ola_cap);
     if (a->dry) return 1;

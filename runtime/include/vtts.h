@@ -92,6 +92,11 @@ long vtts_synthesize_stream_ex(const vtts_model *m, const int32_t *ids, int n_id
                                int first_chunk, int chunk_frames, vtts_pcm_cb cb, void *user,
                                void *arena, size_t arena_bytes);
 
+/* Optional: n bytes of fast memory (e.g. internal SRAM) for the most reused streaming buffers.
+ * Buffers that do not fit stay in the arena; the arena size from vtts_stream_arena_bytes is
+ * unchanged. The memory must stay valid while synthesizing; pass NULL to stop using it. */
+void vtts_set_fast_scratch(void *p, size_t n);
+
 /* Prosody models only: scale the predicted pitch movement (1.0 = as trained, >1 livelier). */
 void vtts_set_expressiveness(vtts_model *m, float e);
 

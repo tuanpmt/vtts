@@ -29,6 +29,10 @@
 #include "vtts_port.h"
 #include "vtts_text.h"
 
+#ifndef FAST_SCRATCH_MAX
+#define FAST_SCRATCH_MAX 0 /* bytes of internal SRAM for hot synthesis buffers; 0 keeps everything in PSRAM (SRAM stays free for DMA). About 2% faster with 96 KB on the P4. */
+#endif
+
 static const char *TAG = "vtts";
 
 extern const uint8_t model_s_start[] asm("_binary_model_s_vtts_start");
@@ -502,6 +506,14 @@ void app_main(void) {
     g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     g.arena_where = "sram";
     if (!g.arena) { g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_SPIRAM); g.arena_where = "psram"; }
+    /* the most reused streaming buffers go to internal SRAM; keep 64 KB for drivers and stacks */
+    {
+        long room = (long)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) - 65536;
+        size_t fast_n = room > FAST_SCRATCH_MAX ? FAST_SCRATCH_MAX : room > 16384 ? (size_t)room : 0;
+        void *fast = fast_n ? heap_caps_aligned_alloc(16, fast_n, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) : NULL;
+        vtts_set_fast_scratch(fast, fast ? fast_n : 0);
+        printf("fast scratch %u bytes in sram\n", fast ? (unsigned)fast_n : 0u);
+    }
     g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
     /* up to MAX_SECONDS, or what PSRAM has left (keep 64 KB spare) */
     long fit = ((long)heap_caps_get_largest_free_block(MALLOC_CAP_SPIRAM) - 65536) / (long)sizeof(float);
