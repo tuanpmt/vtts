@@ -6,14 +6,14 @@
 
 - **On the chip, end to end:** text normalization, grapheme-to-phoneme, an int8 acoustic model and an iSTFT vocoder all run on the MCU.
 - **Faster than real time, streaming:** speech starts after 0.3–2.4 s depending on chip and model.
-- **Two tiers per voice:** a *quality* model for the ESP32-P4 and a *lite* model that also fits the ESP32-S3.
+- **Two model sizes per voice, on both chips:** *quality* (M) for the best sound and *lite* (S), about 1.7× faster with less CPU load and flash. Both run faster than real time on the ESP32-P4 and the ESP32-S3; pick by sound versus headroom, not by chip.
 - **Small and predictable:** 1.1–2.6 MB models, a C99 runtime with no `malloc` (the caller provides one arena whose size is known up front).
 - **Built to grow:** languages plug in as front-end modules on a versioned token set, so new single-language and bilingual voices reuse the same runtime, firmware and training pipeline.
 
 ## Voice catalog
 
 <!-- BEGIN:voices -->
-| Voice | Languages | Quality (ESP32-P4) | Lite (ESP32-S3) | Status |
+| Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
 | Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.0 (non-commercial)** |
 | `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: ~98 h of data, teacher in progress** |
@@ -35,7 +35,7 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 | Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17 | 0.27 | 0.20–0.24 / 0.34–0.42 |
 | EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.28 | 0.51 | 0.42–0.47 / 0.85–0.99 |
 
-RTF below 1 means faster than real time. Numbers are for the current main branch; the last column is the v0.3.0 release.
+Both models run on both chips. RTF below 1 means faster than real time. Numbers are for the current main branch; the last column is the v0.3.0 release.
 <!-- END:hardware -->
 
 Both chips use two cores and int8 SIMD kernels. Audio generated on the chip matches the C runtime on a PC (correlation ≥ 0.99999). The ESP32-S3 needs at least 8 MB of PSRAM. Details, CPU load and the optimizations so far: [docs/reports/performance.md](docs/reports/performance.md). Further runtime speedups are in progress: [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).

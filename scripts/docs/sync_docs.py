@@ -24,21 +24,21 @@ RAW = "https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/"
 
 T = {
     "en": {
-        "voices_head": ["Voice", "Languages", "Quality (ESP32-P4)", "Lite (ESP32-S3)", "Status"],
+        "voices_head": ["Voice", "Languages", "Quality model (M)", "Lite model (S)", "Status"],
         "cs": "code-switching",
         "hw_head": ["Board", "Chip", "Lite RTF", "Quality RTF", "Release v0.3.0 (lite / quality)"],
-        "hw_note": "RTF below 1 means faster than real time. Numbers are for the current main branch; "
-                   "the last column is the v0.3.0 release.",
+        "hw_note": "Both models run on both chips. RTF below 1 means faster than real time. Numbers are for "
+                   "the current main branch; the last column is the v0.3.0 release.",
         "boards_head": ["`BOARD=`", "Board", "Speaker path", "Default volume"],
         "default": " (default)",
         "sentence": "Sentence",
     },
     "vi": {
-        "voices_head": ["Giọng", "Ngôn ngữ", "Chất lượng (ESP32-P4)", "Nhẹ (ESP32-S3)", "Trạng thái"],
+        "voices_head": ["Giọng", "Ngôn ngữ", "Model chất lượng (M)", "Model nhẹ (S)", "Trạng thái"],
         "cs": "đọc câu trộn",
         "hw_head": ["Board", "Chip", "RTF model nhẹ", "RTF model chất lượng", "Bản v0.3.0 (nhẹ / chất lượng)"],
-        "hw_note": "RTF dưới 1 nghĩa là nhanh hơn thời gian thực. Số đo của nhánh main hiện tại; "
-                   "cột cuối là bản phát hành v0.3.0.",
+        "hw_note": "Cả hai model đều chạy trên cả hai chip. RTF dưới 1 nghĩa là nhanh hơn thời gian thực. "
+                   "Số đo của nhánh main hiện tại; cột cuối là bản phát hành v0.3.0.",
         "boards_head": ["`BOARD=`", "Board", "Loa", "Âm lượng mặc định"],
         "default": " (mặc định)",
         "sentence": "Câu",
@@ -136,7 +136,7 @@ STATUS_TAG = {"released": "tag ok", "training": "tag", "planned": "tag plan"}
 
 
 def h_voices(site: dict, samples: dict) -> str:
-    head = [(h, "") for h in ["Voice", "Languages", "Quality (P4)", "Lite (S3)", "Status"]]
+    head = [(h, "") for h in ["Voice", "Languages", "Quality (M)", "Lite (S)", "Status"]]
     rows = []
     for v in site["voices"]:
         langs = " + ".join(h_flag(c) for c in v["langs"])

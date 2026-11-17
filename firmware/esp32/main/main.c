@@ -219,13 +219,15 @@ static void cpu_report(const cpu_snap_t *a) {
 }
 
 /* selftest: both cores run SIMD dots at once, 200 times per row; every repeat must match */
-static struct { const int8_t *w, *x; int len; int32_t *out; volatile int bad; } s_pt;
+static struct { const int8_t *w, *x; int len; int32_t *out; volatile int bad; int irq_off; } s_pt;
 static void partest_rows(int lo, int hi, void *ctx) {
     (void)ctx;
     for (int rep = 0; rep < 200; rep++)
         for (int r = lo; r < hi; r++) {
             int32_t got;
+            if (s_pt.irq_off) portDISABLE_INTERRUPTS();
             vtts_dots_s8s8(s_pt.w + (size_t)r * s_pt.len, s_pt.x, s_pt.len, 1, s_pt.len, &got);
+            if (s_pt.irq_off) portENABLE_INTERRUPTS();
             if (rep == 0) s_pt.out[r] = got;
             else if (got != s_pt.out[r]) s_pt.bad++;
         }
@@ -252,6 +254,39 @@ static void handle(char *line) {
         printf("model %c\nDONE\n", g.cur ? 'M' : 'S');
         return;
     }
+#if CONFIG_IDF_TARGET_ESP32S3
+    if (strcmp(line, "fusetest") == 0) { /* fused ld.ip kernel: kernel x memory x cores x interrupts */
+        extern int vtts_s3_kernel;
+        uint32_t r = esp_random();
+        int8_t *ws = heap_caps_aligned_alloc(16, 64 * 480, MALLOC_CAP_INTERNAL), *xs = heap_caps_aligned_alloc(16, 480, MALLOC_CAP_INTERNAL);
+        int8_t *wp = heap_caps_aligned_alloc(16, 64 * 480, MALLOC_CAP_SPIRAM), *xp = heap_caps_aligned_alloc(16, 480, MALLOC_CAP_SPIRAM);
+        static int32_t out[64], ref[64];
+        if (!ws || !xs || !wp || !xp) { printf("fusetest: out of memory\nDONE\n"); return; }
+        for (int i = 0; i < 64 * 480; i++) ws[i] = wp[i] = (int8_t)(((r = r * 1664525u + 1013904223u) >> 24) % 255 - 127);
+        for (int i = 0; i < 480; i++) xs[i] = xp[i] = (int8_t)(((r = r * 1664525u + 1013904223u) >> 24) % 255 - 127);
+        for (int t = 0; t < 64; t++) { ref[t] = 0; for (int i = 0; i < 480; i++) ref[t] += ws[t * 480 + i] * xs[i]; }
+        for (int k = 0; k < 2; k++)
+            for (int mem = 0; mem < 2; mem++)
+                for (int cores = 1; cores <= 2; cores++)
+                    for (int irq = 0; irq < 2; irq++) {
+                        vtts_s3_kernel = k;
+                        s_pt.w = mem ? wp : ws; s_pt.x = mem ? xp : xs; s_pt.len = 480; s_pt.out = out;
+                        s_pt.bad = 0; s_pt.irq_off = irq;
+                        int64_t t0 = esp_timer_get_time();
+                        if (cores == 2) vtts_par_run(partest_rows, 64, NULL); else partest_rows(0, 64, NULL);
+                        int64_t us = esp_timer_get_time() - t0;
+                        int wrong = 0;
+                        for (int t = 0; t < 64; t++) wrong += out[t] != ref[t];
+                        printf("FUSETEST kernel=%s mem=%s cores=%d irq=%s wrong=%d unstable=%d %.0f MMAC/s\n",
+                               k ? "fused" : "plain", mem ? "psram" : "sram", cores, irq ? "off" : "on", wrong, s_pt.bad,
+                               200.0 * 64 * 480 / us);
+                    }
+        vtts_s3_kernel = 0; s_pt.irq_off = 0;
+        free(ws); free(xs); free(wp); free(xp);
+        printf("DONE\n");
+        return;
+    }
+#endif
     if (strcmp(line, "selftest") == 0) { /* PIE dot vs scalar on random aligned vectors */
         static int8_t va[512] __attribute__((aligned(16))), vb[512] __attribute__((aligned(16)));
         int bad = 0;

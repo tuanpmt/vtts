@@ -43,9 +43,9 @@ Waveshare ESP32-S3-Touch-LCD-2.8: ESP32-S3R8, 240 MHz, 8 MB octal PSRAM, 16 MB f
 | M-vocos v0.2 | 0.85–0.99 | ~2.4 s | 75% / 62% | 0 |
 
 - Audio from the S3 matches the C runtime on a PC: correlation 1.000000 for S and 0.999992 for M.
-- The M model is still faster than real time but close to the limit. On the S3, prefer S when you need fast response or have other work to run.
+- In v0.3.0 the M model was close to real time on the S3. On the main branch it runs at RTF 0.50 (see below), so both models are usable on the S3; S leaves more CPU for the application.
 - At least 8 MB of PSRAM is required: both models are copied into PSRAM and the working area is about 1.9 MB. Boards with 2 MB of PSRAM are not enough.
-- The fused instruction `ee.vmulas.s8.accx.ld.ip` is not used. When both cores run it at the same time the accumulated sum is occasionally wrong; on one core it is always correct. The current kernel loads first and then multiply-accumulates, which is correct on both cores. The firmware `selftest` includes a test that runs the kernel on both cores at once.
+- The default kernel loads first and then multiply-accumulates. An earlier kernel with the fused instruction `ee.vmulas.s8.accx.ld.ip` gave wrong sums on two cores; a rewrite is correct (see below) but barely faster end to end. The firmware `selftest` runs the kernel on both cores at once, and `fusetest` checks the fused form.
 
 ## Runtime optimization (main branch, after v0.3.0)
 
@@ -64,6 +64,7 @@ Tried and not kept:
 - **Fast scratch in internal SRAM** (`vtts_set_fast_scratch`): about 2% faster on the P4 with 96 KB. Available in the API, off in the firmware (`FAST_SCRATCH_MAX 0`).
 - **Software-pipelined S3 kernel** (two register pairs): slower in the kernel benchmark (773 → 690 MMAC/s at 160, 1048 → 846 at 480). The plain load + MAC loop already reaches about 4.4 MAC per cycle.
 - **`-O3`** on the S3: no gain (M 0.508–0.513).
+- **Fused `ee.vmulas.s8.accx.ld.ip` kernel on the S3** (2 instructions per 16 bytes instead of 3): rewritten without any load past the last block, it is **correct** in every case of the `fusetest` matrix (SRAM/PSRAM × one/two cores × interrupts on/off: 0 wrong, 0 unstable), so the earlier two-core failures came from the old kernel, not from the hardware. It is 8–12% faster in the kernel benchmark but only about 1% end to end (M 0.505 → 0.501), so the plain loop stays the default; `vtts_s3_kernel = 1` selects the fused one.
 
 ## How to measure
 

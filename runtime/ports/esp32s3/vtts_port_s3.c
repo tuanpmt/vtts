@@ -37,6 +37,39 @@ static inline int32_t dot_simd(const int8_t *a, const int8_t *b, int32_t blocks)
     return res;
 }
 
+/* Fused form under investigation: ee.vmulas.s8.accx.ld.ip multiplies one block and loads the next
+ * `a` block in the same instruction (2 instructions per block instead of 3). Selected at run
+ * time by vtts_s3_kernel = 1 (test hook; 0 = plain loop). No load past the last block. */
+int vtts_s3_kernel = 0;
+
+static inline int32_t dot_fused(const int8_t *a, const int8_t *b, int32_t blocks) {
+    int32_t res, pairs = (blocks - 1) >> 1, odd = (blocks - 1) & 1;
+    asm volatile(
+        "ee.zero.accx\n\t"
+        "ee.vld.128.ip q0, %[a], 16\n\t"
+        "ee.vld.128.ip q1, %[b], 16\n\t"
+        "loopnez %[p], 1f\n\t"
+        "ee.vmulas.s8.accx.ld.ip q2, %[a], 16, q0, q1\n\t"
+        "ee.vld.128.ip q3, %[b], 16\n\t"
+        "ee.vmulas.s8.accx.ld.ip q0, %[a], 16, q2, q3\n\t"
+        "ee.vld.128.ip q1, %[b], 16\n\t"
+        "1:\n\t"
+        "beqz %[o], 2f\n\t"
+        "ee.vmulas.s8.accx.ld.ip q2, %[a], 16, q0, q1\n\t"
+        "ee.vld.128.ip q3, %[b], 16\n\t"
+        "ee.vmulas.s8.accx q2, q3\n\t"
+        "j 3f\n\t"
+        "2:\n\t"
+        "ee.vmulas.s8.accx q0, q1\n\t"
+        "3:\n\t"
+        "movi a8, 0\n\t"
+        "ee.srs.accx %[res], a8, 0\n\t"
+        : [res] "=&r"(res), [a] "+r"(a), [b] "+r"(b)
+        : [p] "r"(pairs), [o] "r"(odd)
+        : "a8", "memory");
+    return res;
+}
+
 int32_t vtts_dot_s8s8(const int8_t *a, const int8_t *b, int n) {
     if ((((uintptr_t)a | (uintptr_t)b) & 15) || (n & 15) || n == 0) return dot_scalar(a, b, n);
     return dot_simd(a, b, n >> 4);
@@ -47,5 +80,8 @@ void vtts_dots_s8s8(const int8_t *w, const int8_t *x, int stride, int n, int len
         for (int t = 0; t < n; t++) out[t] = dot_scalar(w, x + (long)t * stride, len);
         return;
     }
-    for (int t = 0; t < n; t++) out[t] = dot_simd(w, x + (long)t * stride, len >> 4);
+    if (vtts_s3_kernel == 1)
+        for (int t = 0; t < n; t++) out[t] = dot_fused(w, x + (long)t * stride, len >> 4);
+    else
+        for (int t = 0; t < n; t++) out[t] = dot_simd(w, x + (long)t * stride, len >> 4);
 }

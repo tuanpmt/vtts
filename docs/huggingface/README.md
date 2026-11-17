@@ -27,7 +27,7 @@ Tiny int8 voices for [vtts](https://github.com/tuanpmt/vtts), a text-to-speech e
 
 ## Repository layout
 
-One folder per voice. Each voice comes in two tiers: a **quality** model (M) for the ESP32-P4 and a **lite** model (S) that also fits the ESP32-S3.
+One folder per voice. Each voice comes in two sizes, and both run on the ESP32-P4 and the ESP32-S3: a **quality** model (M) for the best sound and a **lite** model (S) that is about 1.7× faster and uses less CPU and flash.
 
 | Folder | Voice | Languages | Status |
 |---|---|---|---|

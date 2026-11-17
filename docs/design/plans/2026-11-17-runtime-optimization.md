@@ -45,7 +45,7 @@
 - Use two register pairs (load one pair while multiplying the other) and move the frame loop into the assembly.
 - Add a `selftest` matrix to find the root cause of the fused `ld.ip` failure: interrupts on/off × SRAM/PSRAM × what the other core is doing.
 - **Gate:** the two-core `selftest` shows 0 mismatches, and the output is bit-exact.
-- Result so far: the two-register-pair loop is correct but slower (kernel benchmark 773 → 690 MMAC/s), so the plain loop stays. The remaining lever is the fused `ld.ip` form, which needs the root cause of the two-core failure first.
+- Result: the two-register-pair loop is correct but slower (kernel benchmark 773 → 690 MMAC/s). The fused `ld.ip` form, rewritten with no load past the last block, is correct in the whole `fusetest` matrix (memory × cores × interrupts), so the old failure was in the old kernel. It is 8–12% faster per kernel but about 1% end to end, so the plain loop stays the default (`vtts_s3_kernel = 1` selects the fused one). The S3 kernel is bound by load latency, not by instruction count or PSRAM bandwidth (SRAM and PSRAM give the same speed).
 
 ## Task 5: Build
 

@@ -8,14 +8,14 @@
 
 - **Chạy trọn trên chip:** chuẩn hoá văn bản, G2P, model âm học int8 và vocoder iSTFT đều chạy trên MCU.
 - **Nhanh hơn thời gian thực, streaming:** bắt đầu phát sau 0.3–2.4 s tuỳ chip và model.
-- **Hai bản cho mỗi giọng:** bản *chất lượng* cho ESP32-P4 và bản *nhẹ* chạy được cả trên ESP32-S3.
+- **Hai cỡ model cho mỗi giọng, chạy trên cả hai chip:** *chất lượng* (M) cho âm thanh tốt nhất và *nhẹ* (S), nhanh hơn khoảng 1,7 lần, tốn ít CPU và flash hơn. Cả hai đều nhanh hơn thời gian thực trên ESP32-P4 và ESP32-S3; chọn theo chất lượng hay độ dư CPU, không theo chip.
 - **Nhỏ và dự đoán được:** model 1.1–2.6 MB, runtime C99 không dùng `malloc` (caller cấp một arena có kích thước biết trước).
 - **Dễ mở rộng:** mỗi ngôn ngữ là một module front-end trên bộ token có đánh phiên bản, nên các giọng đơn ngữ và song ngữ mới dùng chung runtime, firmware và quy trình train.
 
 ## Danh mục giọng
 
 <!-- BEGIN:voices -->
-| Giọng | Ngôn ngữ | Chất lượng (ESP32-P4) | Nhẹ (ESP32-S3) | Trạng thái |
+| Giọng | Ngôn ngữ | Model chất lượng (M) | Model nhẹ (S) | Trạng thái |
 |---|---|---|---|---|
 | Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.0 (phi thương mại)** |
 | `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: ~98 giờ dữ liệu, đang train teacher** |
@@ -37,7 +37,7 @@ File model được đính kèm ở [GitHub Releases](https://github.com/tuanpmt
 | Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17 | 0.27 | 0.20–0.24 / 0.34–0.42 |
 | EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.28 | 0.51 | 0.42–0.47 / 0.85–0.99 |
 
-RTF dưới 1 nghĩa là nhanh hơn thời gian thực. Số đo của nhánh main hiện tại; cột cuối là bản phát hành v0.3.0.
+Cả hai model đều chạy trên cả hai chip. RTF dưới 1 nghĩa là nhanh hơn thời gian thực. Số đo của nhánh main hiện tại; cột cuối là bản phát hành v0.3.0.
 <!-- END:hardware -->
 
 Cả hai chip đều dùng 2 lõi và kernel SIMD int8. Audio sinh trên chip khớp với runtime C chạy trên máy tính (tương quan ≥ 0.99999). ESP32-S3 cần PSRAM ít nhất 8 MB. Số đo chi tiết, tải CPU và các bước tối ưu: [docs/reports/performance.md](docs/reports/performance.md). Việc tăng tốc runtime đang tiếp tục: [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).
