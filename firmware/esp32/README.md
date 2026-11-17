@@ -1,24 +1,36 @@
-# Firmware ESP32-P4 và ESP32-S3
+# ESP32-P4 and ESP32-S3 firmware
 
-Chạy toàn bộ chuỗi trên chip: văn bản → ID (front-end C) → tổng hợp streaming (runtime C, int8) → loa. Lệnh `bench` in RTF, RMS và bộ nhớ.
+Runs the whole chain on the chip: text → token ids (C front-end) → streaming synthesis (C int8 runtime) → speaker. Type a sentence on the serial console and the board speaks it; `bench` prints RTF, RMS and memory use.
 
-Board hỗ trợ:
+Supported boards:
 
-| Board | Chip | Flash / PSRAM | Loa | `BOARD=` |
+| Board | Chip | Flash / PSRAM | Speaker path | `BOARD=` |
 |---|---|---|---|---|
-| Waveshare ESP32-P4-86-Panel | ESP32-P4 | 32 MB / 32 MB | ES8311 | `panel` (mặc định) |
+| Waveshare ESP32-P4-86-Panel | ESP32-P4 | 32 MB / 32 MB | ES8311 | `panel` (default) |
 | Waveshare ESP32-P4-NANO | ESP32-P4 | 16 MB / 32 MB | ES8311 | `nano` |
 | Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3R8 | 16 MB / 8 MB (octal) | PCM5101 | `s3` |
 
+## Build and flash
+
 ```bash
-# cần ESP-IDF v6.1; build.sh tự nạp môi trường và chép hai model vào main/
+# needs ESP-IDF v6.1; build.sh sources the IDF environment and copies both models into main/
 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor             # 86-Panel
 BOARD=nano ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor  # NANO
 BOARD=s3 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor    # S3-Touch-LCD-2.8
 ```
 
-Mỗi board có thư mục build và file `sdkconfig` riêng. Cấu hình chung nằm trong `sdkconfig.defaults`, phần riêng của từng chip nằm trong `sdkconfig.defaults.esp32p4` và `sdkconfig.defaults.esp32s3`.
+The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts) (folder `vi/`). The serial console commands are listed in the [main README](../../README.md#serial-console).
 
-Dòng `REPORT` cho mỗi câu: thời lượng audio, thời gian tổng hợp, RTF (dưới 1.0 là nhanh hơn thời gian thực).
+Each board has its own build directory and `sdkconfig`. Shared configuration lives in `sdkconfig.defaults`; chip-specific settings live in `sdkconfig.defaults.esp32p4` and `sdkconfig.defaults.esp32s3`.
 
-`selftest` kiểm tra kernel SIMD với kết quả tính bằng C: một hàng, nhiều hàng, trọng số đọc từ model, và hai lõi chạy kernel cùng lúc. Trên S3, kernel không dùng lệnh gộp nhân-cộng-và-nạp (`ee.vmulas.s8.accx.ld.ip`). Khi cả hai lõi cùng chạy lệnh này, tổng nhận được đôi khi sai, dù chạy một lõi thì luôn đúng. Kernel hiện tại chỉ dùng nạp rồi nhân-cộng, và luôn cho kết quả đúng trên hai lõi.
+## Output
+
+Each sentence prints a `REPORT` line: audio duration, synthesis time and RTF (below 1.0 is faster than real time).
+
+## Self-test
+
+`selftest` checks the SIMD kernels against results computed in plain C: one row, many rows, weights read from the model, and both cores running the kernel at the same time. On the S3 the kernel does not use the fused multiply-accumulate-and-load instruction (`ee.vmulas.s8.accx.ld.ip`). When both cores run that instruction at the same time the accumulated sum is occasionally wrong, although it is always correct on one core. The current kernel only uses a load followed by a multiply-accumulate, and is always correct on both cores.
+
+## Adding a board
+
+Each board's speaker code lives in `main/board_audio.c`. A new board needs one choice in `main/Kconfig.projbuild` and a block of pin and codec settings; see [CONTRIBUTING.md](../../CONTRIBUTING.md#adding-a-board).
