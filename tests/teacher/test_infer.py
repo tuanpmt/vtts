@@ -33,3 +33,15 @@ def test_synthesize_multi_chunk(tmp_path):
 def test_empty_text_gives_empty_audio(tmp_path):
     t = Teacher.load(_ckpt(tmp_path), "cpu")
     assert len(t.synthesize("...")) == 0
+
+
+def test_synthesize_bilingual_uses_v2_ids(tmp_path, monkeypatch):
+    t = Teacher.load(_ckpt(tmp_path), "cpu")
+    seen = []
+    monkeypatch.setattr(t, "synthesize_ids", lambda ids: seen.append(ids) or np.zeros(10, np.float32))
+    t.synthesize("Bật Bluetooth nhé. Play some music.", lang="mixed")
+    from vtts.frontend.text import text_to_ids
+    assert seen == text_to_ids("Bật Bluetooth nhé. Play some music.", "vi")  # mixed is read in vi mode
+    seen.clear()
+    t.synthesize("Play some music.", lang="en")
+    assert seen == text_to_ids("Play some music.", "en")

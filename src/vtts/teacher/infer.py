@@ -8,7 +8,7 @@ import numpy as np
 import torch
 
 from vtts.frontend.g2p import encode, g2p
-from vtts.frontend.text import split_sentences
+from vtts.frontend.text import split_sentences, text_to_ids
 
 from .config import TeacherConfig
 from .model import build_generator
@@ -41,11 +41,17 @@ class Teacher:
                          noise_scale_w=self.cfg.noise_scale_w)[0]
         return y[0, 0].float().cpu().numpy().astype(np.float32)
 
-    def synthesize(self, text: str) -> np.ndarray:
+    def synthesize(self, text: str, lang: str | None = None) -> np.ndarray:
+        """lang None: token set v1 (Vietnamese models); "vi" | "en" | "mixed": token set v2,
+        with mixed text read in "vi" mode as in training (teacher/data.encode_text)."""
         gap = np.zeros(int(GAP_SECONDS * self.cfg.sample_rate), dtype=np.float32)
+        if lang is None:
+            chunks = [encode(g2p(chunk)) for chunk in split_sentences(text)]
+        else:
+            chunks = text_to_ids(text, "en" if lang == "en" else "vi")
         parts: list[np.ndarray] = []
-        for chunk in split_sentences(text):
+        for ids in chunks:
             if parts:
                 parts.append(gap)
-            parts.append(self.synthesize_ids(encode(g2p(chunk))))
+            parts.append(self.synthesize_ids(ids))
         return np.concatenate(parts) if parts else np.zeros(0, dtype=np.float32)

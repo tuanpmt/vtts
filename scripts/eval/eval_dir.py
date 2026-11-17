@@ -2,6 +2,7 @@
 
 Usage: uv run python scripts/eval/eval_dir.py --system NAME --set eval/sets/ood.jsonl \
        --audio DIR --out reports/NAME-ood.json [--no-mos]
+English or mixed sets: --lang en|mixed --asr openai/whisper-large-v3 --asr-language en|vi
 """
 
 import argparse
@@ -22,15 +23,18 @@ def main() -> None:
     ap.add_argument("--audio", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--no-mos", action="store_true")
+    ap.add_argument("--lang", default="vi", help="text normalization for CER/WER: vi | en | mixed")
+    ap.add_argument("--asr", default="vinai/PhoWhisper-large")
+    ap.add_argument("--asr-language", default=None, help="force the Whisper language (en, vi)")
     args = ap.parse_args()
     sents = [json.loads(ln) for ln in args.set.read_text(encoding="utf-8").splitlines() if ln]
-    asr = AsrTranscriber()
+    asr = AsrTranscriber(args.asr, language=args.asr_language)
     rep = evaluate(args.system, args.set.stem, args.audio, sents, asr.transcribe,
-                   mos=not args.no_mos)
+                   mos=not args.no_mos, lang=args.lang)
     by_group = defaultdict(list)
     for c in rep.clips:
         by_group[c.group].append((c.ref, c.hyp))
-    out = asdict(rep) | {"group_cer": {g: corpus_cer(p) for g, p in by_group.items()}}
+    out = asdict(rep) | {"group_cer": {g: corpus_cer(p, args.lang) for g, p in by_group.items()}}
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(json.dumps(out, ensure_ascii=False, indent=1))
     print(f"{args.system}/{args.set.stem}: CER={rep.corpus_cer:.4f} WER={rep.corpus_wer:.4f} "

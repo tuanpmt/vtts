@@ -44,7 +44,7 @@ def _mean(vals: list[float | None]) -> float | None:
 
 
 def evaluate(system: str, set_name: str, audio_dir: Path, sentences: list[dict],
-             asr: Callable[[list[Path]], list[str]], mos: bool = True) -> EvalReport:
+             asr: Callable[[list[Path]], list[str]], mos: bool = True, lang: str = "vi") -> EvalReport:
     paths = [Path(audio_dir) / f"{s['id']}.wav" for s in sentences]
     missing = [s["id"] for s, p in zip(sentences, paths) if not p.exists()]
     if missing:
@@ -54,8 +54,8 @@ def evaluate(system: str, set_name: str, audio_dir: Path, sentences: list[dict],
     for s, p, hyp in zip(sentences, paths, hyps):
         x, sr = sf.read(p, dtype="float32", always_2d=True)
         x = x.mean(axis=1)
-        clip = ClipScore(s["id"], s.get("group", ""), s["text"], hyp, cer(s["text"], hyp),
-                         wer(s["text"], hyp), whistle_score(x, sr))
+        clip = ClipScore(s["id"], s.get("group", ""), s["text"], hyp, cer(s["text"], hyp, lang),
+                         wer(s["text"], hyp, lang), whistle_score(x, sr))
         if mos:
             from .mos import dnsmos, utmos
 
@@ -63,6 +63,6 @@ def evaluate(system: str, set_name: str, audio_dir: Path, sentences: list[dict],
             clip.dnsmos_ovrl = dnsmos(x, sr)["ovrl"]
         clips.append(clip)
     pairs = [(c.ref, c.hyp) for c in clips]
-    return EvalReport(system, set_name, corpus_cer(pairs), corpus_wer(pairs),
+    return EvalReport(system, set_name, corpus_cer(pairs, lang), corpus_wer(pairs, lang),
                       float(np.mean([c.whistle for c in clips])),
                       _mean([c.utmos for c in clips]), _mean([c.dnsmos_ovrl for c in clips]), clips)

@@ -1,0 +1,50 @@
+{"id": "ood_en_device_00", "text": "The living room lights are now off.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_01", "text": "The air purifier is running in automatic mode.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_02", "text": "The back door is unlocked. Do you want me to lock it?", "group": "device", "lang": "en"}
+{"id": "ood_en_device_03", "text": "Your washing machine has finished the cycle.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_04", "text": "The battery is low, please plug in the charger.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_05", "text": "I have turned on the fan at medium speed.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_06", "text": "The garage door has been open for ten minutes.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_07", "text": "Your coffee will be ready in a moment.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_08", "text": "Bluetooth is connected to your headphones.", "group": "device", "lang": "en"}
+{"id": "ood_en_device_09", "text": "The heater will switch off at midnight.", "group": "device", "lang": "en"}
+{"id": "ood_en_numbers_00", "text": "The temperature outside is 28 degrees.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_01", "text": "Your package will arrive on Tuesday, November 18.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_02", "text": "The meeting starts at 9:30 tomorrow morning.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_03", "text": "Battery level is at 15 percent.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_04", "text": "Please call me back at 3 p.m.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_05", "text": "The total comes to $42.50.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_06", "text": "It is 7 kilometers to the nearest station.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_07", "text": "We sold 1,250 units in March.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_08", "text": "Set a timer for 25 minutes.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_numbers_09", "text": "The flight leaves at 6:45 in the evening.", "group": "numbers", "lang": "en"}
+{"id": "ood_en_names_00", "text": "Ask Michael to send the report to Sarah.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_01", "text": "Play the latest album by Taylor Swift.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_02", "text": "Open Google Maps and find a route to Brooklyn.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_03", "text": "Remind Jennifer about the dentist appointment.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_04", "text": "Call Doctor Williams at the clinic.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_05", "text": "Search YouTube for cooking videos.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_06", "text": "Send a message to Alex on WhatsApp.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_07", "text": "The next train to Boston is delayed.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_08", "text": "Read the news from the BBC.", "group": "names", "lang": "en"}
+{"id": "ood_en_names_09", "text": "Add Nguyen to the project chat.", "group": "names", "lang": "en"}
+{"id": "ood_en_questions_00", "text": "Do you want me to turn on the kitchen light?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_01", "text": "Would you like to hear today's weather forecast?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_02", "text": "Should I remind you again in ten minutes?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_03", "text": "Which room would you like to clean first?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_04", "text": "Is the front door locked?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_05", "text": "How long should I set the oven for?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_06", "text": "Do you want to continue where you left off?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_07", "text": "Shall I play some relaxing music?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_08", "text": "Are you sure you want to delete this file?", "group": "questions", "lang": "en"}
+{"id": "ood_en_questions_09", "text": "What time would you like to wake up?", "group": "questions", "lang": "en"}
+{"id": "ood_en_long_00", "text": "Good morning, today will be cloudy with light rain in the afternoon, so remember to take an umbrella when you go out.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_01", "text": "Your order has been shipped and should arrive within three business days, and you can track it in the app.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_02", "text": "The firmware update is ready to install, and the device will restart automatically when the update is complete.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_03", "text": "Traffic on the main road is heavier than usual, so it may take twenty minutes longer to get to the office.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_04", "text": "The security camera detected motion near the garden gate at two in the morning, but no one entered the house.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_05", "text": "If you leave now, you will arrive just before the movie starts, but parking might be difficult to find.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_06", "text": "I have added milk, eggs, and fresh bread to your shopping list, and I will remind you when you are near the store.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_07", "text": "The library will be closed on Monday for maintenance and will reopen on Tuesday at nine in the morning.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_08", "text": "Please keep the windows closed while the air conditioner is running to save energy and keep the room cool.", "group": "long", "lang": "en"}
+{"id": "ood_en_long_09", "text": "Your daily summary shows seven thousand steps, six hours of sleep, and about two liters of water.", "group": "long", "lang": "en"}
