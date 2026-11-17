@@ -52,6 +52,13 @@ static const char *const BENCH[] = {
     "Hôm nay là thứ Bảy, ngày 14/11/2026.",
 };
 
+#if CONFIG_IDF_TARGET_ESP32S3
+#define RTF_INIT_S 0.30f
+#define RTF_INIT_M 0.53f
+#else
+#define RTF_INIT_S 0.18f
+#define RTF_INIT_M 0.29f
+#endif
 static struct {
     vtts_model models[2];
     int cur; /* 0 = S, 1 = M */
@@ -72,7 +79,9 @@ static struct {
     int first;
     float gain; /* digital gain before the codec (linear), with a soft limiter */
     float speed; /* length_scale: > 1 reads slower */
-} g = {.vol = BOARD_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f};
+    int64_t blocked_us; /* time the synthesizer waited on a full playback buffer */
+    float rtf[2];       /* measured RTF per model (synthesis only), sets the prebuffer */
+} g = {.vol = BOARD_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f, .rtf = {RTF_INIT_S, RTF_INIT_M}};
 
 /* gain + soft limiter: linear below 0.7, smoothly saturating to 1.0 above */
 static inline float shape(float v) {
@@ -99,9 +108,13 @@ static void stream_out(const float *pcm, long n) {
         for (; k < 1024 && i < n; k++, i++) {
             buf[k] = (int16_t)lrintf(shape(pcm[i]) * 32767.0f);
         }
+        int64_t tb = esp_timer_get_time();
         xStreamBufferSend(g.sb, buf, sizeof(int16_t) * (size_t)k, portMAX_DELAY);
+        g.blocked_us += esp_timer_get_time() - tb;
     }
 }
+
+static int chunk_cap(void);
 
 static int on_pcm(const float *pcm, long n, void *user) {
     (void)user;
@@ -117,8 +130,8 @@ static int on_ids(const int32_t *ids, int n, void *user) {
     const vtts_model *m = &g.models[g.cur];
     int64_t t0 = esp_timer_get_time();
     /* only the first sentence needs a small first chunk; later ones play from a full buffer */
-    int first = (g.n == 0 && g.first < g.chunk) ? g.first : g.chunk;
-    long s = vtts_synthesize_stream_ex(m, ids, n, g.speed, first, g.chunk, on_pcm, NULL, g.arena, g.arena_bytes);
+    int cap = chunk_cap(), first = (g.n == 0 && g.first < cap) ? g.first : cap;
+    long s = vtts_synthesize_stream_ex(m, ids, n, g.speed, first, cap, on_pcm, NULL, g.arena, g.arena_bytes);
     g.synth_us += esp_timer_get_time() - t0;
     if (s < 0) { printf("ERROR synth %ld\n", s); return 1; }
     /* 150 ms pause between chunks, like the host renderer */
@@ -164,10 +177,40 @@ static void play(void) {
 }
 
 /* speaker task: plays whatever the synthesizer streams (requires the model rate) */
-/* prebuffer before playback starts: the next chunks must be ready before the buffer runs dry */
+/* Prebuffer before playback starts: the smallest amount of audio, at a chunk boundary, after which
+ * every later chunk is ready before playback reaches it. Simulated over the chunk schedule (first
+ * chunk, then doubling up to g.chunk) with the measured RTF of the current model plus a margin. */
+#define RTF_MARGIN 1.25f
+#define PREBUF_SLACK_S 0.05f
+static float prebuffer_sec(int cap) {
+    const vtts_model *m = &g.models[g.cur];
+    float fr = (float)m->hop / (float)m->sample_rate, r = g.rtf[g.cur] * RTF_MARGIN, A[64];
+    int nk = 0, c = g.first < cap ? g.first : cap;
+    for (float acc = 0.0f; nk < 64 && acc < 8.0f; c = 2 * c < cap ? 2 * c : cap) A[nk++] = acc += c * fr;
+    for (int j = 0; j < nk; j++) {
+        int ok = 1;
+        for (int k = j + 1; k < nk && ok; k++) ok = r * A[k] + PREBUF_SLACK_S <= r * A[j] + A[k - 1];
+        if (ok) return A[j];
+    }
+    return A[nk - 1];
+}
+
+/* Largest chunk (<= g.chunk) that still gives the smallest prebuffer: smaller chunks let a slow
+ * model start sooner, larger ones are a little cheaper to synthesize. */
+static int chunk_cap(void) {
+    static const int caps[] = {128, 96, 64, 48, 32};
+    int best = caps[sizeof caps / sizeof caps[0] - 1] < g.chunk ? caps[sizeof caps / sizeof caps[0] - 1] : g.chunk;
+    float best_s = prebuffer_sec(best);
+    for (size_t i = 0; i < sizeof caps / sizeof caps[0]; i++) {
+        if (caps[i] > g.chunk) continue;
+        float s = prebuffer_sec(caps[i]);
+        if (s < best_s - 1e-3f || (s < best_s + 1e-3f && caps[i] > best)) { best = caps[i]; best_s = s; }
+    }
+    return best;
+}
+
 static size_t prebuffer_bytes(void) {
-    float sec = g.cur ? 1.0f : 0.45f;
-    return (size_t)(sec * 22050) * sizeof(int16_t);
+    return (size_t)(prebuffer_sec(chunk_cap()) * (float)g.models[g.cur].sample_rate) * sizeof(int16_t);
 }
 
 static void speaker_task(void *arg) {
@@ -467,6 +510,7 @@ static void handle(char *line) {
     int direct = g.sb && g.out_rate == g.models[g.cur].sample_rate;
     g.streaming = direct;
     g.t_first = g.t_play = 0;
+    g.blocked_us = 0;
     g.underruns = 0;
     g.synth_done = 0;
     cpu_snap_t cs = cpu_snap();
@@ -476,6 +520,12 @@ static void handle(char *line) {
     g.synth_done = 1;
     g.streaming = 0;
     report("SAID", 0, c, us);
+    { /* learn the synthesis-only RTF: rises at once, falls slowly */
+        double audio = (double)g.n / g.models[g.cur].sample_rate, rt = audio > 0.3 ? (g.synth_us - g.blocked_us) / 1e6 / audio : 0;
+        if (rt > 0) g.rtf[g.cur] = rt > g.rtf[g.cur] ? (float)rt : 0.8f * g.rtf[g.cur] + 0.2f * (float)rt;
+        printf("rtf %.3f (est %.3f), next: chunk %d, prebuffer %.0f ms\n", rt, g.rtf[g.cur], chunk_cap(),
+               prebuffer_bytes() / 2.0 / g.models[g.cur].sample_rate * 1e3);
+    }
     if (direct) {
         xSemaphoreTake(g.utt_end, portMAX_DELAY); /* playback finished */
         printf("first chunk %.0f ms, playback started %.0f ms, underruns %d\n", (g.t_first - t0) / 1e3,
