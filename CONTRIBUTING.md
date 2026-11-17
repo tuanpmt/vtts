@@ -57,7 +57,7 @@ By contributing you agree that your contributions are licensed under the Apache 
 
 ## README and website
 
-The voice catalog, hardware table, board list and technology summary are shared by `README.md`, `README.vi.md` and the website (`docs/index.html`). Edit them in `docs/site.json` (audio samples: `docs/samples.json`), then run:
+The voice catalog, hardware table, board list and technology summary are shared by `README.md`, `README.vi.md` and the website (`docs/index.html`). Edit them in `docs/site.json` (the `listen` key holds the website's languages, models with their size and RTF, and audio samples), then run:
 
 ```bash
 uv run python scripts/docs/sync_docs.py

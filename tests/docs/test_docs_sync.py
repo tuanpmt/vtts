@@ -1,4 +1,4 @@
-"""README.md, README.vi.md and docs/index.html share generated blocks with docs/site.json and docs/samples.json."""
+"""README.md, README.vi.md and docs/index.html share generated blocks with docs/site.json."""
 
 import importlib.util
 import re
@@ -12,7 +12,7 @@ spec.loader.exec_module(sync_docs)
 EXPECTED = {
     "README.md": {"voices", "hardware", "boards", "tech", "samples"},
     "README.vi.md": {"voices", "hardware", "boards", "tech", "samples"},
-    "docs/index.html": {"voices", "hardware", "boards", "tech"},
+    "docs/index.html": {"boards", "tech"},
 }
 
 
@@ -37,3 +37,14 @@ def test_replace_blocks_keeps_text_outside_markers():
 
 def test_html_escapes_text():
     assert sync_docs.h_inline("a < b `c` **d**") == "a &lt; b <code>c</code> <b>d</b>"
+
+
+def test_listen_models_reference_known_audio():
+    import json
+    site = json.loads((ROOT / "docs/site.json").read_text(encoding="utf-8"))
+    for tab in site["listen"]:
+        ids = {m["id"] for m in tab["models"]}
+        for s in tab["samples"]:
+            assert set(s.get("audio", {})) <= ids, (tab["id"], s["text"])
+            for src in s.get("audio", {}).values():
+                assert (ROOT / "docs" / src).is_file(), src

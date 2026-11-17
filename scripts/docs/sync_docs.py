@@ -1,4 +1,4 @@
-"""Regenerate the content shared by the READMEs and the website from docs/site.json and docs/samples.json.
+"""Regenerate the content shared by the READMEs and the website from docs/site.json.
 
 Generated blocks sit between `<!-- BEGIN:name -->` and `<!-- END:name -->` markers in README.md
 (English Markdown), README.vi.md (Vietnamese Markdown) and docs/index.html (English HTML).
@@ -93,7 +93,7 @@ def md_tech(site: dict, samples: dict, lang: str) -> str:
 
 def md_samples(site: dict, samples: dict, lang: str) -> str:
     out = []
-    for tab in samples["tabs"]:
+    for tab in site["listen"]:
         if not any(s.get("audio") for s in tab["samples"]):
             continue
         rows = []
@@ -188,7 +188,7 @@ def targets(site: dict, samples: dict) -> list[tuple[str, callable]]:
 def sync(root: Path = ROOT, write: bool = True) -> list[str]:
     """Return the files that were (or, with write=False, would be) changed."""
     site = json.loads((root / "docs/site.json").read_text(encoding="utf-8"))
-    samples = json.loads((root / "docs/samples.json").read_text(encoding="utf-8"))
+    samples = site["listen"]
     stale = []
     for rel, make in targets(site, samples):
         p = root / rel

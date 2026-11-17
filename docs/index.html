@@ -85,7 +85,11 @@ section { display: grid; gap: 18px; }
 .grid th { font-size: 0.8rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; background: var(--yellow); color: #000; }
 .grid th:first-child { border-top-left-radius: 3px; } .grid th:last-child { border-top-right-radius: 3px; }
 .grid th.model { text-align: center; min-width: 112px; }
-.grid th.model small { display: block; font: 500 0.7rem var(--sans); text-transform: none; letter-spacing: 0; }
+.grid th.model small { display: block; font: 500 0.72rem var(--sans); text-transform: none; letter-spacing: 0; }
+.rtf { display: flex; gap: 4px; justify-content: center; flex-wrap: wrap; margin-top: 6px; }
+.rtf span { font: 500 0.68rem var(--mono); text-transform: none; letter-spacing: 0; background: var(--surface); color: var(--fg); border: 2px solid var(--border); border-radius: 999px; padding: 0 6px; white-space: nowrap; }
+.rtf span.na { border-style: dashed; color: var(--muted); }
+.grid td.cell small { display: none; }
 .grid td.cell { text-align: center; }
 .bubble { position: relative; display: inline-block; max-width: 460px; background: var(--main); color: var(--main-fg);
   border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 8px 12px; margin-left: 10px; }
@@ -131,7 +135,8 @@ footer { display: grid; gap: 6px; font-size: 0.9rem; border-top: 2px solid var(-
   .grid tr { background: var(--surface); border: 2px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 12px 14px; margin-bottom: 16px; }
   .grid td { border: 0 !important; padding: 5px 0; }
   .grid td.cell { display: flex; align-items: center; gap: 10px; text-align: left; }
-  .grid td.cell::before { content: attr(data-label); flex: 1; font-weight: 700; font-size: 0.9rem; }
+  .grid td.cell::before { content: attr(data-label); font-weight: 700; font-size: 0.9rem; }
+  .grid td.cell small { display: block; flex: 1; font: 500 0.72rem var(--mono); color: var(--muted); }
   .bubble { max-width: none; }
 }
 </style>
@@ -148,9 +153,7 @@ footer { display: grid; gap: 6px; font-size: 0.9rem; border-top: 2px solid var(-
   <a class="brand" href="./">vtts</a>
   <div class="links">
     <a href="#listen">Listen</a>
-    <a href="#voices">Voices</a>
     <a href="#how">How it works</a>
-    <a href="#hardware">Hardware</a>
     <a href="#start">Get started</a>
     <a href="https://github.com/tuanpmt/vtts">GitHub</a>
     <a href="https://huggingface.co/tuanpm/vtts">Hugging Face</a>
@@ -174,7 +177,7 @@ CPU core0 34% core1 28%</div>
 
   <section id="listen">
     <h2>Listen</h2>
-    <p class="muted">Pick a language or language pair, then play any model on any sentence. Every clip is the chip's own PCM output, only compressed to MP3.</p>
+    <p class="muted">Each column is a model with its size and real-time factor (RTF) per chip; below 1 is faster than real time. Every clip is the chip's own output, only compressed to MP3.</p>
     <div class="picker">
       <label id="langlabel" for="langbtn">Language</label>
       <button class="select" id="langbtn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="langlabel langbtn">
@@ -185,27 +188,6 @@ CPU core0 34% core1 28%</div>
     </div>
     <p class="muted" id="tabnote"></p>
     <div class="grid" id="grid"></div>
-  </section>
-
-  <section id="voices">
-    <h2>Voices</h2>
-    <p class="muted">Every voice comes in two tiers. New languages plug in as front-end modules on a shared, versioned token set, so the runtime and firmware stay the same.</p>
-<!-- BEGIN:voices -->
-<div class="tablewrap">
-  <table>
-    <thead><tr><th>Voice</th><th>Languages</th><th>Quality (P4)</th><th>Lite (S3)</th><th>Status</th></tr></thead>
-    <tbody>
-      <tr><td>Vietnamese prototype</td><td class="wrap"><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi</td><td class="wrap">M-vocos v0.2 (1.73M params, 2.6 MB)</td><td class="wrap">S-vocos v0.1 (0.77M params, 1.1 MB)</td><td><span class="tag ok">released</span></td></tr>
-      <tr><td><code>nam-1</code> (male)</td><td class="wrap"><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag">training</span></td></tr>
-      <tr><td><code>nu-10</code> (female)</td><td class="wrap"><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> vi + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag">training</span></td></tr>
-      <tr><td>English</td><td class="wrap"><svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag plan">planned</span></td></tr>
-      <tr><td>Chinese (Mandarin)</td><td class="wrap"><svg class="flag" role="img" aria-label="Chinese"><use href="#flag-zh"/></svg> zh</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag plan">planned</span></td></tr>
-      <tr><td>Chinese + English</td><td class="wrap"><svg class="flag" role="img" aria-label="Chinese"><use href="#flag-zh"/></svg> zh + <svg class="flag" role="img" aria-label="English"><use href="#flag-en"/></svg> en</td><td class="wrap">M</td><td class="wrap">S</td><td><span class="tag plan">planned</span></td></tr>
-    </tbody>
-  </table>
-</div>
-<!-- END:voices -->
-    <p class="muted">Bilingual voices read mixed sentences in one voice, for example <q>Đã kết nối Bluetooth với AirPods</q>.</p>
   </section>
 
   <section id="how">
@@ -230,23 +212,6 @@ CPU core0 34% core1 28%</div>
   <div class="card"><h3>Tooling</h3><p>PyTorch for training, ESP-IDF v6.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness.</p></div>
 </div>
 <!-- END:tech -->
-  </section>
-
-  <section id="hardware">
-    <h2>Hardware</h2>
-<!-- BEGIN:hardware -->
-<div class="tablewrap">
-  <table>
-    <thead><tr><th>Board</th><th>Chip</th><th class="num">RTF lite</th><th class="num">RTF quality</th><th class="num">v0.3.0 lite / quality</th></tr></thead>
-    <tbody>
-      <tr><td class="wrap">Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO</td><td class="wrap">ESP32-P4, 360 MHz, PIE SIMD</td><td class="num">0.18–0.19</td><td class="num">0.30</td><td class="num">0.20–0.24 / 0.34–0.42</td></tr>
-      <tr><td class="wrap">EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8</td><td class="wrap">ESP32-S3, 240 MHz, 8 MB PSRAM</td><td class="num">0.31–0.32</td><td class="num">0.55</td><td class="num">0.42–0.47 / 0.85–0.99</td></tr>
-    </tbody>
-  </table>
-</div>
-<p class="muted">RTF below 1 means faster than real time. Numbers are for the current main branch; the last column is the v0.3.0 release.</p>
-<!-- END:hardware -->
-    <p class="muted">Both chips use two cores and int8 SIMD kernels; chip output matches the reference C runtime.</p>
   </section>
 
   <section id="start">
@@ -302,6 +267,11 @@ function play(btn) {
     .catch(() => {});
 }
 
+// Model column header: "M v0.2 · 1.7M params · 2.6 MB", then one RTF chip per chip family.
+const CHIPS = [["p4", "P4"], ["s3", "S3"]];
+const spec = m => [m.detail, m.params && m.params + " params", m.size].filter(Boolean).join(" · ");
+const rtf = m => CHIPS.map(([k, n]) => (m.rtf || {})[k] ? `<span title="real-time factor on ESP32-${n}">${n} ${esc(m.rtf[k])}</span>` : `<span class="na">${n} —</span>`).join("");
+const rtfText = m => CHIPS.filter(([k]) => (m.rtf || {})[k]).map(([k, n]) => `${n} RTF ${m.rtf[k]}`).join(" · ");
 const tagFor = s => s === "training" ? ' <span class="tag">training</span>' : s === "planned" ? ' <span class="tag plan">planned</span>' : "";
 const tabLabel = t => `${t.flags.map(flag).join("")} ${esc(t.label)}${tagFor(t.status)}`;
 const btn = document.getElementById("langbtn"), list = document.getElementById("langlist");
@@ -319,11 +289,11 @@ function render(id) {
     grid.innerHTML = `<div class="box empty">${tab.status === "planned" ? "Planned. Samples will appear here when the voice is trained." : "No samples yet."}</div>`;
     return;
   }
-  const head = tab.models.map(m => `<th class="model">${esc(m.name)}<small>${esc(m.detail || "")}</small></th>`).join("");
+  const head = tab.models.map(m => `<th class="model">${esc(m.name)}<small>${esc(spec(m))}</small><div class="rtf">${rtf(m)}</div></th>`).join("");
   const rows = tab.samples.map(sm => {
     const cells = tab.models.map(m => {
       const src = (sm.audio || {})[m.id];
-      return `<td class="cell" data-label="${esc(m.name)}">` +
+      return `<td class="cell" data-label="${esc(m.name)}"><small>${esc(rtfText(m))}</small>` +
         (src ? `<button class="play" data-src="${esc(src)}" aria-label="Play">${PLAY}</button>` : `<span class="soon">soon</span>`) + `</td>`;
     }).join("");
     return `<tr><td><span class="bubble">${esc(sm.text)}</span></td>${cells}</tr>`;
@@ -368,7 +338,8 @@ list.addEventListener("keydown", e => {
 list.addEventListener("click", e => { const o = e.target.closest('[role="option"]'); if (o) choose(options().indexOf(o)); });
 document.addEventListener("click", e => { if (!e.target.closest(".picker")) closeMenu(false); });
 
-fetch("samples.json").then(r => r.json()).then(d => {
+fetch("site.json").then(r => r.json()).then(site => {
+  const d = { tabs: site.listen };
   data = d;
   const groups = [["Single language", d.tabs.filter(t => t.flags.length === 1)], ["Multilingual", d.tabs.filter(t => t.flags.length > 1)]];
   list.innerHTML = groups.filter(g => g[1].length).map(([name, tabs]) =>
@@ -378,7 +349,7 @@ fetch("samples.json").then(r => r.json()).then(d => {
   const start = location.hash.slice(1);
   render(d.tabs.some(t => t.id === start) ? start : d.tabs[0].id);
 }).catch(() => {
-  document.getElementById("grid").innerHTML = '<div class="box empty">Could not load the sample list (samples.json).</div>';
+  document.getElementById("grid").innerHTML = '<div class="box empty">Could not load the sample list (site.json).</div>';
 });
 window.addEventListener("hashchange", () => { const id = location.hash.slice(1); if (data && data.tabs.some(t => t.id === id)) render(id); });
 </script>
