@@ -74,21 +74,46 @@ static const float *W(const vtts_model *m, const char *fmt, ...) {
 /* y[co, t] = b[co] + sum_ci,k w[co, ci, k] * x[ci, t + k*dil - pad]  (same length) */
 typedef struct { const float *x, *w, *b; float *y; int ci, T, K, dil; } fconv_t;
 
+/* Output-stationary: 8 frames of one output channel accumulate in registers over ci and K, in
+ * the same order as a per-element loop (i outer, k inner), so the sums are unchanged; frames
+ * whose taps leave [0, T) take the checked path. */
+#define CONV_TILE 8
 static void conv1d_rows(int lo, int hi, void *arg) {
     const fconv_t *j = arg;
     int ci = j->ci, T = j->T, K = j->K, dil = j->dil, pad = dil * (K - 1) / 2;
+    int safe_lo = pad, safe_hi = T - (dil * (K - 1) - pad); /* frames whose taps stay in [0, T) */
     for (int o = lo; o < hi; o++) {
         float *yo = j->y + (size_t)o * T;
-        for (int t = 0; t < T; t++) yo[t] = j->b ? j->b[o] : 0.0f;
-        for (int i = 0; i < ci; i++) {
-            const float *xi = j->x + (size_t)i * T;
-            const float *wk = j->w + ((size_t)o * ci + i) * K;
-            for (int k = 0; k < K; k++) {
-                int sh = k * dil - pad;
-                float wv = wk[k];
-                int t0 = sh < 0 ? -sh : 0, t1 = sh > 0 ? T - sh : T;
-                for (int t = t0; t < t1; t++) yo[t] += wv * xi[t + sh];
+        const float *wo = j->w + (size_t)o * ci * K;
+        float bias = j->b ? j->b[o] : 0.0f;
+        for (int t0 = 0; t0 < T; t0 += CONV_TILE) {
+            int n = T - t0 < CONV_TILE ? T - t0 : CONV_TILE;
+            float acc[CONV_TILE];
+            for (int q = 0; q < CONV_TILE; q++) acc[q] = bias;
+            if (n == CONV_TILE && t0 >= safe_lo && t0 + CONV_TILE <= safe_hi) {
+                for (int i = 0; i < ci; i++) {
+                    const float *xi = j->x + (size_t)i * T + t0 - pad, *wk = wo + (size_t)i * K;
+                    for (int k = 0; k < K; k++) {
+                        float wv = wk[k];
+                        const float *xp = xi + k * dil;
+                        acc[0] += wv * xp[0]; acc[1] += wv * xp[1]; acc[2] += wv * xp[2]; acc[3] += wv * xp[3];
+                        acc[4] += wv * xp[4]; acc[5] += wv * xp[5]; acc[6] += wv * xp[6]; acc[7] += wv * xp[7];
+                    }
+                }
+            } else {
+                for (int i = 0; i < ci; i++) {
+                    const float *xi = j->x + (size_t)i * T, *wk = wo + (size_t)i * K;
+                    for (int k = 0; k < K; k++) {
+                        int sh = k * dil - pad;
+                        float wv = wk[k];
+                        for (int q = 0; q < n; q++) {
+                            int tt = t0 + q + sh;
+                            if (tt >= 0 && tt < T) acc[q] += wv * xi[tt];
+                        }
+                    }
+                }
             }
+            for (int q = 0; q < n; q++) yo[t0 + q] = acc[q];
         }
     }
 }
