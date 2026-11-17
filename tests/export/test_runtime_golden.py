@@ -75,3 +75,15 @@ def test_c_text_frontend_parity():
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
     f = subprocess.run([str(RUNTIME / "build" / "text_test"), "--fuzz"], capture_output=True, text=True)
     assert f.returncode == 0, f.stdout + f.stderr[-2000:]
+
+
+def test_c_lexicon_parity(tmp_path):
+    """The C VLEX reader gives the same lexicon lookups and letter-to-sound ids as Python."""
+    from vtts.frontend.en.vlex import build_vlex
+
+    blob = tmp_path / "lex_en.bin"
+    blob.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/lex_test"], cwd=RUNTIME, check=True)
+    r = subprocess.run([str(RUNTIME / "build" / "lex_test"), str(blob), str(RUNTIME / "test" / "lex_expect.tsv")],
+                       capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]

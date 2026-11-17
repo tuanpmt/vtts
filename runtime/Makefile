@@ -29,3 +29,7 @@ TEXT_SRC = src/vtts_text.c
 build/text_test: $(TEXT_SRC) test/text_test.c include/vtts_text.h src/vtts_text_tables.h
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
+
+build/lex_test: src/vtts_lex.c test/lex_test.c include/vtts_lex.h
+	mkdir -p build
+	$(CC) $(CFLAGS) $(SAN) src/vtts_lex.c test/lex_test.c -o $@
