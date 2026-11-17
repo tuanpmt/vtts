@@ -4,6 +4,7 @@
 #include <string.h>
 
 #include "vtts_lex.h"
+#include "vtts_text_en.h"
 
 int main(int argc, char **argv) {
     if (argc < 3) { fprintf(stderr, "usage: lex_test BLOB EXPECT\n"); return 2; }
@@ -22,10 +23,15 @@ int main(int argc, char **argv) {
     char line[4096];
     int cases = 0, bad = 0;
     while (fgets(line, sizeof line, e)) {
-        char *kind = strtok(line, "\t"), *word = strtok(NULL, "\t\n"), *ids = strtok(NULL, "\n");
-        if (!kind || !word) continue;
+        /* fields may be empty: split on tabs by hand */
+        char *kind = line, *word = strchr(line, '\t');
+        if (!word) continue;
+        *word++ = 0;
+        char *ids = strchr(word, '\t');
+        if (ids) { *ids++ = 0; ids[strcspn(ids, "\n")] = 0; }
         uint8_t got[256];
-        int k = kind[0] == 'L' ? vtts_lex_lookup(&lx, word, got, 256) : vtts_lex_predict(&lx, word, got, 256);
+        int k = kind[0] == 'L' ? vtts_lex_lookup(&lx, word, got, 256)
+              : kind[0] == 'P' ? vtts_lex_predict(&lx, word, got, 256) : vtts_en_g2p(&lx, word, got, 256);
         char buf[2048] = "";
         for (int i = 0; i < k; i++) {
             char t[8];

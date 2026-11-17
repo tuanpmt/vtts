@@ -7,6 +7,7 @@ import unicodedata
 from pathlib import Path
 
 from vtts.frontend import lexicon, phoneme_set
+from vtts.frontend.en import g2p_en, normalize_en
 from vtts.frontend.syllable import _TONE_MARKS
 
 OUT = Path(__file__).resolve().parents[1] / "src" / "vtts_text_tables.h"
@@ -22,6 +23,51 @@ def letter_code(base: str) -> str:
 
 def c_str(s: str) -> str:
     return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
+def c_list(name: str, items: list[str]) -> list[str]:
+    out = [f"static const char *const {name}[{len(items)}] = {{"]
+    out += ["    " + ", ".join(c_str(s) for s in items[i:i + 6]) + "," for i in range(0, len(items), 6)]
+    return out + ["};", ""]
+
+
+def english_tables() -> list[str]:
+    """Tables of the English front-end (src/vtts/frontend/en), in the order Python applies them."""
+    ne = normalize_en
+    v2 = phoneme_set.token_to_id_v2
+    out = ["/* ---- English (token set v2) ---- */",
+           f"#define VTTS_V2_EN0 {v2('EN:' + phoneme_set.ARPABET[0])}",
+           f"#define VTTS_V2_S0 {v2('S0')}",
+           f"#define VTTS_V2_BOS {v2(phoneme_set.BOS)}",
+           f"#define VTTS_V2_EOS {v2(phoneme_set.EOS)}",
+           f"#define VTTS_V2_SPACE {v2(phoneme_set.SPACE)}",
+           f"#define VTTS_V2_VOCAB {phoneme_set.VOCAB_SIZE_V2}", ""]
+    out += c_list("VTTS_ARPABET", list(phoneme_set.ARPABET))
+    vowels = sorted(phoneme_set.ARPABET.index(v) for v in phoneme_set.ARPABET_VOWELS)
+    out += [f"static const uint8_t VTTS_ARPABET_VOWEL[{len(phoneme_set.ARPABET)}] = {{"
+            + ", ".join("1" if i in vowels else "0" for i in range(len(phoneme_set.ARPABET))) + "};", ""]
+    letters = [[v2(x) for x in g2p_en.letter_tokens(ch)] for ch in "abcdefghijklmnopqrstuvwxyz"]
+    out += ["static const uint8_t VTTS_EN_LETTERS[26][12] = {"]
+    out += ["    {" + ", ".join(map(str, [len(ids)] + ids)) + "}," for ids in letters]
+    out += ["};", ""]
+    out += c_list("VTTS_EN_ONES", ne.ONES) + c_list("VTTS_EN_TENS", ne.TENS) + c_list("VTTS_EN_MONTHS", ne.MONTHS)
+    out += ["static const char *const VTTS_EN_ORD_IRREG[][2] = {"]
+    out += [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in ne.ORD_IRREG.items()] + ["};",
+            f"#define VTTS_EN_N_ORD_IRREG {len(ne.ORD_IRREG)}", ""]
+    out += ["static const char *const VTTS_EN_ABBREV[][2] = {  /* applied in this order */"]
+    out += [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in ne.ABBREV.items()] + ["};",
+            f"#define VTTS_EN_N_ABBREV {len(ne.ABBREV)}", ""]
+    units = sorted(ne.UNITS, key=len, reverse=True)  # the alternation order of the Python regex
+    out += ["static const char *const VTTS_EN_UNITS[][2] = {  /* longest first */"]
+    out += [f"    {{{c_str(k)}, {c_str(ne.UNITS[k])}}}," for k in units] + ["};",
+            f"#define VTTS_EN_N_UNITS {len(units)}", ""]
+    out += ["static const char *const VTTS_EN_UNIT_ONE[][2] = {"]
+    out += [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in ne.UNIT_ONE.items()] + ["};",
+            f"#define VTTS_EN_N_UNIT_ONE {len(ne.UNIT_ONE)}", ""]
+    out += ["static const struct { uint32_t cp; const char *one, *many, *sub1, *subn; } VTTS_EN_CURRENCY[] = {"]
+    out += [f"    {{0x{ord(k):04X}, {', '.join(c_str(x) for x in v)}}}," for k, v in ne.CURRENCY.items()]
+    out += ["};", f"#define VTTS_EN_N_CURRENCY {len(ne.CURRENCY)}", ""]
+    return out
 
 
 def main() -> None:
@@ -51,6 +97,7 @@ def main() -> None:
         lines += [f"static const char *const VTTS_{name}[][2] = {{"]
         lines += [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in items]
         lines += ["};", f"#define VTTS_N_{name} {len(items)}", ""]
+    lines += english_tables()
     lines += ["#endif", ""]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({len(rows)} letters)")

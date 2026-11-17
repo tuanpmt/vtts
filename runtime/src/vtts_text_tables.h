@@ -336,4 +336,153 @@ static const char *const VTTS_LETTER_NAMES[][2] = {
 };
 #define VTTS_N_LETTER_NAMES 33
 
+/* ---- English (token set v2) ---- */
+#define VTTS_V2_EN0 65
+#define VTTS_V2_S0 104
+#define VTTS_V2_BOS 1
+#define VTTS_V2_EOS 2
+#define VTTS_V2_SPACE 3
+#define VTTS_V2_VOCAB 107
+
+static const char *const VTTS_ARPABET[39] = {
+    "AA", "AE", "AH", "AO", "AW", "AY",
+    "B", "CH", "D", "DH", "EH", "ER",
+    "EY", "F", "G", "HH", "IH", "IY",
+    "JH", "K", "L", "M", "N", "NG",
+    "OW", "OY", "P", "R", "S", "SH",
+    "T", "TH", "UH", "UW", "V", "W",
+    "Y", "Z", "ZH",
+};
+
+static const uint8_t VTTS_ARPABET_VOWEL[39] = {1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0};
+
+static const uint8_t VTTS_EN_LETTERS[26][12] = {
+    {2, 77, 105},
+    {3, 71, 82, 105},
+    {3, 93, 82, 105},
+    {3, 73, 82, 105},
+    {2, 82, 105},
+    {3, 75, 105, 78},
+    {3, 83, 82, 105},
+    {3, 77, 105, 72},
+    {2, 70, 105},
+    {3, 83, 77, 105},
+    {3, 84, 77, 105},
+    {3, 75, 105, 85},
+    {3, 75, 105, 86},
+    {3, 75, 105, 87},
+    {2, 89, 105},
+    {3, 91, 82, 105},
+    {4, 84, 101, 98, 105},
+    {3, 65, 105, 92},
+    {3, 75, 105, 93},
+    {3, 95, 82, 105},
+    {3, 101, 98, 105},
+    {3, 99, 82, 105},
+    {10, 73, 67, 105, 71, 67, 104, 85, 101, 98, 104},
+    {4, 75, 105, 84, 93},
+    {3, 100, 70, 105},
+    {3, 102, 82, 105},
+};
+
+static const char *const VTTS_EN_ONES[20] = {
+    "zero", "one", "two", "three", "four", "five",
+    "six", "seven", "eight", "nine", "ten", "eleven",
+    "twelve", "thirteen", "fourteen", "fifteen", "sixteen", "seventeen",
+    "eighteen", "nineteen",
+};
+
+static const char *const VTTS_EN_TENS[10] = {
+    "", "", "twenty", "thirty", "forty", "fifty",
+    "sixty", "seventy", "eighty", "ninety",
+};
+
+static const char *const VTTS_EN_MONTHS[12] = {
+    "january", "february", "march", "april", "may", "june",
+    "july", "august", "september", "october", "november", "december",
+};
+
+static const char *const VTTS_EN_ORD_IRREG[][2] = {
+    {"one", "first"},
+    {"two", "second"},
+    {"three", "third"},
+    {"five", "fifth"},
+    {"eight", "eighth"},
+    {"nine", "ninth"},
+    {"twelve", "twelfth"},
+};
+#define VTTS_EN_N_ORD_IRREG 7
+
+static const char *const VTTS_EN_ABBREV[][2] = {  /* applied in this order */
+    {"Dr.", "doctor"},
+    {"Mr.", "mister"},
+    {"Mrs.", "missus"},
+    {"Ms.", "miz"},
+    {"Prof.", "professor"},
+    {"etc.", "et cetera"},
+    {"vs.", "versus"},
+    {"e.g.", "for example"},
+    {"i.e.", "that is"},
+    {"St.", "saint"},
+    {"Jr.", "junior"},
+    {"Sr.", "senior"},
+};
+#define VTTS_EN_N_ABBREV 12
+
+static const char *const VTTS_EN_UNITS[][2] = {  /* longest first */
+    {"km/h", "kilometers per hour"},
+    {"mph", "miles per hour"},
+    {"khz", "kilohertz"},
+    {"mhz", "megahertz"},
+    {"ghz", "gigahertz"},
+    {"mah", "milliamp hours"},
+    {"min", "minutes"},
+    {"km", "kilometers"},
+    {"kg", "kilograms"},
+    {"cm", "centimeters"},
+    {"mm", "millimeters"},
+    {"mg", "milligrams"},
+    {"ml", "milliliters"},
+    {"kb", "kilobytes"},
+    {"mb", "megabytes"},
+    {"gb", "gigabytes"},
+    {"tb", "terabytes"},
+    {"°c", "degrees celsius"},
+    {"°f", "degrees fahrenheit"},
+    {"ms", "milliseconds"},
+    {"hz", "hertz"},
+    {"kw", "kilowatts"},
+    {"m", "meters"},
+    {"g", "grams"},
+    {"l", "liters"},
+    {"°", "degrees"},
+    {"w", "watts"},
+    {"v", "volts"},
+    {"h", "hours"},
+    {"s", "seconds"},
+};
+#define VTTS_EN_N_UNITS 30
+
+static const char *const VTTS_EN_UNIT_ONE[][2] = {
+    {"kilometers", "kilometer"},
+    {"kilograms", "kilogram"},
+    {"meters", "meter"},
+    {"grams", "gram"},
+    {"liters", "liter"},
+    {"degrees", "degree"},
+    {"hours", "hour"},
+    {"minutes", "minute"},
+    {"seconds", "second"},
+    {"watts", "watt"},
+    {"volts", "volt"},
+};
+#define VTTS_EN_N_UNIT_ONE 11
+
+static const struct { uint32_t cp; const char *one, *many, *sub1, *subn; } VTTS_EN_CURRENCY[] = {
+    {0x0024, "dollar", "dollars", "cent", "cents"},
+    {0x20AC, "euro", "euros", "cent", "cents"},
+    {0x00A3, "pound", "pounds", "penny", "pence"},
+};
+#define VTTS_EN_N_CURRENCY 3
+
 #endif
