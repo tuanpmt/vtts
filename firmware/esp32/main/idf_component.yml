@@ -1,5 +1,0 @@
-dependencies:
-  idf:
-    version: ">=6.1"
-  # ES8311 codec driver (bsp/speaker_es8311.c); board pins live in boards/<id>/board.h
-  espressif/esp_codec_dev: "~1.5"

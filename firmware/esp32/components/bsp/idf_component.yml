@@ -1,0 +1,5 @@
+dependencies:
+  idf:
+    version: ">=6.1"
+  # ES8311 codec driver (drivers/speaker_es8311.c)
+  espressif/esp_codec_dev: "~1.5"

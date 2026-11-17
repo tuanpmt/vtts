@@ -1,6 +1,6 @@
-# Boards
+# Board support package (BSP)
 
-Each folder here is one board; `BOARD=<folder>` selects it (`./build.sh` builds in `build_<id>/` with `sdkconfig.<id>`). Adding a board means adding a folder. Code changes are needed only for a speaker chip without a driver yet.
+An ESP-IDF component with the speaker drivers shared by all boards (`drivers/`) and one folder per board (`boards/<id>/`). `BOARD=<id> ./build.sh ...` selects a board (it builds in `build_<id>/` with `sdkconfig.<id>`); the application (`main/`) only uses the `bsp_*` functions of `include/bsp.h`. Adding a board means adding a folder; code changes are needed only for a speaker chip without a driver yet.
 
 | `BOARD=` | Board | Chip | Speaker driver |
 |---|---|---|---|
@@ -13,17 +13,17 @@ Each folder here is one board; `BOARD=<folder>` selects it (`./build.sh` builds 
 
 ```mermaid
 flowchart LR
-    B["build.sh BOARD=id"] --> D["boards/id/"]
+    B["build.sh BOARD=id"] --> D["components/bsp/boards/id/"]
     D --> H["board.h<br/>name, pins, defaults"]
     D --> C["board.cmake<br/>chip, speaker driver"]
     D --> K["sdkconfig.defaults<br/>flash, console, PSRAM"]
-    C --> S["main/bsp/speaker_driver.c"]
+    C --> S["components/bsp/drivers/speaker_driver.c"]
     H --> S
-    S --> I["main/bsp/bsp.h<br/>bsp_speaker_open / set_vol / write"]
+    S --> I["components/bsp/include/bsp.h<br/>bsp_speaker_open / set_vol / write"]
     I --> M["main.c"]
 ```
 
-Kconfig is layered: `sdkconfig.defaults` (all boards), then `sdkconfig.defaults.<chip>` (loaded by ESP-IDF for the target), then `boards/<id>/sdkconfig.defaults`.
+Kconfig is layered: `firmware/esp32/sdkconfig.defaults` (all boards), then `sdkconfig.defaults.<chip>` (loaded by ESP-IDF for the target), then `boards/<id>/sdkconfig.defaults`.
 
 ## A board folder
 
@@ -31,7 +31,7 @@ Kconfig is layered: `sdkconfig.defaults` (all boards), then `sdkconfig.defaults.
 
 ```cmake
 set(BSP_TARGET esp32s3)   # esp32p4 | esp32s3
-set(BSP_SPEAKER es8311)   # a driver in main/bsp/speaker_<driver>.c
+set(BSP_SPEAKER es8311)   # a driver in drivers/speaker_<driver>.c
 ```
 
 `board.h`, with the macros the driver uses:
@@ -51,8 +51,8 @@ set(BSP_SPEAKER es8311)   # a driver in main/bsp/speaker_<driver>.c
 ## Adding a board
 
 1. Copy the folder of the most similar board to `boards/<id>/` and set the pins from the schematic.
-2. If the speaker chip has no driver yet, add `main/bsp/speaker_<driver>.c` implementing `bsp_speaker_open`, `bsp_speaker_set_vol` and `bsp_speaker_write` (see `bsp.h`), and add its component to `main/idf_component.yml` if needed.
+2. If the speaker chip has no driver yet, add `drivers/speaker_<driver>.c` implementing `bsp_speaker_open`, `bsp_speaker_set_vol` and `bsp_speaker_write` (see `include/bsp.h`), and its dependency to this component's `idf_component.yml` if needed.
 3. `BOARD=<id> ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor`, then run `selftest`, `bench` and a long paragraph with playback (no underruns), and adjust the default volume and gain by ear.
 4. Add a row to the table above and to `boards` in `docs/site.json` (README and website follow), and the numbers to `docs/reports/performance.md`.
 
-A new chip family also needs SIMD kernels in `runtime/ports/` that pass `selftest`; see [runtime/README.md](../../../runtime/README.md#porting).
+A new chip family also needs SIMD kernels in `runtime/ports/` that pass `selftest`; see [runtime/README.md](../../../../runtime/README.md#porting).

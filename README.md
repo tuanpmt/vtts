@@ -106,7 +106,7 @@ BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m
 | `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
 <!-- END:boards -->
 
-Each board is a folder in `firmware/esp32/boards/` (pins, defaults, chip and speaker driver); adding a board means adding a folder. See [firmware/esp32/boards/README.md](firmware/esp32/boards/README.md).
+Each board is a folder in `firmware/esp32/components/bsp/boards/` (pins, defaults, chip and speaker driver); adding a board means adding a folder. See [firmware/esp32/components/bsp/README.md](firmware/esp32/components/bsp/README.md).
 
 ### Serial console
 
@@ -121,6 +121,10 @@ Type a sentence and press Enter; the board speaks it. Other commands:
 | `bench`, `prof` | RTF on four fixed sentences; time per stage |
 | `selftest` | SIMD kernels against plain C, including both cores at once |
 | `dump <text>` | Synthesize and send PCM to the PC: `scripts/device/say.py PORT "dump <text>" --dump-dir out/` |
+| `ids <ids;ids...>` | Speak token ids from the PC's front-end: `scripts/device/say.py --lang vi\|en\|mixed PORT "<text>"` |
+| `help` | List the commands; `chunk N`, `first N`, `cores 1\|2` and `fusetest` are for experiments |
+
+Any line that is not a command is spoken, and every command ends with a `DONE` line.
 
 ### On a PC
 

@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Build/flash with ESP-IDF v6.1 (installed by EIM). Copies the int8 models into main/.
 # usage: [BOARD=<id>] ./build.sh S_MODEL.vtts M_MODEL.vtts [idf.py args...]   (default: build)
-#   BOARD is a folder in boards/ (default: panel); each board builds in build_<id>/ with
-#   sdkconfig.<id>. Boards: see boards/README.md.
+#   BOARD is a folder in components/bsp/boards/ (default: panel); each board builds in build_<id>/
+#   with sdkconfig.<id>. Boards: see components/bsp/README.md.
 set -euo pipefail
 cd "$(dirname "$0")"
 BOARD=${BOARD:-panel}
-BDIR=boards/$BOARD
+BDIR=components/bsp/boards/$BOARD
 if [ ! -f "$BDIR/board.cmake" ]; then
-    echo "unknown BOARD=$BOARD; available: $(ls boards | grep -v README | tr '\n' ' ')" >&2
+    echo "unknown BOARD=$BOARD; available: $(ls components/bsp/boards | tr '\n' ' ')" >&2
     exit 2
 fi
 TARGET=$(sed -n 's/^set(BSP_TARGET \([a-z0-9]*\))$/\1/p' "$BDIR/board.cmake")

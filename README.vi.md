@@ -108,7 +108,7 @@ BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m
 | `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
 <!-- END:boards -->
 
-Mỗi board là một thư mục trong `firmware/esp32/boards/` (chân GPIO, giá trị mặc định, chip và driver loa); thêm board chỉ cần thêm một thư mục. Xem [firmware/esp32/boards/README.md](firmware/esp32/boards/README.md).
+Mỗi board là một thư mục trong `firmware/esp32/components/bsp/boards/` (chân GPIO, giá trị mặc định, chip và driver loa); thêm board chỉ cần thêm một thư mục. Xem [firmware/esp32/components/bsp/README.md](firmware/esp32/components/bsp/README.md).
 
 ### Lệnh trên cổng serial
 
@@ -123,6 +123,10 @@ Gõ một câu rồi Enter để board đọc ra loa. Các lệnh khác:
 | `bench`, `prof` | RTF trên 4 câu cố định; thời gian theo từng tầng |
 | `selftest` | Kiểm tra kernel SIMD với kết quả tính bằng C, gồm cả trường hợp hai lõi chạy cùng lúc |
 | `dump <câu>` | Tổng hợp và gửi PCM về máy tính: `scripts/device/say.py PORT "dump <câu>" --dump-dir out/` |
+| `ids <ids;ids...>` | Đọc chuỗi token id từ front-end trên máy tính: `scripts/device/say.py --lang vi\|en\|mixed PORT "<câu>"` |
+| `help` | Liệt kê các lệnh; `chunk N`, `first N`, `cores 1\|2` và `fusetest` dùng cho thử nghiệm |
+
+Dòng nào không phải lệnh thì được đọc ra loa; mỗi lệnh kết thúc bằng một dòng `DONE`.
 
 ### Trên máy tính
 

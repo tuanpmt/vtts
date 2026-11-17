@@ -1,11 +1,12 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* bsp.h -- board support interface of the vtts firmware.
  *
- * A board is a folder boards/<id>/ with:
- *   board.h            name, speaker pins and defaults (BSP_* macros, see boards/README.md)
+ * A board is a folder components/bsp/boards/<id>/ with:
+ *   board.h            name, speaker pins and defaults (BSP_* macros, see components/bsp/README.md)
  *   board.cmake        target chip and speaker driver (set(BSP_TARGET ...) set(BSP_SPEAKER ...))
  *   sdkconfig.defaults board-level Kconfig (flash size, console, PSRAM mode, ...)
- * Speaker drivers live in main/bsp/speaker_<driver>.c and implement the functions below. */
+ * Speaker drivers live in components/bsp/drivers/speaker_<driver>.c and implement the functions
+ * below. */
 #pragma once
 
 #include <stdint.h>
