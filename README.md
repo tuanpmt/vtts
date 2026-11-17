@@ -1,39 +1,42 @@
 # vtts
 
-**Tiny multilingual text-to-speech that runs entirely on ESP32 microcontrollers.** Text in, speech out of the speaker: no cloud, no network, no Linux. A C99 int8 runtime with streaming synthesis, a rule-based front-end per language, and distilled voices small enough for 1-3 MB of flash.
+**Tiny multilingual text-to-speech that runs entirely on ESP32 microcontrollers.** Text in, speech out of the speaker: no cloud, no network, no Linux. A C99 int8 runtime with streaming synthesis, a rule-based front-end per language, and distilled voices small enough for 1–3 MB of flash.
 
-🇻🇳 [Tiếng Việt](README.vi.md) · 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/) · 🤗 [Models on Hugging Face](https://huggingface.co/tuanpm/vtts)
+🇻🇳 [Tiếng Việt](README.vi.md) · 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/) · 🤗 [Models on Hugging Face](https://huggingface.co/tuanpm/vtts) · 📚 [Documentation](docs/README.md)
 
 - **On the chip, end to end:** text normalization, grapheme-to-phoneme, an int8 acoustic model and an iSTFT vocoder all run on the MCU.
-- **Faster than real time with streaming:** speech starts after 0.3-2.4 s depending on chip and model.
-- **Two tiers per voice:** a *quality* model for ESP32-P4 and a *lite* model that fits the ESP32-S3.
+- **Faster than real time, streaming:** speech starts after 0.3–2.4 s depending on chip and model.
+- **Two tiers per voice:** a *quality* model for the ESP32-P4 and a *lite* model that also fits the ESP32-S3.
+- **Small and predictable:** 1.1–2.6 MB models, a C99 runtime with no `malloc` (the caller provides one arena whose size is known up front).
 - **Built to grow:** languages plug in as front-end modules on a versioned token set, so new single-language and bilingual voices reuse the same runtime, firmware and training pipeline.
 
 ## Voice catalog
 
 | Voice | Languages | Quality (ESP32-P4) | Lite (ESP32-S3) | Status |
 |---|---|---|---|---|
-| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.7M params, 2.6 MB) | S-vocos v0.1 (0.8M, 1.1 MB) | **Released** (v0.3.0, non-commercial) |
-| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training**: data done (98 h), teacher in progress |
-| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training**: data generating, teacher in progress |
+| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M, 1.1 MB) | **Released** in v0.3.0 (non-commercial) |
+| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training**: ~98 h of data, teacher in progress |
+| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training**: ~98 h of data, teacher in progress |
 | English | 🇺🇸 en | M | S | Planned |
 | Chinese (Mandarin) | 🇨🇳 zh | M | S | Planned |
 | Chinese + English | 🇨🇳 zh + 🇺🇸 en | M | S | Planned |
 
-Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" in one voice. The device picks the language per word (`lang vi | en | auto`).
+Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" ("Connected to AirPods over Bluetooth") in one voice; the front-end picks the language per word. The English front-end is done in Python; its C port for the device is the next step before the bilingual voices ship.
+
+Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts) (one folder per voice; the released Vietnamese models are in `vi/`).
 
 ## Hardware and performance
 
 | Board | Chip | Lite model RTF | Quality model RTF | Speech starts (lite / quality) |
 |---|---|---:|---:|---:|
-| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.20-0.24 | 0.34-0.42 | 0.3 s / 1.2 s |
-| Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3R8, 240 MHz, 8 MB PSRAM | 0.42-0.47 | 0.85-0.99 | 0.8 s / 2.4 s |
+| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.20–0.24 | 0.34–0.42 | 0.3 s / 1.2 s |
+| Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3R8, 240 MHz, 8 MB PSRAM | 0.42–0.47 | 0.85–0.99 | 0.8 s / 2.4 s |
 
-RTF below 1 means faster than real time. Both chips use two cores and int8 SIMD kernels. Audio generated on the chip matches the C runtime on a PC (correlation ≥ 0.99999). The ESP32-S3 needs at least 8 MB of PSRAM. Details, CPU load and the optimizations so far: [docs/reports/performance.md](docs/reports/performance.md) (Vietnamese).
+RTF (real-time factor) below 1 means faster than real time. Both chips use two cores and int8 SIMD kernels. Audio generated on the chip matches the C runtime on a PC (correlation ≥ 0.99999). The ESP32-S3 needs at least 8 MB of PSRAM. Details, CPU load and the optimizations so far: [docs/reports/performance.md](docs/reports/performance.md). Further runtime speedups are in progress: [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).
 
 ## Quality (Vietnamese prototype)
 
-50 out-of-domain sentences (device prompts, numbers, names, questions, long sentences). CER is the character error rate when an ASR model (PhoWhisper-large) transcribes the audio, tones included; UTMOS predicts naturalness. vtts audio comes from the int8 C runtime.
+50 out-of-domain sentences (device prompts, numbers, names, questions, long sentences). CER is the character error rate when an ASR model (PhoWhisper-large) transcribes the audio, tones included; UTMOS predicts naturalness; the whistle index counts tonal artifacts per second. vtts audio comes from the int8 C runtime.
 
 | System | Params | CER ↓ | UTMOS ↑ | Whistle ↓ |
 |---|---:|---:|---:|---:|
@@ -43,7 +46,11 @@ RTF below 1 means faster than real time. Both chips use two cores and int8 SIMD 
 | sanoTTS `vi` | 1.57M | 0.064 | 1.49 | 1.5 |
 | Piper `vi_VN-25hours_single` | — | 0.089 | 2.06 | 1.1 |
 
+M-vocos v0.2 has a pitch and energy predictor. On 50 held-out sentences its mean duration is 5.80 s per sentence (human reader: 6.08 s) and its pitch variation is 2.37 semitones (human: 2.60). Baseline details: [docs/reports/baseline.md](docs/reports/baseline.md).
+
 ### Listen (generated on an ESP32-P4)
+
+Audio is produced on the chip with the firmware's `dump` command, sent to a PC over serial and only compressed to mp3. More samples on the [website](https://tuanpmt.github.io/vtts/).
 
 | Sentence | Quality (M) | Lite (S) |
 |---|---|---|
@@ -111,9 +118,12 @@ flowchart LR
     V --> P["PCM 22.05 kHz"]
 ```
 
-- **Distillation.** Each voice starts from a large VITS teacher (~24M parameters). The teacher produces durations, latents and audio for tens of thousands of sentences, and a 0.8-1.7M-parameter student learns from them in three stages (front, decoder, joint with multi-resolution discriminators). The student is exported to int8 and runs on the chip.
-- **Training data.** The prototype uses a public single-speaker corpus. The bilingual voices use speech synthesized with VoxCPM2 (Apache-2.0) in one designed voice, with sentences chosen to cover rare syllables, numbers and code-switching.
+- **Distillation.** Each voice starts from a large VITS teacher (~24M parameters). The teacher produces durations, latents and audio for tens of thousands of sentences, and a 0.8–1.7M-parameter student learns from them in three stages (front, decoder, joint with multi-resolution discriminators). The student is exported to int8 and runs on the chip.
+- **Spelling-based Vietnamese G2P.** Tokens follow the written form rather than one dialect (`tr`/`ch`, `s`/`x`, `r`/`d`/`gi` stay distinct; 6 tones from the diacritics), so a regional voice only needs new data.
+- **Training data.** The prototype uses a public single-speaker corpus (InfoRe1, 25 h). The bilingual voices use speech synthesized with VoxCPM2 (Apache-2.0) in one designed voice each, with sentences chosen to cover rare syllables, numbers and code-switching.
 - **Front-end parity.** Every language's front-end exists in Python (training) and C (device), and tests check they produce identical token ids.
+
+Design documents, the model file format and measurement reports are indexed in [docs/README.md](docs/README.md).
 
 ## Adding a language
 
@@ -124,6 +134,17 @@ Languages share one runtime and one firmware; a new one needs:
 3. **Data.** Recordings or synthesized speech with transcripts; the pipeline does not depend on the source.
 4. **Train.** The teacher, then quality and lite students. The model file header carries the vocabulary size, so the runtime needs no change.
 
+See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+
+## Training a voice
+
+1. **Data.** Recorded corpus: `scripts/data/prepare_infore.py` → `score_dataset.py` → `filter_and_split.py`. Synthesized corpus: `build_bilingual_corpus.py` → `synth_voxcpm.py` → `synth_to_csv.py`.
+2. **Teacher.** `scripts/teacher/train_teacher.py`, evaluated with `eval_checkpoints.py`.
+3. **Distillation.** `scripts/student/build_distill_pack.py` → `convert_shards.py` → `add_prosody.py` → `run_prosody_chain.sh`.
+4. **Export and check.** `export_student.py --int8`, `render_student_c.py`, `scripts/eval/eval_dir.py`.
+
+Each script documents its arguments at the top of the file.
+
 ## Repository layout
 
 | Path | Contents |
@@ -133,21 +154,28 @@ Languages share one runtime and one firmware; a new one needs:
 | `src/vtts/` | Python package: front-ends, data, evaluation, teacher, student, export |
 | `scripts/` | Pipeline steps: `data/`, `frontend/`, `teacher/`, `student/`, `eval/`, `device/` |
 | `eval/` | Evaluation sentence sets, baselines, A/B listening configuration |
-| `docs/` | Design, model file format, measurement reports |
+| `docs/` | Design documents, model file format, measurement reports, website ([index](docs/README.md)) |
 | `tests/` | Python and C runtime tests (golden, int8, streaming, front-end parity, fuzz) |
 
 ## Roadmap
 
 - [x] Vietnamese prototype voices, quality and lite, on ESP32-P4 and ESP32-S3
-- [x] English front-end (normalizer, CMUdict, learned letter-to-sound) and per-word language tagging
-- [ ] Bilingual Vietnamese + English voices `nam-1` and `nu-10` (training)
+- [x] English front-end in Python (normalizer, CMUdict, learned letter-to-sound) and per-word language tagging
+- [x] Synthesized training data for the bilingual voices `nam-1` and `nu-10`
+- [ ] Bilingual Vietnamese + English voices `nam-1` and `nu-10` (teachers training)
 - [ ] English front-end on the device (C, parity-tested)
-- [ ] Faster ESP32-S3 runtime so the quality model runs with margin
+- [ ] Faster runtime, so the quality model runs on the ESP32-S3 with margin (in progress)
 - [ ] English, Chinese and Chinese + English voices
 - [ ] Commercially usable licenses for all released voices
 
+Release history: [CHANGELOG.md](CHANGELOG.md).
+
+## Contributing
+
+Bug reports, measurements on other boards and new language front-ends are welcome. See [CONTRIBUTING.md](CONTRIBUTING.md) for how to run the tests, add a language or a board, and the code style.
+
 ## License
 
-- **Code:** Apache-2.0 (`LICENSE`). Parts derived from Piper/VITS keep their MIT license, and the CMU Pronouncing Dictionary keeps its BSD license; see `NOTICE`.
-- **Models in Releases:** the current Vietnamese prototype models are CC BY-NC 4.0 (non-commercial). Their teacher was initialized from a non-commercial Piper checkpoint, and the commercial terms of the training corpus are unclear. The Apache-2.0 code license does not apply to model files.
-- **Synthetic voices:** generated with VoxCPM2 (Apache-2.0) from designed voices. Audio from these models should be labeled as AI-generated.
+- **Code:** Apache-2.0 ([LICENSE](LICENSE)). Parts derived from Piper/VITS keep their MIT license, and the CMU Pronouncing Dictionary keeps its BSD license; see [NOTICE](NOTICE).
+- **Released models:** the current Vietnamese prototype models are CC BY-NC 4.0 (non-commercial use only). Their teacher was initialized from a Piper checkpoint whose training data allows only non-commercial use, and the commercial terms of the InfoRe1 corpus are unclear. The Apache-2.0 code license does not apply to model files. PyTorch checkpoints and teachers are not released.
+- **Synthetic voices:** the bilingual voices are trained on audio generated with VoxCPM2 (Apache-2.0) from designed voices, not cloned from real people; their release license will be stated with the release. Audio from these models should be labeled as AI-generated.
