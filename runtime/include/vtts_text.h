@@ -25,7 +25,7 @@ extern "C" {
 
 typedef struct {
     uint32_t cp[VTTS_TEXT_MAX_CP];
-    uint8_t date_start[VTTS_TEXT_MAX_CP]; /* dates are found before numbers, like Python */
+    uint8_t date_start[VTTS_TEXT_MAX_CP]; /* bit 0: a date starts here; bit 1: digit of a product code */
     int n_cp;
     char words[VTTS_TEXT_WORD_BYTES]; /* normalized words of the current sentence, NUL separated */
     int word_off[VTTS_TEXT_MAX_WORDS];

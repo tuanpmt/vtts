@@ -266,7 +266,8 @@ static const char *const VTTS_TOKENS[65] = {
 #define VTTS_N_TOKENS 65
 
 static const char *const VTTS_LOANWORDS[][2] = {
-    {"smartphone", "xmát phôn"},
+    {"smartphone", "sờ mát phôn"},
+    {"smarthome", "sờ mát hôm"},
     {"internet", "in tơ nét"},
     {"offline", "óp lai"},
     {"hashtag", "hát tác"},
@@ -284,7 +285,7 @@ static const char *const VTTS_LOANWORDS[][2] = {
     {"oxy", "ô xi"},
     {"ok", "ô kê"},
 };
-#define VTTS_N_LOANWORDS 17
+#define VTTS_N_LOANWORDS 18
 
 static const char *const VTTS_ABBREVIATIONS[][2] = {
     {"TP.HCM", "thành phố hồ chí minh"},
@@ -318,7 +319,7 @@ static const char *const VTTS_LETTER_NAMES[][2] = {
     {"p", "pê"},
     {"q", "quy"},
     {"r", "e rờ"},
-    {"s", "ét xì"},
+    {"s", "ét"},
     {"t", "tê"},
     {"u", "u"},
     {"v", "vê"},

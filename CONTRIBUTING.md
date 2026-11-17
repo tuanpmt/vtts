@@ -16,8 +16,10 @@ The Python tests also build and run the C tests in `runtime/` (golden, streaming
 
 ## Adding a language
 
+The front-end layout, rule precedence and the steps for changing a reading are in [docs/frontend/pronunciation-rules.md](docs/frontend/pronunciation-rules.md).
+
 1. **Token set.** Add the new tokens as a new token set version in `src/vtts/frontend/phoneme_set.py`. Never reorder or remove existing tokens: models store ids, and the model file header records the vocabulary size.
-2. **Front-end (Python).** A normalizer (numbers, dates, currency, units) and a G2P under `src/vtts/frontend/<lang>/`, wired into the language tagger (`lang.py`) and `text.py`. Add tests under `tests/frontend/`.
+2. **Front-end (Python).** Data tables in `src/vtts/frontend/lexicons/<lang>/*.tsv`, a normalizer (numbers, dates, currency, units, product codes) and a G2P under `src/vtts/frontend/<lang>/`, wired into the language tagger (`lang.py`) and `text.py`. Add tests under `tests/frontend/`.
 3. **Front-end (C).** Port the subset devices need to `runtime/src/vtts_text.c`; generate tables from Python (`runtime/tools/gen_text_tables.py`) rather than copying them by hand, and extend the parity fixture (`scripts/frontend/export_text_parity.py`) so Python and C must produce identical ids.
 4. **Data and training.** Any recorded or synthesized speech with transcripts works; see "Training a voice" in the README. Document data sources and their licenses in `NOTICE` and in the model card. Use only data whose terms allow training, and only voices that are designed or whose speakers consented.
 5. **Evaluation.** Add an out-of-domain sentence set under `eval/sets/` and report CER, UTMOS and on-chip RTF for both model tiers.

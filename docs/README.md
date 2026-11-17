@@ -9,6 +9,7 @@ Start with the [project README](../README.md) for the voice catalog, hardware su
 | [Firmware for ESP32-P4 and ESP32-S3](../firmware/esp32/README.md) | Supported boards, build and flash, self-test, adding a board |
 | [C runtime](../runtime/README.md) | API, memory model, host build and tests, device text front-end, porting |
 | [Model file format](model-format.md) | Binary layout of `.vtts` files, required dims, load-time checks |
+| [Pronunciation rules and dictionaries](frontend/pronunciation-rules.md) | How text is read (product codes, loanwords, abbreviations), the per-language data files, and how to change them |
 | [Website](https://tuanpmt.github.io/vtts/) ([source](index.html)) | Audio samples generated on the chip, voice catalog, hardware table |
 | [Hugging Face model card](huggingface/README.md) | Source of the model card for [huggingface.co/tuanpm/vtts](https://huggingface.co/tuanpm/vtts) |
 

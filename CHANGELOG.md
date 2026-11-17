@@ -10,7 +10,13 @@ All notable changes to this project are documented here. Model files for each re
 - **Teacher:** bilingual training lists (`lang` column, token set v2), FLAC input resampled on load, warm-start from project checkpoints, a frame budget per batch for long utterances.
 - **Documentation:** English README with a multilingual voice catalog (Vietnamese translation in `README.vi.md`), [website](https://tuanpmt.github.io/vtts/) with on-chip audio samples, Hugging Face model repository with one folder per voice, runtime optimization research for ESP32-S3 and ESP32-P4, documentation index, runtime README, this changelog and contributing guide. All design documents and reports translated to English.
 
+- **Pronunciation data per language:** Vietnamese tables moved from code to `src/vtts/frontend/lexicons/vi/*.tsv`, with a data test and [docs/frontend/pronunciation-rules.md](docs/frontend/pronunciation-rules.md) (layout, precedence, how to change a reading or add a language).
+- **Runtime speedups (ESP32-P4-NANO, everything in PSRAM):** exact streaming with per-layer state; fused depthwise conv + LayerNorm + quantization and GELU + quantization; 64-frame MLP blocks; cached iSTFT window and two-core overlap-add. RTF S 0.21–0.24 → 0.166, M 0.38–0.40 → 0.269. Optional `vtts_set_fast_scratch()` for internal SRAM (off in the firmware).
+- **EchoEar 2.0** board support (`BOARD=echoear`).
+
 ### Changed
+- Product codes (upper-case letters + digits such as ESP32, S3, U23, VN123) read their digits one by one: "ESP32-P4" → "e ét pê ba hai pê bốn" / "E S P three two P four" (Python and C).
+- Vietnamese letter `s` reads "ét" (was "ét xì"); `smartphone` → "sờ mát phôn"; added `smarthome` → "sờ mát hôm".
 - `firmware/esp32p4/` renamed to `firmware/esp32/` (it builds for both chips); `scripts/device/p4_say.py` renamed to `say.py`.
 
 ### In progress

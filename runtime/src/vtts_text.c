@@ -612,6 +612,7 @@ static long num_at(const uint32_t *cp, int i, int len) {
 
 static int prev_is(const uint32_t *cp, int i, int (*pred)(uint32_t)) { return i > 0 && pred(cp[i - 1]); }
 
+static int is_code_cp(uint32_t c) { return (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9'); }
 static int is_word_or_dotcomma(uint32_t c) { return is_word_cp(c) || c == '.' || c == ','; }
 static int is_digit_or_slash(uint32_t c) { return is_digit_cp(c) || c == '/'; }
 
@@ -669,6 +670,16 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
         else if (!prev_is(cp, q, is_digit_or_slash) && !(m0 + ml < n && is_digit_or_slash(cp[m0 + ml])))
             ws->date_start[q] = 1;
     }
+    /* product codes (normalize.PRODUCT_CODE): a standalone run of A-Z and 0-9 with at least one
+     * of each, e.g. ESP32, S3, RTX3060. Bit 1 marks its digits, which are read one by one. */
+    for (int q = 0; q < n;) {
+        if (prev_is(cp, q, is_word_cp) || !is_code_cp(cp[q])) { q++; continue; }
+        int j = q, up = 0, dg = 0;
+        while (j < n && is_code_cp(cp[j])) { up |= cp[j] >= 'A' && cp[j] <= 'Z'; dg |= is_digit_cp(cp[j]); j++; }
+        if (up && dg && !(j < n && is_word_cp(cp[j])))
+            for (int k = q; k < j; k++) if (is_digit_cp(cp[k])) ws->date_start[k] |= 2;
+        q = j;
+    }
     while (i < n && !c->stop) {
         uint32_t ch = cp[i];
         /* abbreviations (case-sensitive, not preceded by a word character) */
@@ -684,6 +695,15 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
                 hit = 1;
             }
             if (hit) continue;
+        }
+        if (is_digit_cp(ch) && (ws->date_start[i] & 2)) { /* digits of a product code */
+            int j = i;
+            char d[64];
+            int k = 0;
+            while (j < n && (ws->date_start[j] & 2) && k < 63) d[k++] = (char)cp[j++];
+            read_digits(c, d, (size_t)k);
+            i = j;
+            continue;
         }
         if (is_digit_cp(ch) || (ch == '-' && i + 1 < n && is_digit_cp(cp[i + 1]) && !prev_is(cp, i, is_word_or_dotcomma))) {
             int start = i, neg = ch == '-';
@@ -728,7 +748,7 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
             }
             /* number token -?\d+([.,]\d+)* */
             int j = d0 + dl;
-            while (j + 1 < n && (cp[j] == '.' || cp[j] == ',') && is_digit_cp(cp[j + 1]) && !ws->date_start[j + 1])
+            while (j + 1 < n && (cp[j] == '.' || cp[j] == ',') && is_digit_cp(cp[j + 1]) && !(ws->date_start[j + 1] & 1))
                 j += 1 + digits_at(cp, n, j + 1);
             char buf[128];
             int k = 0;

@@ -43,7 +43,7 @@ The Python tests build and run the C tests, so `uv run pytest -q` at the reposit
 
 ## Device text front-end
 
-`vtts_text_to_ids` mirrors the Python front-end (`src/vtts/frontend`) for the subset that devices need: Vietnamese words, letters and acronyms, loanwords, abbreviations, numbers (integers, decimals, thousands separators, negatives), percent, dates (d/m, d/m/yyyy), times (8:30, 8h30, 8h) and punctuation. E-mail addresses, URLs, phone numbers, ISO dates, currency and units are handled only by the Python front-end. The tables in `src/vtts_text_tables.h` are generated from Python, and `test/text_parity.tsv` checks that both produce identical ids.
+`vtts_text_to_ids` mirrors the Python front-end (`src/vtts/frontend`) for the subset that devices need: Vietnamese words, letters and acronyms, product codes (ESP32, S3), loanwords, abbreviations, numbers (integers, decimals, thousands separators, negatives), percent, dates (d/m, d/m/yyyy), times (8:30, 8h30, 8h) and punctuation. E-mail addresses, URLs, phone numbers, ISO dates, currency and units are handled only by the Python front-end. The tables in `src/vtts_text_tables.h` are generated from Python, and `test/text_parity.tsv` checks that both produce identical ids.
 
 The English front-end (token set v2) is currently Python only; its C port is planned.
 
