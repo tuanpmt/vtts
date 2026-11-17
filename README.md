@@ -32,8 +32,8 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 <!-- BEGIN:hardware -->
 | Board | Chip | Lite RTF | Quality RTF | Release v0.3.0 (lite / quality) |
 |---|---|---|---|---|
-| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.18–0.19 | 0.30 | 0.20–0.24 / 0.34–0.42 |
-| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.31–0.32 | 0.55 | 0.42–0.47 / 0.85–0.99 |
+| Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17 | 0.27 | 0.20–0.24 / 0.34–0.42 |
+| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.28 | 0.51 | 0.42–0.47 / 0.85–0.99 |
 
 RTF below 1 means faster than real time. Numbers are for the current main branch; the last column is the v0.3.0 release.
 <!-- END:hardware -->

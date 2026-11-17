@@ -86,16 +86,16 @@
     {
       "boards": "Waveshare ESP32-P4-86-Panel, ESP32-P4-NANO",
       "chip": "ESP32-P4, 360 MHz, PIE SIMD",
-      "rtf_lite": "0.18–0.19",
-      "rtf_quality": "0.30",
+      "rtf_lite": "0.17",
+      "rtf_quality": "0.27",
       "release_lite": "0.20–0.24",
       "release_quality": "0.34–0.42"
     },
     {
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
-      "rtf_lite": "0.31–0.32",
-      "rtf_quality": "0.55",
+      "rtf_lite": "0.28",
+      "rtf_quality": "0.51",
       "release_lite": "0.42–0.47",
       "release_quality": "0.85–0.99"
     }
@@ -191,8 +191,8 @@
           "params": "1.7M",
           "size": "2.6 MB",
           "rtf": {
-            "p4": "0.30",
-            "s3": "0.55"
+            "p4": "0.27",
+            "s3": "0.51"
           }
         },
         {
@@ -202,8 +202,8 @@
           "params": "0.8M",
           "size": "1.1 MB",
           "rtf": {
-            "p4": "0.18–0.19",
-            "s3": "0.31–0.32"
+            "p4": "0.17",
+            "s3": "0.28"
           }
         }
       ],
