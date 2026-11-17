@@ -1,215 +1,217 @@
-# Thiết kế: Model song ngữ Việt–Anh chạy trên ESP32-P4 và ESP32-S3
+# Design: Bilingual Vietnamese–English model on ESP32-P4 and ESP32-S3
 
-- Ngày: 2026-11-16
-- Trạng thái: chờ VoxCPM2 API (giọng, hướng dẫn gọi, key) để chạy bước thử dữ liệu
-- Phạm vi: một giọng đọc được cả tiếng Việt và tiếng Anh trong một model, kể cả câu trộn hai thứ tiếng
+- Date: 2026-11-16
+- Status: in progress (2026-11-17). Data synthesized with VoxCPM2 designed voices (about 98 h per voice for `nam-1` male and `nu-10` female); the Python English front-end (token set v2, 107 tokens) is done; teachers are training; the C port of the English front-end is pending.
+- Scope: one voice that reads both Vietnamese and English in a single model, including sentences that mix the two languages
 
-## 1. Mục đích và lý do
+## 1. Purpose and rationale
 
-Hiện vtts chỉ đọc tiếng Việt. Từ tiếng Anh trong câu (Bluetooth, email, tên sản phẩm) bị đọc theo kiểu Việt hoá hoặc đánh vần. Thiết bị dùng ở Việt Nam lại thường xuyên gặp câu trộn ("Đã kết nối Bluetooth với AirPods") và đôi khi cần đọc hẳn câu tiếng Anh.
+vtts currently reads only Vietnamese. English words in a sentence (Bluetooth, email, product names) are read in a Vietnamized way or spelled out letter by letter. Yet devices used in Vietnam frequently meet mixed sentences ("Đã kết nối Bluetooth với AirPods", "Connected Bluetooth to AirPods") and sometimes need to read entire English sentences.
 
-Không có bộ dữ liệu mở nào có cùng một người đọc cả tiếng Việt lẫn tiếng Anh, mà model đọc được câu trộn thì cần đúng điều đó. Người dùng đã dựng VoxCPM2 (Apache-2.0, 2B tham số, 30 ngôn ngữ có tiếng Việt và tiếng Anh) và sẽ cung cấp API để sinh audio bằng một giọng đã chọn. VoxCPM2 đóng vai "thầy" tạo dữ liệu. Phần còn lại dùng lại quy trình đã có: teacher VITS → student → int8 → chip.
+No open dataset has the same speaker reading both Vietnamese and English, and that is exactly what a model that reads mixed sentences needs. VoxCPM2 (Apache-2.0, 2B parameters, 30 languages including Vietnamese and English) runs on a self-hosted server and provides an API to generate audio with a chosen voice. VoxCPM2 plays the role of a "master" that produces the data. The rest reuses the existing pipeline: VITS teacher → student → int8 → chip.
 
-Lợi ích phụ: có thể thiết kế câu để phủ đủ các âm tiết hiếm. Teacher hiện tại đọc sai "nguệch ngoạc", "khuếch", "nghiêng" vì dữ liệu train không có các âm tiết này. Ngoài ra, model làm theo cách này có giấy phép rõ ràng để phát hành dùng thương mại.
+Side benefit: sentences can be designed to cover rare syllables. The current teacher misreads "nguệch ngoạc", "khuếch", "nghiêng" because the training data does not contain these syllables. In addition, a model built this way has a clear license for commercial release.
 
-## 2. Mục tiêu, không làm, phản mục tiêu
+## 2. Goals, non-goals, anti-goals
 
-**Mục tiêu**
-- Một file model `.vtts` đọc được: câu tiếng Việt, câu tiếng Anh, và câu tiếng Việt có xen từ hoặc cụm tiếng Anh. Tất cả cùng một giọng.
-- Tiếng Việt không kém hơn model M v0.2 hiện tại, và đọc đúng các vần hiếm.
-- Chạy nhanh hơn thời gian thực trên ESP32-P4 và ESP32-S3 (PSRAM 8 MB), cùng runtime và kernel hiện có.
-- Front-end tiếng Anh (chuẩn hoá và G2P) có bản Python và bản C cho kết quả khớp nhau, như front-end tiếng Việt.
-- Quy trình sinh dữ liệu không phụ thuộc VoxCPM2: đổi nguồn audio (API khác, hoặc bản thu thật) là chạy lại được.
+**Goals**
+- One `.vtts` model file that reads: Vietnamese sentences, English sentences, and Vietnamese sentences with interspersed English words or phrases. All in the same voice.
+- Vietnamese no worse than the current M v0.2 model, and correct reading of rare rhymes.
+- Faster than real time on ESP32-P4 and ESP32-S3 (8 MB PSRAM), with the existing runtime and kernels.
+- The English front-end (normalization and G2P) has a Python version and a C version with matching output, like the Vietnamese front-end.
+- The data generation pipeline does not depend on VoxCPM2: swapping the audio source (another API, or real recordings) is enough to rerun it.
 
-**Không làm trong giai đoạn này**
-- Ngôn ngữ thứ ba.
-- Nhiều giọng, điều khiển cảm xúc.
-- Giọng Anh-Anh: dùng giọng Mỹ theo CMUdict.
-- Nhận diện ngôn ngữ bằng mô hình học máy. Chỉ dùng luật và từ điển.
+**Non-goals for this phase**
+- A third language.
+- Multiple voices, emotion control.
+- British English: use the American accent per CMUdict.
+- Machine-learning language identification. Only rules and dictionaries.
 
-**Phản mục tiêu** (vẫn là thất bại dù "chạy được")
-- Tiếng Việt kém đi so với v0.2 để đổi lấy tiếng Anh.
-- Cùng một model mà câu tiếng Việt và câu tiếng Anh nghe như hai người khác nhau.
-- Dữ liệu sinh ra mang lỗi của VoxCPM2 (sai thanh, nói lắp, âm thanh lạ) vào model mà không bị lọc hay phát hiện.
-- Dùng giọng của người không đồng ý, hoặc dùng nguồn có điều khoản cấm train model khác. Ví dụ: không dùng ElevenLabs, không clone giọng VietBibleVox.
-- Kéo GPL vào code (espeak-ng, phonemizer, misaki, g2p_en có phụ thuộc GPL).
+**Anti-goals** (still a failure even if it "works")
+- Vietnamese gets worse than v0.2 in exchange for English.
+- Within the same model, Vietnamese and English sentences sound like two different people.
+- Generated data carries VoxCPM2 errors (wrong tones, stuttering, artifacts) into the model without being filtered or detected.
+- Using the voice of someone who did not consent, or sources whose terms forbid training other models. For example: no ElevenLabs, no cloning of the VietBibleVox voice.
+- Pulling GPL into the code (espeak-ng, phonemizer, misaki, g2p_en have GPL dependencies).
 
-## 3. Ràng buộc
+## 3. Constraints
 
-### 3.1 Giấy phép
+### 3.1 Licensing
 
-| Nguồn | Giấy phép | Dùng làm gì |
+| Source | License | Used for |
 |---|---|---|
-| VoxCPM2 | Apache-2.0; cấm mạo danh, lừa đảo; khuyến nghị ghi nhãn audio do AI tạo | Sinh audio train |
-| Giọng mẫu | Do người dùng chọn: giọng thiết kế, hoặc người đã đồng ý | Giọng của model |
-| CMUdict | BSD 2 điều khoản (giữ thông báo bản quyền CMU) | Từ điển phát âm tiếng Anh |
-| Luật đọc chữ NRL (Elovitz và cộng sự, 1976, báo cáo của Hải quân Mỹ, public domain) | Public domain | Đoán phát âm từ ngoài từ điển; tự viết lại từ bài báo |
-| Văn bản tiếng Việt: corpus Wikipedia hiện có (CC BY-SA) và câu tự soạn | CC BY-SA hoặc tự viết | Câu để sinh audio |
-| Văn bản tiếng Anh: Wikipedia EN (CC BY-SA), transcript LJSpeech (public domain), câu tự soạn | Như trên | Câu để sinh audio |
+| VoxCPM2 | Apache-2.0; prohibits impersonation and fraud; recommends labeling AI-generated audio | Generating training audio |
+| Reference voice | Chosen by the maintainer: a designed voice, or a person who has consented | The model's voice |
+| CMUdict | BSD 2-clause (keep the CMU copyright notice) | English pronunciation dictionary |
+| NRL letter-to-sound rules (Elovitz et al., 1976, US Navy report, public domain) | Public domain | Guessing pronunciations for out-of-dictionary words; reimplemented from the paper |
+| Vietnamese text: existing Wikipedia corpus (CC BY-SA) and self-written sentences | CC BY-SA or self-written | Sentences for audio generation |
+| English text: English Wikipedia (CC BY-SA), LJSpeech transcripts (public domain), self-written sentences | Same as above | Sentences for audio generation |
 
-Không đọc hay lấy code từ: espeak-ng, phonemizer, misaki, piper-phonemize, g2p_en (phụ thuộc GPL qua nltk data thì cần kiểm tra; mặc định không dùng).
+Do not read or take code from: espeak-ng, phonemizer, misaki, piper-phonemize, g2p_en (its GPL dependency via nltk data would need checking; not used by default).
 
-Giấy phép phát hành model song ngữ do người dùng quyết định khi phát hành. Thiết kế giữ mọi nguồn ở mức cho phép dùng thương mại.
+The license for releasing the bilingual model is decided by the maintainer at release time. The design keeps every source at a level that permits commercial use.
 
-### 3.2 Phần cứng
+### 3.2 Hardware
 
-- ESP32-P4: model tối đa khoảng 3 MB, RTF M hiện là 0.34–0.42.
-- ESP32-S3 (PSRAM 8 MB, flash 16 MB): RTF M hiện là 0.85–0.99, sát giới hạn. Model song ngữ không được chậm hơn M quá 10%, nếu không S3 chỉ chạy được bản S.
-- Từ điển tiếng Anh trên chip: tối đa 1.5 MB flash. Khi tra từ chỉ đọc từ flash, không chép vào RAM.
+- ESP32-P4: model up to about 3 MB; current M RTF is 0.34–0.42.
+- ESP32-S3 (8 MB PSRAM, 16 MB flash): current M RTF is 0.85–0.99, close to the limit. The bilingual model must not be more than 10% slower than M; otherwise the S3 can only run the S variant.
+- On-chip English dictionary: at most 1.5 MB of flash. Lookups read only from flash, without copying into RAM.
 
-### 3.3 Tương thích
+### 3.3 Compatibility
 
-- Runtime đọc `vocab` từ header model nên không phải sửa phần tổng hợp.
-- Token tiếng Việt giữ nguyên id 0–64. Token mới được nối thêm từ 65 trở đi, để model và tool cũ tiếp tục chạy với bộ token v1.
+- The runtime reads `vocab` from the model header, so the synthesis part does not need changes.
+- Vietnamese tokens keep ids 0–64. New tokens are appended from 65 onward, so that old models and tools keep working with token set v1.
 
-## 4. Các hướng đã cân nhắc
+## 4. Approaches considered
 
-| Hướng | Ưu | Nhược | Kết luận |
+| Approach | Pros | Cons | Conclusion |
 |---|---|---|---|
-| A. Hai model riêng (VI và EN), mỗi câu chọn một | Đơn giản, mỗi model tối ưu cho một thứ tiếng | Không đọc được câu trộn; giọng hai model khác nhau trừ khi cùng nguồn; tốn gấp đôi flash | Không chọn |
-| **B. Một model song ngữ, dữ liệu sinh từ VoxCPM2 bằng một giọng** | Đọc được câu trộn, một giọng, một file; phủ được âm tiết hiếm | Phụ thuộc chất lượng tiếng Việt của VoxCPM2; model phải chia dung lượng cho hai thứ tiếng | **Chọn** |
-| C. Song ngữ từ dữ liệu thật (VietBibleVox + LJSpeech) | Không phụ thuộc VoxCPM2 | Hai người đọc khác nhau, câu trộn sẽ đổi giọng giữa câu; không có dữ liệu câu trộn | Không chọn; giữ làm phương án dự phòng cho bản chỉ tiếng Anh |
+| A. Two separate models (VI and EN), pick one per sentence | Simple, each model optimized for one language | Cannot read mixed sentences; the two models' voices differ unless they share a source; double the flash | Not chosen |
+| **B. One bilingual model, data generated from VoxCPM2 with a single voice** | Reads mixed sentences, one voice, one file; can cover rare syllables | Depends on VoxCPM2's Vietnamese quality; the model must split its capacity between two languages | **Chosen** |
+| C. Bilingual from real data (VietBibleVox + LJSpeech) | Does not depend on VoxCPM2 | Two different speakers, mixed sentences would switch voice mid-sentence; no mixed-sentence data | Not chosen; kept as a fallback for an English-only build |
 
-## 5. Thiết kế
+## 5. Design
 
-### 5.1 Bộ token v2
+### 5.1 Token set v2
 
 ```mermaid
 flowchart LR
-    V1["id 0–64<br/>token v1 tiếng Việt<br/>(giữ nguyên)"] --> V2["id 65–103<br/>39 âm vị ARPAbet<br/>(EN:AA … EN:ZH)"]
-    V2 --> S["id 104–106<br/>trọng âm S0, S1, S2"]
+    V1["id 0–64<br/>v1 Vietnamese tokens<br/>(unchanged)"] --> V2["id 65–103<br/>39 ARPAbet phonemes<br/>(EN:AA … EN:ZH)"]
+    V2 --> S["id 104–106<br/>stress S0, S1, S2"]
 ```
 
 - `PHONEME_SET_VERSION = "2"`, `VOCAB_SIZE = 107`.
-- Mỗi nguyên âm tiếng Anh mang một token trọng âm đặt ngay sau nó, giống cách token thanh điệu đứng sau âm tiết tiếng Việt.
-- Ranh giới từ dùng chung token `SPACE`, dấu câu dùng chung token dấu câu.
-- Không có token đánh dấu ngôn ngữ: âm vị đã đủ phân biệt hai thứ tiếng, và như vậy chuyển ngôn ngữ giữa câu không cần token đặc biệt.
+- Each English vowel carries a stress token placed immediately after it, the same way a tone token follows a Vietnamese syllable.
+- Word boundaries share the `SPACE` token; punctuation shares the punctuation tokens.
+- No language-marker token: the phonemes are enough to distinguish the two languages, and this way switching language mid-sentence needs no special token.
 
 ### 5.2 Front-end
 
 ```mermaid
 flowchart LR
-    T["Văn bản"] --> L["Tách từ + gán ngôn ngữ<br/>(luật + từ điển)"]
-    L --> NV["Chuẩn hoá VI<br/>(hiện có)"]
-    L --> NE["Chuẩn hoá EN<br/>(số, ngày, tiền, đơn vị)"]
-    NV --> GV["G2P VI<br/>(hiện có)"]
-    NE --> GE["G2P EN<br/>CMUdict → luật NRL → đánh vần"]
-    GV --> I["ID token v2"]
+    T["Text"] --> L["Word splitting + language tagging<br/>(rules + dictionary)"]
+    L --> NV["VI normalization<br/>(existing)"]
+    L --> NE["EN normalization<br/>(numbers, dates, money, units)"]
+    NV --> GV["VI G2P<br/>(existing)"]
+    NE --> GE["EN G2P<br/>CMUdict → NRL rules → spelling"]
+    GV --> I["Token set v2 IDs"]
     GE --> I
 ```
 
-**Gán ngôn ngữ cho từng từ** (chế độ `vi`, `en` hoặc `auto`; mặc định `vi`):
-- Từ có dấu tiếng Việt hoặc chữ `đ`: luôn là tiếng Việt.
-- Chế độ `vi`:
-  - từ ghép được thành âm tiết tiếng Việt hợp lệ thì đọc tiếng Việt ("an", "con", "to" vẫn là tiếng Việt);
-  - từ không ghép được nhưng có trong CMUdict hoặc đọc được bằng luật thì đọc tiếng Anh ("Bluetooth", "smartphone");
-  - các từ trong bảng `LOANWORDS` vẫn đọc kiểu Việt hoá nếu người dùng muốn; có cờ cấu hình.
-- Chế độ `en`: mọi từ không dấu là tiếng Anh; từ có dấu là tiếng Việt.
-- Chế độ `auto`: đoạn văn có tỉ lệ từ có dấu ≥ 20% thì coi là `vi`, ngược lại là `en`; tính theo từng câu.
-- Số và ký hiệu đọc theo ngôn ngữ của câu chứa nó.
+**Per-word language tagging** (`vi`, `en` or `auto` mode; default `vi`):
+- Words with Vietnamese diacritics or the letter `đ`: always Vietnamese.
+- `vi` mode:
+  - words that form a valid Vietnamese syllable are read as Vietnamese ("an", "con", "to" stay Vietnamese);
+  - words that cannot form one but are in CMUdict or can be read by the rules are read as English ("Bluetooth", "smartphone");
+  - words in the `LOANWORDS` table can still be read in the Vietnamized way if desired; there is a configuration flag.
+- `en` mode: every word without diacritics is English; words with diacritics are Vietnamese.
+- `auto` mode: a passage with ≥ 20% of words carrying diacritics is treated as `vi`, otherwise as `en`; computed per sentence.
+- Numbers and symbols are read in the language of the sentence containing them.
 
-**Chuẩn hoá tiếng Anh:**
-- số đếm, số thứ tự, số thập phân, phần trăm;
-- ngày (11/16/2026 theo kiểu Mỹ, và "16 Nov 2026"), giờ (3:30 pm);
-- tiền ($5, €3.50), đơn vị (km, kg, °F, °C);
-- viết tắt phổ biến (Dr., Mr., etc.);
-- chữ in hoa ngắn (USB, AI) đánh vần thành tên chữ cái.
+**English normalization:**
+- cardinals, ordinals, decimals, percentages;
+- dates (11/16/2026 in US style, and "16 Nov 2026"), times (3:30 pm);
+- money ($5, €3.50), units (km, kg, °F, °C);
+- common abbreviations (Dr., Mr., etc.);
+- short all-caps words (USB, AI) spelled out as letter names.
 
-**G2P tiếng Anh:**
-1. Tra CMUdict.
-2. Không có thì thử tách hậu tố hoặc từ ghép (-s, -ed, -ing, từ ghép hai phần).
-3. Không được nữa thì dùng luật NRL.
-4. Chữ in hoa ≤ 4 ký tự thì đánh vần.
+**English G2P:**
+1. Look up CMUdict.
+2. If not found, try splitting off suffixes or compounds (-s, -ed, -ing, two-part compounds).
+3. If that still fails, use the NRL rules.
+4. All-caps words of ≤ 4 characters are spelled out.
 
-**Trên chip:**
-- Từ điển được nén thành blob nhị phân: từ sắp xếp, nén tiền tố, âm vị 6 bit, khoảng 1–1.5 MB. Blob nhúng vào firmware riêng với model và tra cứu bằng tìm kiếm nhị phân theo khối.
-- Bản C và bản Python phải cho ra cùng một chuỗi ID trên bộ test khớp, gồm cả fuzz, như front-end tiếng Việt hiện tại.
+**On the chip:**
+- The dictionary is compressed into a binary blob: sorted words, prefix compression, 6-bit phonemes, about 1–1.5 MB. The blob is embedded in the firmware separately from the model and looked up by block-wise binary search.
+- The C and Python versions must produce the same ID sequence on the match test set, including fuzzing, as with the current Vietnamese front-end.
 
-### 5.3 Dữ liệu
+### 5.3 Data
 
 ```mermaid
 flowchart LR
-    C["Bộ câu<br/>VI / EN / trộn"] --> A["VoxCPM2 API<br/>(một giọng)"]
-    A --> F["Lọc: ASR CER, độ giống giọng,<br/>DNSMOS, tốc độ nói"]
-    F --> D["Dataset 22.05 kHz<br/>wav + transcript + ngôn ngữ"]
+    C["Sentence set<br/>VI / EN / mixed"] --> A["VoxCPM2 API<br/>(one voice)"]
+    A --> F["Filter: ASR CER, voice similarity,<br/>DNSMOS, speaking rate"]
+    F --> D["Dataset 22.05 kHz<br/>wav + transcript + language"]
 ```
 
-| Phần | Lượng sau lọc | Nguồn câu |
+| Part | Amount after filtering | Sentence source |
 |---|---:|---|
-| Tiếng Việt | ~30 giờ | Corpus hiện có, cộng ~5.000 câu phủ âm tiết hiếm (chọn tham lam theo âm tiết và vần chưa đủ 20 lần), cộng câu có số, ngày giờ, đơn vị, câu hỏi |
-| Tiếng Anh | ~25 giờ | Wikipedia EN, transcript LJSpeech, câu thông báo thiết bị tự soạn |
-| Câu trộn | ~5 giờ | Câu tiếng Việt chứa thuật ngữ, tên sản phẩm, cụm tiếng Anh; sinh từ mẫu cộng danh sách thuật ngữ |
+| Vietnamese | ~30 hours | Existing corpus, plus ~5,000 sentences covering rare syllables (greedy selection by syllables and rhymes seen fewer than 20 times), plus sentences with numbers, dates and times, units, questions |
+| English | ~25 hours | English Wikipedia, LJSpeech transcripts, self-written device announcement sentences |
+| Mixed sentences | ~5 hours | Vietnamese sentences containing technical terms, product names, English phrases; generated from templates plus a term list |
 
-**Bộ lọc** (ngưỡng được chỉnh sau bước thử):
-- CER với PhoWhisper (VI) hoặc Whisper large-v3 (EN, câu trộn) ≤ 0.05;
-- độ giống giọng (cosine của embedding speaker so với tâm giọng) ≥ ngưỡng của bước thử trừ 2 độ lệch chuẩn;
+**Filters** (thresholds tuned after the trial run):
+- CER with PhoWhisper (VI) or Whisper large-v3 (EN, mixed sentences) ≤ 0.05;
+- voice similarity (cosine of the speaker embedding against the voice centroid) ≥ the trial-run threshold minus 2 standard deviations;
 - DNSMOS ≥ 3.2;
-- tốc độ nói nằm trong khoảng 2–98% phân vị.
+- speaking rate within the 2–98th percentile range.
 
-Mỗi câu bị loại được ghi lại kèm lý do.
+Every rejected sentence is logged with its reason.
 
-**Client API:**
-- Giới hạn số request song song, tự thử lại khi lỗi.
-- Có thể dừng giữa chừng rồi chạy tiếp, nhờ manifest jsonl theo id câu.
-- URL và key đọc từ `~/.config/vtts/voxcpm.env`, không bao giờ nằm trong repo hay log.
+**API client:**
+- Limits the number of concurrent requests, retries automatically on errors.
+- Can be stopped midway and resumed, thanks to a jsonl manifest keyed by sentence id.
+- URL and key are read from `~/.config/vtts/voxcpm.env` and never appear in the repo or in logs.
 
-### 5.4 Train
+### 5.4 Training
 
-1. **Teacher VITS:** train từ đầu trên dataset song ngữ với `n_vocab` hiện có (256 hàng, đủ cho 107 token), khoảng 300k bước.
-2. **Chưng cất:** student M-vocos-p với `vocab = 107`. Bộ câu chưng cất trộn ba phần theo tỉ lệ dataset, và giữ phần phủ âm tiết hiếm.
-3. **Mốc kiểm tra dung lượng:** nếu M không đạt chất lượng mục 6, thử biến thể lớn hơn khoảng 1.5 lần (khoảng 2.5M tham số), miễn là vẫn đạt ràng buộc RTF ở 3.2.
+1. **VITS teacher:** trained from scratch on the bilingual dataset with the existing `n_vocab` (256 rows, enough for 107 tokens), about 300k steps.
+2. **Distillation:** M-vocos-p student with `vocab = 107`. The distillation sentence set mixes the three parts in the dataset's proportions and keeps the rare-syllable coverage part.
+3. **Capacity checkpoint:** if M does not reach the quality in section 6, try a variant about 1.5 times larger (about 2.5M parameters), as long as it still meets the RTF constraint in 3.2.
 
-### 5.5 Runtime và firmware
+### 5.5 Runtime and firmware
 
-- **Runtime tổng hợp:** không đổi.
-- **`vtts_text`:** thêm `vtts_text_set_lang(vi|en|auto)` và đường xử lý tiếng Anh, nhận blob từ điển qua con trỏ (không cấp phát).
+- **Synthesis runtime:** unchanged.
+- **`vtts_text`:** add `vtts_text_set_lang(vi|en|auto)` and the English processing path, receiving the dictionary blob through a pointer (no allocation).
 - **Firmware:**
-  - lệnh `lang vi|en|auto`;
-  - nhúng blob từ điển;
-  - model song ngữ thay khe M (hoặc thêm khe thứ ba nếu flash đủ);
-  - `bench` thêm câu tiếng Anh và câu trộn.
+  - `lang vi|en|auto` command;
+  - embed the dictionary blob;
+  - the bilingual model replaces the M slot (or adds a third slot if flash allows);
+  - `bench` adds English and mixed sentences.
 
-## 6. Đánh giá và tiêu chí đạt
+## 6. Evaluation and acceptance criteria
 
-**Bộ câu đánh giá mới:**
-- `eval/sets/ood_en.jsonl`: 50 câu (thông báo thiết bị, số, tên riêng, câu hỏi, câu dài);
-- `eval/sets/mixed.jsonl`: 50 câu trộn.
+**New evaluation sets:**
+- `eval/sets/ood_en.jsonl`: 50 sentences (device announcements, numbers, proper names, questions, long sentences);
+- `eval/sets/mixed.jsonl`: 50 mixed sentences.
 
-Giữ nguyên bộ `ood` tiếng Việt và bộ từ khó.
+The Vietnamese `ood` set and the hard-words set are kept unchanged.
 
-| Tiêu chí | Ngưỡng đạt |
+| Criterion | Pass threshold |
 |---|---|
-| CER tiếng Việt trên `ood` (PhoWhisper) | ≤ 0.012 (bằng v0.2) |
-| CER trên bộ từ khó tiếng Việt | thấp hơn v0.2 (0.12) |
-| WER tiếng Anh trên `ood_en` (Whisper large-v3) | ≤ 0.05 |
-| Câu trộn: tỉ lệ từ tiếng Anh đọc đúng (Whisper nhận ra đúng từ) | ≥ 90% |
-| UTMOS tiếng Việt | ≥ 2.19 (v0.2) |
-| Độ giống giọng giữa câu VI và câu EN | trong khoảng giống giọng của dữ liệu VoxCPM2 |
-| Tiếng rít | ≤ 10 |
-| RTF trên P4 / S3 | ≤ 0.45 / ≤ 1.0 |
-| Kích thước model + từ điển | ≤ 3 MB + ≤ 1.5 MB |
-| Audio chip khớp runtime trên máy tính | tương quan ≥ 0.9999 |
+| Vietnamese CER on `ood` (PhoWhisper) | ≤ 0.012 (equal to v0.2) |
+| CER on the Vietnamese hard-words set | lower than v0.2 (0.12) |
+| English WER on `ood_en` (Whisper large-v3) | ≤ 0.05 |
+| Mixed sentences: fraction of English words read correctly (Whisper recognizes the correct word) | ≥ 90% |
+| Vietnamese UTMOS | ≥ 2.19 (v0.2) |
+| Voice similarity between VI and EN sentences | within the voice-similarity range of the VoxCPM2 data |
+| Whistle index | ≤ 10 |
+| RTF on P4 / S3 | ≤ 0.45 / ≤ 1.0 |
+| Model + dictionary size | ≤ 3 MB + ≤ 1.5 MB |
+| On-chip audio matches the host runtime | correlation ≥ 0.9999 |
 
-Cuối cùng là trang nghe A/B (v0.2 so với song ngữ, cộng câu tiếng Anh và câu trộn) để người dùng nghe xác nhận.
+Finally, an A/B listening page (v0.2 versus bilingual, plus English and mixed sentences) for the maintainer to listen and confirm.
 
-## 7. Rủi ro
+## 7. Risks
 
-| Rủi ro | Cách xử lý |
+| Risk | Mitigation |
 |---|---|
-| Tiếng Việt của VoxCPM2 sai thanh hoặc vần hiếm | Chạy thử 200 câu trước; nếu CER VI > 0.03 hoặc nghe sai thanh thì dừng và báo người dùng (có thể thử giọng hoặc tham số khác) |
-| Giọng trôi giữa các lần sinh | Cố định giọng mẫu và seed nếu API cho phép; lọc theo độ giống giọng |
-| Model 1.7M không đủ chỗ cho hai thứ tiếng | Mốc kiểm tra ở 5.4; ưu tiên giữ chất lượng tiếng Việt |
-| Gán ngôn ngữ sai (từ trùng chữ giữa hai thứ tiếng) | Luật thiên về tiếng Việt trong chế độ `vi`; danh sách ngoại lệ mở rộng được; có bộ test riêng |
-| Thời gian sinh dữ liệu dài | Chạy song song có giới hạn, chạy tiếp được; ước lượng lại sau bước thử |
-| Từ điển chiếm flash trên S3 | Có thể cắt CMUdict còn ~60k từ thường gặp và dùng luật cho phần còn lại; đo cả hai cấu hình |
+| VoxCPM2's Vietnamese has wrong tones or misreads rare rhymes | Trial-run 200 sentences first; if VI CER > 0.03 or tones sound wrong, stop and report to the maintainer (another voice or other parameters may be tried) |
+| Voice drift across generation runs | Fix the reference voice and seed if the API allows; filter by voice similarity |
+| The 1.7M model lacks capacity for two languages | Capacity checkpoint in 5.4; prioritize keeping Vietnamese quality |
+| Wrong language tagging (words spelled the same in both languages) | Rules biased toward Vietnamese in `vi` mode; extensible exception list; a dedicated test set |
+| Long data generation time | Bounded parallelism, resumable; re-estimate after the trial run |
+| Dictionary takes too much flash on the S3 | Can trim CMUdict to ~60k common words and use rules for the rest; measure both configurations |
 
-## 8. Các quyết định đang chờ người dùng
+## 8. Decisions pending the maintainer
 
-- **Giọng mẫu và cách gọi API:** người dùng sẽ gửi khi dựng xong VoxCPM2.
-- **Giấy phép phát hành model song ngữ:** quyết định khi phát hành.
+(Historical; the voices and the API were provided and the data has been generated.)
 
-Những quyết định đã tự chọn, có thể sửa:
-- Giọng Mỹ (CMUdict).
-- Chế độ mặc định `vi`.
-- Từ tiếng Anh trong câu tiếng Việt đọc theo tiếng Anh, trừ các từ trong bảng `LOANWORDS`.
-- Model song ngữ thay khe M trong firmware.
+- **Reference voice and how to call the API:** the maintainer will send these once VoxCPM2 is set up.
+- **License for releasing the bilingual model:** decided at release time.
+
+Decisions already made by the author, open to change:
+- American accent (CMUdict).
+- Default mode `vi`.
+- English words inside Vietnamese sentences are read as English, except words in the `LOANWORDS` table.
+- The bilingual model replaces the M slot in the firmware.

@@ -1,52 +1,54 @@
-# Kế hoạch 3: Student chưng cất, exporter và runtime C
+# Plan 3: Distilled student, exporter and C runtime
+
+> **Status:** completed. Historical plan, kept for reference. The selected decoder became the Vocos-style ConvNeXt + iSTFT decoder (`decoder = 2` in the [model format](../../model-format.md)); the released students are S-vocos v0.1 (0.77M parameters) and M-vocos v0.2 (1.73M). Current numbers: [README](../../../README.md) and [performance report](../../reports/performance.md).
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Student S và M chưng cất từ teacher, chạy được bằng runtime C99 tự viết (fp32 và int8) trên host, qua golden gate; chọn decoder theo số đo chất lượng so với lượng phép tính để vừa ngân sách real-time của ESP32-P4.
+**Goal:** S and M students distilled from the teacher, running on a hand-written C99 runtime (fp32 and int8) on the host and passing the golden gate; choose the decoder by measured quality versus compute so that it fits the ESP32-P4 real-time budget.
 
-**Architecture:** Student gồm 3 khối: duration (conv mức token), âm học (conv mức token → mở rộng theo duration + vị trí tương đối trong token → conv mức frame → latent 192 kênh), decoder. Decoder là một họ có cấu hình: `hifigan` (upsample 8×8×4 về thẳng waveform) và `istft` (upsample ít hơn rồi iSTFT nhỏ, ví dụ upsample 8×8 + iSTFT n_fft 16 hop 4). Tập phép toán cố định: Embedding, Conv1d (có dilation), ConvTranspose1d, LeakyReLU, ReLU, LayerNorm theo kênh, Linear, tanh, iDFT nhỏ, mở rộng theo duration. Runtime C triển khai đúng tập này, đọc một file model tự mô tả. Chưng cất: teacher sinh dữ liệu cho mọi câu trong kho văn bản; mục tiêu là duration và latent `z` của teacher (noise của prior cố định bằng 0, để mục tiêu tất định) cùng audio do decoder teacher sinh từ `z`.
+**Architecture:** The student has 3 blocks: duration (token-level conv), acoustic (token-level conv → expansion by duration + relative position within the token → frame-level conv → 192-channel latent), and decoder. The decoder is a configurable family: `hifigan` (upsample 8×8×4 straight to the waveform) and `istft` (less upsampling followed by a small iSTFT, e.g. upsample 8×8 + iSTFT n_fft 16 hop 4). Fixed operator set: Embedding, Conv1d (with dilation), ConvTranspose1d, LeakyReLU, ReLU, channel-wise LayerNorm, Linear, tanh, small iDFT, expansion by duration. The C runtime implements exactly this set and reads a self-describing model file. Distillation: the teacher generates data for every sentence in the text corpus; the targets are the teacher's durations and latent `z` (prior noise fixed to 0 so the targets are deterministic) plus the audio the teacher decoder produces from `z`.
 
-**Tech Stack:** PyTorch (train), C99 + Make (runtime, host test), numpy (golden).
+**Tech Stack:** PyTorch (training), C99 + Make (runtime, host tests), numpy (golden).
 
-**Spec:** `docs/design/specs/2026-11-14-vietnamese-tts-p4-design.md` (mục 5.5, 5.6)
+**Spec:** `docs/design/specs/2026-11-14-vietnamese-tts-p4-design.md` (sections 5.5, 5.6)
 
 ## Global Constraints
 
-- Ràng buộc chung của Kế hoạch 1 và 2 vẫn áp dụng.
-- Runtime C: C99, không `malloc`; caller cấp arena và có hàm tính trước kích thước arena; không hardcode shape nào.
-- Định dạng file model: magic `VTTS`, version `1`, bảng tensor (tên, dtype `f32`/`i8`, shape, offset, scale theo kênh), dims dạng key/value. Python exporter và C parser cùng dựa trên một mô tả định dạng duy nhất trong `docs/model-format.md`.
-- Golden gate: C fp32 so với PyTorch có tương quan ≥ 0.9999, duration khớp tuyệt đối; int8 so với fp32 có tương quan > 0.98 và 0.80 < tỉ lệ RMS < 1.25; duration int8 lệch tối đa 1 frame mỗi token và tối đa 1% tổng số frame.
-- Ngân sách phép tính (đo bằng bộ đếm MAC của exporter): **S ≤ 120 MMAC/s audio**, **M ≤ 300 MMAC/s audio**. Decoder nào vượt ngân sách thì không được chọn, dù nghe hay hơn.
+- The global constraints of Plans 1 and 2 still apply.
+- C runtime: C99, no `malloc`; the caller provides an arena, and a function computes the arena size up front; no hard-coded shapes.
+- Model file format: magic `VTTS`, version `1`, a tensor table (name, dtype `f32`/`i8`, shape, offset, per-channel scale), dims as key/value pairs. The Python exporter and the C parser both follow one format description in `docs/model-format.md`.
+- Golden gate: C fp32 vs PyTorch correlation ≥ 0.9999 with exactly matching durations; int8 vs fp32 correlation > 0.98 and 0.80 < RMS ratio < 1.25; int8 durations off by at most 1 frame per token and at most 1% of the total frame count.
+- Compute budget (measured by the exporter's MAC counter): **S ≤ 120 MMAC per second of audio**, **M ≤ 300 MMAC per second of audio**. A decoder over budget is not selected, even if it sounds better.
 
 ## Review Focus
 
-1. Câu chỉ có 1 token hoặc duration bị kẹp về 1 frame: không được tràn arena, không chia cho 0.
-2. Câu dài 40 âm tiết (chunk tối đa của front-end): arena đủ lớn và kích thước arena được tính đúng trước khi chạy.
-3. File model sai hoặc cụt (magic sai, version khác, offset vượt kích thước): `init` trả về mã lỗi âm, không đọc ra ngoài vùng nhớ.
-4. Activation int8 bị bão hoà ở tầng cuối: phải thể hiện qua tỉ lệ RMS, không bị che bởi tương quan cao.
-5. Biên giữa các chunk khi ghép câu: không có tiếng click (fade 5 ms ở biên).
+1. A sentence with only 1 token, or a duration clamped to 1 frame: no arena overflow, no division by zero.
+2. A 40-syllable sentence (the front-end's maximum chunk): the arena is large enough and its size is computed correctly before running.
+3. A malformed or truncated model file (wrong magic, different version, offset beyond the file size): `init` returns a negative error code and never reads out of bounds.
+4. Saturated int8 activations in the last layer must show up in the RMS ratio and not be masked by a high correlation.
+5. Chunk boundaries when sentences are joined: no clicks (5 ms fade at the boundary).
 
 ---
 
-### Task 1: Student model PyTorch + bộ đếm MAC
-`src/vtts/student/{config,model,macs}.py`. `StudentConfig(size="S"|"M", decoder="hifigan"|"istft", ...)`; `Student.forward_duration(ids) -> log_dur`; `Student.forward_latent(ids, durations) -> z[192, T]`; `Student.decode(z) -> wav`; `count_macs(cfg) -> {"duration","acoustic","decoder","per_second"}`. Test: shape; MAC của mỗi preset nằm trong ngân sách; số tham số của S trong 0.4–0.8M, của M trong 1.2–2.0M.
+### Task 1: PyTorch student model + MAC counter
+`src/vtts/student/{config,model,macs}.py`. `StudentConfig(size="S"|"M", decoder="hifigan"|"istft", ...)`; `Student.forward_duration(ids) -> log_dur`; `Student.forward_latent(ids, durations) -> z[192, T]`; `Student.decode(z) -> wav`; `count_macs(cfg) -> {"duration","acoustic","decoder","per_second"}`. Tests: shapes; each preset's MACs are within budget; S has 0.4–0.8M parameters, M has 1.2–2.0M.
 
-### Task 2: Sinh bộ dữ liệu chưng cất
-`src/vtts/student/distill_data.py`, `scripts/student/build_distill_pack.py`. Với mỗi câu trong kho văn bản (InfoRe1 train + câu tổng hợp; mục tiêu ≥ 50k câu), teacher (`best.pt`, noise 0) sinh `ids`, `durations` (số nguyên), `z` (fp16) và `audio` (int16). Ghi thành các shard `.npz`, mỗi shard 1000 câu. Test: shard đọc lại khớp đúng shape; tổng duration × 256 bằng độ dài audio.
+### Task 2: Generate the distillation dataset
+`src/vtts/student/distill_data.py`, `scripts/student/build_distill_pack.py`. For each sentence in the text corpus (InfoRe1 train + synthetic sentences; target ≥ 50k sentences), the teacher (`best.pt`, noise 0) produces `ids`, `durations` (integers), `z` (fp16) and `audio` (int16). Written as `.npz` shards of 1000 sentences each. Tests: shards read back with the right shapes; the sum of durations × 256 equals the audio length.
 
-### Task 3: Train student (3 giai đoạn)
-`src/vtts/student/train.py`. (a) duration: MSE trên log-duration; (b) âm học: L1 + cosine trên `z`, có teacher forcing duration; (c) decoder: multi-resolution STFT + mel L1 + MPD/MRD adversarial + feature matching, input là `z` của teacher; (d) joint finetune với `z` do student dự đoán. Resume và NaN-skip giống Kế hoạch 2. Test: một bước CPU cho mỗi giai đoạn ra loss hữu hạn.
+### Task 3: Train the student (3 stages)
+`src/vtts/student/train.py`. (a) duration: MSE on log-duration; (b) acoustic: L1 + cosine on `z`, with teacher-forced durations; (c) decoder: multi-resolution STFT + mel L1 + MPD/MRD adversarial + feature matching, with the teacher's `z` as input; (d) joint fine-tuning with the student's predicted `z`. Resume and NaN-skip as in Plan 2. Tests: one CPU step per stage gives a finite loss.
 
-### Task 4: Định dạng model + exporter fp32 + golden
-`docs/model-format.md`, `src/vtts/export/format.py`, `src/vtts/export/export.py`, `scripts/student/export_student.py`. Golden: `ids`, `durations`, `z`, `pcm` cho 5 câu. Test: round-trip đọc/ghi file model trong Python.
+### Task 4: Model format + fp32 exporter + golden
+`docs/model-format.md`, `src/vtts/export/format.py`, `src/vtts/export/export.py`, `scripts/student/export_student.py`. Golden: `ids`, `durations`, `z`, `pcm` for 5 sentences. Tests: model file write/read round trip in Python.
 
-### Task 5: Runtime C fp32
-`runtime/include/vtts.h`, `runtime/src/{model,ops,frontend_ids,synth}.c`, `runtime/test/golden_test.c`, `runtime/Makefile`. API: `vtts_init`, `vtts_arena_bytes(model, n_tokens, max_frames)`, `vtts_durations`, `vtts_synthesize`. Test (`make test`): golden fp32 qua cổng; các file model hỏng trả mã lỗi âm (chạy dưới ASan/UBSan).
+### Task 5: fp32 C runtime
+`runtime/include/vtts.h`, `runtime/src/{model,ops,frontend_ids,synth}.c`, `runtime/test/golden_test.c`, `runtime/Makefile`. API: `vtts_init`, `vtts_arena_bytes(model, n_tokens, max_frames)`, `vtts_durations`, `vtts_synthesize`. Tests (`make test`): fp32 golden passes the gate; malformed model files return negative error codes (run under ASan/UBSan).
 
-### Task 6: Lượng tử hoá int8 + runtime int8
-Trọng số int8 theo kênh, activation làn int16 giữ 12-bit, scale tĩnh hiệu chỉnh trên 200 câu; tầng cuối trước tanh và đầu log-duration giữ fp32. Port API `vtts_port.h` (dot/matvec s8 và s16×s8, `weights_resident`, `now_us`) với bản C tham chiếu. Test: golden int8 qua cổng.
+### Task 6: int8 quantization + int8 runtime
+Per-channel int8 weights, int16-lane activations keeping 12 bits, static scales calibrated on 200 sentences; the last layer before tanh and the log-duration head stay fp32. Port API `vtts_port.h` (s8 and s16×s8 dot/matvec, `weights_resident`, `now_us`) with a reference C implementation. Tests: int8 golden passes the gate.
 
-### Task 7: Tìm decoder + đánh giá + tối ưu
-Train 2–4 cấu hình decoder (hifigan-S, istft-S, istft-M, …) trên 2 GPU. Đánh giá bằng `eval_dir` (CER, UTMOS, chỉ số rít) với student fp32 và int8 trên host. Chọn theo luật: trong ngân sách MAC, CER ≤ 1.3 lần teacher, ít rít nhất. Viết `docs/reports/student.md`.
+### Task 7: Decoder search + evaluation + optimization
+Train 2–4 decoder configurations (hifigan-S, istft-S, istft-M, …) on 2 GPUs. Evaluate with `eval_dir` (CER, UTMOS, whistle index) on fp32 and int8 students on the host. Selection rule: within the MAC budget, CER ≤ 1.3 × teacher, least whistle. Write `docs/reports/student.md`.
 
-**Cổng kết thúc Kế hoạch 3:** có ít nhất một student qua cổng CER và qua golden int8 trên host, với MMAC/s trong ngân sách. Sau đó sang Kế hoạch 4 (port P4, đo trên chip, vòng đánh giá và tối ưu cuối).
+**Exit gate for Plan 3:** at least one student passes the CER gate and the int8 golden gate on the host, with MMAC/s within budget. Then on to Plan 4 (P4 port, on-chip measurement, final evaluation and optimization loop).
