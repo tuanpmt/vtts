@@ -30,9 +30,9 @@ build/text_test: $(TEXT_SRC) test/text_test.c include/vtts_text.h src/vtts_text_
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
 
-build/lex_test: src/vtts_lex.c src/vtts_text_en.c src/vtts_text_en.h test/lex_test.c include/vtts_lex.h src/vtts_text_tables.h
+build/lex_test: src/vtts_lex.c src/vtts_text_en.c src/vtts_text.c src/vtts_text_en.h test/lex_test.c include/vtts_lex.h src/vtts_text_tables.h
 	mkdir -p build
-	$(CC) $(CFLAGS) $(SAN) -Isrc src/vtts_lex.c src/vtts_text_en.c test/lex_test.c -o $@
+	$(CC) $(CFLAGS) $(SAN) -Isrc src/vtts_lex.c src/vtts_text_en.c src/vtts_text.c test/lex_test.c -o $@
 
 build/en_norm_test: src/vtts_text_en.c src/vtts_text.c src/vtts_lex.c test/en_norm_test.c src/vtts_text_en.h src/vtts_text_tables.h
 	mkdir -p build
