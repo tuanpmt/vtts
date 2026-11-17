@@ -1,0 +1,20 @@
+# Words read with a fixed Vietnamese reading. Matching is case-insensitive. An entry here also makes the word Vietnamese in bilingual mode, so do not add names that bilingual voices should read in English (put those in the English lexicon instead).
+# Format: key<TAB>reading. Lines starting with '#' are comments. See docs/frontend/pronunciation-rules.md.
+wifi	oai phai
+email	i meo
+ok	ô kê
+okay	ô kê
+internet	in tơ nét
+video	vi đê ô
+online	on lai
+offline	óp lai
+app	áp
+smartphone	sờ mát phôn
+covid	cô vít
+hashtag	hát tác
+ôtô	ô tô
+tivi	ti vi
+taxi	tắc xi
+mini	mi ni
+oxy	ô xi
+smarthome	sờ mát hôm

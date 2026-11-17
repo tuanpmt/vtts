@@ -1,0 +1,6 @@
+# Symbols read aloud.
+# Format: key<TAB>reading. Lines starting with '#' are comments. See docs/frontend/pronunciation-rules.md.
+@	a còng
++	cộng
+=	bằng
+&	và

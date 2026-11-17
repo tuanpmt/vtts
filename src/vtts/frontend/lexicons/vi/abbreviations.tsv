@@ -1,0 +1,10 @@
+# Case-sensitive, longest key first, only at word boundaries (a key that does not end in '.' must not be followed by a letter or digit).
+# Format: key<TAB>reading. Lines starting with '#' are comments. See docs/frontend/pronunciation-rules.md.
+TP.HCM	thành phố hồ chí minh
+TPHCM	thành phố hồ chí minh
+TP.	thành phố
+Q.	quận
+P.	phường
+HN	hà nội
+VN	việt nam
+v.v.	vân vân

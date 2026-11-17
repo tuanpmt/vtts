@@ -77,6 +77,16 @@ def _time(m: re.Match) -> str:
     return f"{read_int(h)} {read_int(mi)}"
 
 
+# Product codes: upper-case ASCII letters and digits with at least one of each, standing alone
+# (ESP32, S3, RTX3060, MP3). Their digits are read one by one ("ESP32" -> "ESP ba hai"); the
+# letters are spelled later as usual. See docs/frontend/pronunciation-rules.md.
+PRODUCT_CODE = r"(?<!\w)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*[0-9])[A-Z0-9]+(?!\w)"
+
+
+def _read_code(m: re.Match) -> str:
+    return re.sub(r"[0-9]+", lambda d: f" {read_digits(d.group(0))} ", m.group(0))
+
+
 def _spell(word: str) -> str:
     names = []
     for ch in word:
@@ -106,6 +116,7 @@ def _expand(text: str) -> str:
         tail = "" if abbr.endswith(".") else r"(?!\w)"
         text = re.sub(rf"(?<!\w){re.escape(abbr)}{tail}", f" {ABBREVIATIONS[abbr]} ", text)
 
+    text = _sub(PRODUCT_CODE, _read_code, text)
     text = _sub(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", _read_address, text)
     text = _sub(r"(?:https?://|www\.)[^\s]+", _read_address, text)
     text = _sub(r"(?<![\d.])0\d{2,3}[. ]?\d{3}[. ]?\d{3,4}(?!\d|\.\d)",

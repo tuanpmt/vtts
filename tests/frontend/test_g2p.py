@@ -10,7 +10,7 @@ def test_sentence_tokens():
 
 
 def test_dialect_distinctions_preserved():
-    first = lambda w: g2p(w)[0]  # noqa: E731
+    first = lambda w: g2p(w)[0]
     assert len({first("tra"), first("cha")}) == 2
     assert len({first("sa"), first("xa")}) == 2
     assert len({first("ra"), first("da"), first("gia")}) == 3

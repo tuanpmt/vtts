@@ -143,8 +143,18 @@ def _spell_caps(word: str) -> str:
     return " ".join(out)
 
 
+# Product codes (ESP32, S3, RTX3060): digits read one by one, letters spelled as an acronym.
+# Same pattern as the Vietnamese front-end; see docs/frontend/pronunciation-rules.md.
+PRODUCT_CODE = r"(?<!\w)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*[0-9])[A-Z0-9]+(?!\w)"
+
+
+def _code(m: re.Match) -> str:
+    return re.sub(r"[0-9]", lambda d: f" {cardinal(int(d.group(0)))} ", m.group(0))
+
+
 def normalize_en(text: str) -> str:
     t = " " + text + " "
+    t = re.sub(PRODUCT_CODE, _code, t)
     for k, v in ABBREV.items():
         t = re.sub(rf"(?<![\w.]){re.escape(k)}", f" {v} ", t)
     t = re.sub(r"([$€£])(\d[\d,]*)(?:\.(\d+))?(?:\s?(million|billion|thousand))?", _money, t)

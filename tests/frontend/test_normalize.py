@@ -26,6 +26,17 @@ CASES = [
     ("Tôi sinh ngày 2/9.", "tôi sinh ngày hai tháng chín ."),
     ("Điện thoại 0987 654 321.", "điện thoại không chín tám bảy sáu năm bốn ba hai một ."),
     ("2024-11-14", "ngày mười bốn tháng mười một năm hai nghìn không trăm hai mươi tư"),
+    # product codes (upper-case letters + digits): digits one by one, S is "ét"
+    ("ESP32-P4", "e ét pê ba hai pê bốn"),
+    ("Chip ESP32-S3 chạy tốt.", "chip e ét pê ba hai ét ba chạy tốt ."),
+    ("RTX3060", "e rờ tê ích xì ba không sáu không"),
+    ("MP3", "em mờ pê ba"),
+    ("4G", "bốn giê"),
+    # not codes: mixed case, numbers on their own
+    ("iPhone15", "i pê hát o en nờ e mười lăm"),
+    ("COVID-19", "cô vít mười chín"),
+    ("SOS", "ét o ét"),
+    ("Smartphone và smarthome", "sờ mát phôn và sờ mát hôm"),
 ]
 
 

@@ -1,0 +1,7 @@
+# Currencies after a number, case-insensitive (100.000đ, 5 USD).
+# Format: key<TAB>reading. Lines starting with '#' are comments. See docs/frontend/pronunciation-rules.md.
+đ	đồng
+đồng	đồng
+vnđ	đồng
+vnd	đồng
+usd	đô la

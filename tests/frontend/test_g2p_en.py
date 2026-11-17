@@ -3,7 +3,7 @@ from vtts.frontend.en.g2p_en import g2p_word_en, letter_tokens
 
 
 def ph(tokens):
-    return " ".join(t[3:] if t.startswith("EN:") else t for t in tokens)
+    return " ".join(t.removeprefix("EN:") for t in tokens)
 
 
 def test_lexicon_word():

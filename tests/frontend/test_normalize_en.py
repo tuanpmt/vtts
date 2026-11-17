@@ -26,3 +26,11 @@ from vtts.frontend.en.normalize_en import normalize_en
 ])
 def test_normalize_en(text, expected):
     assert normalize_en(text) == expected
+
+
+def test_product_codes_read_digits_one_by_one():
+    from vtts.frontend.en.normalize_en import normalize_en
+    assert "three two" in normalize_en("The ESP32-P4 chip")
+    assert "thirty" not in normalize_en("The ESP32-P4 chip")
+    assert "three zero six zero" in normalize_en("an RTX3060 card")
+    assert "fifteen" in normalize_en("my iPhone15")

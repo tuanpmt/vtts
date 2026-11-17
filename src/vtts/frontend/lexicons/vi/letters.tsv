@@ -1,0 +1,35 @@
+# Letter names, used to spell acronyms and unknown words (Northern readings).
+# Format: key<TAB>reading. Lines starting with '#' are comments. See docs/frontend/pronunciation-rules.md.
+a	a
+b	bê
+c	xê
+d	dê
+đ	đê
+e	e
+f	ép
+g	giê
+h	hát
+i	i
+j	gi
+k	ca
+l	e lờ
+m	em mờ
+n	en nờ
+o	o
+p	pê
+q	quy
+r	e rờ
+s	ét
+t	tê
+u	u
+v	vê
+w	vê kép
+x	ích xì
+y	i dài
+z	dét
+ă	á
+â	ớ
+ê	ê
+ô	ô
+ơ	ơ
+ư	ư

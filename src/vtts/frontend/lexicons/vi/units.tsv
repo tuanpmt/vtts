@@ -1,0 +1,12 @@
+# Units after a number (5km, 25°C).
+# Format: key<TAB>reading. Lines starting with '#' are comments. See docs/frontend/pronunciation-rules.md.
+km	ki lô mét
+kg	ki lô gam
+cm	xen ti mét
+mm	mi li mét
+ml	mi li lít
+m	mét
+g	gam
+l	lít
+°C	độ xê
+°	độ

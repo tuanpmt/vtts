@@ -162,9 +162,7 @@ def canonical_spelling(word: str) -> str:
     while p < len(base) and base[p] not in _VOWELS:
         p += 1
     if p < len(base) and p > 0:
-        if base[p - 1] == "q" and base[p] == "u":
-            p += 1
-        elif base[p - 1] == "g" and base[p] == "i" and p + 1 < len(base) and base[p + 1] in _VOWELS:
+        if base[p - 1] == "q" and base[p] == "u" or base[p - 1] == "g" and base[p] == "i" and p + 1 < len(base) and base[p + 1] in _VOWELS:
             p += 1
     e = p
     while e < len(base) and base[e] in _VOWELS:
@@ -177,9 +175,7 @@ def canonical_spelling(word: str) -> str:
         target = quality[-1]
     elif e < len(base) or len(run) == 1:
         target = run[-1]
-    elif len(run) == 3:
-        target = run[1]
-    elif base[p:e] in ("oa", "oe", "uy"):
+    elif len(run) == 3 or base[p:e] in ("oa", "oe", "uy"):
         target = run[1]
     else:
         target = run[0]

@@ -15,7 +15,6 @@ import collections
 import functools
 import json
 import math
-from pathlib import Path
 
 from ..phoneme_set import ARPABET_VOWELS
 from .cmudict import COMMIT, DEFAULT_PATH, load_cmudict
