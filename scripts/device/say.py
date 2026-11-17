@@ -45,6 +45,42 @@ def save_dump(lines: list[str], path: Path) -> None:
     print(f"saved {path} ({n / sr:.2f} s)")
 
 
+COMMANDS = ("model ", "vol ", "gain ", "speed ", "expr ", "chunk ", "first ", "bench", "prof",
+            "selftest", "fusetest", "ids ")
+LINE_MAX = 2000  # the firmware reads lines of up to 2047 bytes
+
+
+def to_ids_cmds(text: str, lang: str) -> list[str]:
+    """Sentence -> "ids ..." commands from the Python front-end (token set v2), split so that
+    each line fits the firmware's buffer; chunks within a command are separated by ';'."""
+    from vtts.frontend.text import text_to_ids
+
+    out, cur = [], []
+    for ids in text_to_ids(text, "en" if lang == "en" else "vi"):
+        part = " ".join(map(str, ids))
+        if cur and len("ids " + ";".join(cur + [part])) > LINE_MAX:
+            out.append("ids " + ";".join(cur))
+            cur = []
+        cur.append(part)
+    if cur:
+        out.append("ids " + ";".join(cur))
+    return out
+
+
+def expand(cmds: list[str], lang: str | None) -> list[str]:
+    if not lang:
+        return cmds
+    out = []
+    for c in cmds:
+        if c.startswith(COMMANDS):
+            out.append(c)
+        elif c.startswith("dump "):
+            out += ["dump " + x for x in to_ids_cmds(c[5:], lang)]
+        else:
+            out += to_ids_cmds(c, lang)
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("port")
@@ -53,7 +89,11 @@ def main() -> None:
     ap.add_argument("--timeout", type=float, default=120)
     ap.add_argument("--dump-dir", type=Path, default=None,
                     help="save each `dump <text>` result here as dump_<n>.wav")
+    ap.add_argument("--lang", choices=["vi", "en", "mixed"], default=None,
+                    help="convert sentences to token ids (set v2) on the host and send `ids ...` "
+                         "(bilingual models; needs `uv run`)")
     a = ap.parse_args()
+    a.cmds = expand(a.cmds, a.lang)
     ser = serial.Serial(a.port, 115200, timeout=0.1)
     if a.reset:
         ser.dtr, ser.rts = False, True

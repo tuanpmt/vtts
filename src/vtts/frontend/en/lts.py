@@ -173,6 +173,51 @@ def train_lts(lex: dict[str, list[str]], min_count: int = 2) -> LtsModel:
     return LtsModel(model)
 
 
+ALPHA = tuple(chr(c) for c in range(ord("a"), ord("z") + 1)) + (PAD,)
+_WIDX = {w: i for i, w in enumerate(WINDOWS)}
+
+
+def _first_label(table: dict, left: str, c: str, right: str, start: int):
+    """Label for a context with known left/right letters, trying windows from `start` on;
+    ("need", window) when a window needs a letter beyond the known ones."""
+    for w in WINDOWS[start:]:
+        lw, rw = w
+        if lw > len(left) or rw > len(right):
+            return ("need", w)
+        lab = table.get(f"{lw}{rw}{left[len(left) - lw:]}|{c}|{right[:rw]}")
+        if lab is not None:
+            return lab
+    return None
+
+
+def _redundant(table: dict, key: str) -> bool:
+    """True if every context where `key` is the widest match gets the same label without it.
+    Some later windows are not nested in the key's window ((3,2) is followed by (2,3)), so the
+    missing letter is enumerated over the alphabet and the padding symbol."""
+    w = (int(key[0]), int(key[1]))
+    left, c, right = key[2:].split("|")
+    lab, stack = table[key], [(left, right)]
+    while stack:
+        lf, rt = stack.pop()
+        res = _first_label(table, lf, c, rt, _WIDX[w] + 1)
+        if isinstance(res, tuple):
+            nl, _ = res[1]
+            stack += [(x + lf, rt) for x in ALPHA] if nl > len(lf) else [(lf, rt + x) for x in ALPHA]
+        elif res != lab:
+            return False
+    return True
+
+
+def prune_table(table: dict) -> dict:
+    """Drop window keys that never change a prediction (widest windows first). Lossless:
+    every word gets the same labels from the pruned table."""
+    t = dict(table)
+    for key in sorted(t, key=lambda k: _WIDX[(int(k[0]), int(k[1]))]):
+        if _redundant(t, key):
+            del t[key]
+    return t
+
+
 @functools.lru_cache(maxsize=1)
 def load_lts() -> LtsModel:
     """The model trained on the full pinned CMUdict, cached next to it."""

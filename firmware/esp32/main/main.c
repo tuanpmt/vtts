@@ -10,6 +10,7 @@
  *   <text>       synthesize and speak; prints a SAID line with timings
  */
 #include <math.h>
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -142,12 +143,35 @@ static int on_ids(const int32_t *ids, int n, void *user) {
     return 0;
 }
 
-/* text -> g.pcm; returns chunks; fills timing */
+/* "ids 1 34 57 ...;1 20 ...": token ids from a front-end on the host (e.g. bilingual text before
+ * the device has an English front-end); chunks are separated by ';' */
+static int synth_ids(const char *s) {
+    static int32_t ids[VTTS_TEXT_MAX_IDS];
+    int chunks = 0;
+    while (*s) {
+        int n = 0;
+        while (*s && *s != ';') {
+            char *end;
+            long v = strtol(s, &end, 10);
+            if (end == s) { s++; continue; }
+            if (n < VTTS_TEXT_MAX_IDS) ids[n++] = (int32_t)v;
+            s = end;
+        }
+        if (*s == ';') s++;
+        if (n) {
+            if (on_ids(ids, n, NULL)) break;
+            chunks++;
+        }
+    }
+    return chunks;
+}
+
+/* text (or "ids ...") -> g.pcm; returns chunks; fills timing */
 static int synthesize(const char *text, int64_t *total_us) {
     g.n = 0;
     g.synth_us = 0;
     int64_t t0 = esp_timer_get_time();
-    int chunks = vtts_text_to_ids(text, &s_ws, on_ids, NULL);
+    int chunks = strncmp(text, "ids ", 4) == 0 ? synth_ids(text + 4) : vtts_text_to_ids(text, &s_ws, on_ids, NULL);
     *total_us = esp_timer_get_time() - t0;
     return chunks;
 }
