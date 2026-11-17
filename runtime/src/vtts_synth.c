@@ -1228,6 +1228,67 @@ static int sl_advance(st_t *st, sl_t *L, long target) {
 }
 
 /* head + iSTFT for output frames [s, e) from final decoder frames [f_lo, f_lo + nf) in xh */
+/* Hann window and, for samples covered by all n_fft / hop frames, the squared-window envelope
+ * per phase (i mod hop), summed in the same frame order as the per-sample loop; cached per n_fft */
+#define ENV_HOP_MAX 512
+static float s_hann[4 * ENV_HOP_MAX], s_envp[ENV_HOP_MAX];
+static int s_hann_n;
+
+static const float *hann(int n_fft, int hop) {
+    if (s_hann_n != n_fft) {
+        for (int i = 0; i < n_fft; i++) s_hann[i] = 0.5f - 0.5f * cosf(2.0f * (float)M_PI * i / n_fft);
+        int nfr = n_fft / hop;
+        for (int ph = 0; ph < hop; ph++) {
+            float env = 0.0f; /* frames fa..fb of a fully covered sample: window index ph + (nfr-1-q)*hop */
+            for (int q = 0; q < nfr; q++) { float w = s_hann[ph + (nfr - 1 - q) * hop]; env += w * w; }
+            s_envp[ph] = env;
+        }
+        s_hann_n = n_fft;
+    }
+    return s_hann;
+}
+
+/* overlap-add of hb frames into ola, split by sample index across cores: each sample still
+ * accumulates its frames in increasing frame order */
+typedef struct { const float *fbuf, *win; float *ola; int hb, n_fft, hop; float inv_n; } ola_t;
+
+static void ola_range(int lo, int hi, void *arg) {
+    const ola_t *j = arg;
+    int H = j->n_fft / 2, i0 = lo * 64, i1 = hi * 64 < H ? hi * 64 : H;
+    for (int f = 0; f < j->hb; f++) {
+        const float *zr = j->fbuf + (size_t)f * j->n_fft, *zi = zr + H;
+        float *op = j->ola + (size_t)f * j->hop;
+        for (int i = i0; i < i1; i++) {
+            op[2 * i] += zr[i] * j->inv_n * j->win[2 * i];
+            op[2 * i + 1] += zi[i] * j->inv_n * j->win[2 * i + 1];
+        }
+    }
+}
+
+/* window normalization and tanh for output samples [lo*256, hi*256) */
+typedef struct { const float *ola, *win; float *pcm; long n_out, base, ola_len, nf; int n_fft, hop; } env_t;
+
+static void env_range(int lo, int hi, void *arg) {
+    const env_t *j = arg;
+    long i0 = (long)lo * 256, i1 = (long)hi * 256 < j->n_out ? (long)hi * 256 : j->n_out;
+    int n_fft = j->n_fft, hop = j->hop;
+    for (long i = i0; i < i1; i++) {
+        long jj = j->base + i;
+        float v = 0.0f;
+        if (jj >= 0 && jj < j->ola_len) {
+            long fa = jj >= n_fft ? (jj - n_fft) / hop + 1 : 0, fb = jj / hop < j->nf - 1 ? jj / hop : j->nf - 1;
+            float env;
+            if (fb - fa + 1 == n_fft / hop && n_fft % hop == 0) env = s_envp[jj - fb * hop];
+            else {
+                env = 0.0f;
+                for (long f = fa; f <= fb; f++) { float w = j->win[jj - f * hop]; env += w * w; }
+            }
+            if (env > 1e-11f) v = j->ola[jj] / env;
+        }
+        j->pcm[i] = fast_tanh(v);
+    }
+}
+
 static long head_region(const vtts_model *m, const float *xh, long ldx, long nf, long f_lo, long s, long e,
                         float *col, float *head, float *fbuf, float *win, float *ola,
                         qbuf_t *xq, float *pcm) {
@@ -1236,7 +1297,8 @@ static long head_region(const vtts_model *m, const float *xh, long ldx, long nf,
     PROF_T0();
     layer_t hd = L(m, "decoder.head");
     if (!layer_ok(&hd)) return VTTS_ERR_MISSING;
-    for (int i = 0; i < n_fft; i++) win[i] = 0.5f - 0.5f * cosf(2.0f * (float)M_PI * i / n_fft);
+    if (n_fft > 4 * ENV_HOP_MAX || hop > ENV_HOP_MAX) return VTTS_ERR_ARGS;
+    memcpy(win, hann(n_fft, hop), sizeof(float) * (size_t)n_fft);
     memset(ola, 0, sizeof(float) * (size_t)ola_len);
     for (long hb0 = f_lo; hb0 < f_hi; hb0 += VTTS_HEAD_BLOCK) {
         int hb = (int)(f_hi - hb0 < VTTS_HEAD_BLOCK ? f_hi - hb0 : VTTS_HEAD_BLOCK);
@@ -1253,31 +1315,15 @@ static long head_region(const vtts_model *m, const float *xh, long ldx, long nf,
         PROF_ADD(5);
         ifr_t job = {head, fbuf, hb, n_fft, twiddles(n_fft)};
         vtts_par_run(istft_frames, hb, &job);
-        const float inv_n = 1.0f / (float)n_fft;
-        for (int j = 0; j < hb; j++) {
-            const float *zr = fbuf + (size_t)j * n_fft, *zi = zr + n_fft / 2;
-            float *op = ola + (hb0 + j - f_lo) * hop;
-            for (int i = 0; i < n_fft / 2; i++) {
-                op[2 * i] += zr[i] * inv_n * win[2 * i];
-                op[2 * i + 1] += zi[i] * inv_n * win[2 * i + 1];
-            }
-        }
+        ola_t oj = {fbuf, win, ola + (hb0 - f_lo) * hop, hb, n_fft, hop, 1.0f / (float)n_fft};
+        vtts_par_run(ola_range, (n_fft / 2 + 63) / 64, &oj);
     }
     PROF_ADD(6);
     /* window envelope: the squared windows of the frames covering each sample, summed in frame
      * order (as an accumulated buffer would be), computed per output sample */
     long n_out = (e - s) * hop;
-    for (long i = 0; i < n_out; i++) {
-        long jj = s * hop + i + n_fft / 2 - f_lo * hop;
-        float v = 0.0f;
-        if (jj >= 0 && jj < ola_len) {
-            long fa = jj >= n_fft ? (jj - n_fft) / hop + 1 : 0, fb = jj / hop < nf - 1 ? jj / hop : nf - 1;
-            float env = 0.0f;
-            for (long f = fa; f <= fb; f++) { float w = win[jj - f * hop]; env += w * w; }
-            if (env > 1e-11f) v = ola[jj] / env;
-        }
-        pcm[i] = fast_tanh(v);
-    }
+    env_t ej = {ola, win, pcm, n_out, s * hop + n_fft / 2 - f_lo * hop, ola_len, nf, n_fft, hop};
+    vtts_par_run(env_range, (int)((n_out + 255) / 256), &ej);
     return n_out;
 }
 
