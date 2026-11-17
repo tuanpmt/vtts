@@ -58,6 +58,32 @@ th { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; colo
 tbody tr:last-child td { border-bottom: 0; }
 .num { text-align: right; }
 .flag { width: 21px; height: 14px; border-radius: 2px; vertical-align: -2px; box-shadow: 0 0 0 1px var(--line); margin-right: 4px; }
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; border-bottom: 1px solid var(--line); }
+.tab { font: 500 0.95rem var(--sans); background: transparent; color: var(--muted); border: 0; border-bottom: 2px solid transparent; padding: 10px 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; margin-bottom: -1px; }
+.tab[aria-selected="true"] { color: var(--fg); border-bottom-color: var(--accent); }
+.tab .pill { font-size: 0.65rem; padding: 1px 6px; }
+.tabnote { margin-top: -4px; }
+.grid { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; }
+.grid table { min-width: 560px; }
+.grid th.model { white-space: normal; min-width: 110px; vertical-align: bottom; }
+.grid th.model small { display: block; font: 400 0.72rem var(--sans); text-transform: none; letter-spacing: 0; color: var(--muted); }
+.grid td.sent { white-space: normal; min-width: 260px; max-width: 460px; }
+.grid td.cell { text-align: center; }
+.play { width: 36px; height: 36px; border-radius: 50%; border: 1px solid var(--line); background: var(--surface); color: var(--accent); cursor: pointer; display: inline-grid; place-items: center; }
+.play:hover { border-color: var(--accent); }
+.play.on { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+.play svg { width: 13px; height: 13px; fill: currentColor; }
+.soon { color: var(--muted); font-size: 0.8rem; }
+.empty { padding: 28px 20px; color: var(--muted); text-align: center; }
+@media (max-width: 620px) {
+  .grid { border: 0; background: transparent; }
+  .grid table, .grid thead, .grid tbody, .grid tr, .grid td { display: block; min-width: 0; }
+  .grid thead { display: none; }
+  .grid tr { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; margin-bottom: 10px; }
+  .grid td { border: 0; padding: 4px 0; white-space: normal; }
+  .grid td.cell { display: flex; align-items: center; gap: 10px; text-align: left; }
+  .grid td.cell::before { content: attr(data-label); flex: 1; color: var(--muted); font-size: 0.85rem; }
+}
 .pill { display: inline-block; font: 500 0.75rem var(--mono); padding: 2px 8px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); }
 .pill.plan { background: transparent; border: 1px solid var(--line); color: var(--muted); }
 pre.code { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; overflow-x: auto; font: 0.85rem/1.6 var(--mono); margin: 0; }
@@ -103,8 +129,10 @@ CPU core0 34% core1 28%</div>
 
   <section id="listen">
     <h2>Listen</h2>
-    <p class="muted"><svg class="flag" role="img" aria-label="Vietnamese"><use href="#flag-vi"/></svg> Vietnamese prototype voice. <em>Quality</em> is the 1.7M-parameter model for ESP32-P4; <em>lite</em> is the 0.8M model that also runs on ESP32-S3. The audio is the chip's PCM output, only compressed to MP3.</p>
-    <div class="samples" id="samples"></div>
+    <p class="muted">Every clip is the chip's own PCM output, sent back over the serial port and only compressed to MP3. Pick a language, then play any model on any sentence.</p>
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <p class="muted tabnote" id="tabnote"></p>
+    <div class="grid" id="grid"></div>
   </section>
 
   <section id="voices">
@@ -155,30 +183,73 @@ BOARD=nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts \
   </footer>
 </main>
 <script>
-// Sample list: add a row here (and the MP3s under audio/) to publish new clips.
-const SAMPLES = [
-  { text: "Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4.", id: "intro", m: "6.5 s · RTF 0.37", s: "5.4 s · RTF 0.22" },
-  { text: "Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11.", id: "news", m: "9.1 s · RTF 0.37", s: "8.2 s · RTF 0.21" },
-  { text: "Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai.", id: "numbers", m: "8.2 s · RTF 0.36", s: "6.9 s · RTF 0.20" },
-  { text: "Bạn có muốn bật đèn phòng khách không?", id: "question", m: "2.7 s · RTF 0.42", s: "2.2 s · RTF 0.22" },
-  { text: "A five-sentence weather bulletin in Vietnamese (commas, full stops, numbers read as words).", id: "paragraph", m: "30 s · RTF 0.34", s: "26 s · RTF 0.20" },
-];
-const box = document.getElementById("samples");
-for (const s of SAMPLES) {
-  const el = document.createElement("article");
-  el.className = "sample";
-  el.innerHTML = `<p class="text"></p>
-    <div class="players">
-      <div class="player"><span class="tag">Quality · ESP32-P4</span><audio controls preload="none" src="audio/p4-m-${s.id}.mp3"></audio><span class="muted">${s.m}</span></div>
-      <div class="player"><span class="tag">Lite · runs on ESP32-S3</span><audio controls preload="none" src="audio/p4-s-${s.id}.mp3"></audio><span class="muted">${s.s}</span></div>
-    </div>`;
-  el.querySelector(".text").textContent = s.text;
-  box.appendChild(el);
+// Samples come from samples.json: tabs (languages or language pairs) -> models (columns) -> sentences (rows).
+const FLAG_NAMES = { vi: "Vietnamese", en: "English", zh: "Chinese" };
+const STATUS = { released: "", training: "training", planned: "planned" };
+const PLAY = '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M4 2.5v11l9-5.5z"/></svg>';
+const STOP = '<svg viewBox="0 0 16 16" aria-hidden="true"><rect x="3.5" y="3.5" width="9" height="9" rx="1"/></svg>';
+const audio = new Audio();
+let playing = null, data = null;
+
+const flag = c => `<svg class="flag" role="img" aria-label="${FLAG_NAMES[c] || c}"><use href="#flag-${c}"/></svg>`;
+const esc = t => t.replace(/[&<>"]/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[ch]);
+
+function stop() {
+  audio.pause();
+  if (playing) { playing.classList.remove("on"); playing.innerHTML = PLAY; playing.setAttribute("aria-label", "Play"); }
+  playing = null;
 }
-// one clip at a time
-document.addEventListener("play", e => {
-  document.querySelectorAll("audio").forEach(a => { if (a !== e.target) a.pause(); });
-}, true);
+audio.addEventListener("ended", stop);
+
+function play(btn) {
+  if (playing === btn) { stop(); return; }
+  stop();
+  audio.src = btn.dataset.src;
+  audio.play().then(() => { playing = btn; btn.classList.add("on"); btn.innerHTML = STOP; btn.setAttribute("aria-label", "Stop"); })
+    .catch(() => {});
+}
+
+function render(id) {
+  const tab = data.tabs.find(t => t.id === id) || data.tabs[0];
+  stop();
+  document.querySelectorAll(".tab").forEach(b => b.setAttribute("aria-selected", b.dataset.id === tab.id ? "true" : "false"));
+  document.getElementById("tabnote").textContent = tab.note || "";
+  const grid = document.getElementById("grid");
+  if (!tab.models.length || !tab.samples.length) {
+    grid.innerHTML = `<div class="empty">${tab.status === "planned" ? "Planned. Samples will appear here when the voice is trained." : "No samples yet."}</div>`;
+    return;
+  }
+  const head = tab.models.map(m => `<th class="model">${esc(m.name)}<small>${esc(m.detail || "")}</small></th>`).join("");
+  const rows = tab.samples.map(sm => {
+    const cells = tab.models.map(m => {
+      const src = (sm.audio || {})[m.id];
+      const label = esc(m.name);
+      return `<td class="cell" data-label="${label}">` +
+        (src ? `<button class="play" data-src="${esc(src)}" aria-label="Play">${PLAY}</button>` : `<span class="soon">soon</span>`) + `</td>`;
+    }).join("");
+    return `<tr><td class="sent">${esc(sm.text)}</td>${cells}</tr>`;
+  }).join("");
+  grid.innerHTML = `<table><thead><tr><th>Sentence</th>${head}</tr></thead><tbody>${rows}</tbody></table>`;
+  grid.querySelectorAll(".play").forEach(b => b.addEventListener("click", () => play(b)));
+}
+
+function select(id) {
+  if (location.hash !== "#" + id) history.replaceState(null, "", "#" + id);
+  render(id);
+}
+
+fetch("samples.json").then(r => r.json()).then(d => {
+  data = d;
+  document.getElementById("tabs").innerHTML = d.tabs.map(t =>
+    `<button class="tab" role="tab" data-id="${t.id}">${t.flags.map(flag).join("")} ${esc(t.label)}` +
+    (STATUS[t.status] ? ` <span class="pill${t.status === "planned" ? " plan" : ""}">${STATUS[t.status]}</span>` : "") + `</button>`).join("");
+  document.querySelectorAll(".tab").forEach(b => b.addEventListener("click", () => select(b.dataset.id)));
+  const start = location.hash.slice(1);
+  render(d.tabs.some(t => t.id === start) ? start : d.tabs[0].id);
+}).catch(() => {
+  document.getElementById("grid").innerHTML = '<div class="empty">Could not load the sample list (samples.json).</div>';
+});
+window.addEventListener("hashchange", () => data && render(location.hash.slice(1)));
 </script>
 </body>
 </html>

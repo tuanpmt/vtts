@@ -1,0 +1,64 @@
+{
+  "_comment": "Audio samples on the website. Add a tab per language or language pair, a model per column and a sentence per row; audio paths are relative to docs/. Every clip is the chip's PCM output, compressed to MP3.",
+  "tabs": [
+    {
+      "id": "vi",
+      "label": "Tiếng Việt",
+      "flags": ["vi"],
+      "status": "released",
+      "note": "Vietnamese prototype voice, generated on an ESP32-P4.",
+      "models": [
+        { "id": "vi-m", "name": "Quality", "detail": "M v0.2 · 1.7M params · ESP32-P4" },
+        { "id": "vi-s", "name": "Lite", "detail": "S v0.1 · 0.8M params · also ESP32-S3" }
+      ],
+      "samples": [
+        { "text": "Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4.",
+          "audio": { "vi-m": "audio/p4-m-intro.mp3", "vi-s": "audio/p4-s-intro.mp3" } },
+        { "text": "Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11.",
+          "audio": { "vi-m": "audio/p4-m-news.mp3", "vi-s": "audio/p4-s-news.mp3" } },
+        { "text": "Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai.",
+          "audio": { "vi-m": "audio/p4-m-numbers.mp3", "vi-s": "audio/p4-s-numbers.mp3" } },
+        { "text": "Bạn có muốn bật đèn phòng khách không?",
+          "audio": { "vi-m": "audio/p4-m-question.mp3", "vi-s": "audio/p4-s-question.mp3" } },
+        { "text": "Bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ), khoảng 30 giây.",
+          "audio": { "vi-m": "audio/p4-m-paragraph.mp3", "vi-s": "audio/p4-s-paragraph.mp3" } }
+      ]
+    },
+    {
+      "id": "en",
+      "label": "English",
+      "flags": ["en"],
+      "status": "planned",
+      "note": "English-only voices are planned. The bilingual voices below already read English.",
+      "models": [],
+      "samples": []
+    },
+    {
+      "id": "vi-en",
+      "label": "Việt–English",
+      "flags": ["vi", "en"],
+      "status": "training",
+      "note": "Bilingual voices that read Vietnamese, English and mixed sentences in one voice. Samples arrive when training finishes.",
+      "models": [
+        { "id": "nam1-m", "name": "nam-1 Quality", "detail": "male · ESP32-P4" },
+        { "id": "nam1-s", "name": "nam-1 Lite", "detail": "male · ESP32-S3" },
+        { "id": "nu10-m", "name": "nu-10 Quality", "detail": "female · ESP32-P4" },
+        { "id": "nu10-s", "name": "nu-10 Lite", "detail": "female · ESP32-S3" }
+      ],
+      "samples": [
+        { "text": "Đã kết nối Bluetooth với AirPods, bạn có thể mở Spotify hoặc YouTube Music.", "audio": {} },
+        { "text": "Your package will arrive on Tuesday, November 18, between 2 and 4 p.m.", "audio": {} },
+        { "text": "Cuộc họp trên Google Meet sẽ bắt đầu lúc 9 giờ, nhớ chuẩn bị file PowerPoint nhé.", "audio": {} }
+      ]
+    },
+    {
+      "id": "zh-en",
+      "label": "中文–English",
+      "flags": ["zh", "en"],
+      "status": "planned",
+      "note": "Mandarin Chinese and Chinese–English voices are planned.",
+      "models": [],
+      "samples": []
+    }
+  ]
+}
