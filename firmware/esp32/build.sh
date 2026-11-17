@@ -4,6 +4,7 @@
 #   BOARD=panel (default): Waveshare ESP32-P4-86-Panel, 32 MB flash, build dir build/
 #   BOARD=nano:            Waveshare ESP32-P4-NANO, 16 MB flash, build dir build_nano/
 #   BOARD=s3:              Waveshare ESP32-S3-Touch-LCD-2.8, 16 MB flash, build dir build_s3/
+#   BOARD=echoear:         EchoEar 2.0 (ESP32-S3, 16 MB flash, 8 MB PSRAM), build dir build_echoear/
 set -euo pipefail
 cd "$(dirname "$0")"
 cp "$1" main/model_s.vtts
@@ -23,7 +24,9 @@ case "${BOARD:-panel}" in
           ARGS=(-B build_nano -D SDKCONFIG=sdkconfig.nano -D "SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.defaults.nano") ;;
     s3) CFG=sdkconfig.s3; TARGET=esp32s3
         ARGS=(-B build_s3 -D SDKCONFIG=sdkconfig.s3) ;;
-    *) echo "unknown BOARD=$BOARD (panel | nano | s3)" >&2; exit 2 ;;
+    echoear) CFG=sdkconfig.echoear; TARGET=esp32s3
+        ARGS=(-B build_echoear -D SDKCONFIG=sdkconfig.echoear -D "SDKCONFIG_DEFAULTS=sdkconfig.defaults;sdkconfig.defaults.echoear") ;;
+    *) echo "unknown BOARD=$BOARD (panel | nano | s3 | echoear)" >&2; exit 2 ;;
 esac
 [ -f "$CFG" ] || idf.py "${ARGS[@]}" set-target "${TARGET:-esp32p4}"
 idf.py "${ARGS[@]}" "${@:-build}"

@@ -482,6 +482,7 @@ static void console_task(void *arg) {
 }
 
 void app_main(void) {
+    board_early_init();
     const uint8_t *starts[2] = {model_s_start, model_m_start}, *ends[2] = {model_s_end, model_m_end};
     size_t need = 0;
     for (int k = 0; k < 2; k++) {

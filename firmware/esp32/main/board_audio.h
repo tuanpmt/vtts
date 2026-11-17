@@ -12,6 +12,9 @@
 #if defined(CONFIG_VTTS_BOARD_P4_NANO)
 #define BOARD_DEFAULT_VOL 90
 #define BOARD_DEFAULT_GAIN_DB 12.0f
+#elif defined(CONFIG_VTTS_BOARD_S3_ECHOEAR)
+#define BOARD_DEFAULT_VOL 75
+#define BOARD_DEFAULT_GAIN_DB 6.0f
 #elif defined(CONFIG_VTTS_BOARD_S3_TOUCH_LCD_28)
 #define BOARD_DEFAULT_VOL 80
 #define BOARD_DEFAULT_GAIN_DB 6.0f
@@ -19,6 +22,9 @@
 #define BOARD_DEFAULT_VOL 70
 #define BOARD_DEFAULT_GAIN_DB 0.0f
 #endif
+
+/* Board-level setup that must run first in app_main (e.g. a power self-latch). */
+void board_early_init(void);
 
 /* Board name, for the boot log. */
 const char *board_name(void);

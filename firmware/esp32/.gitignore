@@ -10,3 +10,6 @@ sdkconfig.nano.old
 build_s3/
 sdkconfig.s3
 sdkconfig.s3.old
+build_echoear/
+sdkconfig.echoear
+sdkconfig.echoear.old

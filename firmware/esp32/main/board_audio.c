@@ -6,6 +6,8 @@
  * the codec the same way.
  * ESP32-S3-Touch-LCD-2.8: PCM5101 DAC driven straight from I2S (no control bus, no MCLK), pins
  * from Waveshare's published pin table for the board; volume is a digital scale.
+ * EchoEar 2.0: ES8311 + NS4150B amplifier; GPIO7 latches the board power on and must be driven
+ * high right after boot (see board_early_init).
  * To add a board, add a Kconfig choice and a pin block below. */
 #include "board_audio.h"
 
@@ -19,7 +21,20 @@
 
 static const char *TAG = "board";
 
-#if defined(CONFIG_VTTS_BOARD_S3_TOUCH_LCD_28)
+#if defined(CONFIG_VTTS_BOARD_S3_ECHOEAR)
+#define BOARD_NAME "EchoEar 2.0"
+#define USE_ES8311 1
+#define PIN_I2C_SDA 2
+#define PIN_I2C_SCL 1
+#define PIN_I2S_MCLK 42
+#define PIN_I2S_BCLK 40
+#define PIN_I2S_WS 39
+#define PIN_I2S_DOUT 41
+#define PIN_PA_EN 4
+#define PIN_POWER_HOLD 7 /* PG2: high keeps the board powered after the power button is released */
+#define I2S_PORT 0
+#define I2C_PORT 0
+#elif defined(CONFIG_VTTS_BOARD_S3_TOUCH_LCD_28)
 #define BOARD_NAME "ESP32-S3-Touch-LCD-2.8"
 #define USE_ES8311 0
 #define PIN_I2S_MCLK I2S_GPIO_UNUSED
@@ -48,6 +63,14 @@ static const char *TAG = "board";
 #endif
 
 const char *board_name(void) { return BOARD_NAME; }
+
+void board_early_init(void) {
+#ifdef PIN_POWER_HOLD
+    gpio_config_t io = {.pin_bit_mask = 1ULL << PIN_POWER_HOLD, .mode = GPIO_MODE_OUTPUT};
+    gpio_config(&io);
+    gpio_set_level(PIN_POWER_HOLD, 1);
+#endif
+}
 
 static i2s_chan_handle_t i2s_tx(int rate) {
     i2s_chan_handle_t tx = NULL;
