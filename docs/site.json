@@ -25,9 +25,9 @@
       "code_switching": true,
       "quality": "M",
       "lite": "S",
-      "status": "planned",
-      "status_text": "Later: first student done; one voice per pair for now (nu-10)",
-      "status_text_vi": "Để sau: đã có student đầu tiên; trước mắt mỗi cặp một giọng (nu-10)"
+      "status": "training",
+      "status_text": "Training: teacher retrained from scratch for an Apache-2.0 release",
+      "status_text_vi": "Đang train: train lại teacher từ đầu để phát hành Apache-2.0"
     },
     {
       "name": "`nu-10` (female)",
@@ -255,6 +255,16 @@
       "status": "training",
       "note": "Bilingual voices that read Vietnamese, English and mixed sentences in one voice. Samples arrive when training finishes.",
       "models": [
+        {
+          "id": "nam1-m",
+          "name": "nam-1 Quality",
+          "detail": "male · quality"
+        },
+        {
+          "id": "nam1-s",
+          "name": "nam-1 Lite",
+          "detail": "male · lite"
+        },
         {
           "id": "nu10-m",
           "name": "nu-10 Quality",

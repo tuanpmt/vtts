@@ -18,7 +18,7 @@
 | Giọng | Ngôn ngữ | Model chất lượng (M) | Model nhẹ (S) | Trạng thái |
 |---|---|---|---|---|
 | Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.2 (phi thương mại); ngừng khi phát hành các giọng song ngữ** |
-| `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | Để sau: đã có student đầu tiên; trước mắt mỗi cặp một giọng (nu-10) |
+| `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: train lại teacher từ đầu để phát hành Apache-2.0** |
 | `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: train lại teacher từ đầu để phát hành Apache-2.0** |
 | Trung + Anh | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M | S | **Dữ liệu: đang sinh audio tiếng Trung; tiếp theo là front-end** |
 | Hàn + Anh | 🇰🇷 ko + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
@@ -200,7 +200,7 @@ vtts tập trung vào **giọng song ngữ: một ngôn ngữ chính + tiếng A
 - [x] Front-end tiếng Anh bằng Python và trên thiết bị (C, có test parity), gán ngôn ngữ từng từ
 - [x] Dữ liệu tổng hợp cho hai giọng song ngữ `nam-1` và `nu-10`
 - [x] Runtime nhanh hơn: model chất lượng chạy được cả trên ESP32-S3
-- [ ] **Việt + Anh** `nu-10`, Apache-2.0 (đang train lại teacher từ đầu); trước mắt mỗi cặp một giọng, thêm giọng sau
+- [ ] **Việt + Anh** `nam-1` (nam) và `nu-10` (nữ), Apache-2.0 (đang train lại teacher từ đầu); các cặp khác trước mắt chỉ có `nu-10`, thêm giọng sau
 - [ ] **Trung + Anh** (đang sinh audio tiếng Trung; tiếp theo là front-end pinyin)
 - [ ] **Hàn + Anh**
 - [ ] **Nhật + Anh**

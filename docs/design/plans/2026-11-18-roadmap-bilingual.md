@@ -10,7 +10,7 @@ vtts ships **bilingual models**: one voice reads its main language, English, and
 - More pairs follow by ESP32 market size (see "Choosing the next languages").
 - **Single-language models are retired** once the Vietnamese + English voices are published: the Vietnamese prototype leaves the voice catalog, the website and the Hugging Face card. Old releases stay downloadable on GitHub.
 - Every released voice must be **Apache-2.0**: teachers are trained from random initialization (or warm-started only from another clean vtts teacher) on synthetic audio from VoxCPM2 (Apache-2.0) with designed voices. No checkpoint descended from a non-commercial or share-alike corpus may be used.
-- Each pair starts with **one voice, the female voice `nu-10`**; more voices (the male `nam-1` and others) are added later with the same pipeline. Each voice comes in two sizes: **Quality (M)** and **Lite (S)**. Both run on the ESP32-P4 and the ESP32-S3; an S3-tuned vocoder variant is added where it helps.
+- Vietnamese + English ships with two voices (male `nam-1`, female `nu-10`). Every other pair starts with **one voice, the female `nu-10`**; more voices are added later with the same pipeline. Each voice comes in two sizes: **Quality (M)** and **Lite (S)**. Both run on the ESP32-P4 and the ESP32-S3; an S3-tuned vocoder variant is added where it helps.
 
 ```mermaid
 flowchart LR
@@ -37,7 +37,7 @@ These make every new pair cheaper, so they come first or alongside the first new
 
 ### Vietnamese + English (in progress)
 
-- Data: about 98 h per voice (`nam-1`, `nu-10`), done. Only `nu-10` is trained for the first release; the `nam-1` clean teacher is paused at 11.7k steps and resumes later.
+- Data: about 98 h per voice (`nam-1`, `nu-10`), done.
 - Front-end: Python and C, parity-tested, running on the chip.
 - Teachers: retraining from random initialization (the first teachers were warm-started from a model trained on another corpus). Evaluate at 150k–200k steps with the same sets as before.
 - Then: students M and S for both voices, the S3 vocoder variant, on-chip samples, website and Hugging Face pages, release **v0.4.0** under Apache-2.0, retire the Vietnamese prototype and the v1 token path in the docs (the v1 code path is removed one release later).
@@ -91,7 +91,7 @@ All work is AI-assisted: front-end code, C ports, parity tests and docs are writ
 | Students M and S, int8 export, on-chip check | about half a day | |
 | Front-end per language (Python, C, parity tests) | a few working sessions | in parallel with synthesis |
 
-With one voice per pair and two GPUs, one pair takes about two days of compute, mostly synthesis. Synthesis for the next pair runs while the current pair trains, so pairs overlap.
+With one voice per new pair and two GPUs, one pair takes about two days of compute, mostly synthesis. Synthesis for the next pair runs while the current pair trains, so pairs overlap.
 
 ## Retiring single-language models
 

@@ -16,7 +16,7 @@
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
 | Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.2 (non-commercial); retired when the bilingual voices are released** |
-| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | Later: first student done; one voice per pair for now (nu-10) |
+| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: teacher retrained from scratch for an Apache-2.0 release** |
 | `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: teacher retrained from scratch for an Apache-2.0 release** |
 | Chinese + English | 🇨🇳 zh + 🇺🇸 en, code-switching | M | S | **Data: Mandarin speech synthesizing; front-end next** |
 | Korean + English | 🇰🇷 ko + 🇺🇸 en, code-switching | M | S | Planned |
@@ -198,7 +198,7 @@ vtts focuses on **bilingual voices: one main language + English**, with code-swi
 - [x] English front-end in Python and on the device (C, parity-tested), per-word language tagging
 - [x] Synthesized training data for the bilingual voices `nam-1` and `nu-10`
 - [x] Faster runtime: the quality model runs on the ESP32-S3 too
-- [ ] **Vietnamese + English** `nu-10`, Apache-2.0 (teacher retraining from scratch); one voice per pair first, more voices later
+- [ ] **Vietnamese + English** `nam-1` (male) and `nu-10` (female), Apache-2.0 (teachers retraining from scratch); other pairs start with `nu-10`, more voices later
 - [ ] **Chinese + English** (Mandarin speech synthesizing; pinyin front-end next)
 - [ ] **Korean + English**
 - [ ] **Japanese + English**
