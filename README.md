@@ -8,22 +8,22 @@
 - **Faster than real time, streaming:** speech starts after 0.1–0.45 s depending on chip and model.
 - **Two model sizes per voice, on both chips:** *quality* (M) for the best sound and *lite* (S), about 1.7× faster with less CPU load and flash. Both run faster than real time on the ESP32-P4 and the ESP32-S3; pick by sound versus headroom, not by chip.
 - **Small and predictable:** 1.1–2.6 MB models, a C99 runtime with no `malloc` (the caller provides one arena whose size is known up front).
-- **Built to grow:** languages plug in as front-end modules on a versioned token set, so new single-language and bilingual voices reuse the same runtime, firmware and training pipeline.
+- **Built to grow:** languages plug in as front-end modules on a versioned token set, so new bilingual voices reuse the same runtime, firmware and training pipeline.
 
 ## Voice catalog
 
 <!-- BEGIN:voices -->
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
-| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.2 (non-commercial)** |
+| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.2 (non-commercial); retired when the bilingual voices are released** |
 | `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: first student done; teachers retrained from scratch for an Apache-2.0 release** |
 | `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: first student done; teachers retrained from scratch for an Apache-2.0 release** |
-| English | 🇺🇸 en | M | S | Planned |
-| Chinese (Mandarin) | 🇨🇳 zh | M | S | Planned |
-| Chinese + English | 🇨🇳 zh + 🇺🇸 en, code-switching | M | S | Planned |
+| Chinese + English | 🇨🇳 zh + 🇺🇸 en, code-switching | M | S | **Data: Mandarin speech synthesizing; front-end next** |
+| Korean + English | 🇰🇷 ko + 🇺🇸 en, code-switching | M | S | Planned |
+| Japanese + English | 🇯🇵 ja + 🇺🇸 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
-Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" ("Connected to AirPods over Bluetooth") in one voice; the front-end picks the language per word. The English front-end is done in Python; its C port for the device is the next step before the bilingual voices ship.
+Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" ("Connected to AirPods over Bluetooth") in one voice; the front-end picks the language per word. The English front-end runs on the device too (C, parity-tested against Python), so mixed text is handled on the chip.
 
 Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts) (one folder per voice; the released Vietnamese models are in `vi/`).
 
@@ -192,14 +192,18 @@ Each script documents its arguments at the top of the file.
 
 ## Roadmap
 
-- [x] Vietnamese prototype voices, quality and lite, on ESP32-P4 and ESP32-S3
-- [x] English front-end in Python (normalizer, CMUdict, learned letter-to-sound) and per-word language tagging
+vtts focuses on **bilingual voices: one main language + English**, with code-switching. Single-language models are retired once the Vietnamese + English voices are released. Details: [docs/design/plans/2026-11-18-roadmap-bilingual.md](docs/design/plans/2026-11-18-roadmap-bilingual.md).
+
+- [x] Vietnamese prototype voices, quality and lite, on ESP32-P4 and ESP32-S3 (to be retired)
+- [x] English front-end in Python and on the device (C, parity-tested), per-word language tagging
 - [x] Synthesized training data for the bilingual voices `nam-1` and `nu-10`
-- [ ] Bilingual Vietnamese + English voices `nam-1` and `nu-10` (teachers training)
-- [ ] English front-end on the device (C, parity-tested)
-- [ ] Faster runtime, so the quality model runs on the ESP32-S3 with margin (in progress)
-- [ ] English, Chinese and Chinese + English voices
-- [ ] Commercially usable licenses for all released voices
+- [x] Faster runtime: the quality model runs on the ESP32-S3 too
+- [ ] **Vietnamese + English** `nam-1` and `nu-10`, Apache-2.0 (teachers retraining from scratch)
+- [ ] **Chinese + English** (Mandarin speech synthesizing; pinyin front-end next)
+- [ ] **Korean + English**
+- [ ] **Japanese + English**
+- [ ] Next pairs by ESP32 market: Spanish, Portuguese (Brazil), Indonesian, Hindi, Thai, German, French
+- [ ] User pronunciation dictionary
 
 Release history: [CHANGELOG.md](CHANGELOG.md).
 

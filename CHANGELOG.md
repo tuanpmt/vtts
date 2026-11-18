@@ -17,6 +17,9 @@ All notable changes to this project are documented here. Model files for each re
 - `render_student_c.py --lang` renders bilingual models through the C runtime for evaluation.
 - **Mandarin corpus builder** (`scripts/data/build_zh_corpus.py`): plain Simplified Chinese sentences from Chinese Wikipedia for the planned Chinese + English voice; synthesis with the `nu-10` voice has started.
 
+### Changed
+- **Direction:** vtts now targets bilingual voices (main language + English): Vietnamese, Chinese, Korean and Japanese first, then more pairs by ESP32 market. Single-language models are retired once the Vietnamese + English voices are released. See the [roadmap](docs/design/plans/2026-11-18-roadmap-bilingual.md).
+
 ### In progress
 - Retraining the `nam-1` and `nu-10` teachers from random initialization on the synthetic audio only (the first teachers were warm-started from a model trained on another corpus), so the bilingual voices can be released under Apache-2.0.
 - Chinese + English voice: front-end (pinyin, polyphones, number reading) and data.

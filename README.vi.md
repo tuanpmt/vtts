@@ -17,15 +17,15 @@
 <!-- BEGIN:voices -->
 | Giọng | Ngôn ngữ | Model chất lượng (M) | Model nhẹ (S) | Trạng thái |
 |---|---|---|---|---|
-| Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.2 (phi thương mại)** |
+| Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.2 (phi thương mại); ngừng khi phát hành các giọng song ngữ** |
 | `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: đã có student đầu tiên; train lại teacher từ đầu để phát hành Apache-2.0** |
 | `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: đã có student đầu tiên; train lại teacher từ đầu để phát hành Apache-2.0** |
-| Tiếng Anh | 🇺🇸 en | M | S | Dự kiến |
-| Tiếng Trung (phổ thông) | 🇨🇳 zh | M | S | Dự kiến |
-| Trung + Anh | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Trung + Anh | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M | S | **Dữ liệu: đang sinh audio tiếng Trung; tiếp theo là front-end** |
+| Hàn + Anh | 🇰🇷 ko + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Nhật + Anh | 🇯🇵 ja + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 <!-- END:voices -->
 
-Giọng song ngữ đọc được câu một thứ tiếng và câu trộn như "Đã kết nối Bluetooth với AirPods" bằng cùng một giọng; front-end chọn ngôn ngữ cho từng từ. Front-end tiếng Anh đã xong bản Python; bước tiếp theo trước khi phát hành giọng song ngữ là port sang C để chạy trên chip.
+Giọng song ngữ đọc được câu một thứ tiếng và câu trộn như "Đã kết nối Bluetooth với AirPods" bằng cùng một giọng; front-end chọn ngôn ngữ cho từng từ. Front-end tiếng Anh cũng chạy trên thiết bị (bản C, có test khớp với Python), nên câu trộn được xử lý ngay trên chip.
 
 File model được đính kèm ở [GitHub Releases](https://github.com/tuanpmt/vtts/releases) và có bản sao trên [Hugging Face](https://huggingface.co/tuanpm/vtts) (mỗi giọng một thư mục; model tiếng Việt đã phát hành nằm trong `vi/`).
 
@@ -194,14 +194,18 @@ Mỗi script ghi cách dùng ở đầu file.
 
 ## Lộ trình
 
-- [x] Giọng prototype tiếng Việt, bản chất lượng và bản nhẹ, trên ESP32-P4 và ESP32-S3
-- [x] Front-end tiếng Anh bằng Python (chuẩn hoá, CMUdict, letter-to-sound học được) và gán ngôn ngữ từng từ
+vtts tập trung vào **giọng song ngữ: một ngôn ngữ chính + tiếng Anh**, đọc được câu trộn hai ngôn ngữ. Các model một ngôn ngữ sẽ ngừng khi phát hành giọng Việt + Anh. Chi tiết: [docs/design/plans/2026-11-18-roadmap-bilingual.md](docs/design/plans/2026-11-18-roadmap-bilingual.md).
+
+- [x] Giọng prototype tiếng Việt, bản chất lượng và bản nhẹ, trên ESP32-P4 và ESP32-S3 (sẽ ngừng)
+- [x] Front-end tiếng Anh bằng Python và trên thiết bị (C, có test parity), gán ngôn ngữ từng từ
 - [x] Dữ liệu tổng hợp cho hai giọng song ngữ `nam-1` và `nu-10`
-- [ ] Giọng song ngữ Việt + Anh `nam-1` và `nu-10` (đang train teacher)
-- [ ] Front-end tiếng Anh trên thiết bị (C, có test parity)
-- [ ] Runtime nhanh hơn để model chất lượng chạy dư sức trên ESP32-S3 (đang làm)
-- [ ] Giọng tiếng Anh, tiếng Trung và Trung + Anh
-- [ ] Giấy phép dùng thương mại cho mọi giọng đã phát hành
+- [x] Runtime nhanh hơn: model chất lượng chạy được cả trên ESP32-S3
+- [ ] **Việt + Anh** `nam-1` và `nu-10`, Apache-2.0 (đang train lại teacher từ đầu)
+- [ ] **Trung + Anh** (đang sinh audio tiếng Trung; tiếp theo là front-end pinyin)
+- [ ] **Hàn + Anh**
+- [ ] **Nhật + Anh**
+- [ ] Các cặp tiếp theo theo thị trường ESP32: Tây Ban Nha, Bồ Đào Nha (Brazil), Indonesia, Hindi, Thái, Đức, Pháp
+- [ ] Từ điển phát âm của người dùng
 
 Lịch sử phát hành: [CHANGELOG.md](CHANGELOG.md).
 
