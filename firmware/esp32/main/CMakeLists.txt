@@ -29,7 +29,7 @@ idf_component_register(
          "${RT}/ports/freertos/vtts_par_freertos.c"
          "${RT}/src/vtts_model.c" "${RT}/src/vtts_synth.c" "${RT}/src/vtts_kernels_ref.c"
          "${RT}/src/vtts_text.c" "${RT}/src/vtts_text_en.c" "${RT}/src/vtts_text_zh.c" "${RT}/src/vtts_text_ko.c"
-         "${RT}/src/vtts_text_hi.c" "${RT}/src/vtts_text_ja.c" "${RT}/src/vtts_lex.c"
+         "${RT}/src/vtts_text_hi.c" "${RT}/src/vtts_text_ja.c" "${RT}/src/vtts_text_lt.c" "${RT}/src/vtts_lex.c"
     INCLUDE_DIRS "." "${RT}/include" "${RT}/src"
     PRIV_REQUIRES ${REQS}
     EMBED_FILES ${EMBED})

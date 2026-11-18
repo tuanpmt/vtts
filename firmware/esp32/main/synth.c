@@ -43,6 +43,24 @@ static const char *const BENCH_HI[] = {
     "कल सुबह 6:30 बजे का अलार्म लगा दिया गया है।",
     "आज शनिवार है, 14/11/2026।",
 };
+static const char *const BENCH_ES[] = {
+    "Hola, soy tu asistente de voz.",
+    "La temperatura de la habitación es de 26 grados, con una humedad del 65%.",
+    "La alarma de mañana a las 6:30 ya está puesta.",
+    "Hoy es sábado, 14/11/2026.",
+};
+static const char *const BENCH_ID[] = {
+    "Halo, saya asisten suara Anda.",
+    "Suhu ruangan sekarang 26 derajat, kelembapan 65%.",
+    "Alarm besok pukul 06.30 sudah dipasang.",
+    "Hari ini hari Sabtu, 14/11/2026.",
+};
+static const char *const BENCH_PT[] = {
+    "Olá, eu sou o seu assistente de voz.",
+    "A temperatura do quarto é de 26 graus, com umidade de 65%.",
+    "O alarme de amanhã às 6:30 já está ativado.",
+    "Hoje é sábado, 14/11/2026.",
+};
 
 const char *synth_lang_name(int k) { return g.lang[k] < 0 ? "none" : vtts_text_lang_name((vtts_lang)g.lang[k]); }
 
@@ -129,7 +147,7 @@ int synth_text(const char *text, int64_t *total_us) {
                vtts_token_set_name(vtts_token_set(&g.models[g.cur])));
         chunks = 0;
     } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en), KO (ko-en),
-              * HI (hi-en), JA (ja-en) */
+              * HI (hi-en), JA (ja-en), ES (es-en), ID (id-en), PT (pt-en) */
         vtts_text_opts o = {.lang = (vtts_lang)g.lang[g.cur], .lex = g.has_lex ? &g.lex : NULL,
                             .zh = g.has_zh ? &g.zh : NULL, .ja = g.has_ja ? &g.ja : NULL};
         chunks = vtts_text_to_ids_ex(text, g.ws, &o, on_ids, NULL);
@@ -149,7 +167,8 @@ void synth_report(const char *tag, int idx, int chunks, int64_t total_us) {
 void synth_bench(void) {
     const int l = g.lang[g.cur];
     const char *const *set = l == VTTS_LANG_ZH ? BENCH_ZH : l == VTTS_LANG_KO ? BENCH_KO : l == VTTS_LANG_HI ? BENCH_HI
-                             : l == VTTS_LANG_JA ? BENCH_JA : BENCH;
+                             : l == VTTS_LANG_JA ? BENCH_JA : l == VTTS_LANG_ES ? BENCH_ES : l == VTTS_LANG_ID ? BENCH_ID
+                             : l == VTTS_LANG_PT ? BENCH_PT : BENCH;
     for (int k = 0; k < 4; k++) {
         int64_t us;
         int c = synth_text(set[k], &us);

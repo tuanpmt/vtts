@@ -52,8 +52,9 @@ static int set_indexed(vtts_model *m, const uint8_t *key, int32_t v) {
 }
 
 static const struct { const char *name; int size; } TOKEN_SETS[] = {
-    {"unknown", 0}, {"v1", 65}, {"vi-en", 107}, {"zh-en", 171}, {"ko-en", 153}, {"ja-en", 144},
-    {"unknown", 0}, {"unknown", 0}, {"unknown", 0}, {"unknown", 0}, /* 6..9: es-en id-en pt-en th-en, raw ids */
+    {"unknown", 0}, {"v1", 65},     {"vi-en", 107}, {"zh-en", 171}, {"ko-en", 153},
+    {"ja-en", 144}, {"es-en", 138}, {"id-en", 141}, {"pt-en", 150},
+    {"unknown", 0}, /* 9: th-en, raw ids */
     {"hi-en", 157}};
 #define N_TOKEN_SETS ((int)(sizeof(TOKEN_SETS) / sizeof(TOKEN_SETS[0])))
 

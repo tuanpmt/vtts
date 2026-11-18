@@ -1463,4 +1463,1438 @@ static const uint32_t VTTS_ND_ZEROS[] = {
 };
 #define VTTS_N_ND_ZEROS 66
 
+/* ---- Unicode classes of Python's re (str patterns), for the Latin-script pairs ---- */
+static const uint32_t VTTS_U_WORD[734][2] = {  /* \w: isalnum() or _ */
+    {0x30, 0x39}, {0x41, 0x5A}, {0x5F, 0x5F}, {0x61, 0x7A}, {0xAA, 0xAA}, {0xB2, 0xB3},
+    {0xB5, 0xB5}, {0xB9, 0xBA}, {0xBC, 0xBE}, {0xC0, 0xD6}, {0xD8, 0xF6}, {0xF8, 0x2C1},
+    {0x2C6, 0x2D1}, {0x2E0, 0x2E4}, {0x2EC, 0x2EC}, {0x2EE, 0x2EE}, {0x370, 0x374}, {0x376, 0x377},
+    {0x37A, 0x37D}, {0x37F, 0x37F}, {0x386, 0x386}, {0x388, 0x38A}, {0x38C, 0x38C}, {0x38E, 0x3A1},
+    {0x3A3, 0x3F5}, {0x3F7, 0x481}, {0x48A, 0x52F}, {0x531, 0x556}, {0x559, 0x559}, {0x560, 0x588},
+    {0x5D0, 0x5EA}, {0x5EF, 0x5F2}, {0x620, 0x64A}, {0x660, 0x669}, {0x66E, 0x66F}, {0x671, 0x6D3},
+    {0x6D5, 0x6D5}, {0x6E5, 0x6E6}, {0x6EE, 0x6FC}, {0x6FF, 0x6FF}, {0x710, 0x710}, {0x712, 0x72F},
+    {0x74D, 0x7A5}, {0x7B1, 0x7B1}, {0x7C0, 0x7EA}, {0x7F4, 0x7F5}, {0x7FA, 0x7FA}, {0x800, 0x815},
+    {0x81A, 0x81A}, {0x824, 0x824}, {0x828, 0x828}, {0x840, 0x858}, {0x860, 0x86A}, {0x870, 0x887},
+    {0x889, 0x88E}, {0x8A0, 0x8C9}, {0x904, 0x939}, {0x93D, 0x93D}, {0x950, 0x950}, {0x958, 0x961},
+    {0x966, 0x96F}, {0x971, 0x980}, {0x985, 0x98C}, {0x98F, 0x990}, {0x993, 0x9A8}, {0x9AA, 0x9B0},
+    {0x9B2, 0x9B2}, {0x9B6, 0x9B9}, {0x9BD, 0x9BD}, {0x9CE, 0x9CE}, {0x9DC, 0x9DD}, {0x9DF, 0x9E1},
+    {0x9E6, 0x9F1}, {0x9F4, 0x9F9}, {0x9FC, 0x9FC}, {0xA05, 0xA0A}, {0xA0F, 0xA10}, {0xA13, 0xA28},
+    {0xA2A, 0xA30}, {0xA32, 0xA33}, {0xA35, 0xA36}, {0xA38, 0xA39}, {0xA59, 0xA5C}, {0xA5E, 0xA5E},
+    {0xA66, 0xA6F}, {0xA72, 0xA74}, {0xA85, 0xA8D}, {0xA8F, 0xA91}, {0xA93, 0xAA8}, {0xAAA, 0xAB0},
+    {0xAB2, 0xAB3}, {0xAB5, 0xAB9}, {0xABD, 0xABD}, {0xAD0, 0xAD0}, {0xAE0, 0xAE1}, {0xAE6, 0xAEF},
+    {0xAF9, 0xAF9}, {0xB05, 0xB0C}, {0xB0F, 0xB10}, {0xB13, 0xB28}, {0xB2A, 0xB30}, {0xB32, 0xB33},
+    {0xB35, 0xB39}, {0xB3D, 0xB3D}, {0xB5C, 0xB5D}, {0xB5F, 0xB61}, {0xB66, 0xB6F}, {0xB71, 0xB77},
+    {0xB83, 0xB83}, {0xB85, 0xB8A}, {0xB8E, 0xB90}, {0xB92, 0xB95}, {0xB99, 0xB9A}, {0xB9C, 0xB9C},
+    {0xB9E, 0xB9F}, {0xBA3, 0xBA4}, {0xBA8, 0xBAA}, {0xBAE, 0xBB9}, {0xBD0, 0xBD0}, {0xBE6, 0xBF2},
+    {0xC05, 0xC0C}, {0xC0E, 0xC10}, {0xC12, 0xC28}, {0xC2A, 0xC39}, {0xC3D, 0xC3D}, {0xC58, 0xC5A},
+    {0xC5D, 0xC5D}, {0xC60, 0xC61}, {0xC66, 0xC6F}, {0xC78, 0xC7E}, {0xC80, 0xC80}, {0xC85, 0xC8C},
+    {0xC8E, 0xC90}, {0xC92, 0xCA8}, {0xCAA, 0xCB3}, {0xCB5, 0xCB9}, {0xCBD, 0xCBD}, {0xCDD, 0xCDE},
+    {0xCE0, 0xCE1}, {0xCE6, 0xCEF}, {0xCF1, 0xCF2}, {0xD04, 0xD0C}, {0xD0E, 0xD10}, {0xD12, 0xD3A},
+    {0xD3D, 0xD3D}, {0xD4E, 0xD4E}, {0xD54, 0xD56}, {0xD58, 0xD61}, {0xD66, 0xD78}, {0xD7A, 0xD7F},
+    {0xD85, 0xD96}, {0xD9A, 0xDB1}, {0xDB3, 0xDBB}, {0xDBD, 0xDBD}, {0xDC0, 0xDC6}, {0xDE6, 0xDEF},
+    {0xE01, 0xE30}, {0xE32, 0xE33}, {0xE40, 0xE46}, {0xE50, 0xE59}, {0xE81, 0xE82}, {0xE84, 0xE84},
+    {0xE86, 0xE8A}, {0xE8C, 0xEA3}, {0xEA5, 0xEA5}, {0xEA7, 0xEB0}, {0xEB2, 0xEB3}, {0xEBD, 0xEBD},
+    {0xEC0, 0xEC4}, {0xEC6, 0xEC6}, {0xED0, 0xED9}, {0xEDC, 0xEDF}, {0xF00, 0xF00}, {0xF20, 0xF33},
+    {0xF40, 0xF47}, {0xF49, 0xF6C}, {0xF88, 0xF8C}, {0x1000, 0x102A}, {0x103F, 0x1049}, {0x1050, 0x1055},
+    {0x105A, 0x105D}, {0x1061, 0x1061}, {0x1065, 0x1066}, {0x106E, 0x1070}, {0x1075, 0x1081}, {0x108E, 0x108E},
+    {0x1090, 0x1099}, {0x10A0, 0x10C5}, {0x10C7, 0x10C7}, {0x10CD, 0x10CD}, {0x10D0, 0x10FA}, {0x10FC, 0x1248},
+    {0x124A, 0x124D}, {0x1250, 0x1256}, {0x1258, 0x1258}, {0x125A, 0x125D}, {0x1260, 0x1288}, {0x128A, 0x128D},
+    {0x1290, 0x12B0}, {0x12B2, 0x12B5}, {0x12B8, 0x12BE}, {0x12C0, 0x12C0}, {0x12C2, 0x12C5}, {0x12C8, 0x12D6},
+    {0x12D8, 0x1310}, {0x1312, 0x1315}, {0x1318, 0x135A}, {0x1369, 0x137C}, {0x1380, 0x138F}, {0x13A0, 0x13F5},
+    {0x13F8, 0x13FD}, {0x1401, 0x166C}, {0x166F, 0x167F}, {0x1681, 0x169A}, {0x16A0, 0x16EA}, {0x16EE, 0x16F8},
+    {0x1700, 0x1711}, {0x171F, 0x1731}, {0x1740, 0x1751}, {0x1760, 0x176C}, {0x176E, 0x1770}, {0x1780, 0x17B3},
+    {0x17D7, 0x17D7}, {0x17DC, 0x17DC}, {0x17E0, 0x17E9}, {0x17F0, 0x17F9}, {0x1810, 0x1819}, {0x1820, 0x1878},
+    {0x1880, 0x1884}, {0x1887, 0x18A8}, {0x18AA, 0x18AA}, {0x18B0, 0x18F5}, {0x1900, 0x191E}, {0x1946, 0x196D},
+    {0x1970, 0x1974}, {0x1980, 0x19AB}, {0x19B0, 0x19C9}, {0x19D0, 0x19DA}, {0x1A00, 0x1A16}, {0x1A20, 0x1A54},
+    {0x1A80, 0x1A89}, {0x1A90, 0x1A99}, {0x1AA7, 0x1AA7}, {0x1B05, 0x1B33}, {0x1B45, 0x1B4C}, {0x1B50, 0x1B59},
+    {0x1B83, 0x1BA0}, {0x1BAE, 0x1BE5}, {0x1C00, 0x1C23}, {0x1C40, 0x1C49}, {0x1C4D, 0x1C7D}, {0x1C80, 0x1C88},
+    {0x1C90, 0x1CBA}, {0x1CBD, 0x1CBF}, {0x1CE9, 0x1CEC}, {0x1CEE, 0x1CF3}, {0x1CF5, 0x1CF6}, {0x1CFA, 0x1CFA},
+    {0x1D00, 0x1DBF}, {0x1E00, 0x1F15}, {0x1F18, 0x1F1D}, {0x1F20, 0x1F45}, {0x1F48, 0x1F4D}, {0x1F50, 0x1F57},
+    {0x1F59, 0x1F59}, {0x1F5B, 0x1F5B}, {0x1F5D, 0x1F5D}, {0x1F5F, 0x1F7D}, {0x1F80, 0x1FB4}, {0x1FB6, 0x1FBC},
+    {0x1FBE, 0x1FBE}, {0x1FC2, 0x1FC4}, {0x1FC6, 0x1FCC}, {0x1FD0, 0x1FD3}, {0x1FD6, 0x1FDB}, {0x1FE0, 0x1FEC},
+    {0x1FF2, 0x1FF4}, {0x1FF6, 0x1FFC}, {0x2070, 0x2071}, {0x2074, 0x2079}, {0x207F, 0x2089}, {0x2090, 0x209C},
+    {0x2102, 0x2102}, {0x2107, 0x2107}, {0x210A, 0x2113}, {0x2115, 0x2115}, {0x2119, 0x211D}, {0x2124, 0x2124},
+    {0x2126, 0x2126}, {0x2128, 0x2128}, {0x212A, 0x212D}, {0x212F, 0x2139}, {0x213C, 0x213F}, {0x2145, 0x2149},
+    {0x214E, 0x214E}, {0x2150, 0x2189}, {0x2460, 0x249B}, {0x24EA, 0x24FF}, {0x2776, 0x2793}, {0x2C00, 0x2CE4},
+    {0x2CEB, 0x2CEE}, {0x2CF2, 0x2CF3}, {0x2CFD, 0x2CFD}, {0x2D00, 0x2D25}, {0x2D27, 0x2D27}, {0x2D2D, 0x2D2D},
+    {0x2D30, 0x2D67}, {0x2D6F, 0x2D6F}, {0x2D80, 0x2D96}, {0x2DA0, 0x2DA6}, {0x2DA8, 0x2DAE}, {0x2DB0, 0x2DB6},
+    {0x2DB8, 0x2DBE}, {0x2DC0, 0x2DC6}, {0x2DC8, 0x2DCE}, {0x2DD0, 0x2DD6}, {0x2DD8, 0x2DDE}, {0x2E2F, 0x2E2F},
+    {0x3005, 0x3007}, {0x3021, 0x3029}, {0x3031, 0x3035}, {0x3038, 0x303C}, {0x3041, 0x3096}, {0x309D, 0x309F},
+    {0x30A1, 0x30FA}, {0x30FC, 0x30FF}, {0x3105, 0x312F}, {0x3131, 0x318E}, {0x3192, 0x3195}, {0x31A0, 0x31BF},
+    {0x31F0, 0x31FF}, {0x3220, 0x3229}, {0x3248, 0x324F}, {0x3251, 0x325F}, {0x3280, 0x3289}, {0x32B1, 0x32BF},
+    {0x3400, 0x4DBF}, {0x4E00, 0xA48C}, {0xA4D0, 0xA4FD}, {0xA500, 0xA60C}, {0xA610, 0xA62B}, {0xA640, 0xA66E},
+    {0xA67F, 0xA69D}, {0xA6A0, 0xA6EF}, {0xA717, 0xA71F}, {0xA722, 0xA788}, {0xA78B, 0xA7CA}, {0xA7D0, 0xA7D1},
+    {0xA7D3, 0xA7D3}, {0xA7D5, 0xA7D9}, {0xA7F2, 0xA801}, {0xA803, 0xA805}, {0xA807, 0xA80A}, {0xA80C, 0xA822},
+    {0xA830, 0xA835}, {0xA840, 0xA873}, {0xA882, 0xA8B3}, {0xA8D0, 0xA8D9}, {0xA8F2, 0xA8F7}, {0xA8FB, 0xA8FB},
+    {0xA8FD, 0xA8FE}, {0xA900, 0xA925}, {0xA930, 0xA946}, {0xA960, 0xA97C}, {0xA984, 0xA9B2}, {0xA9CF, 0xA9D9},
+    {0xA9E0, 0xA9E4}, {0xA9E6, 0xA9FE}, {0xAA00, 0xAA28}, {0xAA40, 0xAA42}, {0xAA44, 0xAA4B}, {0xAA50, 0xAA59},
+    {0xAA60, 0xAA76}, {0xAA7A, 0xAA7A}, {0xAA7E, 0xAAAF}, {0xAAB1, 0xAAB1}, {0xAAB5, 0xAAB6}, {0xAAB9, 0xAABD},
+    {0xAAC0, 0xAAC0}, {0xAAC2, 0xAAC2}, {0xAADB, 0xAADD}, {0xAAE0, 0xAAEA}, {0xAAF2, 0xAAF4}, {0xAB01, 0xAB06},
+    {0xAB09, 0xAB0E}, {0xAB11, 0xAB16}, {0xAB20, 0xAB26}, {0xAB28, 0xAB2E}, {0xAB30, 0xAB5A}, {0xAB5C, 0xAB69},
+    {0xAB70, 0xABE2}, {0xABF0, 0xABF9}, {0xAC00, 0xD7A3}, {0xD7B0, 0xD7C6}, {0xD7CB, 0xD7FB}, {0xF900, 0xFA6D},
+    {0xFA70, 0xFAD9}, {0xFB00, 0xFB06}, {0xFB13, 0xFB17}, {0xFB1D, 0xFB1D}, {0xFB1F, 0xFB28}, {0xFB2A, 0xFB36},
+    {0xFB38, 0xFB3C}, {0xFB3E, 0xFB3E}, {0xFB40, 0xFB41}, {0xFB43, 0xFB44}, {0xFB46, 0xFBB1}, {0xFBD3, 0xFD3D},
+    {0xFD50, 0xFD8F}, {0xFD92, 0xFDC7}, {0xFDF0, 0xFDFB}, {0xFE70, 0xFE74}, {0xFE76, 0xFEFC}, {0xFF10, 0xFF19},
+    {0xFF21, 0xFF3A}, {0xFF41, 0xFF5A}, {0xFF66, 0xFFBE}, {0xFFC2, 0xFFC7}, {0xFFCA, 0xFFCF}, {0xFFD2, 0xFFD7},
+    {0xFFDA, 0xFFDC}, {0x10000, 0x1000B}, {0x1000D, 0x10026}, {0x10028, 0x1003A}, {0x1003C, 0x1003D}, {0x1003F, 0x1004D},
+    {0x10050, 0x1005D}, {0x10080, 0x100FA}, {0x10107, 0x10133}, {0x10140, 0x10178}, {0x1018A, 0x1018B}, {0x10280, 0x1029C},
+    {0x102A0, 0x102D0}, {0x102E1, 0x102FB}, {0x10300, 0x10323}, {0x1032D, 0x1034A}, {0x10350, 0x10375}, {0x10380, 0x1039D},
+    {0x103A0, 0x103C3}, {0x103C8, 0x103CF}, {0x103D1, 0x103D5}, {0x10400, 0x1049D}, {0x104A0, 0x104A9}, {0x104B0, 0x104D3},
+    {0x104D8, 0x104FB}, {0x10500, 0x10527}, {0x10530, 0x10563}, {0x10570, 0x1057A}, {0x1057C, 0x1058A}, {0x1058C, 0x10592},
+    {0x10594, 0x10595}, {0x10597, 0x105A1}, {0x105A3, 0x105B1}, {0x105B3, 0x105B9}, {0x105BB, 0x105BC}, {0x10600, 0x10736},
+    {0x10740, 0x10755}, {0x10760, 0x10767}, {0x10780, 0x10785}, {0x10787, 0x107B0}, {0x107B2, 0x107BA}, {0x10800, 0x10805},
+    {0x10808, 0x10808}, {0x1080A, 0x10835}, {0x10837, 0x10838}, {0x1083C, 0x1083C}, {0x1083F, 0x10855}, {0x10858, 0x10876},
+    {0x10879, 0x1089E}, {0x108A7, 0x108AF}, {0x108E0, 0x108F2}, {0x108F4, 0x108F5}, {0x108FB, 0x1091B}, {0x10920, 0x10939},
+    {0x10980, 0x109B7}, {0x109BC, 0x109CF}, {0x109D2, 0x10A00}, {0x10A10, 0x10A13}, {0x10A15, 0x10A17}, {0x10A19, 0x10A35},
+    {0x10A40, 0x10A48}, {0x10A60, 0x10A7E}, {0x10A80, 0x10A9F}, {0x10AC0, 0x10AC7}, {0x10AC9, 0x10AE4}, {0x10AEB, 0x10AEF},
+    {0x10B00, 0x10B35}, {0x10B40, 0x10B55}, {0x10B58, 0x10B72}, {0x10B78, 0x10B91}, {0x10BA9, 0x10BAF}, {0x10C00, 0x10C48},
+    {0x10C80, 0x10CB2}, {0x10CC0, 0x10CF2}, {0x10CFA, 0x10D23}, {0x10D30, 0x10D39}, {0x10E60, 0x10E7E}, {0x10E80, 0x10EA9},
+    {0x10EB0, 0x10EB1}, {0x10F00, 0x10F27}, {0x10F30, 0x10F45}, {0x10F51, 0x10F54}, {0x10F70, 0x10F81}, {0x10FB0, 0x10FCB},
+    {0x10FE0, 0x10FF6}, {0x11003, 0x11037}, {0x11052, 0x1106F}, {0x11071, 0x11072}, {0x11075, 0x11075}, {0x11083, 0x110AF},
+    {0x110D0, 0x110E8}, {0x110F0, 0x110F9}, {0x11103, 0x11126}, {0x11136, 0x1113F}, {0x11144, 0x11144}, {0x11147, 0x11147},
+    {0x11150, 0x11172}, {0x11176, 0x11176}, {0x11183, 0x111B2}, {0x111C1, 0x111C4}, {0x111D0, 0x111DA}, {0x111DC, 0x111DC},
+    {0x111E1, 0x111F4}, {0x11200, 0x11211}, {0x11213, 0x1122B}, {0x11280, 0x11286}, {0x11288, 0x11288}, {0x1128A, 0x1128D},
+    {0x1128F, 0x1129D}, {0x1129F, 0x112A8}, {0x112B0, 0x112DE}, {0x112F0, 0x112F9}, {0x11305, 0x1130C}, {0x1130F, 0x11310},
+    {0x11313, 0x11328}, {0x1132A, 0x11330}, {0x11332, 0x11333}, {0x11335, 0x11339}, {0x1133D, 0x1133D}, {0x11350, 0x11350},
+    {0x1135D, 0x11361}, {0x11400, 0x11434}, {0x11447, 0x1144A}, {0x11450, 0x11459}, {0x1145F, 0x11461}, {0x11480, 0x114AF},
+    {0x114C4, 0x114C5}, {0x114C7, 0x114C7}, {0x114D0, 0x114D9}, {0x11580, 0x115AE}, {0x115D8, 0x115DB}, {0x11600, 0x1162F},
+    {0x11644, 0x11644}, {0x11650, 0x11659}, {0x11680, 0x116AA}, {0x116B8, 0x116B8}, {0x116C0, 0x116C9}, {0x11700, 0x1171A},
+    {0x11730, 0x1173B}, {0x11740, 0x11746}, {0x11800, 0x1182B}, {0x118A0, 0x118F2}, {0x118FF, 0x11906}, {0x11909, 0x11909},
+    {0x1190C, 0x11913}, {0x11915, 0x11916}, {0x11918, 0x1192F}, {0x1193F, 0x1193F}, {0x11941, 0x11941}, {0x11950, 0x11959},
+    {0x119A0, 0x119A7}, {0x119AA, 0x119D0}, {0x119E1, 0x119E1}, {0x119E3, 0x119E3}, {0x11A00, 0x11A00}, {0x11A0B, 0x11A32},
+    {0x11A3A, 0x11A3A}, {0x11A50, 0x11A50}, {0x11A5C, 0x11A89}, {0x11A9D, 0x11A9D}, {0x11AB0, 0x11AF8}, {0x11C00, 0x11C08},
+    {0x11C0A, 0x11C2E}, {0x11C40, 0x11C40}, {0x11C50, 0x11C6C}, {0x11C72, 0x11C8F}, {0x11D00, 0x11D06}, {0x11D08, 0x11D09},
+    {0x11D0B, 0x11D30}, {0x11D46, 0x11D46}, {0x11D50, 0x11D59}, {0x11D60, 0x11D65}, {0x11D67, 0x11D68}, {0x11D6A, 0x11D89},
+    {0x11D98, 0x11D98}, {0x11DA0, 0x11DA9}, {0x11EE0, 0x11EF2}, {0x11FB0, 0x11FB0}, {0x11FC0, 0x11FD4}, {0x12000, 0x12399},
+    {0x12400, 0x1246E}, {0x12480, 0x12543}, {0x12F90, 0x12FF0}, {0x13000, 0x1342E}, {0x14400, 0x14646}, {0x16800, 0x16A38},
+    {0x16A40, 0x16A5E}, {0x16A60, 0x16A69}, {0x16A70, 0x16ABE}, {0x16AC0, 0x16AC9}, {0x16AD0, 0x16AED}, {0x16B00, 0x16B2F},
+    {0x16B40, 0x16B43}, {0x16B50, 0x16B59}, {0x16B5B, 0x16B61}, {0x16B63, 0x16B77}, {0x16B7D, 0x16B8F}, {0x16E40, 0x16E96},
+    {0x16F00, 0x16F4A}, {0x16F50, 0x16F50}, {0x16F93, 0x16F9F}, {0x16FE0, 0x16FE1}, {0x16FE3, 0x16FE3}, {0x17000, 0x187F7},
+    {0x18800, 0x18CD5}, {0x18D00, 0x18D08}, {0x1AFF0, 0x1AFF3}, {0x1AFF5, 0x1AFFB}, {0x1AFFD, 0x1AFFE}, {0x1B000, 0x1B122},
+    {0x1B150, 0x1B152}, {0x1B164, 0x1B167}, {0x1B170, 0x1B2FB}, {0x1BC00, 0x1BC6A}, {0x1BC70, 0x1BC7C}, {0x1BC80, 0x1BC88},
+    {0x1BC90, 0x1BC99}, {0x1D2E0, 0x1D2F3}, {0x1D360, 0x1D378}, {0x1D400, 0x1D454}, {0x1D456, 0x1D49C}, {0x1D49E, 0x1D49F},
+    {0x1D4A2, 0x1D4A2}, {0x1D4A5, 0x1D4A6}, {0x1D4A9, 0x1D4AC}, {0x1D4AE, 0x1D4B9}, {0x1D4BB, 0x1D4BB}, {0x1D4BD, 0x1D4C3},
+    {0x1D4C5, 0x1D505}, {0x1D507, 0x1D50A}, {0x1D50D, 0x1D514}, {0x1D516, 0x1D51C}, {0x1D51E, 0x1D539}, {0x1D53B, 0x1D53E},
+    {0x1D540, 0x1D544}, {0x1D546, 0x1D546}, {0x1D54A, 0x1D550}, {0x1D552, 0x1D6A5}, {0x1D6A8, 0x1D6C0}, {0x1D6C2, 0x1D6DA},
+    {0x1D6DC, 0x1D6FA}, {0x1D6FC, 0x1D714}, {0x1D716, 0x1D734}, {0x1D736, 0x1D74E}, {0x1D750, 0x1D76E}, {0x1D770, 0x1D788},
+    {0x1D78A, 0x1D7A8}, {0x1D7AA, 0x1D7C2}, {0x1D7C4, 0x1D7CB}, {0x1D7CE, 0x1D7FF}, {0x1DF00, 0x1DF1E}, {0x1E100, 0x1E12C},
+    {0x1E137, 0x1E13D}, {0x1E140, 0x1E149}, {0x1E14E, 0x1E14E}, {0x1E290, 0x1E2AD}, {0x1E2C0, 0x1E2EB}, {0x1E2F0, 0x1E2F9},
+    {0x1E7E0, 0x1E7E6}, {0x1E7E8, 0x1E7EB}, {0x1E7ED, 0x1E7EE}, {0x1E7F0, 0x1E7FE}, {0x1E800, 0x1E8C4}, {0x1E8C7, 0x1E8CF},
+    {0x1E900, 0x1E943}, {0x1E94B, 0x1E94B}, {0x1E950, 0x1E959}, {0x1EC71, 0x1ECAB}, {0x1ECAD, 0x1ECAF}, {0x1ECB1, 0x1ECB4},
+    {0x1ED01, 0x1ED2D}, {0x1ED2F, 0x1ED3D}, {0x1EE00, 0x1EE03}, {0x1EE05, 0x1EE1F}, {0x1EE21, 0x1EE22}, {0x1EE24, 0x1EE24},
+    {0x1EE27, 0x1EE27}, {0x1EE29, 0x1EE32}, {0x1EE34, 0x1EE37}, {0x1EE39, 0x1EE39}, {0x1EE3B, 0x1EE3B}, {0x1EE42, 0x1EE42},
+    {0x1EE47, 0x1EE47}, {0x1EE49, 0x1EE49}, {0x1EE4B, 0x1EE4B}, {0x1EE4D, 0x1EE4F}, {0x1EE51, 0x1EE52}, {0x1EE54, 0x1EE54},
+    {0x1EE57, 0x1EE57}, {0x1EE59, 0x1EE59}, {0x1EE5B, 0x1EE5B}, {0x1EE5D, 0x1EE5D}, {0x1EE5F, 0x1EE5F}, {0x1EE61, 0x1EE62},
+    {0x1EE64, 0x1EE64}, {0x1EE67, 0x1EE6A}, {0x1EE6C, 0x1EE72}, {0x1EE74, 0x1EE77}, {0x1EE79, 0x1EE7C}, {0x1EE7E, 0x1EE7E},
+    {0x1EE80, 0x1EE89}, {0x1EE8B, 0x1EE9B}, {0x1EEA1, 0x1EEA3}, {0x1EEA5, 0x1EEA9}, {0x1EEAB, 0x1EEBB}, {0x1F100, 0x1F10C},
+    {0x1FBF0, 0x1FBF9}, {0x20000, 0x2A6DF}, {0x2A700, 0x2B738}, {0x2B740, 0x2B81D}, {0x2B820, 0x2CEA1}, {0x2CEB0, 0x2EBE0},
+    {0x2F800, 0x2FA1D}, {0x30000, 0x3134A},
+};
+#define VTTS_U_N_WORD 734
+
+static const uint32_t VTTS_U_DECIMAL[62][2] = {  /* \d: isdecimal(), blocks of 0..9 */
+    {0x30, 0x39}, {0x660, 0x669}, {0x6F0, 0x6F9}, {0x7C0, 0x7C9}, {0x966, 0x96F}, {0x9E6, 0x9EF},
+    {0xA66, 0xA6F}, {0xAE6, 0xAEF}, {0xB66, 0xB6F}, {0xBE6, 0xBEF}, {0xC66, 0xC6F}, {0xCE6, 0xCEF},
+    {0xD66, 0xD6F}, {0xDE6, 0xDEF}, {0xE50, 0xE59}, {0xED0, 0xED9}, {0xF20, 0xF29}, {0x1040, 0x1049},
+    {0x1090, 0x1099}, {0x17E0, 0x17E9}, {0x1810, 0x1819}, {0x1946, 0x194F}, {0x19D0, 0x19D9}, {0x1A80, 0x1A89},
+    {0x1A90, 0x1A99}, {0x1B50, 0x1B59}, {0x1BB0, 0x1BB9}, {0x1C40, 0x1C49}, {0x1C50, 0x1C59}, {0xA620, 0xA629},
+    {0xA8D0, 0xA8D9}, {0xA900, 0xA909}, {0xA9D0, 0xA9D9}, {0xA9F0, 0xA9F9}, {0xAA50, 0xAA59}, {0xABF0, 0xABF9},
+    {0xFF10, 0xFF19}, {0x104A0, 0x104A9}, {0x10D30, 0x10D39}, {0x11066, 0x1106F}, {0x110F0, 0x110F9}, {0x11136, 0x1113F},
+    {0x111D0, 0x111D9}, {0x112F0, 0x112F9}, {0x11450, 0x11459}, {0x114D0, 0x114D9}, {0x11650, 0x11659}, {0x116C0, 0x116C9},
+    {0x11730, 0x11739}, {0x118E0, 0x118E9}, {0x11950, 0x11959}, {0x11C50, 0x11C59}, {0x11D50, 0x11D59}, {0x11DA0, 0x11DA9},
+    {0x16A60, 0x16A69}, {0x16AC0, 0x16AC9}, {0x16B50, 0x16B59}, {0x1D7CE, 0x1D7FF}, {0x1E140, 0x1E149}, {0x1E2F0, 0x1E2F9},
+    {0x1E950, 0x1E959}, {0x1FBF0, 0x1FBF9},
+};
+#define VTTS_U_N_DECIMAL 62
+
+static const uint32_t VTTS_U_SPACE[29] = {  /* \s and str.split(): isspace() */
+    0x9, 0xA, 0xB, 0xC, 0xD, 0x1C, 0x1D, 0x1E, 0x1F, 0x20, 0x85, 0xA0, 0x1680, 0x2000, 0x2001, 0x2002, 0x2003, 0x2004, 0x2005, 0x2006, 0x2007, 0x2008, 0x2009, 0x200A, 0x2028, 0x2029, 0x202F, 0x205F, 0x3000,
+};
+#define VTTS_U_N_SPACE 29
+
+/* str.lower() of one code point: runs (first, count, delta, step); U+0130 lowers to i U+0307 */
+static const int32_t VTTS_U_LOWER[182][4] = {
+    {0x41, 26, 32, 1}, {0xC0, 23, 32, 1}, {0xD8, 7, 32, 1}, {0x100, 24, 1, 2}, {0x130, 1, -199, 1},
+    {0x132, 3, 1, 2}, {0x139, 8, 1, 2}, {0x14A, 23, 1, 2}, {0x178, 1, -121, 1}, {0x179, 3, 1, 2},
+    {0x181, 1, 210, 1}, {0x182, 2, 1, 2}, {0x186, 1, 206, 1}, {0x187, 1, 1, 1}, {0x189, 2, 205, 1},
+    {0x18B, 1, 1, 1}, {0x18E, 1, 79, 1}, {0x18F, 1, 202, 1}, {0x190, 1, 203, 1}, {0x191, 1, 1, 1},
+    {0x193, 1, 205, 1}, {0x194, 1, 207, 1}, {0x196, 1, 211, 1}, {0x197, 1, 209, 1}, {0x198, 1, 1, 1},
+    {0x19C, 1, 211, 1}, {0x19D, 1, 213, 1}, {0x19F, 1, 214, 1}, {0x1A0, 3, 1, 2}, {0x1A6, 1, 218, 1},
+    {0x1A7, 1, 1, 1}, {0x1A9, 1, 218, 1}, {0x1AC, 1, 1, 1}, {0x1AE, 1, 218, 1}, {0x1AF, 1, 1, 1},
+    {0x1B1, 2, 217, 1}, {0x1B3, 2, 1, 2}, {0x1B7, 1, 219, 1}, {0x1B8, 1, 1, 1}, {0x1BC, 1, 1, 1},
+    {0x1C4, 1, 2, 1}, {0x1C5, 1, 1, 1}, {0x1C7, 1, 2, 1}, {0x1C8, 1, 1, 1}, {0x1CA, 1, 2, 1},
+    {0x1CB, 9, 1, 2}, {0x1DE, 9, 1, 2}, {0x1F1, 1, 2, 1}, {0x1F2, 2, 1, 2}, {0x1F6, 1, -97, 1},
+    {0x1F7, 1, -56, 1}, {0x1F8, 20, 1, 2}, {0x220, 1, -130, 1}, {0x222, 9, 1, 2}, {0x23A, 1, 10795, 1},
+    {0x23B, 1, 1, 1}, {0x23D, 1, -163, 1}, {0x23E, 1, 10792, 1}, {0x241, 1, 1, 1}, {0x243, 1, -195, 1},
+    {0x244, 1, 69, 1}, {0x245, 1, 71, 1}, {0x246, 5, 1, 2}, {0x370, 2, 1, 2}, {0x376, 1, 1, 1},
+    {0x37F, 1, 116, 1}, {0x386, 1, 38, 1}, {0x388, 3, 37, 1}, {0x38C, 1, 64, 1}, {0x38E, 2, 63, 1},
+    {0x391, 17, 32, 1}, {0x3A3, 9, 32, 1}, {0x3CF, 1, 8, 1}, {0x3D8, 12, 1, 2}, {0x3F4, 1, -60, 1},
+    {0x3F7, 1, 1, 1}, {0x3F9, 1, -7, 1}, {0x3FA, 1, 1, 1}, {0x3FD, 3, -130, 1}, {0x400, 16, 80, 1},
+    {0x410, 32, 32, 1}, {0x460, 17, 1, 2}, {0x48A, 27, 1, 2}, {0x4C0, 1, 15, 1}, {0x4C1, 7, 1, 2},
+    {0x4D0, 48, 1, 2}, {0x531, 38, 48, 1}, {0x10A0, 38, 7264, 1}, {0x10C7, 1, 7264, 1}, {0x10CD, 1, 7264, 1},
+    {0x13A0, 80, 38864, 1}, {0x13F0, 6, 8, 1}, {0x1C90, 43, -3008, 1}, {0x1CBD, 3, -3008, 1}, {0x1E00, 75, 1, 2},
+    {0x1E9E, 1, -7615, 1}, {0x1EA0, 48, 1, 2}, {0x1F08, 8, -8, 1}, {0x1F18, 6, -8, 1}, {0x1F28, 8, -8, 1},
+    {0x1F38, 8, -8, 1}, {0x1F48, 6, -8, 1}, {0x1F59, 4, -8, 2}, {0x1F68, 8, -8, 1}, {0x1F88, 8, -8, 1},
+    {0x1F98, 8, -8, 1}, {0x1FA8, 8, -8, 1}, {0x1FB8, 2, -8, 1}, {0x1FBA, 2, -74, 1}, {0x1FBC, 1, -9, 1},
+    {0x1FC8, 4, -86, 1}, {0x1FCC, 1, -9, 1}, {0x1FD8, 2, -8, 1}, {0x1FDA, 2, -100, 1}, {0x1FE8, 2, -8, 1},
+    {0x1FEA, 2, -112, 1}, {0x1FEC, 1, -7, 1}, {0x1FF8, 2, -128, 1}, {0x1FFA, 2, -126, 1}, {0x1FFC, 1, -9, 1},
+    {0x2126, 1, -7517, 1}, {0x212A, 1, -8383, 1}, {0x212B, 1, -8262, 1}, {0x2132, 1, 28, 1}, {0x2160, 16, 16, 1},
+    {0x2183, 1, 1, 1}, {0x24B6, 26, 26, 1}, {0x2C00, 48, 48, 1}, {0x2C60, 1, 1, 1}, {0x2C62, 1, -10743, 1},
+    {0x2C63, 1, -3814, 1}, {0x2C64, 1, -10727, 1}, {0x2C67, 3, 1, 2}, {0x2C6D, 1, -10780, 1}, {0x2C6E, 1, -10749, 1},
+    {0x2C6F, 1, -10783, 1}, {0x2C70, 1, -10782, 1}, {0x2C72, 1, 1, 1}, {0x2C75, 1, 1, 1}, {0x2C7E, 2, -10815, 1},
+    {0x2C80, 50, 1, 2}, {0x2CEB, 2, 1, 2}, {0x2CF2, 1, 1, 1}, {0xA640, 23, 1, 2}, {0xA680, 14, 1, 2},
+    {0xA722, 7, 1, 2}, {0xA732, 31, 1, 2}, {0xA779, 2, 1, 2}, {0xA77D, 1, -35332, 1}, {0xA77E, 5, 1, 2},
+    {0xA78B, 1, 1, 1}, {0xA78D, 1, -42280, 1}, {0xA790, 2, 1, 2}, {0xA796, 10, 1, 2}, {0xA7AA, 1, -42308, 1},
+    {0xA7AB, 1, -42319, 1}, {0xA7AC, 1, -42315, 1}, {0xA7AD, 1, -42305, 1}, {0xA7AE, 1, -42308, 1}, {0xA7B0, 1, -42258, 1},
+    {0xA7B1, 1, -42282, 1}, {0xA7B2, 1, -42261, 1}, {0xA7B3, 1, 928, 1}, {0xA7B4, 8, 1, 2}, {0xA7C4, 1, -48, 1},
+    {0xA7C5, 1, -42307, 1}, {0xA7C6, 1, -35384, 1}, {0xA7C7, 2, 1, 2}, {0xA7D0, 1, 1, 1}, {0xA7D6, 2, 1, 2},
+    {0xA7F5, 1, 1, 1}, {0xFF21, 26, 32, 1}, {0x10400, 40, 40, 1}, {0x104B0, 36, 40, 1}, {0x10570, 11, 39, 1},
+    {0x1057C, 15, 39, 1}, {0x1058C, 7, 39, 1}, {0x10594, 2, 39, 1}, {0x10C80, 51, 64, 1}, {0x118A0, 32, 32, 1},
+    {0x16E40, 32, 32, 1}, {0x1E900, 34, 34, 1},
+};
+#define VTTS_U_N_LOWER 182
+
+static const uint32_t VTTS_U_ICASE[7][4] = {  /* re.I variants (0 ends) */
+    {0x41, 0x61, 0, 0},  /* a */
+    {0x4A, 0x6A, 0, 0},  /* j */
+    {0x4B, 0x6B, 0x212A, 0},  /* k */
+    {0x4C, 0x6C, 0, 0},  /* l */
+    {0x4D, 0x6D, 0, 0},  /* m */
+    {0x50, 0x70, 0, 0},  /* p */
+    {0x55, 0x75, 0, 0},  /* u */
+};
+#define VTTS_U_N_ICASE 7
+
+/* ---- Latin-script pairs (token sets es-en, id-en, pt-en; ids 0..106 are the v2 ids) ---- */
+static const char *const VTTS_LT_ENGLISH[446] = {
+    "acer", "admin", "airplane", "airpods", "alarm", "alexa",
+    "amazon", "and", "android", "app", "apple", "apps",
+    "are", "as", "ask", "asus", "at", "baby",
+    "badminton", "bank", "basic", "battery", "be", "beauty",
+    "bedroom", "been", "black", "blog", "blogger", "blue",
+    "bluetooth", "booking", "boy", "burger", "but", "by",
+    "bye", "call", "caller", "calls", "camera", "camping",
+    "cappuccino", "captain", "card", "cards", "care", "case",
+    "charger", "chatgpt", "check", "chrome", "claude", "close",
+    "closed", "cloud", "coach", "coca", "code", "coder",
+    "coffee", "cola", "combo", "come", "comment", "comments",
+    "concert", "console", "content", "cool", "core", "creator",
+    "dark", "database", "date", "deadline", "delivery", "dell",
+    "deluxe", "designer", "desktop", "developer", "diamond", "did",
+    "do", "does", "done", "door", "download", "drive",
+    "drone", "earphone", "edition", "eight", "eleven", "email",
+    "emails", "esports", "event", "events", "excel", "facebook",
+    "family", "fan", "fanpage", "fans", "fashion", "feedback",
+    "file", "files", "fine", "firefox", "fitness", "five",
+    "follow", "follower", "followers", "football", "for", "four",
+    "free", "freelancer", "friend", "friends", "from", "galaxy",
+    "game", "gamer", "games", "gaming", "garage", "garden",
+    "get", "girl", "github", "give", "gmail", "go",
+    "going", "gold", "gone", "good", "google", "grab",
+    "gray", "great", "green", "grey", "guest", "gym",
+    "had", "has", "hashtag", "have", "he", "headphone",
+    "headphones", "hello", "help", "her", "here", "hi",
+    "his", "home", "honey", "host", "hotspot", "house",
+    "how", "huawei", "if", "in", "inbox", "influencer",
+    "instagram", "intel", "ipad", "iphone", "is", "it",
+    "keyboard", "kitchen", "lady", "lamp", "laptop", "latte",
+    "leader", "lenovo", "let", "life", "light", "lights",
+    "like", "liked", "likes", "line", "link", "links",
+    "linux", "lite", "live", "livestream", "log", "login",
+    "logout", "love", "macbook", "made", "mail", "make",
+    "makeup", "mall", "man", "manager", "maps", "marathon",
+    "market", "marketing", "master", "meet", "meeting", "meetings",
+    "menu", "message", "messages", "microsoft", "mobile", "mode",
+    "model", "modem", "more", "mouse", "movie", "movies",
+    "music", "my", "name", "netflix", "new", "news",
+    "nice", "nine", "not", "note", "notes", "nvidia",
+    "of", "off", "office", "offline", "ok", "okay",
+    "on", "one", "online", "open", "oppo", "or",
+    "orange", "order", "orders", "our", "out", "outlook",
+    "page", "party", "password", "pay", "paypal", "people",
+    "pepsi", "phone", "picnic", "pink", "play", "player",
+    "playing", "playlist", "plays", "please", "plug", "podcast",
+    "power", "printer", "producer", "project", "projects", "purple",
+    "put", "read", "reader", "red", "release", "remote",
+    "reset", "room", "router", "run", "runner", "running",
+    "safari", "said", "salad", "sale", "sales", "same",
+    "samsung", "sandwich", "save", "saved", "say", "scanner",
+    "screen", "sea", "see", "selfie", "sensors", "server",
+    "service", "set", "setup", "seven", "share", "shared",
+    "she", "ship", "shop", "shopee", "shopping", "show",
+    "sign", "signup", "silver", "siri", "site", "six",
+    "size", "skin", "skincare", "slack", "smart", "smartphone",
+    "smartwatch", "smoothie", "song", "songs", "sony", "sorry",
+    "spam", "speaker", "speakers", "spotify", "stable", "star",
+    "start", "startup", "stop", "store", "stream", "streaming",
+    "style", "supermarket", "superstar", "support", "switch", "tablet",
+    "take", "tea", "team", "teams", "telegram", "tell",
+    "ten", "tennis", "tesla", "thank", "thanks", "that",
+    "the", "their", "there", "these", "they", "this",
+    "those", "three", "ticket", "tickets", "tiktok", "time",
+    "timer", "to", "touch", "tree", "trending", "twitter",
+    "two", "type", "uber", "update", "updates", "upgrade",
+    "upload", "use", "user", "username", "users", "vacuum",
+    "version", "visa", "vlog", "voice", "voucher", "was",
+    "watch", "we", "web", "website", "weekend", "welcome",
+    "were", "what", "whatsapp", "when", "where", "white",
+    "who", "why", "wi-fi", "wifi", "windows", "with",
+    "woman", "word", "wow", "write", "writer", "xiaomi",
+    "yellow", "yes", "yoga", "yogurt", "you", "your",
+    "youtube", "zoom",
+};
+
+#define VTTS_LT_N_ENGLISH 446
+
+typedef struct { const char *key, *one, *many; } vtts_lt_reading;
+typedef struct { uint32_t cp; const char *name; } vtts_lt_letter;
+typedef struct { uint32_t start; uint16_t count; uint8_t first, step; } vtts_lt_fold;
+typedef struct {
+    const char *code;
+    int tok0, n_tokens, vocab;
+    const char *const *tokens;          /* names of the ids tok0.. without the prefix */
+    const char *const (*abbrev)[2]; int n_abbrev;  /* in the order they are applied */
+    const char *drop;                  /* characters replaced by a space */
+    const vtts_lt_letter *letters; int n_letters;   /* letter names (spelling) */
+    const char *const *acronym_words; int n_acronym_words;
+    const vtts_lt_reading *units; int n_units;       /* alternation order */
+    const vtts_lt_reading *currency; int n_currency; /* alternation order */
+    const vtts_lt_letter *symbols; int n_symbols;   /* replaced in this order */
+    const char *comma, *period;        /* MARK_WORDS */
+    const char *const *months;
+    const char *const *native; int n_native;        /* sorted */
+    const char *const *table_keys; int n_table_keys; /* sorted */
+    const char *const (*overrides)[2]; int n_overrides;
+    const char *const *unstressed; int n_unstressed;
+    const char *own;                   /* LATIN_PAIRS letters */
+    const char *g2p_letters;           /* LETTERS of the g2p outside a-z */
+    const vtts_lt_fold *fold; int n_fold;           /* fold() of code points >= 0x80 */
+    const char *const *onsets; int n_onsets;
+    const char *const *codas; int n_codas;
+    const char *const *finals; int n_finals;
+    const char *const *doubles; int n_doubles;
+    const char *const *foreign; int n_foreign;
+    const char *const (*digraphs)[2]; int n_digraphs;
+} vtts_lt_lang;
+
+/* es: token set es-en */
+static const char *const VTTS_ES_TOKENS[31] = {
+    "a", "e", "i", "o", "u", "a1",
+    "e1", "i1", "o1", "u1", "j", "w",
+    "p", "b", "t", "d", "k", "g",
+    "f", "th", "s", "x", "ch", "y",
+    "ll", "m", "n", "ny", "l", "r",
+    "rr",
+};
+
+static const char *const VTTS_ES_ABBREV[][2] = {
+    {"EE. UU.", "estados unidos"},
+    {"EE.UU.", "estados unidos"},
+    {"aprox.", "aproximadamente"},
+    {"Srta.", "señorita"},
+    {"págs.", "páginas"},
+    {"Avda.", "avenida"},
+    {"Sra.", "señora"},
+    {"Dra.", "doctora"},
+    {"Uds.", "ustedes"},
+    {"Dña.", "doña"},
+    {"etc.", "etcétera"},
+    {"pág.", "página"},
+    {"núm.", "número"},
+    {"tel.", "teléfono"},
+    {"S.A.", "sociedad anónima"},
+    {"Sr.", "señor"},
+    {"Dr.", "doctor"},
+    {"Ud.", "usted"},
+    {"Vd.", "usted"},
+    {"n.º", "número"},
+    {"Av.", "avenida"},
+    {"D.", "don"},
+    {"nº", "número"},
+};
+
+static const vtts_lt_letter VTTS_ES_LETTERS[] = {
+    {0x0061, "á"},
+    {0x0062, "be"},
+    {0x0063, "ce"},
+    {0x0064, "dé"},
+    {0x0065, "é"},
+    {0x0066, "efe"},
+    {0x0067, "ge"},
+    {0x0068, "hache"},
+    {0x0069, "í"},
+    {0x006A, "jota"},
+    {0x006B, "ka"},
+    {0x006C, "ele"},
+    {0x006D, "eme"},
+    {0x006E, "ene"},
+    {0x00F1, "eñe"},
+    {0x006F, "ó"},
+    {0x0070, "pe"},
+    {0x0071, "cu"},
+    {0x0072, "erre"},
+    {0x0073, "ese"},
+    {0x0074, "té"},
+    {0x0075, "ú"},
+    {0x0076, "uve"},
+    {0x0077, "uve doble"},
+    {0x0078, "equis"},
+    {0x0079, "ye"},
+    {0x007A, "zeta"},
+};
+
+static const char *const VTTS_ES_ACRONYM_WORDS[20] = {
+    "covid", "dana", "fifa", "iva", "led", "nasa",
+    "onu", "opep", "otan", "ovni", "pin", "pyme",
+    "pymes", "ram", "renfe", "rom", "sida", "sim",
+    "uefa", "unam",
+};
+
+static const vtts_lt_reading VTTS_ES_UNITS[] = {
+    {"km/h", "kilómetro por hora", "kilómetros por hora"},
+    {"min", "minuto", "minutos"},
+    {"kWh", "kilovatio hora", "kilovatios hora"},
+    {"mAh", "miliamperio hora", "miliamperios hora"},
+    {"GHz", "gigahercio", "gigahercios"},
+    {"MHz", "megahercio", "megahercios"},
+    {"km", "kilómetro", "kilómetros"},
+    {"cm", "centímetro", "centímetros"},
+    {"mm", "milímetro", "milímetros"},
+    {"kg", "kilo", "kilos"},
+    {"mg", "miligramo", "miligramos"},
+    {"ml", "mililitro", "mililitros"},
+    {"GB", "gigabyte", "gigabytes"},
+    {"MB", "megabyte", "megabytes"},
+    {"TB", "terabyte", "terabytes"},
+    {"kW", "kilovatio", "kilovatios"},
+    {"°C", "grado", "grados"},
+    {"m", "metro", "metros"},
+    {"g", "gramo", "gramos"},
+    {"l", "litro", "litros"},
+    {"L", "litro", "litros"},
+    {"h", "hora", "horas"},
+    {"s", "segundo", "segundos"},
+    {"W", "vatio", "vatios"},
+    {"V", "voltio", "voltios"},
+    {"℃", "grado", "grados"},
+    {"°", "grado", "grados"},
+};
+
+static const vtts_lt_reading VTTS_ES_CURRENCY[] = {
+    {"US$", "dólar", "dólares"},
+    {"$", "dólar", "dólares"},
+    {"€", "euro", "euros"},
+    {"£", "libra", "libras"},
+    {"¥", "yen", "yenes"},
+};
+
+static const vtts_lt_letter VTTS_ES_SYMBOLS[] = {
+    {0x0026, " y "},
+    {0x002B, " más "},
+    {0x003D, " igual a "},
+    {0x0040, " arroba "},
+    {0x0023, " número "},
+    {0x00D7, " por "},
+    {0x002F, " "},
+    {0x0025, " por ciento "},
+};
+
+static const char *const VTTS_ES_MONTHS[13] = {
+    "", "enero", "febrero", "marzo", "abril", "mayo",
+    "junio", "julio", "agosto", "septiembre", "octubre", "noviembre",
+    "diciembre",
+};
+
+static const char *const VTTS_ES_NATIVE[41] = {
+    "ballet", "bistec", "boicot", "chalet", "chat", "chef",
+    "club", "clubs", "coca", "cola", "combo", "come",
+    "complot", "fan", "fans", "fax", "golf", "has",
+    "he", "iceberg", "internet", "jacuzzi", "menu", "mini",
+    "mozzarella", "ok", "pizza", "pizzas", "pizzeria", "red",
+    "robot", "robots", "sale", "sales", "sea", "test",
+    "tic", "use", "visa", "yoga", "zigzag",
+};
+
+static const char *const VTTS_ES_TABLE_KEYS[49] = {
+    "aprox", "av", "avda", "cm", "d", "dr",
+    "dra", "dña", "ee. uu", "ee.uu", "etc", "g",
+    "gb", "ghz", "h", "kg", "km", "km/h",
+    "kw", "kwh", "l", "m", "mah", "mb",
+    "mg", "mhz", "min", "ml", "mm", "n.º",
+    "nº", "núm", "pág", "págs", "s", "s.a",
+    "sr", "sra", "srta", "tb", "tel", "ud",
+    "uds", "v", "vd", "w", "°", "°c",
+    "℃",
+};
+
+static const char *const VTTS_ES_OVERRIDES[][2] = {
+    {"méxico", "méjico"},
+    {"mexico", "méjico"},
+    {"mexicano", "mejicano"},
+    {"mexicana", "mejicana"},
+    {"mexicanos", "mejicanos"},
+    {"mexicanas", "mejicanas"},
+    {"texas", "téjas"},
+    {"oaxaca", "oajaca"},
+    {"xavier", "javier"},
+    {"ximena", "jimena"},
+    {"ok", "okéi"},
+    {"chalet", "chalé"},
+    {"ballet", "balé"},
+    {"iceberg", "áisberg"},
+    {"sándwich", "sánguich"},
+    {"whisky", "güisqui"},
+};
+
+static const char *const VTTS_ES_UNSTRESSED[58] = {
+    "a", "al", "ante", "aunque", "bajo", "como",
+    "con", "contra", "cual", "cuando", "de", "del",
+    "desde", "donde", "e", "el", "en", "entre",
+    "hacia", "hasta", "la", "las", "le", "les",
+    "lo", "los", "mas", "me", "mi", "mis",
+    "ni", "nos", "nuestro", "o", "os", "para",
+    "pero", "por", "porque", "pues", "que", "quien",
+    "quienes", "se", "si", "sin", "so", "sobre",
+    "su", "sus", "te", "tras", "tu", "tus",
+    "u", "un", "unos", "y",
+};
+
+static const vtts_lt_fold VTTS_ES_FOLD[282] = {
+    {0xAA, 1, 0x61, 0}, {0xBA, 1, 0x6F, 0}, {0xC0, 1, 0x61, 0}, {0xC1, 1, 0xE1, 0}, {0xC2, 4, 0x61, 0},
+    {0xC6, 1, 0x65, 0}, {0xC7, 1, 0x73, 0}, {0xC8, 1, 0x65, 0}, {0xC9, 1, 0xE9, 0}, {0xCA, 2, 0x65, 0},
+    {0xCC, 1, 0x69, 0}, {0xCD, 1, 0xED, 0}, {0xCE, 2, 0x69, 0}, {0xD1, 1, 0xF1, 0}, {0xD2, 1, 0x6F, 0},
+    {0xD3, 1, 0xF3, 0}, {0xD4, 3, 0x6F, 0}, {0xD8, 1, 0x6F, 0}, {0xD9, 1, 0x75, 0}, {0xDA, 1, 0xFA, 0},
+    {0xDB, 1, 0x75, 0}, {0xDC, 1, 0xFC, 0}, {0xDD, 1, 0x79, 0}, {0xDE, 1, 0x74, 0}, {0xDF, 1, 0x73, 0},
+    {0xE0, 1, 0x61, 0}, {0xE1, 1, 0xE1, 0}, {0xE2, 4, 0x61, 0}, {0xE6, 1, 0x65, 0}, {0xE7, 1, 0x73, 0},
+    {0xE8, 1, 0x65, 0}, {0xE9, 1, 0xE9, 0}, {0xEA, 2, 0x65, 0}, {0xEC, 1, 0x69, 0}, {0xED, 1, 0xED, 0},
+    {0xEE, 2, 0x69, 0}, {0xF1, 1, 0xF1, 0}, {0xF2, 1, 0x6F, 0}, {0xF3, 1, 0xF3, 0}, {0xF4, 3, 0x6F, 0},
+    {0xF8, 1, 0x6F, 0}, {0xF9, 1, 0x75, 0}, {0xFA, 1, 0xFA, 0}, {0xFB, 1, 0x75, 0}, {0xFC, 1, 0xFC, 0},
+    {0xFD, 1, 0x79, 0}, {0xFE, 1, 0x74, 0}, {0xFF, 1, 0x79, 0}, {0x100, 6, 0x61, 0}, {0x106, 8, 0x63, 0},
+    {0x10E, 4, 0x64, 0}, {0x112, 10, 0x65, 0}, {0x11C, 8, 0x67, 0}, {0x124, 2, 0x68, 0}, {0x128, 9, 0x69, 0},
+    {0x132, 2, 0x69, 0}, {0x134, 2, 0x6A, 0}, {0x136, 2, 0x6B, 0}, {0x139, 10, 0x6C, 0}, {0x143, 6, 0x6E, 0},
+    {0x14C, 6, 0x6F, 0}, {0x152, 2, 0x65, 0}, {0x154, 6, 0x72, 0}, {0x15A, 8, 0x73, 0}, {0x162, 4, 0x74, 0},
+    {0x168, 12, 0x75, 0}, {0x174, 2, 0x77, 0}, {0x176, 3, 0x79, 0}, {0x179, 6, 0x7A, 0}, {0x17F, 1, 0x73, 0},
+    {0x1A0, 2, 0x6F, 0}, {0x1AF, 2, 0x75, 0}, {0x1C4, 3, 0x64, 0}, {0x1C7, 3, 0x6C, 0}, {0x1CA, 3, 0x6E, 0},
+    {0x1CD, 2, 0x61, 0}, {0x1CF, 2, 0x69, 0}, {0x1D1, 2, 0x6F, 0}, {0x1D3, 10, 0x75, 0}, {0x1DE, 4, 0x61, 0},
+    {0x1E6, 2, 0x67, 0}, {0x1E8, 2, 0x6B, 0}, {0x1EA, 4, 0x6F, 0}, {0x1F0, 1, 0x6A, 0}, {0x1F1, 3, 0x64, 0},
+    {0x1F4, 2, 0x67, 0}, {0x1F8, 2, 0x6E, 0}, {0x1FA, 2, 0x61, 0}, {0x200, 4, 0x61, 0}, {0x204, 4, 0x65, 0},
+    {0x208, 4, 0x69, 0}, {0x20C, 4, 0x6F, 0}, {0x210, 4, 0x72, 0}, {0x214, 4, 0x75, 0}, {0x218, 2, 0x73, 0},
+    {0x21A, 2, 0x74, 0}, {0x21E, 2, 0x68, 0}, {0x226, 2, 0x61, 0}, {0x228, 2, 0x65, 0}, {0x22A, 8, 0x6F, 0},
+    {0x232, 2, 0x79, 0}, {0x2B0, 1, 0x68, 0}, {0x2B2, 1, 0x6A, 0}, {0x2B3, 1, 0x72, 0}, {0x2B7, 1, 0x77, 0},
+    {0x2B8, 1, 0x79, 0}, {0x2E1, 1, 0x6C, 0}, {0x2E2, 1, 0x73, 0}, {0x2E3, 1, 0x78, 0}, {0x1D43, 1, 0x61, 0},
+    {0x1D47, 1, 0x62, 0}, {0x1D48, 2, 0x64, 1}, {0x1D4D, 1, 0x67, 0}, {0x1D4F, 1, 0x6B, 0}, {0x1D50, 1, 0x6D, 0},
+    {0x1D52, 1, 0x6F, 0}, {0x1D56, 1, 0x70, 0}, {0x1D57, 2, 0x74, 1}, {0x1D5B, 1, 0x76, 0}, {0x1D62, 1, 0x69, 0},
+    {0x1D63, 1, 0x72, 0}, {0x1D64, 2, 0x75, 1}, {0x1D9C, 1, 0x63, 0}, {0x1DA0, 1, 0x66, 0}, {0x1DBB, 1, 0x7A, 0},
+    {0x1E00, 2, 0x61, 0}, {0x1E02, 6, 0x62, 0}, {0x1E08, 2, 0x63, 0}, {0x1E0A, 10, 0x64, 0}, {0x1E14, 10, 0x65, 0},
+    {0x1E1E, 2, 0x66, 0}, {0x1E20, 2, 0x67, 0}, {0x1E22, 10, 0x68, 0}, {0x1E2C, 4, 0x69, 0}, {0x1E30, 6, 0x6B, 0},
+    {0x1E36, 8, 0x6C, 0}, {0x1E3E, 6, 0x6D, 0}, {0x1E44, 8, 0x6E, 0}, {0x1E4C, 8, 0x6F, 0}, {0x1E54, 4, 0x70, 0},
+    {0x1E58, 8, 0x72, 0}, {0x1E60, 10, 0x73, 0}, {0x1E6A, 8, 0x74, 0}, {0x1E72, 10, 0x75, 0}, {0x1E7C, 4, 0x76, 0},
+    {0x1E80, 10, 0x77, 0}, {0x1E8A, 4, 0x78, 0}, {0x1E8E, 2, 0x79, 0}, {0x1E90, 6, 0x7A, 0}, {0x1E96, 1, 0x68, 0},
+    {0x1E97, 1, 0x74, 0}, {0x1E98, 1, 0x77, 0}, {0x1E99, 1, 0x79, 0}, {0x1E9A, 1, 0x61, 0}, {0x1E9B, 1, 0x73, 0},
+    {0x1E9E, 1, 0x73, 0}, {0x1EA0, 24, 0x61, 0}, {0x1EB8, 16, 0x65, 0}, {0x1EC8, 4, 0x69, 0}, {0x1ECC, 24, 0x6F, 0},
+    {0x1EE4, 14, 0x75, 0}, {0x1EF2, 8, 0x79, 0}, {0x2071, 1, 0x69, 0}, {0x207F, 1, 0x6E, 0}, {0x2090, 1, 0x61, 0},
+    {0x2091, 1, 0x65, 0}, {0x2092, 1, 0x6F, 0}, {0x2093, 1, 0x78, 0}, {0x2095, 1, 0x68, 0}, {0x2096, 4, 0x6B, 1},
+    {0x209A, 1, 0x70, 0}, {0x209B, 2, 0x73, 1}, {0x2100, 2, 0x61, 0}, {0x2105, 2, 0x63, 0}, {0x210A, 1, 0x67, 0},
+    {0x210E, 1, 0x68, 0}, {0x2113, 1, 0x6C, 0}, {0x212A, 1, 0x6B, 0}, {0x212B, 1, 0x61, 0}, {0x212F, 1, 0x65, 0},
+    {0x2134, 1, 0x6F, 0}, {0x2139, 1, 0x69, 0}, {0x2146, 2, 0x64, 1}, {0x2148, 2, 0x69, 1}, {0x2160, 4, 0x69, 0},
+    {0x2164, 4, 0x76, 0}, {0x2168, 1, 0x69, 0}, {0x2169, 3, 0x78, 0}, {0x216C, 1, 0x6C, 0}, {0x216D, 2, 0x63, 1},
+    {0x216F, 1, 0x6D, 0}, {0x2170, 4, 0x69, 0}, {0x2174, 4, 0x76, 0}, {0x2178, 1, 0x69, 0}, {0x2179, 3, 0x78, 0},
+    {0x217C, 1, 0x6C, 0}, {0x217D, 2, 0x63, 1}, {0x217F, 1, 0x6D, 0}, {0x24B6, 26, 0x61, 1}, {0x24D0, 26, 0x61, 1},
+    {0x2C7C, 1, 0x6A, 0}, {0x32CD, 2, 0x65, 0}, {0x3371, 1, 0x68, 0}, {0x3372, 1, 0x64, 0}, {0x3374, 1, 0x62, 0},
+    {0x3375, 2, 0x6F, 1}, {0x3377, 3, 0x64, 0}, {0x3380, 1, 0x70, 0}, {0x3381, 1, 0x6E, 0}, {0x3383, 1, 0x6D, 0},
+    {0x3384, 1, 0x6B, 0}, {0x3388, 1, 0x63, 0}, {0x3389, 1, 0x6B, 0}, {0x338A, 1, 0x70, 0}, {0x338B, 1, 0x6E, 0},
+    {0x338E, 1, 0x6D, 0}, {0x338F, 1, 0x6B, 0}, {0x3391, 1, 0x6B, 0}, {0x3396, 1, 0x6D, 0}, {0x3397, 1, 0x64, 0},
+    {0x3398, 1, 0x6B, 0}, {0x3399, 1, 0x66, 0}, {0x339A, 1, 0x6E, 0}, {0x339C, 1, 0x6D, 0}, {0x339D, 1, 0x63, 0},
+    {0x339E, 1, 0x6B, 0}, {0x339F, 1, 0x6D, 0}, {0x33A0, 1, 0x63, 0}, {0x33A1, 1, 0x6D, 0}, {0x33A2, 1, 0x6B, 0},
+    {0x33A3, 1, 0x6D, 0}, {0x33A4, 1, 0x63, 0}, {0x33A5, 1, 0x6D, 0}, {0x33A6, 1, 0x6B, 0}, {0x33A7, 2, 0x6D, 0},
+    {0x33AA, 1, 0x6B, 0}, {0x33AD, 3, 0x72, 0}, {0x33B0, 1, 0x70, 0}, {0x33B1, 1, 0x6E, 0}, {0x33B3, 1, 0x6D, 0},
+    {0x33B4, 1, 0x70, 0}, {0x33B5, 1, 0x6E, 0}, {0x33B7, 1, 0x6D, 0}, {0x33B8, 1, 0x6B, 0}, {0x33BA, 1, 0x70, 0},
+    {0x33BB, 1, 0x6E, 0}, {0x33BD, 1, 0x6D, 0}, {0x33BE, 1, 0x6B, 0}, {0x33C0, 1, 0x6B, 0}, {0x33C2, 1, 0x61, 0},
+    {0x33C4, 2, 0x63, 0}, {0x33C8, 1, 0x64, 0}, {0x33CA, 1, 0x68, 0}, {0x33CC, 1, 0x69, 0}, {0x33CF, 2, 0x6B, 1},
+    {0x33D1, 3, 0x6C, 0}, {0x33D4, 3, 0x6D, 0}, {0x33D8, 1, 0x70, 0}, {0x33DB, 1, 0x73, 0}, {0x33FF, 1, 0x67, 0},
+    {0xFB00, 5, 0x66, 0}, {0xFB05, 2, 0x73, 0}, {0xFF21, 26, 0x61, 1}, {0xFF41, 26, 0x61, 1}, {0x107A5, 1, 0x71, 0},
+    {0x1D41A, 26, 0x61, 1}, {0x1D44E, 7, 0x61, 1}, {0x1D456, 18, 0x69, 1}, {0x1D482, 26, 0x61, 1}, {0x1D4B6, 4, 0x61, 1},
+    {0x1D4BB, 1, 0x66, 0}, {0x1D4BD, 7, 0x68, 1}, {0x1D4C5, 11, 0x70, 1}, {0x1D4EA, 26, 0x61, 1}, {0x1D51E, 26, 0x61, 1},
+    {0x1D552, 26, 0x61, 1}, {0x1D586, 26, 0x61, 1}, {0x1D5BA, 26, 0x61, 1}, {0x1D5EE, 26, 0x61, 1}, {0x1D622, 26, 0x61, 1},
+    {0x1D656, 26, 0x61, 1}, {0x1D68A, 26, 0x61, 1},
+};
+
+static const char *const VTTS_ES_ONSETS[16] = {
+    "bl", "br", "cl", "cr", "dr", "fl",
+    "fr", "gl", "gn", "gr", "kr", "pl",
+    "pn", "pr", "ps", "tr",
+};
+
+static const char *const VTTS_ES_CODAS[20] = {
+    "b", "bs", "c", "d", "ds", "f",
+    "g", "j", "k", "l", "m", "n",
+    "ns", "p", "r", "rs", "s", "t",
+    "x", "z",
+};
+
+static const char *const VTTS_ES_FINALS[9] = {
+    "d", "j", "l", "n", "r", "s",
+    "x", "y", "z",
+};
+
+static const char *const VTTS_ES_DOUBLES[7] = {
+    "aa", "cc", "ee", "ll", "nn", "oo",
+    "rr",
+};
+
+static const char *const VTTS_ES_FOREIGN[9] = {
+    "sh", "th", "ph", "ck", "gh", "kh",
+    "tz", "wh", "w",
+};
+
+static const char *const VTTS_ES_DIGRAPHS[][2] = {  /* replaced in this order */
+    {"ch", "C"},
+    {"ll", "L"},
+    {"rr", "R"},
+    {"qu", "K"},
+};
+
+/* id: token set id-en */
+static const char *const VTTS_ID_TOKENS[34] = {
+    "a", "i", "u", "e", "@", "o",
+    "a1", "i1", "u1", "e1", "o1", "p",
+    "b", "t", "d", "k", "g", "?",
+    "c", "j", "f", "s", "z", "sy",
+    "kh", "h", "m", "n", "ny", "ng",
+    "l", "r", "w", "y",
+};
+
+static const char *const VTTS_ID_ABBREV[][2] = {
+    {"Prof.", "profesor"},
+    {"dll.", "dan lain lain"},
+    {"dsb.", "dan sebagainya"},
+    {"dst.", "dan seterusnya"},
+    {"Bpk.", "bapak"},
+    {"a.n.", "atas nama"},
+    {"s.d.", "sampai dengan"},
+    {"tsb.", "tersebut"},
+    {"Kab.", "kabupaten"},
+    {"Kec.", "kecamatan"},
+    {"Tbk.", "terbuka"},
+    {"Jl.", "jalan"},
+    {"No.", "nomor"},
+    {"no.", "nomor"},
+    {"Dr.", "doktor"},
+    {"dgn", "dengan"},
+    {"tdk", "tidak"},
+    {"utk", "untuk"},
+    {"krn", "karena"},
+    {"PT.", "pé té"},
+    {"yg", "yang"},
+};
+
+static const vtts_lt_letter VTTS_ID_LETTERS[] = {
+    {0x0061, "a"},
+    {0x0062, "bé"},
+    {0x0063, "cé"},
+    {0x0064, "dé"},
+    {0x0065, "é"},
+    {0x0066, "éf"},
+    {0x0067, "gé"},
+    {0x0068, "ha"},
+    {0x0069, "i"},
+    {0x006A, "jé"},
+    {0x006B, "ka"},
+    {0x006C, "él"},
+    {0x006D, "ém"},
+    {0x006E, "én"},
+    {0x006F, "o"},
+    {0x0070, "pé"},
+    {0x0071, "ki"},
+    {0x0072, "ér"},
+    {0x0073, "és"},
+    {0x0074, "té"},
+    {0x0075, "u"},
+    {0x0076, "fé"},
+    {0x0077, "wé"},
+    {0x0078, "éks"},
+    {0x0079, "yé"},
+    {0x007A, "zét"},
+};
+
+static const char *const VTTS_ID_ACRONYM_WORDS[12] = {
+    "asean", "bulog", "covid", "golput", "led", "nato",
+    "opec", "pemilu", "pin", "ram", "rom", "sim",
+};
+
+static const vtts_lt_reading VTTS_ID_UNITS[] = {
+    {"km/jam", "kilometer per jam", "kilometer per jam"},
+    {"km/h", "kilometer per jam", "kilometer per jam"},
+    {"kWh", "kilowatt jam", "kilowatt jam"},
+    {"mAh", "miliampere jam", "miliampere jam"},
+    {"GHz", "gigahertz", "gigahertz"},
+    {"MHz", "megahertz", "megahertz"},
+    {"km", "kilometer", "kilometer"},
+    {"cm", "sentimeter", "sentimeter"},
+    {"mm", "milimeter", "milimeter"},
+    {"kg", "kilogram", "kilogram"},
+    {"mg", "miligram", "miligram"},
+    {"ml", "mililiter", "mililiter"},
+    {"GB", "gigabita", "gigabita"},
+    {"MB", "megabita", "megabita"},
+    {"TB", "terabita", "terabita"},
+    {"kW", "kilowatt", "kilowatt"},
+    {"ha", "hektare", "hektare"},
+    {"°C", "derajat celsius", "derajat celsius"},
+    {"m", "meter", "meter"},
+    {"g", "gram", "gram"},
+    {"l", "liter", "liter"},
+    {"L", "liter", "liter"},
+    {"W", "watt", "watt"},
+    {"V", "volt", "volt"},
+    {"℃", "derajat celsius", "derajat celsius"},
+    {"°", "derajat", "derajat"},
+};
+
+static const vtts_lt_reading VTTS_ID_CURRENCY[] = {
+    {"Rp.", "rupiah", "rupiah"},
+    {"US$", "dolar", "dolar"},
+    {"Rp", "rupiah", "rupiah"},
+    {"$", "dolar", "dolar"},
+    {"€", "euro", "euro"},
+    {"£", "pound", "pound"},
+    {"¥", "yen", "yen"},
+};
+
+static const vtts_lt_letter VTTS_ID_SYMBOLS[] = {
+    {0x0026, " dan "},
+    {0x002B, " tambah "},
+    {0x003D, " sama dengan "},
+    {0x0040, " et "},
+    {0x0023, " nomor "},
+    {0x00D7, " kali "},
+    {0x002F, " per "},
+    {0x0025, " persen "},
+};
+
+static const char *const VTTS_ID_MONTHS[13] = {
+    "", "januari", "februari", "maret", "april", "mei",
+    "juni", "juli", "agustus", "september", "oktober", "november",
+    "desember",
+};
+
+static const char *const VTTS_ID_NATIVE[22] = {
+    "allah", "alquran", "bank", "film", "kooperasi", "koordinasi",
+    "makassar", "master", "mekkah", "menu", "mode", "model",
+    "muhammad", "ok", "oke", "pizza", "quran", "salad",
+    "taksi", "tv", "visa", "yoga",
+};
+
+static const char *const VTTS_ID_TABLE_KEYS[45] = {
+    "a.n", "bpk", "cm", "dgn", "dll", "dr",
+    "dsb", "dst", "g", "gb", "ghz", "ha",
+    "jl", "kab", "kec", "kg", "km", "km/h",
+    "km/jam", "krn", "kw", "kwh", "l", "m",
+    "mah", "mb", "mg", "mhz", "ml", "mm",
+    "no", "prof", "pt", "s.d", "tb", "tbk",
+    "tdk", "tsb", "utk", "v", "w", "yg",
+    "°", "°c", "℃",
+};
+
+static const char *const VTTS_ID_OVERRIDES[][2] = {
+    {"enak", "énak"},
+    {"desa", "désa"},
+    {"meja", "méja"},
+    {"merah", "mérah"},
+    {"besok", "bésok"},
+    {"lebar", "lébar"},
+    {"kereta", "keréta"},
+    {"bebas", "bébas"},
+    {"beda", "béda"},
+    {"heran", "héran"},
+    {"sewa", "séwa"},
+    {"dewa", "déwa"},
+    {"dewasa", "déwasa"},
+    {"dewan", "déwan"},
+    {"dewi", "déwi"},
+    {"tega", "téga"},
+    {"peta", "péta"},
+    {"pena", "péna"},
+    {"ekor", "ékor"},
+    {"elok", "élok"},
+    {"ember", "émber"},
+    {"ekonomi", "ékonomi"},
+    {"energi", "énergi"},
+    {"elektronik", "éléktronik"},
+    {"teknologi", "téknologi"},
+    {"teknik", "téknik"},
+    {"telepon", "télépon"},
+    {"televisi", "télévisi"},
+    {"presiden", "présidén"},
+    {"presentasi", "présentasi"},
+    {"restoran", "réstoran"},
+    {"metode", "métodé"},
+    {"meter", "méter"},
+    {"kilometer", "kilométer"},
+    {"sentimeter", "séntiméter"},
+    {"efektif", "éféktif"},
+    {"efek", "éfék"},
+    {"eropa", "éropa"},
+    {"edukasi", "édukasi"},
+    {"edisi", "édisi"},
+    {"era", "éra"},
+    {"ego", "égo"},
+    {"emosi", "émosi"},
+    {"ekspor", "ékspor"},
+    {"ekstra", "ékstra"},
+    {"demo", "démo"},
+    {"desember", "désémber"},
+    {"september", "séptémber"},
+    {"november", "novémber"},
+    {"februari", "fébruari"},
+    {"generasi", "générasi"},
+    {"kecap", "kécap"},
+    {"mewah", "méwah"},
+    {"lele", "lélé"},
+    {"tempe", "témpé"},
+    {"gereja", "geréja"},
+    {"kemeja", "keméja"},
+    {"pepaya", "pépaya"},
+    {"cewek", "céwék"},
+    {"sepeda", "sepéda"},
+    {"karena", "karéna"},
+    {"leher", "léhér"},
+    {"pesta", "pésta"},
+    {"mereka", "meréka"},
+    {"bengkel", "béngkél"},
+    {"benteng", "bénténg"},
+    {"becak", "bécak"},
+    {"pecel", "pécél"},
+    {"rendang", "réndang"},
+    {"setan", "sétan"},
+    {"kecewa", "kecéwa"},
+    {"rewel", "réwél"},
+    {"repot", "répot"},
+    {"beres", "bérés"},
+    {"pendek", "péndék"},
+    {"ketoprak", "kétoprak"},
+    {"festival", "féstival"},
+    {"level", "lévél"},
+    {"tema", "téma"},
+    {"kalender", "kaléndér"},
+    {"versi", "vérsi"},
+    {"server", "sérvér"},
+    {"stereo", "stéréo"},
+    {"jerman", "jérman"},
+    {"medan", "médan"},
+    {"depok", "dépok"},
+    {"jember", "jémbér"},
+    {"cirebon", "cirébon"},
+    {"denpasar", "dénpasar"},
+    {"sulawesi", "sulawési"},
+    {"amerika", "amérika"},
+    {"mekah", "mékah"},
+    {"ke", "ke"},
+    {"se", "se"},
+};
+
+static const char *const VTTS_ID_UNSTRESSED[15] = {
+    "atau", "bagi", "dan", "dari", "dengan", "di",
+    "ke", "oleh", "pada", "para", "sang", "se",
+    "si", "untuk", "yang",
+};
+
+static const vtts_lt_fold VTTS_ID_FOLD[260] = {
+    {0xAA, 1, 0x61, 0}, {0xBA, 1, 0x6F, 0}, {0xC0, 6, 0x61, 0}, {0xC6, 1, 0x65, 0}, {0xC7, 1, 0x73, 0},
+    {0xC8, 3, 0xE9, 0}, {0xCB, 1, 0x65, 0}, {0xCC, 4, 0x69, 0}, {0xD1, 2, 0x6E, 1}, {0xD3, 4, 0x6F, 0},
+    {0xD8, 1, 0x6F, 0}, {0xD9, 4, 0x75, 0}, {0xDD, 1, 0x79, 0}, {0xDF, 1, 0x73, 0}, {0xE0, 6, 0x61, 0},
+    {0xE6, 1, 0x65, 0}, {0xE7, 1, 0x73, 0}, {0xE8, 3, 0xE9, 0}, {0xEB, 1, 0x65, 0}, {0xEC, 4, 0x69, 0},
+    {0xF1, 2, 0x6E, 1}, {0xF3, 4, 0x6F, 0}, {0xF8, 1, 0x6F, 0}, {0xF9, 4, 0x75, 0}, {0xFD, 1, 0x79, 0},
+    {0xFF, 1, 0x79, 0}, {0x100, 6, 0x61, 0}, {0x106, 8, 0x63, 0}, {0x10E, 2, 0x64, 0}, {0x112, 10, 0x65, 0},
+    {0x11C, 8, 0x67, 0}, {0x124, 2, 0x68, 0}, {0x128, 9, 0x69, 0}, {0x132, 2, 0x69, 0}, {0x134, 2, 0x6A, 0},
+    {0x136, 2, 0x6B, 0}, {0x139, 8, 0x6C, 0}, {0x143, 6, 0x6E, 0}, {0x14C, 6, 0x6F, 0}, {0x152, 2, 0x65, 0},
+    {0x154, 6, 0x72, 0}, {0x15A, 8, 0x73, 0}, {0x162, 4, 0x74, 0}, {0x168, 12, 0x75, 0}, {0x174, 2, 0x77, 0},
+    {0x176, 3, 0x79, 0}, {0x179, 6, 0x7A, 0}, {0x17F, 1, 0x73, 0}, {0x1A0, 2, 0x6F, 0}, {0x1AF, 2, 0x75, 0},
+    {0x1C4, 3, 0x64, 0}, {0x1C7, 3, 0x6C, 0}, {0x1CA, 3, 0x6E, 0}, {0x1CD, 2, 0x61, 0}, {0x1CF, 2, 0x69, 0},
+    {0x1D1, 2, 0x6F, 0}, {0x1D3, 10, 0x75, 0}, {0x1DE, 4, 0x61, 0}, {0x1E6, 2, 0x67, 0}, {0x1E8, 2, 0x6B, 0},
+    {0x1EA, 4, 0x6F, 0}, {0x1F0, 1, 0x6A, 0}, {0x1F1, 3, 0x64, 0}, {0x1F4, 2, 0x67, 0}, {0x1F8, 2, 0x6E, 0},
+    {0x1FA, 2, 0x61, 0}, {0x200, 4, 0x61, 0}, {0x204, 4, 0x65, 0}, {0x208, 4, 0x69, 0}, {0x20C, 4, 0x6F, 0},
+    {0x210, 4, 0x72, 0}, {0x214, 4, 0x75, 0}, {0x218, 2, 0x73, 0}, {0x21A, 2, 0x74, 0}, {0x21E, 2, 0x68, 0},
+    {0x226, 2, 0x61, 0}, {0x228, 2, 0x65, 0}, {0x22A, 8, 0x6F, 0}, {0x232, 2, 0x79, 0}, {0x2B0, 1, 0x68, 0},
+    {0x2B2, 1, 0x6A, 0}, {0x2B3, 1, 0x72, 0}, {0x2B7, 1, 0x77, 0}, {0x2B8, 1, 0x79, 0}, {0x2E1, 1, 0x6C, 0},
+    {0x2E2, 1, 0x73, 0}, {0x2E3, 1, 0x78, 0}, {0x1D43, 1, 0x61, 0}, {0x1D47, 1, 0x62, 0}, {0x1D48, 2, 0x64, 1},
+    {0x1D4D, 1, 0x67, 0}, {0x1D4F, 1, 0x6B, 0}, {0x1D50, 1, 0x6D, 0}, {0x1D52, 1, 0x6F, 0}, {0x1D56, 1, 0x70, 0},
+    {0x1D57, 2, 0x74, 1}, {0x1D5B, 1, 0x76, 0}, {0x1D62, 1, 0x69, 0}, {0x1D63, 1, 0x72, 0}, {0x1D64, 2, 0x75, 1},
+    {0x1D9C, 1, 0x63, 0}, {0x1DA0, 1, 0x66, 0}, {0x1DBB, 1, 0x7A, 0}, {0x1E00, 2, 0x61, 0}, {0x1E02, 6, 0x62, 0},
+    {0x1E08, 2, 0x63, 0}, {0x1E0A, 10, 0x64, 0}, {0x1E14, 10, 0x65, 0}, {0x1E1E, 2, 0x66, 0}, {0x1E20, 2, 0x67, 0},
+    {0x1E22, 10, 0x68, 0}, {0x1E2C, 4, 0x69, 0}, {0x1E30, 6, 0x6B, 0}, {0x1E36, 8, 0x6C, 0}, {0x1E3E, 6, 0x6D, 0},
+    {0x1E44, 8, 0x6E, 0}, {0x1E4C, 8, 0x6F, 0}, {0x1E54, 4, 0x70, 0}, {0x1E58, 8, 0x72, 0}, {0x1E60, 10, 0x73, 0},
+    {0x1E6A, 8, 0x74, 0}, {0x1E72, 10, 0x75, 0}, {0x1E7C, 4, 0x76, 0}, {0x1E80, 10, 0x77, 0}, {0x1E8A, 4, 0x78, 0},
+    {0x1E8E, 2, 0x79, 0}, {0x1E90, 6, 0x7A, 0}, {0x1E96, 1, 0x68, 0}, {0x1E97, 1, 0x74, 0}, {0x1E98, 1, 0x77, 0},
+    {0x1E99, 1, 0x79, 0}, {0x1E9A, 1, 0x61, 0}, {0x1E9B, 1, 0x73, 0}, {0x1E9E, 1, 0x73, 0}, {0x1EA0, 24, 0x61, 0},
+    {0x1EB8, 16, 0x65, 0}, {0x1EC8, 4, 0x69, 0}, {0x1ECC, 24, 0x6F, 0}, {0x1EE4, 14, 0x75, 0}, {0x1EF2, 8, 0x79, 0},
+    {0x2071, 1, 0x69, 0}, {0x207F, 1, 0x6E, 0}, {0x2090, 1, 0x61, 0}, {0x2091, 1, 0x65, 0}, {0x2092, 1, 0x6F, 0},
+    {0x2093, 1, 0x78, 0}, {0x2095, 1, 0x68, 0}, {0x2096, 4, 0x6B, 1}, {0x209A, 1, 0x70, 0}, {0x209B, 2, 0x73, 1},
+    {0x2100, 2, 0x61, 0}, {0x2105, 2, 0x63, 0}, {0x210A, 1, 0x67, 0}, {0x210E, 1, 0x68, 0}, {0x2113, 1, 0x6C, 0},
+    {0x212A, 1, 0x6B, 0}, {0x212B, 1, 0x61, 0}, {0x212F, 1, 0x65, 0}, {0x2134, 1, 0x6F, 0}, {0x2139, 1, 0x69, 0},
+    {0x2146, 2, 0x64, 1}, {0x2148, 2, 0x69, 1}, {0x2160, 4, 0x69, 0}, {0x2164, 4, 0x76, 0}, {0x2168, 1, 0x69, 0},
+    {0x2169, 3, 0x78, 0}, {0x216C, 1, 0x6C, 0}, {0x216D, 2, 0x63, 1}, {0x216F, 1, 0x6D, 0}, {0x2170, 4, 0x69, 0},
+    {0x2174, 4, 0x76, 0}, {0x2178, 1, 0x69, 0}, {0x2179, 3, 0x78, 0}, {0x217C, 1, 0x6C, 0}, {0x217D, 2, 0x63, 1},
+    {0x217F, 1, 0x6D, 0}, {0x24B6, 26, 0x61, 1}, {0x24D0, 26, 0x61, 1}, {0x2C7C, 1, 0x6A, 0}, {0x32CD, 2, 0x65, 0},
+    {0x3371, 1, 0x68, 0}, {0x3372, 1, 0x64, 0}, {0x3374, 1, 0x62, 0}, {0x3375, 2, 0x6F, 1}, {0x3377, 3, 0x64, 0},
+    {0x3380, 1, 0x70, 0}, {0x3381, 1, 0x6E, 0}, {0x3383, 1, 0x6D, 0}, {0x3384, 1, 0x6B, 0}, {0x3388, 1, 0x63, 0},
+    {0x3389, 1, 0x6B, 0}, {0x338A, 1, 0x70, 0}, {0x338B, 1, 0x6E, 0}, {0x338E, 1, 0x6D, 0}, {0x338F, 1, 0x6B, 0},
+    {0x3391, 1, 0x6B, 0}, {0x3396, 1, 0x6D, 0}, {0x3397, 1, 0x64, 0}, {0x3398, 1, 0x6B, 0}, {0x3399, 1, 0x66, 0},
+    {0x339A, 1, 0x6E, 0}, {0x339C, 1, 0x6D, 0}, {0x339D, 1, 0x63, 0}, {0x339E, 1, 0x6B, 0}, {0x339F, 1, 0x6D, 0},
+    {0x33A0, 1, 0x63, 0}, {0x33A1, 1, 0x6D, 0}, {0x33A2, 1, 0x6B, 0}, {0x33A3, 1, 0x6D, 0}, {0x33A4, 1, 0x63, 0},
+    {0x33A5, 1, 0x6D, 0}, {0x33A6, 1, 0x6B, 0}, {0x33A7, 2, 0x6D, 0}, {0x33AA, 1, 0x6B, 0}, {0x33AD, 3, 0x72, 0},
+    {0x33B0, 1, 0x70, 0}, {0x33B1, 1, 0x6E, 0}, {0x33B3, 1, 0x6D, 0}, {0x33B4, 1, 0x70, 0}, {0x33B5, 1, 0x6E, 0},
+    {0x33B7, 1, 0x6D, 0}, {0x33B8, 1, 0x6B, 0}, {0x33BA, 1, 0x70, 0}, {0x33BB, 1, 0x6E, 0}, {0x33BD, 1, 0x6D, 0},
+    {0x33BE, 1, 0x6B, 0}, {0x33C0, 1, 0x6B, 0}, {0x33C2, 1, 0x61, 0}, {0x33C4, 2, 0x63, 0}, {0x33C8, 1, 0x64, 0},
+    {0x33CA, 1, 0x68, 0}, {0x33CC, 1, 0x69, 0}, {0x33CF, 2, 0x6B, 1}, {0x33D1, 3, 0x6C, 0}, {0x33D4, 3, 0x6D, 0},
+    {0x33D8, 1, 0x70, 0}, {0x33DB, 1, 0x73, 0}, {0x33FF, 1, 0x67, 0}, {0xFB00, 5, 0x66, 0}, {0xFB05, 2, 0x73, 0},
+    {0xFF21, 26, 0x61, 1}, {0xFF41, 26, 0x61, 1}, {0x107A5, 1, 0x71, 0}, {0x1D41A, 26, 0x61, 1}, {0x1D44E, 7, 0x61, 1},
+    {0x1D456, 18, 0x69, 1}, {0x1D482, 26, 0x61, 1}, {0x1D4B6, 4, 0x61, 1}, {0x1D4BB, 1, 0x66, 0}, {0x1D4BD, 7, 0x68, 1},
+    {0x1D4C5, 11, 0x70, 1}, {0x1D4EA, 26, 0x61, 1}, {0x1D51E, 26, 0x61, 1}, {0x1D552, 26, 0x61, 1}, {0x1D586, 26, 0x61, 1},
+    {0x1D5BA, 26, 0x61, 1}, {0x1D5EE, 26, 0x61, 1}, {0x1D622, 26, 0x61, 1}, {0x1D656, 26, 0x61, 1}, {0x1D68A, 26, 0x61, 1},
+};
+
+static const char *const VTTS_ID_ONSETS[23] = {
+    "bl", "br", "dr", "fl", "fr", "gl",
+    "gr", "kl", "kr", "kw", "pl", "pr",
+    "ps", "sk", "skr", "sl", "sp", "spr",
+    "sr", "st", "str", "sw", "tr",
+};
+
+static const char *const VTTS_ID_CODAS[15] = {
+    "K", "N", "b", "d", "f", "g",
+    "h", "k", "l", "m", "n", "p",
+    "r", "s", "t",
+};
+
+static const char *const VTTS_ID_FINALS[19] = {
+    "K", "N", "b", "d", "f", "g",
+    "h", "k", "ks", "l", "m", "n",
+    "ns", "p", "r", "rs", "s", "t",
+    "z",
+};
+
+static const char *const VTTS_ID_DOUBLES[5] = {
+    "aa", "ii", "kk", "nn", "uu",
+};
+
+static const char *const VTTS_ID_FOREIGN[11] = {
+    "th", "sh", "ph", "ch", "ck", "gh",
+    "ou", "oo", "q", "x", "wh",
+};
+
+static const char *const VTTS_ID_DIGRAPHS[][2] = {  /* replaced in this order */
+    {"ng", "N"},
+    {"ny", "J"},
+    {"sy", "S"},
+    {"kh", "K"},
+};
+
+/* pt: token set pt-en */
+static const char *const VTTS_PT_TOKENS[43] = {
+    "a", "e", "i", "o", "u", "a1",
+    "e1", "E1", "i1", "o1", "O1", "u1",
+    "an", "en", "in", "on", "un", "an1",
+    "en1", "in1", "on1", "un1", "j", "w",
+    "p", "b", "t", "d", "k", "g",
+    "f", "v", "s", "z", "sh", "zh",
+    "m", "n", "nh", "l", "lh", "r",
+    "rr",
+};
+
+static const char *const VTTS_PT_ABBREV[][2] = {
+    {"Profa.", "professora"},
+    {"Srta.", "senhorita"},
+    {"Prof.", "professor"},
+    {"Ltda.", "limitada"},
+    {"Sra.", "senhora"},
+    {"Dra.", "doutora"},
+    {"etc.", "etcétera"},
+    {"pág.", "página"},
+    {"tel.", "telefone"},
+    {"obs.", "observação"},
+    {"Sr.", "senhor"},
+    {"Dr.", "doutor"},
+    {"Av.", "avenida"},
+    {"n.º", "número"},
+    {"vcs", "vocês"},
+    {"tbm", "também"},
+    {"nº", "número"},
+    {"vc", "você"},
+    {"pq", "porque"},
+    {"tb", "também"},
+};
+
+static const vtts_lt_letter VTTS_PT_LETTERS[] = {
+    {0x0061, "á"},
+    {0x0062, "bê"},
+    {0x0063, "cê"},
+    {0x0064, "dê"},
+    {0x0065, "é"},
+    {0x0066, "éfe"},
+    {0x0067, "gê"},
+    {0x0068, "agá"},
+    {0x0069, "í"},
+    {0x006A, "jóta"},
+    {0x006B, "cá"},
+    {0x006C, "éle"},
+    {0x006D, "ême"},
+    {0x006E, "êne"},
+    {0x006F, "ó"},
+    {0x0070, "pê"},
+    {0x0071, "quê"},
+    {0x0072, "érre"},
+    {0x0073, "ésse"},
+    {0x0074, "tê"},
+    {0x0075, "ú"},
+    {0x0076, "vê"},
+    {0x0077, "dáblio"},
+    {0x0078, "xís"},
+    {0x0079, "ípsilon"},
+    {0x007A, "zê"},
+};
+
+static const char *const VTTS_PT_ACRONYM_WORDS[17] = {
+    "aids", "cep", "covid", "detran", "enem", "fies",
+    "fifa", "led", "nasa", "onu", "otan", "pin",
+    "ram", "rom", "sim", "sus", "unesco",
+};
+
+static const vtts_lt_reading VTTS_PT_UNITS[] = {
+    {"km/h", "quilômetro por hora", "quilômetros por hora"},
+    {"min", "minuto", "minutos"},
+    {"kWh", "quilowatt hora", "quilowatts hora"},
+    {"mAh", "miliampère hora", "miliampères hora"},
+    {"GHz", "gigahertz", "gigahertz"},
+    {"MHz", "megahertz", "megahertz"},
+    {"km", "quilômetro", "quilômetros"},
+    {"cm", "centímetro", "centímetros"},
+    {"mm", "milímetro", "milímetros"},
+    {"kg", "quilo", "quilos"},
+    {"mg", "miligrama", "miligramas"},
+    {"ml", "mililitro", "mililitros"},
+    {"GB", "gigabaite", "gigabaites"},
+    {"MB", "megabaite", "megabaites"},
+    {"TB", "terabaite", "terabaites"},
+    {"kW", "quilowatt", "quilowatts"},
+    {"°C", "grau", "graus"},
+    {"m", "metro", "metros"},
+    {"g", "grama", "gramas"},
+    {"l", "litro", "litros"},
+    {"L", "litro", "litros"},
+    {"s", "segundo", "segundos"},
+    {"W", "watt", "watts"},
+    {"V", "volt", "volts"},
+    {"℃", "grau", "graus"},
+    {"°", "grau", "graus"},
+};
+
+static const vtts_lt_reading VTTS_PT_CURRENCY[] = {
+    {"US$", "dólar", "dólares"},
+    {"R$", "real", "reais"},
+    {"$", "dólar", "dólares"},
+    {"€", "euro", "euros"},
+    {"£", "libra", "libras"},
+    {"¥", "iene", "ienes"},
+};
+
+static const vtts_lt_letter VTTS_PT_SYMBOLS[] = {
+    {0x0026, " e "},
+    {0x002B, " mais "},
+    {0x003D, " igual a "},
+    {0x0040, " arroba "},
+    {0x0023, " número "},
+    {0x00D7, " vezes "},
+    {0x002F, " "},
+    {0x0025, " por cento "},
+};
+
+static const char *const VTTS_PT_MONTHS[13] = {
+    "", "janeiro", "fevereiro", "março", "abril", "maio",
+    "junho", "julho", "agosto", "setembro", "outubro", "novembro",
+    "dezembro",
+};
+
+static const char *const VTTS_PT_NATIVE[22] = {
+    "as", "clube", "coca", "cola", "combo", "come",
+    "do", "fan", "fans", "internet", "menu", "ok",
+    "pizza", "pizzaria", "pizzas", "real", "sob", "time",
+    "times", "use", "visa", "yoga",
+};
+
+static const char *const VTTS_PT_TABLE_KEYS[44] = {
+    "av", "cm", "dr", "dra", "etc", "g",
+    "gb", "ghz", "kg", "km", "km/h", "kw",
+    "kwh", "l", "ltda", "m", "mah", "mb",
+    "mg", "mhz", "min", "ml", "mm", "n.º",
+    "nº", "obs", "pq", "prof", "profa", "pág",
+    "s", "sr", "sra", "srta", "tb", "tbm",
+    "tel", "v", "vc", "vcs", "w", "°",
+    "°c", "℃",
+};
+
+static const char *const VTTS_PT_OVERRIDES[][2] = {
+    {"ela", "éla"},
+    {"elas", "élas"},
+    {"esta", "ésta"},
+    {"essa", "éssa"},
+    {"pedra", "pédra"},
+    {"terra", "térra"},
+    {"guerra", "guérra"},
+    {"perna", "pérna"},
+    {"festa", "fésta"},
+    {"certo", "cérto"},
+    {"certa", "cérta"},
+    {"perto", "pérto"},
+    {"aberto", "abérto"},
+    {"aberta", "abérta"},
+    {"sete", "séte"},
+    {"dez", "déz"},
+    {"quero", "quéro"},
+    {"quer", "quér"},
+    {"pedro", "pédro"},
+    {"roberto", "robérto"},
+    {"rebeca", "rebéca"},
+    {"belo", "bélo"},
+    {"bela", "béla"},
+    {"alegre", "alégre"},
+    {"velho", "vélho"},
+    {"velha", "vélha"},
+    {"metro", "métro"},
+    {"neta", "néta"},
+    {"reto", "réto"},
+    {"porta", "pórta"},
+    {"portas", "pórtas"},
+    {"nova", "nóva"},
+    {"novas", "nóvas"},
+    {"novos", "nóvos"},
+    {"hora", "hóra"},
+    {"horas", "hóras"},
+    {"agora", "agóra"},
+    {"embora", "embóra"},
+    {"fora", "fóra"},
+    {"bola", "bóla"},
+    {"nove", "nóve"},
+    {"forte", "fórte"},
+    {"morte", "mórte"},
+    {"modo", "módo"},
+    {"moda", "móda"},
+    {"posso", "pósso"},
+    {"pode", "póde"},
+    {"podem", "pódem"},
+    {"obra", "óbra"},
+    {"nossa", "nóssa"},
+    {"olhos", "ólhos"},
+    {"jogos", "jógos"},
+    {"ovos", "óvos"},
+    {"corpos", "córpos"},
+    {"portos", "pórtos"},
+    {"fogos", "fógos"},
+    {"roda", "róda"},
+    {"loja", "lója"},
+    {"escola", "escóla"},
+    {"sopa", "sópa"},
+    {"copa", "cópa"},
+    {"rota", "róta"},
+    {"nota", "nóta"},
+    {"volta", "vólta"},
+    {"cola", "cóla"},
+    {"mora", "móra"},
+    {"cobra", "cóbra"},
+    {"táxi", "táksi"},
+    {"taxi", "táksi"},
+    {"tóxico", "tóksico"},
+    {"fixo", "fikso"},
+    {"fixa", "fiksa"},
+    {"sexo", "sékso"},
+    {"complexo", "complékso"},
+    {"reflexo", "reflékso"},
+    {"boxe", "bókse"},
+    {"máximo", "mássimo"},
+    {"máxima", "mássima"},
+    {"próximo", "próssimo"},
+    {"próxima", "próssima"},
+    {"auxílio", "aussílio"},
+    {"sintaxe", "sintásse"},
+    {"trouxe", "trousse"},
+    {"oxigênio", "oksigênio"},
+    {"cinquenta", "cinqüenta"},
+    {"frequente", "freqüente"},
+    {"frequentes", "freqüentes"},
+    {"frequência", "freqüência"},
+    {"tranquilo", "tranqüilo"},
+    {"tranquila", "tranqüila"},
+    {"sequência", "seqüência"},
+    {"consequência", "conseqüência"},
+    {"linguiça", "lingüiça"},
+    {"aguentar", "agüentar"},
+    {"bilíngue", "bilíngüe"},
+    {"pinguim", "pingüim"},
+    {"linguística", "lingüística"},
+    {"raiz", "raíz"},
+    {"juiz", "juíz"},
+};
+
+static const char *const VTTS_PT_UNSTRESSED[43] = {
+    "a", "ao", "aos", "as", "com", "como",
+    "da", "das", "de", "do", "dos", "e",
+    "em", "lhe", "lhes", "mas", "me", "na",
+    "nas", "nem", "no", "nos", "num", "numa",
+    "o", "onde", "os", "ou", "para", "pela",
+    "pelas", "pelo", "pelos", "por", "pra", "quando",
+    "que", "se", "sem", "te", "vos", "à",
+    "às",
+};
+
+static const vtts_lt_fold VTTS_PT_FOLD[276] = {
+    {0xAA, 1, 0x61, 0}, {0xBA, 1, 0x6F, 0}, {0xC0, 4, 0xE0, 1}, {0xC4, 2, 0x61, 0}, {0xC6, 1, 0x65, 0},
+    {0xC7, 1, 0xE7, 0}, {0xC8, 1, 0x65, 0}, {0xC9, 2, 0xE9, 1}, {0xCB, 1, 0x65, 0}, {0xCC, 1, 0x69, 0},
+    {0xCD, 1, 0xED, 0}, {0xCE, 2, 0x69, 0}, {0xD1, 2, 0x6E, 1}, {0xD3, 3, 0xF3, 1}, {0xD6, 1, 0x6F, 0},
+    {0xD8, 1, 0x6F, 0}, {0xD9, 1, 0x75, 0}, {0xDA, 1, 0xFA, 0}, {0xDB, 1, 0x75, 0}, {0xDC, 1, 0xFC, 0},
+    {0xDD, 1, 0x79, 0}, {0xDF, 1, 0x73, 0}, {0xE0, 4, 0xE0, 1}, {0xE4, 2, 0x61, 0}, {0xE6, 1, 0x65, 0},
+    {0xE7, 1, 0xE7, 0}, {0xE8, 1, 0x65, 0}, {0xE9, 2, 0xE9, 1}, {0xEB, 1, 0x65, 0}, {0xEC, 1, 0x69, 0},
+    {0xED, 1, 0xED, 0}, {0xEE, 2, 0x69, 0}, {0xF1, 2, 0x6E, 1}, {0xF3, 3, 0xF3, 1}, {0xF6, 1, 0x6F, 0},
+    {0xF8, 1, 0x6F, 0}, {0xF9, 1, 0x75, 0}, {0xFA, 1, 0xFA, 0}, {0xFB, 1, 0x75, 0}, {0xFC, 1, 0xFC, 0},
+    {0xFD, 1, 0x79, 0}, {0xFF, 1, 0x79, 0}, {0x100, 6, 0x61, 0}, {0x106, 8, 0x63, 0}, {0x10E, 2, 0x64, 0},
+    {0x112, 10, 0x65, 0}, {0x11C, 8, 0x67, 0}, {0x124, 2, 0x68, 0}, {0x128, 9, 0x69, 0}, {0x132, 2, 0x69, 0},
+    {0x134, 2, 0x6A, 0}, {0x136, 2, 0x6B, 0}, {0x139, 10, 0x6C, 0}, {0x143, 6, 0x6E, 0}, {0x14C, 6, 0x6F, 0},
+    {0x152, 2, 0x65, 0}, {0x154, 6, 0x72, 0}, {0x15A, 8, 0x73, 0}, {0x162, 4, 0x74, 0}, {0x168, 12, 0x75, 0},
+    {0x174, 2, 0x77, 0}, {0x176, 3, 0x79, 0}, {0x179, 6, 0x7A, 0}, {0x17F, 1, 0x73, 0}, {0x1A0, 2, 0x6F, 0},
+    {0x1AF, 2, 0x75, 0}, {0x1C4, 3, 0x64, 0}, {0x1C7, 3, 0x6C, 0}, {0x1CA, 3, 0x6E, 0}, {0x1CD, 2, 0x61, 0},
+    {0x1CF, 2, 0x69, 0}, {0x1D1, 2, 0x6F, 0}, {0x1D3, 10, 0x75, 0}, {0x1DE, 4, 0x61, 0}, {0x1E6, 2, 0x67, 0},
+    {0x1E8, 2, 0x6B, 0}, {0x1EA, 4, 0x6F, 0}, {0x1F0, 1, 0x6A, 0}, {0x1F1, 3, 0x64, 0}, {0x1F4, 2, 0x67, 0},
+    {0x1F8, 2, 0x6E, 0}, {0x1FA, 2, 0x61, 0}, {0x200, 4, 0x61, 0}, {0x204, 4, 0x65, 0}, {0x208, 4, 0x69, 0},
+    {0x20C, 4, 0x6F, 0}, {0x210, 4, 0x72, 0}, {0x214, 4, 0x75, 0}, {0x218, 2, 0x73, 0}, {0x21A, 2, 0x74, 0},
+    {0x21E, 2, 0x68, 0}, {0x226, 2, 0x61, 0}, {0x228, 2, 0x65, 0}, {0x22A, 8, 0x6F, 0}, {0x232, 2, 0x79, 0},
+    {0x2B0, 1, 0x68, 0}, {0x2B2, 1, 0x6A, 0}, {0x2B3, 1, 0x72, 0}, {0x2B7, 1, 0x77, 0}, {0x2B8, 1, 0x79, 0},
+    {0x2E1, 1, 0x6C, 0}, {0x2E2, 1, 0x73, 0}, {0x2E3, 1, 0x78, 0}, {0x1D43, 1, 0x61, 0}, {0x1D47, 1, 0x62, 0},
+    {0x1D48, 2, 0x64, 1}, {0x1D4D, 1, 0x67, 0}, {0x1D4F, 1, 0x6B, 0}, {0x1D50, 1, 0x6D, 0}, {0x1D52, 1, 0x6F, 0},
+    {0x1D56, 1, 0x70, 0}, {0x1D57, 2, 0x74, 1}, {0x1D5B, 1, 0x76, 0}, {0x1D62, 1, 0x69, 0}, {0x1D63, 1, 0x72, 0},
+    {0x1D64, 2, 0x75, 1}, {0x1D9C, 1, 0x63, 0}, {0x1DA0, 1, 0x66, 0}, {0x1DBB, 1, 0x7A, 0}, {0x1E00, 2, 0x61, 0},
+    {0x1E02, 6, 0x62, 0}, {0x1E08, 2, 0x63, 0}, {0x1E0A, 10, 0x64, 0}, {0x1E14, 10, 0x65, 0}, {0x1E1E, 2, 0x66, 0},
+    {0x1E20, 2, 0x67, 0}, {0x1E22, 10, 0x68, 0}, {0x1E2C, 4, 0x69, 0}, {0x1E30, 6, 0x6B, 0}, {0x1E36, 8, 0x6C, 0},
+    {0x1E3E, 6, 0x6D, 0}, {0x1E44, 8, 0x6E, 0}, {0x1E4C, 8, 0x6F, 0}, {0x1E54, 4, 0x70, 0}, {0x1E58, 8, 0x72, 0},
+    {0x1E60, 10, 0x73, 0}, {0x1E6A, 8, 0x74, 0}, {0x1E72, 10, 0x75, 0}, {0x1E7C, 4, 0x76, 0}, {0x1E80, 10, 0x77, 0},
+    {0x1E8A, 4, 0x78, 0}, {0x1E8E, 2, 0x79, 0}, {0x1E90, 6, 0x7A, 0}, {0x1E96, 1, 0x68, 0}, {0x1E97, 1, 0x74, 0},
+    {0x1E98, 1, 0x77, 0}, {0x1E99, 1, 0x79, 0}, {0x1E9A, 1, 0x61, 0}, {0x1E9B, 1, 0x73, 0}, {0x1E9E, 1, 0x73, 0},
+    {0x1EA0, 24, 0x61, 0}, {0x1EB8, 16, 0x65, 0}, {0x1EC8, 4, 0x69, 0}, {0x1ECC, 24, 0x6F, 0}, {0x1EE4, 14, 0x75, 0},
+    {0x1EF2, 8, 0x79, 0}, {0x2071, 1, 0x69, 0}, {0x207F, 1, 0x6E, 0}, {0x2090, 1, 0x61, 0}, {0x2091, 1, 0x65, 0},
+    {0x2092, 1, 0x6F, 0}, {0x2093, 1, 0x78, 0}, {0x2095, 1, 0x68, 0}, {0x2096, 4, 0x6B, 1}, {0x209A, 1, 0x70, 0},
+    {0x209B, 2, 0x73, 1}, {0x2100, 2, 0x61, 0}, {0x2105, 2, 0x63, 0}, {0x210A, 1, 0x67, 0}, {0x210E, 1, 0x68, 0},
+    {0x2113, 1, 0x6C, 0}, {0x212A, 1, 0x6B, 0}, {0x212B, 1, 0x61, 0}, {0x212F, 1, 0x65, 0}, {0x2134, 1, 0x6F, 0},
+    {0x2139, 1, 0x69, 0}, {0x2146, 2, 0x64, 1}, {0x2148, 2, 0x69, 1}, {0x2160, 4, 0x69, 0}, {0x2164, 4, 0x76, 0},
+    {0x2168, 1, 0x69, 0}, {0x2169, 3, 0x78, 0}, {0x216C, 1, 0x6C, 0}, {0x216D, 2, 0x63, 1}, {0x216F, 1, 0x6D, 0},
+    {0x2170, 4, 0x69, 0}, {0x2174, 4, 0x76, 0}, {0x2178, 1, 0x69, 0}, {0x2179, 3, 0x78, 0}, {0x217C, 1, 0x6C, 0},
+    {0x217D, 2, 0x63, 1}, {0x217F, 1, 0x6D, 0}, {0x24B6, 26, 0x61, 1}, {0x24D0, 26, 0x61, 1}, {0x2C7C, 1, 0x6A, 0},
+    {0x32CD, 2, 0x65, 0}, {0x3371, 1, 0x68, 0}, {0x3372, 1, 0x64, 0}, {0x3374, 1, 0x62, 0}, {0x3375, 2, 0x6F, 1},
+    {0x3377, 3, 0x64, 0}, {0x3380, 1, 0x70, 0}, {0x3381, 1, 0x6E, 0}, {0x3383, 1, 0x6D, 0}, {0x3384, 1, 0x6B, 0},
+    {0x3388, 1, 0x63, 0}, {0x3389, 1, 0x6B, 0}, {0x338A, 1, 0x70, 0}, {0x338B, 1, 0x6E, 0}, {0x338E, 1, 0x6D, 0},
+    {0x338F, 1, 0x6B, 0}, {0x3391, 1, 0x6B, 0}, {0x3396, 1, 0x6D, 0}, {0x3397, 1, 0x64, 0}, {0x3398, 1, 0x6B, 0},
+    {0x3399, 1, 0x66, 0}, {0x339A, 1, 0x6E, 0}, {0x339C, 1, 0x6D, 0}, {0x339D, 1, 0x63, 0}, {0x339E, 1, 0x6B, 0},
+    {0x339F, 1, 0x6D, 0}, {0x33A0, 1, 0x63, 0}, {0x33A1, 1, 0x6D, 0}, {0x33A2, 1, 0x6B, 0}, {0x33A3, 1, 0x6D, 0},
+    {0x33A4, 1, 0x63, 0}, {0x33A5, 1, 0x6D, 0}, {0x33A6, 1, 0x6B, 0}, {0x33A7, 2, 0x6D, 0}, {0x33AA, 1, 0x6B, 0},
+    {0x33AD, 3, 0x72, 0}, {0x33B0, 1, 0x70, 0}, {0x33B1, 1, 0x6E, 0}, {0x33B3, 1, 0x6D, 0}, {0x33B4, 1, 0x70, 0},
+    {0x33B5, 1, 0x6E, 0}, {0x33B7, 1, 0x6D, 0}, {0x33B8, 1, 0x6B, 0}, {0x33BA, 1, 0x70, 0}, {0x33BB, 1, 0x6E, 0},
+    {0x33BD, 1, 0x6D, 0}, {0x33BE, 1, 0x6B, 0}, {0x33C0, 1, 0x6B, 0}, {0x33C2, 1, 0x61, 0}, {0x33C4, 2, 0x63, 0},
+    {0x33C8, 1, 0x64, 0}, {0x33CA, 1, 0x68, 0}, {0x33CC, 1, 0x69, 0}, {0x33CF, 2, 0x6B, 1}, {0x33D1, 3, 0x6C, 0},
+    {0x33D4, 3, 0x6D, 0}, {0x33D8, 1, 0x70, 0}, {0x33DB, 1, 0x73, 0}, {0x33FF, 1, 0x67, 0}, {0xFB00, 5, 0x66, 0},
+    {0xFB05, 2, 0x73, 0}, {0xFF21, 26, 0x61, 1}, {0xFF41, 26, 0x61, 1}, {0x107A5, 1, 0x71, 0}, {0x1D41A, 26, 0x61, 1},
+    {0x1D44E, 7, 0x61, 1}, {0x1D456, 18, 0x69, 1}, {0x1D482, 26, 0x61, 1}, {0x1D4B6, 4, 0x61, 1}, {0x1D4BB, 1, 0x66, 0},
+    {0x1D4BD, 7, 0x68, 1}, {0x1D4C5, 11, 0x70, 1}, {0x1D4EA, 26, 0x61, 1}, {0x1D51E, 26, 0x61, 1}, {0x1D552, 26, 0x61, 1},
+    {0x1D586, 26, 0x61, 1}, {0x1D5BA, 26, 0x61, 1}, {0x1D5EE, 26, 0x61, 1}, {0x1D622, 26, 0x61, 1}, {0x1D656, 26, 0x61, 1},
+    {0x1D68A, 26, 0x61, 1},
+};
+
+static const char *const VTTS_PT_ONSETS[18] = {
+    "bl", "br", "cl", "cr", "dr", "fl",
+    "fr", "gl", "gn", "gr", "mn", "pl",
+    "pn", "pr", "ps", "tl", "tr", "vr",
+};
+
+static const char *const VTTS_PT_CODAS[16] = {
+    "b", "bs", "c", "d", "f", "g",
+    "l", "m", "n", "ns", "p", "r",
+    "rs", "s", "t", "x",
+};
+
+static const char *const VTTS_PT_FINALS[8] = {
+    "l", "m", "n", "ns", "r", "s",
+    "x", "z",
+};
+
+static const char *const VTTS_PT_DOUBLES[5] = {
+    "aa", "ee", "oo", "rr", "ss",
+};
+
+static const char *const VTTS_PT_FOREIGN[9] = {
+    "sh", "th", "ph", "ck", "gh", "wh",
+    "w", "k", "y",
+};
+
+static const char *const VTTS_PT_DIGRAPHS[][2] = {  /* replaced in this order */
+    {"ch", "C"},
+    {"lh", "L"},
+    {"nh", "N"},
+    {"rr", "R"},
+    {"ss", "S"},
+    {"qu", "K"},
+    {"gue", "Ge"},
+    {"gui", "Gi"},
+};
+
+/* es: number words (normalize_es) and the letters of g2p_es */
+static const char *const VTTS_ES_ONES[30] = {
+    "cero", "uno", "dos", "tres", "cuatro", "cinco",
+    "seis", "siete", "ocho", "nueve", "diez", "once",
+    "doce", "trece", "catorce", "quince", "dieciséis", "diecisiete",
+    "dieciocho", "diecinueve", "veinte", "veintiuno", "veintidós", "veintitrés",
+    "veinticuatro", "veinticinco", "veintiséis", "veintisiete", "veintiocho", "veintinueve",
+};
+
+static const char *const VTTS_ES_TENS[10] = {
+    "", "", "", "treinta", "cuarenta", "cincuenta",
+    "sesenta", "setenta", "ochenta", "noventa",
+};
+
+static const char *const VTTS_ES_HUNDREDS[10] = {
+    "", "ciento", "doscientos", "trescientos", "cuatrocientos", "quinientos",
+    "seiscientos", "setecientos", "ochocientos", "novecientos",
+};
+
+static const char *const VTTS_ES_SCALES[3][2] = {  /* 10^18, 10^12, 10^6 */
+    {"trillón", "trillones"},
+    {"billón", "billones"},
+    {"millón", "millones"},
+};
+
+static const char *const VTTS_ES_ORD_ONES[10] = {
+    "", "primero", "segundo", "tercero", "cuarto", "quinto",
+    "sexto", "séptimo", "octavo", "noveno",
+};
+
+static const char *const VTTS_ES_ORD_TENS[10] = {
+    "", "décimo", "vigésimo", "trigésimo", "cuadragésimo", "quincuagésimo",
+    "sexagésimo", "septuagésimo", "octogésimo", "nonagésimo",
+};
+
+static const char *const VTTS_ES_ORD_HUNDREDS[10] = {
+    "", "centésimo", "ducentésimo", "tricentésimo", "cuadringentésimo", "quingentésimo",
+    "sexcentésimo", "septingentésimo", "octingentésimo", "noningentésimo",
+};
+
+#define VTTS_ES_VOWELS "aeiouáéíóúü"
+#define VTTS_ES_FRONT "eiéí"
+#define VTTS_ES_ACCENTED "áéíóú"
+#define VTTS_ES_ACCENTED_BASE "aeiou"
+
+/* id: number words (normalize_id) and the affixes and letters of g2p_id */
+static const char *const VTTS_ID_ONES[10] = {
+    "nol", "satu", "dua", "tiga", "empat", "lima",
+    "enam", "tujuh", "delapan", "sembilan",
+};
+
+static const char *const VTTS_ID_SCALES[3] = {
+    "triliun", "miliar", "juta",
+};
+
+static const char *const VTTS_ID_PREFIXES[8] = {
+    "ber", "ter", "per", "di", "ke", "se",
+    "pe", "me",
+};
+
+static const char *const VTTS_ID_SUFFIXES[9] = {
+    "nya", "lah", "kah", "pun", "kan", "ku",
+    "mu", "an", "i",
+};
+
+#define VTTS_ID_VOWELS "aiueoé"
+
+/* pt: number words (normalize_pt) and the letters of g2p_pt */
+static const char *const VTTS_PT_ONES[20] = {
+    "zero", "um", "dois", "três", "quatro", "cinco",
+    "seis", "sete", "oito", "nove", "dez", "onze",
+    "doze", "treze", "quatorze", "quinze", "dezesseis", "dezessete",
+    "dezoito", "dezenove",
+};
+
+static const char *const VTTS_PT_TENS[10] = {
+    "", "", "vinte", "trinta", "quarenta", "cinquenta",
+    "sessenta", "setenta", "oitenta", "noventa",
+};
+
+static const char *const VTTS_PT_HUNDREDS[10] = {
+    "", "cento", "duzentos", "trezentos", "quatrocentos", "quinhentos",
+    "seiscentos", "setecentos", "oitocentos", "novecentos",
+};
+
+static const char *const VTTS_PT_SCALES[4][2] = {  /* 10^12, 10^9, 10^6, 10^3 */
+    {"trilhão", "trilhões"},
+    {"bilhão", "bilhões"},
+    {"milhão", "milhões"},
+    {"mil", "mil"},
+};
+
+static const char *const VTTS_PT_ORD_ONES[10] = {
+    "", "primeiro", "segundo", "terceiro", "quarto", "quinto",
+    "sexto", "sétimo", "oitavo", "nono",
+};
+
+static const char *const VTTS_PT_ORD_TENS[10] = {
+    "", "décimo", "vigésimo", "trigésimo", "quadragésimo", "quinquagésimo",
+    "sexagésimo", "septuagésimo", "octogésimo", "nonagésimo",
+};
+
+static const char *const VTTS_PT_ORD_HUNDREDS[10] = {
+    "", "centésimo", "ducentésimo", "trecentésimo", "quadringentésimo", "quingentésimo",
+    "sexcentésimo", "septingentésimo", "octingentésimo", "noningentésimo",
+};
+
+#define VTTS_PT_VOWEL_LETTERS "aeiouáéíóúâêôãõàü"
+#define VTTS_PT_FRONT "eiéíê"
+/* BASE: letter, base vowel, accent (1 acute, 2 circumflex, 3 tilde, 0 none) */
+static const struct { uint32_t cp; char base; uint8_t accent; } VTTS_PT_BASE[] = {
+    {0x00E1, 'a', 1},
+    {0x00E9, 'e', 1},
+    {0x00ED, 'i', 1},
+    {0x00F3, 'o', 1},
+    {0x00FA, 'u', 1},
+    {0x00E2, 'a', 2},
+    {0x00EA, 'e', 2},
+    {0x00F4, 'o', 2},
+    {0x00E3, 'a', 3},
+    {0x00F5, 'o', 3},
+    {0x00E0, 'a', 0},
+    {0x00FC, 'u', 0},
+};
+#define VTTS_PT_N_BASE 12
+
+static const vtts_lt_lang VTTS_LT_LANGS[3] = {  /* es, id, pt */
+    {"es", 107, 31, 138, VTTS_ES_TOKENS, VTTS_ES_ABBREV, 23,
+     "“”‘’\"«»()[]{}<>¿¡*_~|", VTTS_ES_LETTERS, 27, VTTS_ES_ACRONYM_WORDS, 20,
+     VTTS_ES_UNITS, 27, VTTS_ES_CURRENCY, 5, VTTS_ES_SYMBOLS, 8,
+     "coma", "punto", VTTS_ES_MONTHS,
+     VTTS_ES_NATIVE, 41, VTTS_ES_TABLE_KEYS, 49, VTTS_ES_OVERRIDES, 16,
+     VTTS_ES_UNSTRESSED, 58, "áéíóúüñÁÉÍÓÚÜÑ", "áéíñóúü",
+     VTTS_ES_FOLD, 282, VTTS_ES_ONSETS, 16, VTTS_ES_CODAS, 20,
+     VTTS_ES_FINALS, 9, VTTS_ES_DOUBLES, 7, VTTS_ES_FOREIGN, 9,
+     VTTS_ES_DIGRAPHS, 4},
+    {"id", 107, 34, 141, VTTS_ID_TOKENS, VTTS_ID_ABBREV, 21,
+     "“”‘’\"«»()[]{}<>¿¡*_~|", VTTS_ID_LETTERS, 26, VTTS_ID_ACRONYM_WORDS, 12,
+     VTTS_ID_UNITS, 26, VTTS_ID_CURRENCY, 7, VTTS_ID_SYMBOLS, 8,
+     "koma", "titik", VTTS_ID_MONTHS,
+     VTTS_ID_NATIVE, 22, VTTS_ID_TABLE_KEYS, 45, VTTS_ID_OVERRIDES, 94,
+     VTTS_ID_UNSTRESSED, 15, "", "é",
+     VTTS_ID_FOLD, 260, VTTS_ID_ONSETS, 23, VTTS_ID_CODAS, 15,
+     VTTS_ID_FINALS, 19, VTTS_ID_DOUBLES, 5, VTTS_ID_FOREIGN, 11,
+     VTTS_ID_DIGRAPHS, 4},
+    {"pt", 107, 43, 150, VTTS_PT_TOKENS, VTTS_PT_ABBREV, 20,
+     "“”‘’\"«»[]{}<>¿¡*_~|", VTTS_PT_LETTERS, 26, VTTS_PT_ACRONYM_WORDS, 17,
+     VTTS_PT_UNITS, 26, VTTS_PT_CURRENCY, 6, VTTS_PT_SYMBOLS, 8,
+     "vírgula", "ponto", VTTS_PT_MONTHS,
+     VTTS_PT_NATIVE, 22, VTTS_PT_TABLE_KEYS, 44, VTTS_PT_OVERRIDES, 99,
+     VTTS_PT_UNSTRESSED, 43, "áâãàçéêíóôõúüÁÂÃÀÇÉÊÍÓÔÕÚÜ", "àáâãçéêíóôõúü",
+     VTTS_PT_FOLD, 276, VTTS_PT_ONSETS, 18, VTTS_PT_CODAS, 16,
+     VTTS_PT_FINALS, 8, VTTS_PT_DOUBLES, 5, VTTS_PT_FOREIGN, 9,
+     VTTS_PT_DIGRAPHS, 8},
+};
+
 #endif

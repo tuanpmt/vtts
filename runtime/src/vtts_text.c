@@ -68,9 +68,9 @@ static int is_letter_cp(uint32_t cp) {
 }
 
 static int is_digit_cp(uint32_t cp) { return cp >= '0' && cp <= '9'; }
-static int is_space_cp(uint32_t cp) {
-    return cp == ' ' || (cp >= 0x09 && cp <= 0x0D) || cp == 0xA0 || cp == 0x1680 ||
-           (cp >= 0x2000 && cp <= 0x200A) || cp == 0x2028 || cp == 0x2029 || cp == 0x202F ||
+static int is_space_cp(uint32_t cp) { /* str.isspace() */
+    return cp == ' ' || (cp >= 0x09 && cp <= 0x0D) || (cp >= 0x1C && cp <= 0x1F) || cp == 0x85 || cp == 0xA0 ||
+           cp == 0x1680 || (cp >= 0x2000 && cp <= 0x200A) || cp == 0x2028 || cp == 0x2029 || cp == 0x202F ||
            cp == 0x205F || cp == 0x3000;
 }
 static int is_word_cp(uint32_t cp) { return is_letter_cp(cp) || is_digit_cp(cp) || cp == '_'; }
@@ -852,6 +852,7 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 #include "vtts_text_ko.h"
 #include "vtts_text_hi.h"
 #include "vtts_text_ja.h"
+#include "vtts_text_lt.h"
 
 #define V2_MAX_WORDS 40
 #define V2_MAX_TOKENS 318
@@ -899,7 +900,8 @@ static int ascii_syllable(const uint32_t *w, int n) { /* parse_syllable(p.lower(
     return parse_syl(&L, &s);
 }
 
-enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1, TAG_ZH = 2, TAG_KO = 3, TAG_HI = 4, TAG_JA = 5 }; /* indices into LANGS */
+enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1, TAG_ZH = 2, TAG_KO = 3, TAG_HI = 4, TAG_JA = 5, TAG_ES = 6,
+       TAG_ID = 7, TAG_PT = 8 }; /* indices into LANGS; TAG_ES + VTTS_LT_* */
 
 static int key_eq(const uint32_t *w, int n, const char *k, int lower) {
     int i = 0;
@@ -965,10 +967,10 @@ static int last_is_word(const vtts_text_ws *ws) { return ws->n_items && !ws->ite
 
 /* ---- language modules (mirror src/vtts/frontend/languages.py) ----
  * normalize: the words of one same-language run into ws->words (punctuation marks included);
- * word_ids: token ids of one normalized word, 0 if it cannot be pronounced;
- * add_word (optional, for a language written without spaces): adds the items of one normalized
- * word itself, like word_units in Python (the first syllable is a word, the next ones are joined
- * to it without SPACE).
+ * word_ids: token ids of one normalized word, 0 if it cannot be pronounced (NULL with add_word);
+ * add_word (optional, for a language written without spaces or with long items): adds the items of
+ * one normalized word itself, like word_units in Python (the first syllable is a word, the next
+ * ones are joined to it without SPACE).
  * Adding a language: one entry here, its tag rule in word_tag(), its tables and tests. */
 typedef struct {
     const char *code;
@@ -1177,6 +1179,34 @@ static void ja_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o
     if (k > 0) add_item(ws, ids, k, 0, 0);
 }
 
+/* Latin-script pairs (es, id, pt): normalize_es|id|pt and one item per word (vtts_text_lt.c). ws->run
+ * and en_a are free when words are added (the run's words were copied to ws->words). */
+static void lt_normalize(ctx_t *c, uint32_t *run, int n, int lang) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    int m = vtts_lt_normalize(lang, run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static void lt_add_word(vtts_text_ws *ws, const char *w, int lang) {
+    uint8_t ids[V2_MAX_TOKENS];
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_lt_word_ids(lang, ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+
+static void es_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_ES); }
+static void id_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_ID); }
+static void pt_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_PT); }
+static void es_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_ES); }
+static void id_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_ID); }
+static void pt_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_PT); }
+
 static const lang_mod_t LANGS[] = {
     {"vi", vi_normalize, vi_word_ids, NULL},
     {"en", en_normalize, en_word_ids, NULL},
@@ -1184,6 +1214,9 @@ static const lang_mod_t LANGS[] = {
     {"ko", ko_normalize, ko_word_ids, ko_add_word},
     {"hi", hi_normalize, hi_word_ids, hi_add_word},
     {"ja", ja_normalize, ja_word_ids, ja_add_word},
+    {"es", es_normalize, NULL, es_add_word},
+    {"id", id_normalize, NULL, id_add_word},
+    {"pt", pt_normalize, NULL, pt_add_word},
 };
 
 static void add_word_or_mark(vtts_text_ws *ws, const char *w, const lang_mod_t *m, const vtts_text_opts *o) {
@@ -1282,19 +1315,24 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     const uint32_t *cp = ws->cp;
     const int mode = o->lang, zh = mode == VTTS_LANG_ZH, ko = mode == VTTS_LANG_KO, hi = mode == VTTS_LANG_HI,
               ja = mode == VTTS_LANG_JA;
+    const int lt = mode == VTTS_LANG_ES ? VTTS_LT_ES : mode == VTTS_LANG_ID ? VTTS_LT_ID
+                 : mode == VTTS_LANG_PT ? VTTS_LT_PT : -1;
     enum { MAXCH = 1024 };
     static int cs[MAXCH], ce[MAXCH], tag[MAXCH];
     int nc = 0;
-    for (int i = s; i < e && nc < MAXCH;) { /* sentence.split(); zh, ja: split_scripts(sentence).split() */
-        while (i < e && is_space_cp(cp[i])) i++;
+    /* sentence.split(); zh, ja: split_scripts(sentence).split(); es, id, pt: ¿ and ¡ are spaces */
+#define SEP(c) (is_space_cp(c) || (lt >= 0 && ((c) == 0xBF || (c) == 0xA1)))
+    for (int i = s; i < e && nc < MAXCH;) {
+        while (i < e && SEP(cp[i])) i++;
         if (i >= e) break;
         int j = i;
-        while (j < e && !is_space_cp(cp[j]) && (!zh || script_class(cp[j]) == script_class(cp[i])) &&
+        while (j < e && !SEP(cp[j]) && (!zh || script_class(cp[j]) == script_class(cp[i])) &&
                (!ja || vtts_ja_script_class(cp[j]) == vtts_ja_script_class(cp[i])))
             j++;
         cs[nc] = i; ce[nc] = j; nc++;
         i = j;
     }
+#undef SEP
     if (!nc) return;
     int sent_en = mode == VTTS_LANG_EN;
     if (mode == VTTS_LANG_AUTO) { /* share of words with Vietnamese letters >= 0.2 -> vi */
@@ -1333,6 +1371,10 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
             tag[k] = has ? TAG_JA : plain_latin(cp + a, b - a) ? TAG_EN : TAG_JA;
             continue;
         }
+        if (lt >= 0) { /* es, id, pt: own letters, word lists, CamelCase, acronyms, spelling (latin.py) */
+            tag[k] = vtts_lt_word_lang(lt, cp + a, b - a) == 0 ? TAG_EN : TAG_ES + lt;
+            continue;
+        }
         int t = word_tag(cp + a, b - a, sent_en);
         tag[k] = t == TAG_NEUTRAL ? (sent_en ? TAG_EN : TAG_VI) : t;
     }
@@ -1356,8 +1398,8 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     pack_items(c);
 }
 
-/* lang.py SENTENCE_END: split at whitespace after . ! ? ; and, in zh, ko, hi and ja mode, right after
- * 。！？；।॥ (the vi-en modes keep their earlier behaviour) */
+/* lang.py SENTENCE_END: split at whitespace after . ! ? ; and, in the zh, ko, hi, ja, es, id and pt
+ * modes, right after 。！？；।॥ (the vi-en modes keep their earlier behaviour) */
 static int cjk_end(uint32_t c) {
     return c == 0x3002 || c == 0xFF01 || c == 0xFF1F || c == 0xFF1B || c == 0x0964 || c == 0x0965;
 }
@@ -1367,7 +1409,8 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
     if (!utf8 || !ws) return -1;
     ctx_t ctx = {ws, cb, user, 0, 0, 0}, *c = &ctx;
     const int cjk = o->lang == VTTS_LANG_ZH || o->lang == VTTS_LANG_KO || o->lang == VTTS_LANG_HI ||
-                    o->lang == VTTS_LANG_JA;
+                    o->lang == VTTS_LANG_JA || o->lang == VTTS_LANG_ES || o->lang == VTTS_LANG_ID ||
+                    o->lang == VTTS_LANG_PT;
     int n = ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
     int a = 0, z = n;
     while (a < z && is_space_cp(ws->cp[a])) a++; /* text.strip() */
@@ -1394,6 +1437,8 @@ static const struct { int token_set; const char *name; vtts_lang lang; } MODES[]
     {VTTS_TOKSET_ZH_EN, "zh", VTTS_LANG_ZH},    {VTTS_TOKSET_KO_EN, "ko", VTTS_LANG_KO},
     {VTTS_TOKSET_HI_EN, "hi", VTTS_LANG_HI},
     {VTTS_TOKSET_JA_EN, "ja", VTTS_LANG_JA},
+    {VTTS_TOKSET_ES_EN, "es", VTTS_LANG_ES},    {VTTS_TOKSET_ID_EN, "id", VTTS_LANG_ID},
+    {VTTS_TOKSET_PT_EN, "pt", VTTS_LANG_PT},
 };
 #define N_MODES ((int)(sizeof(MODES) / sizeof(MODES[0])))
 
@@ -1424,6 +1469,9 @@ const char *vtts_text_modes(int token_set) {
     case VTTS_TOKSET_KO_EN: return "ko";
     case VTTS_TOKSET_HI_EN: return "hi";
     case VTTS_TOKSET_JA_EN: return "ja";
+    case VTTS_TOKSET_ES_EN: return "es";
+    case VTTS_TOKSET_ID_EN: return "id";
+    case VTTS_TOKSET_PT_EN: return "pt";
     default: return "";
     }
 }
@@ -1436,6 +1484,9 @@ const char *vtts_text_lang_name(vtts_lang lang) {
     case VTTS_LANG_KO: return "ko";
     case VTTS_LANG_HI: return "hi";
     case VTTS_LANG_JA: return "ja";
+    case VTTS_LANG_ES: return "es";
+    case VTTS_LANG_ID: return "id";
+    case VTTS_LANG_PT: return "pt";
     default: return "vi";
     }
 }

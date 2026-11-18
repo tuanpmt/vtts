@@ -1,9 +1,10 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* text_test.c -- device front-end must produce exactly the Python ids.
  * usage: text_test text_parity.tsv                          (text \t ids;ids...; phoneme set v1)
- *        text_test --lex LEX [--zh ZLEX] text_parity_v2.tsv (mode \t text \t ids...; mode vi|en|auto|zh|ko|hi|ja)
- *        text_test --fuzz [--lex LEX] [--zh ZLEX] [--ja JLEX] (v1; v2, ko and hi modes with --lex; zh mode with --zh;
- *                                                       ja mode with --ja)
+ *        text_test --lex LEX [--zh ZLEX] text_parity_v2.tsv (mode \t text \t ids...; mode vi|en|auto|zh|ko|hi|ja|es|id|pt)
+ *        text_test --fuzz [--lex LEX] [--zh ZLEX] [--ja JLEX] (v1; v2, ko, hi, es, id and pt modes with --lex; zh mode
+ *                                                       with --zh; ja mode with --ja)
+ *        text_test --fuzz-lt [--lex LEX]                    (es, id and pt modes)
  *        text_test --ja JLEX --nfkc ja_nfkc.tsv             (NFKC of the JLEX data against unicodedata)
  *        text_test --ja JLEX --bench [words.tsv]           (reading lookups and ja-mode throughput) */
 #include <stdio.h>
@@ -411,6 +412,10 @@ static int fuzz(void) {
             if (rc < 0) { printf("fuzz hi: error %d\n", rc); return 1; }
             rc = run(buf, VTTS_LANG_JA, &ws, NULL, NULL);
             if (rc < 0) { printf("fuzz ja: error %d\n", rc); return 1; }
+            for (int m = VTTS_LANG_ES; m <= VTTS_LANG_PT; m++) {
+                rc = run(buf, m, &ws, NULL, NULL);
+                if (rc < 0) { printf("fuzz lt: error %d\n", rc); return 1; }
+            }
         }
     }
     if (vtts_text_to_ids("", &ws, NULL, NULL) != 0 || vtts_text_to_ids("...", &ws, NULL, NULL) != 0) {
@@ -426,6 +431,74 @@ static int fuzz(void) {
     return 0;
 }
 
+/* Spanish, Indonesian, Portuguese: words with the languages' letters, numbers, dates, times, money,
+ * units, ordinals, phone numbers, codes, acronyms, abbreviations, English words, punctuation of every
+ * normalizer pass and random bytes; chunks must stay inside the mode's token set (no Vietnamese ids) */
+static int s_lt_vocab;
+
+static int check_lt(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= s_lt_vocab || (ids[i] >= 10 && ids[i] <= 64)) *bad = 1;
+    return 0;
+}
+
+static int fuzz_lt(void) {
+    static vtts_text_ws ws;
+    static char buf[20000];
+    static const char *const parts[] = {
+        "canción", "año", "pingüino", "México", "queso", "guerra", "chico", "llave", "xilófono", "ciudad", "muy",
+        "hielo", "enak", "kereta", "besar", "anak2", "pantai", "ma'af", "tinggal", "menyanyi", "mejanya", "canção",
+        "mão", "pães", "bem", "falam", "ainda", "rainha", "táxi", "exemplo", "quer", "janela", "famosa", "ÑANDÚ",
+        "Ação", "İstanbul", "straße", "Œuvre", "ﬁn", "ｈｏｌａ", "𝐡𝐨𝐥𝐚", "ǅ", "Ⅻ", "²", "½", "º", "ª", "٣", "١٢",
+        "Netflix", "iPhone", "GitHub", "Wi-Fi", "smart", "weekend", "update", "USB", "GPS", "ONU", "KTP", "ESP32",
+        "ESP32-P4", "RTX3060", "A1", "Sr.", "Sra.", "EE. UU.", "EE.UU.", "etc.", "n.º", "nº", "dll.", "Jl.",
+        "No.", "yg", "a.n.", "s.d.", "PT.", "vc", "pq", "Ltda.", "Dr.", "Prof.", "D.", "Rp", "Rp.", "R$", "US$",
+        "$", "€", "£", "¥", "%", "°C", "℃", "°", "km", "km/h", "km/jam", "kWh", "mAh", "GB", "ml", "L", "h", "hs",
+        "hrs", "min", "s", "m", "g", "ha", "ribu", "juta", "miliar", "mil", "milhões", "milhão", "º", "ª", "er",
+        "ke-", "Ke", "pukul ", "PUKUL ", "jam ", "Jam ", "pu\xe2\x84\xaaul ", "0", "1", "2", "3", "5", "7", "9",
+        "00", "12", "21", "100", "1001", "2026", "1.000", "1,5", "3,14", "1.234,56", "1,234.56", "1.234.567", "0,05",
+        "-5", "+34", "(11)", " 91234-5678", "600 123 456", "0812", "14:30", "7:00 h", "14h30", "14h", "8.15",
+        "5/3/2026", "05/03/26", "2026-03-05", "2026-13-45", "10-20", "10 – 20", "1.º", "2.ª", "3.er", "1º", "ke-3",
+        "ke3", "…", "...", "—", "–", " - ", "¿", "¡", "?", "!", ",", ".", ";", ":", "'", "\"", "“", "”", "«", "»",
+        "(", ")", "[", "]", "<", ">", "*", "_", "~", "|", "&", "+", "=", "@", "#", "×", "/", "-", " ", " ", "  ",
+        "\t", "\n", "\xc2\x85", "\x1c", "।", "。", "\xe1\xba", "\xff", "\x80", "é", "ạ", "中", "한"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    static const int vocab[3] = {138, 141, 150};
+    unsigned seed = 4244;
+    int bad = 0;
+    long chunks = 0;
+    for (int it = 0; it < 9000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        int no_space = it % 7 == 0; /* long words */
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; } /* random byte */
+            const char *p = parts[r % (unsigned)np];
+            if (no_space && (p[0] == ' ' || p[0] == '\t')) continue;
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int m = it % 3;
+        s_lt_vocab = vocab[m];
+        int rc = run(buf, VTTS_LANG_ES + m, &ws, check_lt, &bad);
+        if (rc < 0 || bad) { printf("fuzz lt: mode %d rc %d, bad chunk %d (iteration %d)\n", m, rc, bad, it); return 1; }
+        chunks += rc;
+    }
+    for (int m = VTTS_LANG_ES; m <= VTTS_LANG_PT; m++)
+        if (run("", m, &ws, NULL, NULL) != 0 || run("¿¡...,", m, &ws, NULL, NULL) != 0) {
+            puts("fuzz lt: empty input must give 0 chunks");
+            return 1;
+        }
+    printf("fuzz lt: ok (es, id, pt; %ld chunks)\n", chunks);
+    return 0;
+}
+
 static int mode_of(const char *m) {
     if (strcmp(m, "en") == 0) return VTTS_LANG_EN;
     if (strcmp(m, "auto") == 0) return VTTS_LANG_AUTO;
@@ -433,14 +506,18 @@ static int mode_of(const char *m) {
     if (strcmp(m, "ko") == 0) return VTTS_LANG_KO;
     if (strcmp(m, "hi") == 0) return VTTS_LANG_HI;
     if (strcmp(m, "ja") == 0) return VTTS_LANG_JA;
+    if (strcmp(m, "es") == 0) return VTTS_LANG_ES;
+    if (strcmp(m, "id") == 0) return VTTS_LANG_ID;
+    if (strcmp(m, "pt") == 0) return VTTS_LANG_PT;
     return VTTS_LANG_VI;
 }
 
 int main(int argc, char **argv) {
     const char *file = NULL, *nfkc = NULL;
-    int do_fuzz = 0, do_bench = 0;
+    int do_fuzz = 0, do_bench = 0, do_fuzz_lt = 0;
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--fuzz") == 0) do_fuzz = 1;
+        else if (strcmp(argv[i], "--fuzz-lt") == 0) do_fuzz_lt = 1;
         else if (strcmp(argv[i], "--lex") == 0 && i + 1 < argc) {
             if (load_lex(argv[++i])) { puts("bad lexicon"); return 2; }
         } else if (strcmp(argv[i], "--zh") == 0 && i + 1 < argc) {
@@ -454,6 +531,7 @@ int main(int argc, char **argv) {
     if (nfkc) return s_has_ja ? nfkc_test(nfkc) : 2;
     if (do_bench) return s_has_ja ? bench(file) : 2;
     if (do_fuzz) return fuzz();
+    if (do_fuzz_lt) return fuzz_lt();
     if (!file) return 2;
     FILE *f = fopen(file, "rb");
     if (!f) return 2;

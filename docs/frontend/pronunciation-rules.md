@@ -354,7 +354,7 @@ Digits and codes are neutral as in the other pairs. On random Wikipedia introduc
 
 ## Spanish (token set `es-en`)
 
-Python only for now (`src/vtts/frontend/es/`); the C port comes later, so everything is rules and small tables. `text_to_ids(text, "es")` returns ids of the token set `es-en` (model header code 6): ids 0–106 are the v2 set unchanged, followed by 31 Spanish tokens from id 107 (vocabulary 138):
+Python and C (`src/vtts/frontend/es/`; device: [Latin-script pairs on the device](#latin-script-pairs-on-the-device-c)); everything is rules and small tables. `text_to_ids(text, "es")` returns ids of the token set `es-en` (model header code 6): ids 0–106 are the v2 set unchanged, followed by 31 Spanish tokens from id 107 (vocabulary 138):
 
 | Group | Tokens |
 |---|---|
@@ -392,7 +392,7 @@ Quotes, brackets, ¿ and ¡ are dropped; … and dashes between spaces are a pau
 
 ## Indonesian (token set `id-en`)
 
-Python only for now (`src/vtts/frontend/id/`). `text_to_ids(text, "id")` returns ids of the token set `id-en` (model header code 7): ids 0–106 are the v2 set unchanged, followed by 34 Indonesian tokens from id 107 (vocabulary 141):
+Python and C (`src/vtts/frontend/id/`; device: [Latin-script pairs on the device](#latin-script-pairs-on-the-device-c)). `text_to_ids(text, "id")` returns ids of the token set `id-en` (model header code 7): ids 0–106 are the v2 set unchanged, followed by 34 Indonesian tokens from id 107 (vocabulary 141):
 
 | Group | Tokens |
 |---|---|
@@ -427,7 +427,7 @@ Known gaps: e in words missing from the exception table follows the defaults; k 
 
 ## Portuguese, Brazil (token set `pt-en`)
 
-Python only for now (`src/vtts/frontend/pt/`). `text_to_ids(text, "pt")` returns ids of the token set `pt-en` (model header code 8): ids 0–106 are the v2 set unchanged, followed by 43 Portuguese tokens from id 107 (vocabulary 150):
+Python and C (`src/vtts/frontend/pt/`; device: [Latin-script pairs on the device](#latin-script-pairs-on-the-device-c)). `text_to_ids(text, "pt")` returns ids of the token set `pt-en` (model header code 8): ids 0–106 are the v2 set unchanged, followed by 43 Portuguese tokens from id 107 (vocabulary 150):
 
 | Group | Tokens |
 |---|---|
@@ -462,9 +462,37 @@ Palatalized t/d before i (tia, leite) and the vocalized final l (Brasil) are lef
 
 Known gaps: open/closed e/o of words missing from the table follow the defaults (closed); x between vowels defaults to `sh`; pretonic vowel raising (menino → minino) and sandhi between words are not marked.
 
+## Latin-script pairs on the device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_ES`, `VTTS_LANG_ID` or `VTTS_LANG_PT` gives exactly `text_to_ids(text, "es" | "id" | "pt")` (module `runtime/src/vtts_text_lt.c`, entries `es`, `id`, `pt` in `LANGS`). There is no blob: `runtime/tools/gen_text_tables.py` compiles every table of the three languages into `vtts_text_tables.h`, and only English words need the VLEX lexicon. In the ESP32-P4 firmware the module is about 62 KB (35 KB code, 27 KB tables) for the three languages together.
+
+```mermaid
+flowchart LR
+    PY["latin.py, latin_norm.py<br/>es, id, pt normalize + g2p<br/>lexicons, latin/english.txt"] --> GEN["gen_text_tables.py"]
+    UNI["Python unicodedata<br/>(\w, \d, isspace, lower, fold)"] --> GEN
+    GEN --> H["vtts_text_tables.h<br/>(VTTS_LT_LANGS, VTTS_ES_*, _ID_*, _PT_*, VTTS_U_*)"]
+    H --> TAG["vtts_lt_word_lang<br/>(latin_word_lang)"]
+    H --> N["vtts_lt_normalize<br/>(regex passes)"]
+    H --> G["vtts_lt_word_ids<br/>(fold → overrides → rules → stress)"]
+    TAG --> N --> G
+```
+
+| Part | How it is ported | Size (tables) |
+|---|---|---|
+| Unicode classes | Python's `\w` (`isalnum()` or `_`, 734 ranges), `\d` (`isdecimal()`, any script, with the digit value), `isspace()`, `str.lower()` as runs, and `fold()` of every code point per language as runs (NFKD base letter, the language's own letters kept); the `re.IGNORECASE` variants of the letters of `pukul`/`jam` (K also matches the Kelvin sign) | about 16 KB |
+| Normalizer tables | abbreviations in the order `apply_abbreviations` uses them, units and currencies in the regex alternation order, symbols, dropped characters, letter names, acronyms read as words, month and number words, ordinals | about 6 KB |
+| Tagger | `lexicons/latin/english.txt`, `native.txt`, the normalizer's unit and abbreviation keys, and the clusters of each `valid_spelling` (onsets, codas, finals, doubles, foreign groups, digraphs in order) | about 5 KB |
+| G2P | the exception tables, unstressed function words, Indonesian affixes, the vowel and accent sets (Portuguese `BASE`) | about 3 KB |
+
+- **Normalization** follows `normalize_es`, `normalize_id` and `normalize_pt` pass by pass (one C function per regex, lookarounds on the pass's input), with the regex engine's backtracking order where it can change a match: the `NUM` alternation `\d{1,3}(?:[.,]\d{3})+(?:[.,]\d+)?|\d+(?:[.,]\d+)?` with the check that follows it (`\s?%`, units, currencies, `(?![\d])`), the hour alternation `[01]?\d|2[0-4]`, optional seconds and `h|hs|hrs` suffixes, phone groups, the optional `+cc` and `(dd)` parts. Numbers of any length are read like Python (Spanish up to 10²⁴ by groups, then digit by digit; Indonesian and Portuguese up to 10¹⁵), including the apocope (`veintiún`), feminine hours and ordinals, Portuguese `e` between groups and reais with centavos.
+- **Tagging and chunks:** in the pair modes `¿` and `¡` separate words, a word with the language's letters or any non-Latin character is the language, a plain Latin word follows `latin_word_lang`; each word is one item. Sentences also end right after `。！？；।॥`, as in Python.
+- **G2P** ports `fold`, the exception table, `_segments`, `_nuclei` / `_resolve_e` / `_nasalize` / `_glides` and the stress and quality rules; a word without a vowel is spelled with the letter names. Python's `"" in FRONT` (true at the end of a word: final `c` is read `th` in Spanish and `s` in Portuguese) is kept.
+- **Tests:** `runtime/test/text_parity_es.tsv`, `_id.tsv`, `_pt.tsv` (about 11,900 cases each: edge cases, both eval sets, 2,000 mixed template sentences, the strings of the language's Python tests, 3,000 generated sentences, every word of the eval sets, templates and lexicons, 6,000 random words of the language's letters, numbers, dates, times, money and units, regex-dense random strings) must match exactly; `make -C runtime lt_test` also runs the fuzz in the three modes (letters of the languages, other scripts, digits of other scripts, every normalizer trigger, random bytes, words without spaces), which must stay inside the buffers and inside each token set. A pytest checks that `vtts_text_tables.h` holds the current tables. After changing a rule or table, run `uv run python runtime/tools/gen_text_tables.py` and `uv run python scripts/frontend/export_text_parity.py --lt es --sentences data/es/sentences.jsonl --limit 3000 --out runtime/test/text_parity_es.tsv` (and `id`, `pt`).
+- **Known gaps (pathological input only):** a word is read up to 256 letters and a chunk holds at most 318 tokens (Python makes one longer chunk for a longer word), a sentence is cut at 4,096 code points, and a run whose normalized form exceeds 6,144 code points is dropped. Texts on which Python raises (numbers like `1.000.00` or `1.234.5678`, where `parse_number` calls `int(".")`) do not raise in C: the integer before the first mark is read as a number and the rest digit by digit.
+
 ## Hindi (token set `hi-en`)
 
-Python (`src/vtts/frontend/hi/`) and C (`runtime/src/vtts_text_hi.c`, see [Device (C)](#device-c-2)). `text_to_ids(text, "hi")` returns ids of the token set `hi-en` (model header code 10): ids 0–106 are the v2 set unchanged, followed by 50 Hindi tokens from id 107 (vocabulary 157):
+Python (`src/vtts/frontend/hi/`) and C (`runtime/src/vtts_text_hi.c`, see [Device (C)](#device-c-3)). `text_to_ids(text, "hi")` returns ids of the token set `hi-en` (model header code 10): ids 0–106 are the v2 set unchanged, followed by 50 Hindi tokens from id 107 (vocabulary 157):
 
 | Group | Tokens |
 |---|---|
@@ -644,12 +672,13 @@ Applications will be able to add their own entries without rebuilding the firmwa
 | Date | Change |
 |---|---|
 | 2026-11-19 | Hindi front-end in C: mode `VTTS_LANG_HI`, letter tables, `overrides.tsv` and `numbers.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
+| 2026-11-19 | Spanish, Indonesian and Portuguese front-ends in C: modes `VTTS_LANG_ES`, `VTTS_LANG_ID`, `VTTS_LANG_PT`, all tables (and Python's Unicode classes) compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
+| 2026-11-19 | Japanese front-end in C: mode `VTTS_LANG_JA`, `JLEX` blob (`scripts/frontend/build_ja_blob.py`, reading tables and NFKC data, 721 KB), exact parity with Python. |
 | 2026-11-19 | Hindi front-end in Python: token set `hi-en`, Devanagari letters, nasals and schwa deletion, `lexicons/hi/` (numbers 0-99, overrides), Hindi number reading, mode `hi`. |
 | 2026-11-19 | Thai front-end in Python: token set `th-en`, word list from PyThaiNLP, syllable patterns, consonant classes and tone rules, `lexicons/th/`, Thai number reading, mode `th`. |
 | 2026-11-18 | Portuguese (Brazil) front-end in Python: token set `pt-en`, spelling, nasal, stress and vowel-quality rules, `lexicons/pt/`, Portuguese number reading, mode `pt`. |
 | 2026-11-18 | Indonesian front-end in Python: token set `id-en`, spelling, e and stress rules, `lexicons/id/`, Indonesian number reading, mode `id`. |
 | 2026-11-18 | Spanish front-end in Python: token set `es-en`, spelling and stress rules, `lexicons/es/`, Spanish number reading, mode `es`; Latin-script code-switching rules (`latin.py`, `lexicons/latin/english.txt`). |
-| 2026-11-19 | Japanese front-end in C: mode `VTTS_LANG_JA`, `JLEX` blob (`scripts/frontend/build_ja_blob.py`, reading tables and NFKC data, 721 KB), exact parity with Python. |
 | 2026-11-18 | Korean front-end in C: mode `VTTS_LANG_KO`, rule tables and `overrides.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-18 | Japanese front-end in Python: token set `ja-en`, `lexicons/ja/` word, context and kanji tables from Open JTalk's dictionary (98.2% mora agreement with pyopenjtalk), kana rules, Japanese number and counter reading, mode `ja`. |
 | 2026-11-18 | Chinese front-end in C: mode `VTTS_LANG_ZH`, `ZLEX` blob (`scripts/frontend/build_zh_blob.py`), exact parity with Python. |

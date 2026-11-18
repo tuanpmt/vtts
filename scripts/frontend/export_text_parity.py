@@ -22,6 +22,11 @@ built by the corpus rules from their words, the templates, the exception table a
 sentences from the reading tables (words, context keys after kanji and katakana, kanji, kana runs).
 --nfkc-out also writes the NFKC fixture of the C reader (every code point NFKC changes and random
 sequences with combining marks, half-width kana and Hangul jamo).
+       uv run python scripts/frontend/export_text_parity.py --lt es --sentences data/es/sentences.jsonl \
+           --limit 3000 --out runtime/test/text_parity_es.tsv
+--lt es|id|pt does the same for mode es, id or pt (token set es-en, id-en, pt-en); without a corpus it
+generates sentences from the eval sets, the templates, the word lists, the exception table and random
+words of the language's letters.
 """
 
 import argparse
@@ -691,8 +696,198 @@ def nfkc_lines(rnd) -> list[str]:
     return [f"{hexs(t)}\t{hexs(unicodedata.normalize('NFKC', t))}" for t in singles + seqs]
 
 
+LT_EDGE = [
+    "", ".", "...", "¿?", "¡!", "a", "A", "x", "Y", "ñ", "é", "'", "-", "--", "¿Qué?", "¡Hola!", "Hola. Adiós.",
+    "  espacios  ", "múltiples\ttabuladores", "línea\nnueva", "Wi-Fi", "iPhone 15 Pro", "ESP32-P4", "RTX3060",
+    "USB, GPS y NASA.", "ONU OTAN ASEAN NATO ENEM", "GitHub y YouTube", "smart home", "weekend", "update", "e-mail",
+    "don't", "it's", "x-ray", "ABCDEF", "AB", "ABCDE", "A1B2C3", "a1b2", "_x_", "x_y", "C++", "R&D", "Q&A", "2 + 3 = 5",
+    "a@b.com", "#1", "3 × 4", "1/2", "10%", "10 %", "-10%", "50,5%", "1.000.000", "1,000,000", "1.234,56",
+    "1,234.56", "1.234.5678", "3.14", "3,14", "0,05", "0.5", ".5", "5.", "007", "0812345678", "+34 600 123 456",
+    "600-123-456", "+55 (11) 91234-5678", "(11) 91234-5678", "12 34 56 78 90 12", "1 2 3", "12 34", "123 456 789",
+    "14:30", "14:30:15", "7:00 h", "7:00h", "7:00 hs", "7:00 hrs", "23:59", "24:00", "25:00", "9:5", "14h30", "14h",
+    "08h", "pukul 14.30", "jam 7.15", "Pukul 08.00", "PUKUL 8.05", "jam 25.00", "5/3/2026", "05/03/26", "31/12/1999",
+    "32/13/2020", "1/1/2000", "2026-03-05", "2026-13-45", "12026-1-1", "1-2-3", "10-20", "10 - 20", "10 – 20",
+    "10–20", "1.º", "2.ª", "3.er", "1er", "1º", "2ª", "21º", "11.º", "12.ª", "100º", "1000º", "0º", "ke-3", "ke3",
+    "Ke-1", "ke-21", "anak2", "kura2", "a2", "$5", "$ 5", "US$ 1.250,50", "R$ 1.250,50", "R$ 1,00", "R$ 1,5 milhão",
+    "R$ 2 milhões", "Rp50.000", "Rp 1,5 juta", "Rp. 10 ribu", "20 €", "20€", "£7", "¥100", "5 km", "5km", "1 km",
+    "21 km", "1,5 kg", "25 °C", "25°C", "30℃", "40°", "-5 °C", "100 km/h", "60 km/jam", "16 GB", "3 kWh", "5000 mAh",
+    "2 h", "1 h", "30 min", "10 s", "5 m", "1 L", "2 l", "3 ha", "21 casas", "1 casa", "un 1", "21 años", "veintiún",
+    "101 dálmatas", "1001 noches", "1.000.001 libros", "Sr. García", "Sra. López", "Dr. Pérez", "EE. UU.", "EE.UU.",
+    "etc.", "etc. y más", "n.º 5", "nº 5", "pág. 3", "D. Juan", "Dña. María", "Jl. Sudirman No. 5", "dll.", "a.n. Budi",
+    "s.d.", "yg dgn tdk utk krn", "PT. Maju", "vc pq tb tbm", "Ltda.", "Prof. Silva", "obs.", "…", "—", "–", "a — b",
+    "a - b", "a—b", "eh...", "eh....", "¿Abriste Netflix en el iPhone?", "“citado”", "«citado»", "(entre) [corchetes]",
+    "{llaves} <menor>", "*negrita*", "~tilde~", "a|b", "año 2026", "MÉXICO", "Ñandú", "İstanbul", "straße", "Œuvre",
+    "ﬁn", "ｈｏｌａ", "𝐡𝐨𝐥𝐚", "Ⅻ", "x²", "½", "٣ ٤", "١٢:٣٠", "中文", "한국어", "Việt Nam", "ελληνικά", "русский",
+    "naïve café", "façade", "Øresund", "Łódź", "Þór", "đường", "ß", "x\x1cy", "x\x85y", "a।b", "a。b", "a; b", "a ; b",
+    "1999-2000", "2000-01", "100-200 km", "3-2", "-3", "- 3", "a-3", "3-a", "3.", "3,", "3, 4", "3.4.5", "1,23,456",
+    "1.234,567,890", "1,234,5678", "12.345.678,9", "999.999.999.999.999", "1000000000000000000000000",
+    "999999999999999999999999", "123456789012345678901234567890", "0000000000000001", "0,000", "0.00", "00,5",
+    "Velocidad: 100 km/h; peso: 5 kg.", "Son las 7:30 y hace 25 °C.", "Cuesta $1.250,50 o 20 €.",
+]
+
+
+def _lt_words(lang: str) -> list[str]:
+    """Words of the eval sets, the templates, the exception table and the word lists of a language."""
+    import json
+
+    from vtts.frontend.lexicons import load_table, load_words
+
+    root = Path(__file__).parents[2]
+    words: set[str] = set()
+    for name in (f"ood_{lang}.jsonl", f"mixed_{lang}.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                words.update(json.loads(x)["text"].split())
+    for t in (root / "scripts" / "data" / "bilingual" / f"templates_{lang}.txt").read_text(encoding="utf-8").splitlines():
+        words.update(t.replace("{T}", " ").split())
+    for k, v in load_table(lang, "overrides").items():
+        words.update({k, v, k.capitalize(), k.upper()})
+    words.update(load_words(lang, "native"))
+    if lang == "id":
+        from vtts.frontend.id.g2p_id import PREFIXES, SUFFIXES
+
+        for k in list(load_table("id", "overrides"))[:60]:
+            words.update({p + k for p in PREFIXES} | {k + s for s in SUFFIXES})
+    return sorted(words)
+
+
+def _lt_pseudo(lang: str, rnd, n: int) -> list[str]:
+    """Random words of the language's letters (every branch of the spelling rules)."""
+    vowels = {"es": "aeiouáéíóúü", "id": "aiueoé", "pt": "aeiouáéíóúâêôãõàü"}[lang]
+    cons = {"es": ["b", "c", "ch", "d", "f", "g", "gu", "gü", "h", "j", "k", "l", "ll", "m", "n", "ñ", "p", "qu", "r",
+                   "rr", "s", "t", "v", "w", "x", "y", "z", "br", "cr", "pl", "tr", "ns", "st"],
+            "id": ["b", "c", "d", "f", "g", "h", "j", "k", "kh", "l", "m", "n", "ng", "ngg", "ny", "p", "q", "r", "s",
+                   "sy", "t", "v", "w", "x", "y", "z", "'", "kk", "nn", "tr", "st", "pr"],
+            "pt": ["b", "c", "ç", "ch", "d", "f", "g", "gu", "h", "j", "k", "l", "lh", "m", "n", "nh", "p", "qu", "r",
+                   "rr", "s", "ss", "sc", "t", "v", "w", "x", "xc", "y", "z", "br", "cr", "pl", "tr", "ns"]}[lang]
+    out = []
+    for _ in range(n):
+        w = "".join(rnd.choice(cons) * (rnd.random() < 0.8) + rnd.choice(vowels) + rnd.choice(vowels) * (rnd.random() < 0.25)
+                    for _ in range(rnd.randint(1, 4)))
+        w += rnd.choice(["", "", "", "n", "s", "r", "l", "m", "z", "k", "x", "ns", "m", "ão", "ões", "ãe", "am", "em",
+                         "ens", "el", "ol", "osa", "ai", "au", "ei", "oi", "nya", "kan", "lah"])
+        out.append(w.capitalize() if rnd.random() < 0.2 else w.upper() if rnd.random() < 0.03 else w)
+    return out
+
+
+def _lt_generated(lang: str, n: int, rnd) -> list[str]:
+    vocab = _lt_words(lang)
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "A1", "smart",
+             "GitHub", "YouTube", "Netflix", "weekend", "update", "online", "router", "Spotify", "macOS", "NASA"]
+    numbers = ["3", "15", "21", "100", "2026", "3,5", "1.000", "1.234,56", "50%", "9:30", "$20", "-7", "2024-05-01",
+               "5/3/2026", "10-20", "25 °C", "5 km", "1º", "2ª", "ke-2", "Rp5.000", "R$ 10,50", "0812345678"]
+    marks = [",", ".", "!", "?", ";", ":", "…", "—", "“", "”", "(", ")", "¿", "¡", "«", "»"]
+    pseudo = _lt_pseudo(lang, rnd, 4 * n)
+    out = []
+    for _ in range(n):
+        parts = []
+        for _ in range(rnd.randint(2, 14)):
+            r = rnd.random()
+            if r < 0.45:
+                parts.append(rnd.choice(vocab))
+            elif r < 0.7:
+                parts.append(rnd.choice(pseudo))
+            elif r < 0.82:
+                parts.append(rnd.choice(numbers))
+            elif r < 0.92:
+                parts.append(rnd.choice(latin))
+            else:
+                parts.append(rnd.choice(marks))
+        out.append(" ".join(parts) + rnd.choice([".", "!", "?", "", "。", "..."]))
+    return out
+
+
+def _lt_regex_fuzz(lang: str, n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the normalizer passes react to."""
+    from vtts.frontend.es import normalize_es
+    from vtts.frontend.id import normalize_id
+    from vtts.frontend.pt import normalize_pt
+
+    nm = {"es": normalize_es, "id": normalize_id, "pt": normalize_pt}[lang]
+    atoms = (list("0123456789") * 4 + list(":/.,-–—~%'+&@#×=() ") * 2 + list(nm.UNITS) + list(nm.CURRENCY)
+             + [k for k in nm.ABBREVIATIONS] + ["º", "ª", "er", "h", "hs", "hrs", "ke", "Ke", "pukul ", "jam ",
+                                               "ribu", "juta", "mil", "milhão", "milhões", "…", "...", "¿", "¡",
+                                               "A", "B", "Z", "ESP", "x", "ab", "Ok", "Wi", "é", "ñ", "ç", "ã", " ",
+                                               "  ", "\t", "“", "”", "«", "»"])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 18))) for _ in range(n)]
+
+
+def _lt_tests(lang: str) -> list[str]:
+    """String constants of the language's front-end tests."""
+    import ast
+
+    root = Path(__file__).parents[2] / "tests" / "frontend"
+    out = []
+    for name in (f"test_normalize_{lang}.py", f"test_text_{lang}.py", f"test_{lang}_g2p.py"):
+        p = root / name
+        if p.exists():
+            for node in ast.walk(ast.parse(p.read_text(encoding="utf-8"))):
+                if isinstance(node, ast.Constant) and isinstance(node.value, str) and 0 < len(node.value) < 400:
+                    out.append(node.value)
+    return out
+
+
+def lt_lines(lang: str, paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
+    """mode es|id|pt cases: edge cases, the eval sets, the mixed-style sentences (templates x terms_en),
+    the tests' strings, sentences (a corpus when given and present, else generated from the vocabulary
+    and random words), number/date/time/money/unit cases and regex-dense random strings. Texts for
+    which the Python front-end raises (numbers like 1.234.5678) are left out."""
+    import json
+    import random
+
+    rnd = random.Random(0)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / f"templates_{lang}.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(LT_EDGE)
+    for name in (f"ood_{lang}.jsonl", f"mixed_{lang}.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += rnd.sample(mixed, min(len(mixed), 2000))
+    texts += _lt_tests(lang)
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows if rows else _lt_generated(lang, limit or 3000, rnd)
+    texts += [" ".join(_lt_words(lang)[i:i + 20]) + "." for i in range(0, len(_lt_words(lang)), 20)]
+    pseudo = _lt_pseudo(lang, rnd, 6000)
+    texts += [" ".join(pseudo[i:i + 20]) + "." for i in range(0, len(pseudo), 20)]
+    nums = []
+    for _ in range(2500):
+        k = rnd.randint(0, 17)
+        v = rnd.choice([rnd.randint(0, 31), rnd.randint(0, 999), rnd.randint(0, 99999), rnd.randint(0, 10**9),
+                        rnd.randint(0, 10**15), rnd.randint(0, 10**25)])
+        a, b = rnd.randint(0, 60), rnd.randint(0, 40)
+        nums.append(["{} casas", "{:,} libros", "{}.5%", "$ {}", "{}º", "-{} km", "{}/{}/2026", "{}-{} kg", "{}:{:02d}",
+                     "{}h{:02d}", "pukul {}.{:02d}", "{}.{:03d}.{:03d}", "R$ {},{:02d}", "Rp{}", "{} €",
+                     "ke-{}", "{},{}", "+{} {} {}"][k].format(v, a, b))
+    for _ in range(500):
+        nums.append(f"{rnd.randint(1900, 2100)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)} y "
+                    f"{rnd.randint(0, 33)}/{rnd.randint(0, 13)}/{rnd.randint(0, 99):02d} "
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    texts += nums + _lt_regex_fuzz(lang, fuzz, rnd)
+    out, seen = [], set()
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        if text in seen or any(c in text for c in "\r\v\f\x1c\x1d\x1e\x85  "):  # line breaks of splitlines()
+            continue
+        seen.add(text)
+        try:
+            ids = text_to_ids(text, lang)
+        except (ValueError, KeyError, IndexError):  # Python raises (e.g. int('.') in 1.234.5678): not a case
+            continue
+        out.append(f"{lang}\t{text}\t" + ";".join(" ".join(map(str, c)) for c in ids))
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
+    ap.add_argument("--lt", choices=("es", "id", "pt"), help="mode es|id|pt (token set es-en|id-en|pt-en) cases")
     ap.add_argument("--v2", action="store_true")
     ap.add_argument("--zh", action="store_true", help="mode zh (token set zh-en) cases")
     ap.add_argument("--ko", action="store_true", help="mode ko (token set ko-en) cases")
@@ -702,8 +897,13 @@ def main() -> None:
     ap.add_argument("--sentences", type=Path, nargs="*", default=[])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko, --hi, --ja: regex-dense random strings")
+    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko, --hi, --ja, --lt: regex-dense random strings")
     a = ap.parse_args()
+    if a.lt:
+        lines = lt_lines(a.lt, a.sentences, a.limit, a.fuzz)
+        a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"wrote {len(lines)} cases to {a.out}")
+        return
     if a.ja:
         import random
 

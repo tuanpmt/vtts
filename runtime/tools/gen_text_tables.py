@@ -4,6 +4,7 @@ Run: uv run python runtime/tools/gen_text_tables.py
 """
 
 import unicodedata
+from itertools import pairwise
 from pathlib import Path
 
 from vtts.frontend import lexicon, phoneme_set
@@ -478,6 +479,246 @@ def japanese_tables() -> list[str]:
     return out
 
 
+# ---------------- Latin-script pairs (es-en, id-en, pt-en) and the Unicode classes they need ----------------
+
+def _str_list(name: str, items) -> list[str]:
+    items = list(items)
+    if not items:
+        return [f"static const char *const {name}[1] = {{0}};", ""]
+    return c_list(name, items)
+
+
+def _ranges(pred) -> list[tuple[int, int]]:
+    out, start = [], None
+    for c in range(0x110000):
+        p = not 0xD800 <= c < 0xE000 and pred(chr(c))
+        if p and start is None:
+            start = c
+        if not p and start is not None:
+            out.append((start, c - 1))
+            start = None
+    if start is not None:
+        out.append((start, 0x10FFFF))
+    return out
+
+
+def unicode_tables() -> list[str]:
+    """Python's re classes for str patterns: \\w (isalnum or _), \\d (isdecimal, blocks of ten
+    digits), str.lower() as runs, and the re.IGNORECASE variants of the letters the Indonesian time
+    rule looks behind for ("pukul ", "jam ")."""
+    import re
+
+    word = _ranges(lambda ch: ch.isalnum() or ch == "_")
+    dec = _ranges(lambda ch: ch.isdecimal())
+    for a, b in dec:  # blocks of ten digits 0..9
+        assert all(unicodedata.decimal(chr(c)) == (c - a) % 10 for c in range(a, b + 1)), hex(a)
+    space = [c for c in range(0x110000) if not 0xD800 <= c < 0xE000 and chr(c).isspace()]
+    multi = {c for c in range(0x110000) if not 0xD800 <= c < 0xE000 and len(chr(c).lower()) != 1}
+    assert multi == {0x130} and chr(0x130).lower() == "i̇"
+    low = [(c, ord(chr(c).lower()[0]) - c) for c in range(0x110000)
+           if not 0xD800 <= c < 0xE000 and chr(c).lower() != chr(c)]
+    runs: list[list[int]] = []  # first, count, delta, step
+    for c, dl in low:
+        if runs:
+            r = runs[-1]
+            last = r[0] + (r[1] - 1) * r[3]
+            if r[2] == dl and r[1] == 1 and c - last in (1, 2):
+                r[1], r[3] = 2, c - last
+                continue
+            if r[2] == dl and r[1] > 1 and c - last == r[3]:
+                r[1] += 1
+                continue
+        runs.append([c, 1, dl, 1])
+    for r0, r1 in pairwise(runs):  # disjoint and sorted (binary search)
+        assert r0[0] + (r0[1] - 1) * r0[3] < r1[0]
+    out = ["/* ---- Unicode classes of Python's re (str patterns), for the Latin-script pairs ---- */",
+           f"static const uint32_t VTTS_U_WORD[{len(word)}][2] = {{  /* \\w: isalnum() or _ */"]
+    out += ["    " + " ".join(f"{{0x{a:X}, 0x{b:X}}}," for a, b in word[i:i + 6]) for i in range(0, len(word), 6)]
+    out += ["};", f"#define VTTS_U_N_WORD {len(word)}", "",
+            f"static const uint32_t VTTS_U_DECIMAL[{len(dec)}][2] = {{  /* \\d: isdecimal(), blocks of 0..9 */"]
+    out += ["    " + " ".join(f"{{0x{a:X}, 0x{b:X}}}," for a, b in dec[i:i + 6]) for i in range(0, len(dec), 6)]
+    out += ["};", f"#define VTTS_U_N_DECIMAL {len(dec)}", "",
+            f"static const uint32_t VTTS_U_SPACE[{len(space)}] = {{  /* \\s and str.split(): isspace() */",
+            "    " + ", ".join(f"0x{c:X}" for c in space) + ",", "};", f"#define VTTS_U_N_SPACE {len(space)}", "",
+            "/* str.lower() of one code point: runs (first, count, delta, step); U+0130 lowers to i U+0307 */",
+            f"static const int32_t VTTS_U_LOWER[{len(runs)}][4] = {{"]
+    out += ["    " + " ".join(f"{{0x{a:X}, {n}, {d}, {s}}}," for a, n, d, s in runs[i:i + 5])
+            for i in range(0, len(runs), 5)]
+    out += ["};", f"#define VTTS_U_N_LOWER {len(runs)}", ""]
+    letters = sorted(set("pukuljam"))
+    var = {ch: [c for c in range(0x110000)
+                if not 0xD800 <= c < 0xE000 and re.fullmatch(ch, chr(c), re.IGNORECASE)] for ch in letters}
+    width = max(len(v) for v in var.values()) + 1
+    out += [f"static const uint32_t VTTS_U_ICASE[{len(letters)}][{width}] = {{  /* re.I variants (0 ends) */"]
+    out += [f"    {{{', '.join(f'0x{c:X}' for c in var[ch])}{', 0' * (width - len(var[ch]))}}},  /* {ch} */"
+            for ch in letters]
+    out += ["};", f"#define VTTS_U_N_ICASE {len(letters)}", ""]
+    return out
+
+
+def latin_tables() -> list[str]:
+    """Tables of the Latin-script pair front-ends (es/, id/, pt/, latin.py, latin_norm.py): token
+    names, normalizer tables in the order the regexes and replacements use them, number words, the
+    word lists of the tagger, the exception tables and the letters of each g2p (fold() of every code
+    point as runs, spelling-check clusters)."""
+    from vtts.frontend import latin, latin_norm
+    from vtts.frontend.es import g2p_es, normalize_es
+    from vtts.frontend.id import g2p_id, normalize_id
+    from vtts.frontend.lexicons import load_words
+    from vtts.frontend.pt import g2p_pt, normalize_pt
+
+    out = ["/* ---- Latin-script pairs (token sets es-en, id-en, pt-en; ids 0..106 are the v2 ids) ---- */"]
+    english = sorted(load_words("latin", "english"))
+    assert all(w.isascii() for w in english)
+    out += c_list("VTTS_LT_ENGLISH", english) + [f"#define VTTS_LT_N_ENGLISH {len(english)}", ""]
+    assert latin_norm.MARKS == ",.?!;:"
+    out += ["typedef struct { const char *key, *one, *many; } vtts_lt_reading;",
+            "typedef struct { uint32_t cp; const char *name; } vtts_lt_letter;",
+            "typedef struct { uint32_t start; uint16_t count; uint8_t first, step; } vtts_lt_fold;",
+            "typedef struct {",
+            "    const char *code;",
+            "    int tok0, n_tokens, vocab;",
+            "    const char *const *tokens;          /* names of the ids tok0.. without the prefix */",
+            "    const char *const (*abbrev)[2]; int n_abbrev;  /* in the order they are applied */",
+            "    const char *drop;                  /* characters replaced by a space */",
+            "    const vtts_lt_letter *letters; int n_letters;   /* letter names (spelling) */",
+            "    const char *const *acronym_words; int n_acronym_words;",
+            "    const vtts_lt_reading *units; int n_units;       /* alternation order */",
+            "    const vtts_lt_reading *currency; int n_currency; /* alternation order */",
+            "    const vtts_lt_letter *symbols; int n_symbols;   /* replaced in this order */",
+            "    const char *comma, *period;        /* MARK_WORDS */",
+            "    const char *const *months;",
+            "    const char *const *native; int n_native;        /* sorted */",
+            "    const char *const *table_keys; int n_table_keys; /* sorted */",
+            "    const char *const (*overrides)[2]; int n_overrides;",
+            "    const char *const *unstressed; int n_unstressed;",
+            "    const char *own;                   /* LATIN_PAIRS letters */",
+            "    const char *g2p_letters;           /* LETTERS of the g2p outside a-z */",
+            "    const vtts_lt_fold *fold; int n_fold;           /* fold() of code points >= 0x80 */",
+            "    const char *const *onsets; int n_onsets;",
+            "    const char *const *codas; int n_codas;",
+            "    const char *const *finals; int n_finals;",
+            "    const char *const *doubles; int n_doubles;",
+            "    const char *const *foreign; int n_foreign;",
+            "    const char *const (*digraphs)[2]; int n_digraphs;",
+            "} vtts_lt_lang;", ""]
+    langs = (("es", "ES", g2p_es, normalize_es), ("id", "ID", g2p_id, normalize_id),
+             ("pt", "PT", g2p_pt, normalize_pt))
+    descs = []
+    for code, up, g, nm in langs:
+        tset = phoneme_set.TOKEN_SETS[phoneme_set.PAIR_MODES[code]]
+        tok0 = phoneme_set.VOCAB_SIZE_V2
+        assert all(t.startswith(up + ":") for t in tset[tok0:])
+        names = [t.split(":", 1)[1] for t in tset[tok0:]]
+        out += [f"/* {code}: token set {phoneme_set.PAIR_MODES[code]} */"]
+        out += c_list(f"VTTS_{up}_TOKENS", names)
+        abbrev = sorted(nm.ABBREVIATIONS, key=len, reverse=True)  # apply_abbreviations order
+        out += [f"static const char *const VTTS_{up}_ABBREV[][2] = {{"]
+        out += [f"    {{{c_str(k)}, {c_str(nm.ABBREVIATIONS[k])}}}," for k in abbrev] + ["};", ""]
+        drop = latin_norm.DROP.replace("(", "").replace(")", "") if code == "pt" else latin_norm.DROP
+        letters = list(nm.LETTERS.items())
+        out += [f"static const vtts_lt_letter VTTS_{up}_LETTERS[] = {{"]
+        out += [f"    {{0x{ord(k):04X}, {c_str(v)}}}," for k, v in letters] + ["};", ""]
+        out += _str_list(f"VTTS_{up}_ACRONYM_WORDS", sorted(nm.ACRONYM_WORDS))
+
+        def reading(v):
+            return (v, v) if isinstance(v, str) else v
+
+        units = sorted(nm.UNITS, key=len, reverse=True)  # the alternation order of the regexes
+        out += [f"static const vtts_lt_reading VTTS_{up}_UNITS[] = {{"]
+        out += [f"    {{{c_str(k)}, {c_str(reading(nm.UNITS[k])[0])}, {c_str(reading(nm.UNITS[k])[1])}}},"
+                for k in units] + ["};", ""]
+        cur = sorted(nm.CURRENCY, key=len, reverse=True)
+        out += [f"static const vtts_lt_reading VTTS_{up}_CURRENCY[] = {{"]
+        out += [f"    {{{c_str(k)}, {c_str(reading(nm.CURRENCY[k])[0])}, {c_str(reading(nm.CURRENCY[k])[1])}}},"
+                for k in cur] + ["};", ""]
+        assert all(len(k) == 1 for k in nm.SYMBOLS)
+        out += [f"static const vtts_lt_letter VTTS_{up}_SYMBOLS[] = {{"]
+        out += [f"    {{0x{ord(k):04X}, {c_str(v)}}}," for k, v in nm.SYMBOLS.items()] + ["};", ""]
+        out += c_list(f"VTTS_{up}_MONTHS", list(nm.MONTHS))
+        native = sorted(load_words(code, "native"))
+        out += _str_list(f"VTTS_{up}_NATIVE", native)
+        keys = sorted(latin._table_keys(code))
+        out += _str_list(f"VTTS_{up}_TABLE_KEYS", keys)
+        ovr = g.override_table()
+        out += [f"static const char *const VTTS_{up}_OVERRIDES[][2] = {{"]
+        out += [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in ovr.items()] + ["};", ""]
+        out += _str_list(f"VTTS_{up}_UNSTRESSED", sorted(g.UNSTRESSED))
+        assert set("abcdefghijklmnopqrstuvwxyz") <= g.LETTERS
+        extra = "".join(sorted(g.LETTERS - set("abcdefghijklmnopqrstuvwxyz")))
+        for c in range(0x80):  # ASCII: lower-case a-z (and ' in Indonesian), nothing else
+            want = chr(c).lower() if chr(c).isalpha() else ("'" if code == "id" and chr(c) == "'" else "")
+            assert g.fold(chr(c)) == want, (code, c)
+        folded = [(c, g.fold(chr(c))) for c in range(0x80, 0x110000) if not 0xD800 <= c < 0xE000]
+        folded = [(c, f) for c, f in folded if f]
+        assert all(len(f) == 1 and ord(f) < 256 for _, f in folded)
+        runs: list[list[int]] = []  # start, count, first result, step 0/1
+        for c, f in folded:
+            if runs and c == runs[-1][0] + runs[-1][1] and runs[-1][1] < 65535:
+                r = runs[-1]
+                if r[1] == 1 and ord(f) in (r[2], r[2] + 1):
+                    r[1], r[3] = 2, ord(f) - r[2]
+                    continue
+                if r[1] > 1 and ord(f) == r[2] + r[1] * r[3]:
+                    r[1] += 1
+                    continue
+            runs.append([c, 1, ord(f), 0])
+        out += [f"static const vtts_lt_fold VTTS_{up}_FOLD[{len(runs)}] = {{"]
+        out += ["    " + " ".join(f"{{0x{a:X}, {n}, 0x{f:02X}, {s}}}," for a, n, f, s in runs[i:i + 5])
+                for i in range(0, len(runs), 5)] + ["};", ""]
+        for attr in ("ONSETS", "CODAS", "FINALS", "DOUBLES"):
+            out += _str_list(f"VTTS_{up}_{attr}", sorted(getattr(g, attr)))
+        out += _str_list(f"VTTS_{up}_FOREIGN", list(g.FOREIGN))
+        out += [f"static const char *const VTTS_{up}_DIGRAPHS[][2] = {{  /* replaced in this order */"]
+        out += [f"    {{{c_str(a)}, {c_str(b)}}}," for a, b in g.DIGRAPHS] + ["};", ""]
+        n = len
+        descs.append(
+            f"    {{{c_str(code)}, {tok0}, {n(names)}, {n(tset)}, VTTS_{up}_TOKENS, VTTS_{up}_ABBREV, {n(abbrev)},\n"
+            f"     {c_str(drop)}, VTTS_{up}_LETTERS, {n(letters)}, VTTS_{up}_ACRONYM_WORDS, {n(nm.ACRONYM_WORDS)},\n"
+            f"     VTTS_{up}_UNITS, {n(units)}, VTTS_{up}_CURRENCY, {n(cur)}, VTTS_{up}_SYMBOLS, {n(nm.SYMBOLS)},\n"
+            f"     {c_str(nm.MARK_WORDS[','])}, {c_str(nm.MARK_WORDS['.'])}, VTTS_{up}_MONTHS,\n"
+            f"     VTTS_{up}_NATIVE, {n(native)}, VTTS_{up}_TABLE_KEYS, {n(keys)}, VTTS_{up}_OVERRIDES, {n(ovr)},\n"
+            f"     VTTS_{up}_UNSTRESSED, {n(g.UNSTRESSED)}, {c_str(latin.LATIN_PAIRS[code])}, {c_str(extra)},\n"
+            f"     VTTS_{up}_FOLD, {n(runs)}, VTTS_{up}_ONSETS, {n(g.ONSETS)}, VTTS_{up}_CODAS, {n(g.CODAS)},\n"
+            f"     VTTS_{up}_FINALS, {n(g.FINALS)}, VTTS_{up}_DOUBLES, {n(g.DOUBLES)}, VTTS_{up}_FOREIGN, {n(g.FOREIGN)},\n"
+            f"     VTTS_{up}_DIGRAPHS, {n(g.DIGRAPHS)}}},")
+    es, id_, pt = normalize_es, normalize_id, normalize_pt
+    out += ["/* es: number words (normalize_es) and the letters of g2p_es */"]
+    out += c_list("VTTS_ES_ONES", list(es.ONES)) + c_list("VTTS_ES_TENS", list(es.TENS))
+    out += c_list("VTTS_ES_HUNDREDS", list(es.HUNDREDS))
+    assert [s for s, _, _ in es.SCALES] == [10 ** 18, 10 ** 12, 10 ** 6]
+    out += ["static const char *const VTTS_ES_SCALES[3][2] = {  /* 10^18, 10^12, 10^6 */"]
+    out += [f"    {{{c_str(a)}, {c_str(b)}}}," for _, a, b in es.SCALES] + ["};", ""]
+    out += c_list("VTTS_ES_ORD_ONES", list(es.ORD_ONES)) + c_list("VTTS_ES_ORD_TENS", list(es.ORD_TENS))
+    out += c_list("VTTS_ES_ORD_HUNDREDS", list(es.ORD_HUNDREDS))
+    out += [f"#define VTTS_ES_VOWELS {c_str(g2p_es.VOWELS)}", f"#define VTTS_ES_FRONT {c_str(g2p_es.FRONT)}",
+            f"#define VTTS_ES_ACCENTED {c_str(''.join(g2p_es.ACCENTED))}",
+            f"#define VTTS_ES_ACCENTED_BASE {c_str(''.join(g2p_es.ACCENTED.values()))}", ""]
+    out += ["/* id: number words (normalize_id) and the affixes and letters of g2p_id */"]
+    out += c_list("VTTS_ID_ONES", list(id_.ONES))
+    assert [s for s, _ in id_.SCALES] == [10 ** 12, 10 ** 9, 10 ** 6]
+    out += c_list("VTTS_ID_SCALES", [x for _, x in id_.SCALES])
+    out += c_list("VTTS_ID_PREFIXES", list(g2p_id.PREFIXES)) + c_list("VTTS_ID_SUFFIXES", list(g2p_id.SUFFIXES))
+    out += [f"#define VTTS_ID_VOWELS {c_str(g2p_id.VOWELS)}", ""]
+    out += ["/* pt: number words (normalize_pt) and the letters of g2p_pt */"]
+    out += c_list("VTTS_PT_ONES", list(pt.ONES)) + c_list("VTTS_PT_TENS", list(pt.TENS))
+    out += c_list("VTTS_PT_HUNDREDS", list(pt.HUNDREDS))
+    assert [s for s, _, _ in pt.SCALES] == [10 ** 12, 10 ** 9, 10 ** 6, 10 ** 3]
+    out += ["static const char *const VTTS_PT_SCALES[4][2] = {  /* 10^12, 10^9, 10^6, 10^3 */"]
+    out += [f"    {{{c_str(a)}, {c_str(b)}}}," for _, a, b in pt.SCALES] + ["};", ""]
+    out += c_list("VTTS_PT_ORD_ONES", list(pt.ORD_ONES)) + c_list("VTTS_PT_ORD_TENS", list(pt.ORD_TENS))
+    out += c_list("VTTS_PT_ORD_HUNDREDS", list(pt.ORD_HUNDREDS))
+    acc = {"acute": 1, "circ": 2, "tilde": 3, None: 0}
+    out += [f"#define VTTS_PT_VOWEL_LETTERS {c_str(g2p_pt.VOWEL_LETTERS)}",
+            f"#define VTTS_PT_FRONT {c_str(g2p_pt.FRONT)}",
+            "/* BASE: letter, base vowel, accent (1 acute, 2 circumflex, 3 tilde, 0 none) */",
+            "static const struct { uint32_t cp; char base; uint8_t accent; } VTTS_PT_BASE[] = {"]
+    out += [f"    {{0x{ord(k):04X}, '{b}', {acc[a]}}}," for k, (b, a) in g2p_pt.BASE.items()]
+    out += ["};", f"#define VTTS_PT_N_BASE {len(g2p_pt.BASE)}", ""]
+    out += ["static const vtts_lt_lang VTTS_LT_LANGS[3] = {  /* es, id, pt */"] + descs + ["};", ""]
+    return out
+
+
 def main() -> None:
     rows = []
     for base in BASES:
@@ -510,6 +751,8 @@ def main() -> None:
     lines += korean_tables()
     lines += hindi_tables()
     lines += japanese_tables()
+    lines += unicode_tables()
+    lines += latin_tables()
     lines += ["#endif", ""]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({len(rows)} letters)")

@@ -335,6 +335,102 @@ def test_c_text_to_audio_ja_en(tmp_path):
     assert bad.returncode == 2 and "modes: ja" in bad.stderr
 
 
+@pytest.mark.parametrize("lang", ["es", "id", "pt"])
+def test_c_latin_frontend_parity(tmp_path, lang):
+    """vtts_text_to_ids_ex in VTTS_LANG_ES|ID|PT mode (token sets es-en, id-en, pt-en; tables compiled
+    in, VLEX for English words) gives exactly text_to_ids(text, lang)."""
+    import random
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    fixture = RUNTIME / "test" / f"text_parity_{lang}.tsv"
+    lines = fixture.read_text(encoding="utf-8").split("\n")[:-1]
+    assert len(lines) > 10000
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert mode == lang
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            f"run: uv run python scripts/frontend/export_text_parity.py --lt {lang} "
+            f"--sentences data/{lang}/sentences.jsonl --limit 3000 --out runtime/test/text_parity_{lang}.tsv")
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    r = subprocess.run([str(RUNTIME / "build" / "text_test"), "--lex", str(lex), str(fixture)],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+
+
+def test_c_latin_frontend_fuzz(tmp_path):
+    """The es, id and pt modes survive the fuzz run (letters of the languages, numbers, dates, money,
+    units, abbreviations, English words, other scripts, random bytes, long words) and stay inside
+    their token sets."""
+    from vtts.frontend.en.vlex import build_vlex
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    f = subprocess.run([str(RUNTIME / "build" / "text_test"), "--fuzz-lt", "--lex", str(lex)],
+                       check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "fuzz lt: ok" in f.stdout, f.stdout + f.stderr[-2000:]
+
+
+def test_c_latin_tables_current():
+    """runtime/src/vtts_text_tables.h holds the current es/id/pt tables (lexicons included) and the
+    Unicode classes."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_text_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_text_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    header = (RUNTIME / "src" / "vtts_text_tables.h").read_text(encoding="utf-8")
+    for part in (mod.latin_tables(), mod.unicode_tables()):
+        assert "\n".join(part) in header, "run: uv run python runtime/tools/gen_text_tables.py"
+
+
+@pytest.mark.parametrize("lang, text", [
+    ("es", "¿Enciendo el Wi-Fi? Son las 8:30 y hace 26 °C, el iPhone tiene 21 apps."),
+    ("id", "Nyalakan Wi-Fi sekarang? Pukul 08.30, suhu 26 °C, harganya Rp50.000."),
+    ("pt", "Ligo o Wi-Fi? São 8h30, faz 26 °C e o iPhone custa R$ 1.250,50."),
+])
+def test_c_text_to_audio_latin(tmp_path, lang, text):
+    """Full device path on the host for an es-en, id-en or pt-en model (tiny, random weights): the
+    header's token set picks the front-end (no extra blob), ids above 106 reach the embedding."""
+    import wave
+
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    pair = f"{lang}-en"
+    m = Student(PRESETS[f"S-vocos-p-{pair}"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / f"{lang}.vtts"
+    write_model_int8(m, model, token_set=pair)
+    assert token_set_of(read_model(model)[0]) == pair
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), text],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith(f"token_set {pair} header mode {lang} lex 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, lang)
+    assert max(max(c) for c in c_ids) > 106
+    with wave.open(str(wav)) as w:
+        assert w.getframerate() == 22050 and w.getnframes() > 0
+    bad = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lang", "ko", text],
+                         check=False, capture_output=True, text=True)
+    assert bad.returncode == 2 and f"modes: {lang}" in bad.stderr
+
+
 def test_c_token_set_header():
     """vtts_token_set: the token_set dim, old files by vocab; text modes per token set."""
     subprocess.run(["make", "-s", "build/token_set_test"], cwd=RUNTIME, check=True)

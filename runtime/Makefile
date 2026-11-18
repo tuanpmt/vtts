@@ -26,9 +26,9 @@ build/stream_test: $(SRC) test/stream_test.c include/vtts.h
 	$(CC) $(CFLAGS) $(SAN) $(SRC) test/stream_test.c -lm -o $@
 
 TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_text_zh.c src/vtts_text_ko.c src/vtts_text_hi.c src/vtts_text_ja.c \
-           src/vtts_lex.c
+           src/vtts_text_lt.c src/vtts_lex.c
 TEXT_HDR = include/vtts_text.h include/vtts_lex.h include/vtts_zlex.h include/vtts_jlex.h src/vtts_text_en.h src/vtts_text_zh.h \
-           src/vtts_text_ko.h src/vtts_text_hi.h src/vtts_text_ja.h src/vtts_text_tables.h
+           src/vtts_text_ko.h src/vtts_text_hi.h src/vtts_text_ja.h src/vtts_text_lt.h src/vtts_text_tables.h
 build/text_test: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
@@ -95,6 +95,14 @@ build/text_bench: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 ja_bench: build/text_bench build/lex_en.bin build/ja_lex.bin
 	./build/text_bench --lex build/lex_en.bin --ja build/ja_lex.bin --bench ../src/vtts/frontend/lexicons/ja/words.tsv
 
+# Spanish, Indonesian, Portuguese (VTTS_LANG_ES|ID|PT) parity with text_to_ids(text, "es"|"id"|"pt")
+# and the fuzz run of the three modes; tables are compiled in (no blob).
+lt_test: build/text_test build/lex_en.bin
+	./build/text_test --lex build/lex_en.bin test/text_parity_es.tsv
+	./build/text_test --lex build/lex_en.bin test/text_parity_id.tsv
+	./build/text_test --lex build/lex_en.bin test/text_parity_pt.tsv
+	./build/text_test --fuzz-lt --lex build/lex_en.bin
+
 # All text front-end tests (no model needed); the model golden tests run from pytest.
 test: build/token_set_test build/text_test build/lex_test build/en_norm_test build/lex_en.bin build/zh_lex.bin build/ja_lex.bin
 	./build/token_set_test
@@ -106,4 +114,5 @@ test: build/token_set_test build/text_test build/lex_test build/en_norm_test bui
 	$(MAKE) ko_test
 	$(MAKE) hi_test
 	$(MAKE) ja_test
-.PHONY: zh_test ko_test hi_test ja_test ja_bench test
+	$(MAKE) lt_test
+.PHONY: zh_test ko_test hi_test ja_test ja_bench lt_test test

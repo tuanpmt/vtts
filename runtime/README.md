@@ -57,6 +57,7 @@ The Python tests build and run the C tests, so `uv run pytest -q` at the reposit
 | `VTTS_LANG_KO` | ko-en (ids 0–106 = v2, Korean from 107, 153 ids) | `lex` for English words only: the Korean rules, exception table and normalizer strings are compiled in (`src/vtts_text_tables.h`) |
 | `VTTS_LANG_HI` | hi-en (ids 0–106 = v2, Hindi from 107, 157 ids) | `lex` for English words only: the Devanagari letter tables, exception table, numbers and normalizer strings are compiled in (`src/vtts_text_tables.h`) |
 | `VTTS_LANG_JA` | ja-en (ids 0–106 = v2, Japanese from 107, 144 ids) | `lex` for English words and `ja`: JLEX blob (Japanese reading tables and NFKC data, ~721 KB, `scripts/frontend/build_ja_blob.py`) |
+| `VTTS_LANG_ES`, `VTTS_LANG_ID`, `VTTS_LANG_PT` | es-en (138 ids), id-en (141), pt-en (150); ids 0–106 = v2, the language from 107 | `lex` for English words only: normalizers, spelling rules, exception tables, word lists and Python's Unicode classes are compiled in (`src/vtts_text_lt.c`) |
 
 The blobs are read in place (flash is fine) and must stay alive while they are used:
 
@@ -69,14 +70,14 @@ vtts_text_opts o = {.lang = VTTS_LANG_ZH, .lex = &lex, .zh = &zh};  /* zh may be
 int chunks = vtts_text_to_ids_ex(utf8, ws, &o, on_ids, user);  /* ws: vtts_text_ws, ~145 KB, PSRAM */
 ```
 
-Japanese: `vtts_jlex_init(&ja, ja_blob, ja_size)` (`static vtts_jlex ja;`, < 0: not a JLEX v1 blob), then `vtts_text_opts o = {.lang = VTTS_LANG_JA, .lex = &lex, .ja = &ja};`. Without `ja`, kana and kanji give no ids (and NFKC is skipped). Without `zh`, Han characters give no ids; without `lex`, English words are not pronounced (acronyms are still spelled). A zh-en model must be fed only zh-mode ids (its embedding has 171 rows), a ko-en model only ko-mode ids (153 rows), a hi-en model only hi-mode ids (157 rows), a ja-en model only ja-mode ids (144 rows). Korean and Hindi need no extra blob: `vtts_text_opts o = {.lang = VTTS_LANG_KO, .lex = &lex};` (or `VTTS_LANG_HI`). `make -C runtime test` builds the blobs and runs every text parity test and the fuzz runs (with ASan/UBSan).
+Japanese: `vtts_jlex_init(&ja, ja_blob, ja_size)` (`static vtts_jlex ja;`, < 0: not a JLEX v1 blob), then `vtts_text_opts o = {.lang = VTTS_LANG_JA, .lex = &lex, .ja = &ja};`. Without `ja`, kana and kanji give no ids (and NFKC is skipped). Without `zh`, Han characters give no ids; without `lex`, English words are not pronounced (acronyms are still spelled). A zh-en model must be fed only zh-mode ids (its embedding has 171 rows), a ko-en model only ko-mode ids (153 rows), a hi-en model only hi-mode ids (157 rows), a ja-en model only ja-mode ids (144 rows), and likewise for es-en, id-en and pt-en. Korean, Hindi, Spanish, Indonesian and Portuguese need no extra blob: `vtts_text_opts o = {.lang = VTTS_LANG_KO, .lex = &lex};` (or `VTTS_LANG_HI`, `_ES`, `_ID`, `_PT`). `make -C runtime test` builds the blobs and runs every text parity test and the fuzz runs (with ASan/UBSan).
 
 ### Choosing the front-end from the model
 
 A model file records its token set (dim `token_set`, see [docs/model-format.md](../docs/model-format.md#token_set-added-in-format-revision-11); older files map by `vocab`). Pick the mode from it instead of guessing:
 
 ```c
-int ts = vtts_token_set(&m);                    /* VTTS_TOKSET_V1, _VI_EN, _ZH_EN, _KO_EN, _JA_EN, _HI_EN, _UNKNOWN */
+int ts = vtts_token_set(&m);                    /* VTTS_TOKSET_V1, _VI_EN, _ZH_EN, _KO_EN, _JA_EN, _ES_EN, _ID_EN, _PT_EN, _HI_EN, _UNKNOWN */
 vtts_lang lang;
 if (vtts_text_default_lang(ts, &lang) < 0) { /* unknown token set: no device front-end, ids only */ }
 if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set */ }
@@ -90,7 +91,8 @@ if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set
 | `ko-en` | `ko` (Hangul → Korean, Latin words → English, numbers in Korean; the only ko-en mode of the Python front-end) | `ko` |
 | `hi-en` | `hi` (Devanagari → Hindi, Latin words → English, numbers in Hindi; the only hi-en mode of the Python front-end) | `hi` |
 | `ja-en` | `ja` (kana/kanji → Japanese, Latin words → English, numbers in Japanese; the only ja-en mode of the Python front-end) | `ja` |
-| `es-en`, `id-en`, `pt-en` (unknown to the runtime), unknown | none (Python front-end only) | |
+| `es-en`, `id-en`, `pt-en` | `es`, `id`, `pt` (plain Latin words by the `latin.py` rules → the language or English, numbers in the language) | `es`, `id`, `pt` |
+| `th-en` (unknown to the runtime), unknown | none (Python front-end only) | |
 
 `tools/vtts_say.c` is the host version of this path: `vtts_say MODEL.vtts OUT.wav --lex lex_en.bin --zh zh_lex.bin --ja ja_lex.bin [--lang MODE] "text"` prints the token set, the mode and the ids of each chunk, then writes the audio.
 
