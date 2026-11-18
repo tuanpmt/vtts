@@ -76,3 +76,20 @@ def test_duplicate_ids_across_sources_rejected(tmp_path):
     s2, syn2 = _run(tmp_path, "b", [("x", "Hi.", "en", 1.0)])
     with pytest.raises(ValueError, match="duplicate"):
         build_rows([Source(s1, syn1), Source(s2, syn2)], root=tmp_path)
+
+
+def test_source_from_an_existing_train_csv(tmp_path):
+    """A run whose manifest is gone: texts and durations come from its synth_to_csv list."""
+    syn = tmp_path / "bi" / "synth"
+    (syn / "audio").mkdir(parents=True)
+    for uid in ("en0", "en1", "vi0"):
+        (syn / "audio" / f"{uid}.flac").write_bytes(b"")
+    csv = tmp_path / "bi" / "train.csv"
+    csv.write_text("vi0|Xin chào.|1.000|vi\nen1|Good night.|2.000|en\nen0|Hello.|1.500|en\n"
+                   "en9|No audio.|1.0|en\n", encoding="utf-8")
+    s = parse_source(f"csv={csv},synth={syn},only=en")
+    assert s.csv == csv and s.sentences is None
+    assert build_rows([s], root=tmp_path) == ["en0|Hello.|1.500|en|bi/synth/audio/en0.flac",
+                                              "en1|Good night.|2.000|en|bi/synth/audio/en1.flac"]
+    with pytest.raises(ValueError):
+        parse_source(f"csv={csv},sentences=a.jsonl,synth={syn}")

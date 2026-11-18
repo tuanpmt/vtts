@@ -6,8 +6,11 @@ Usage (zh-en, nu-10, run from the repo root with the data under data/):
     --source sentences=data/zh/mixed.jsonl,synth=data/zh/synth_nu10_mixed \
     --source sentences=data/bilingual/sentences.jsonl,synth=data/bilingual/synth_nu10,only=en,hours=35
   uv run python scripts/teacher/train_teacher.py --data data/zh/pair_nu10 --wavs data ...
+(when a run's manifest.jsonl is not on the host, use its synth_to_csv list instead:
+ --source csv=data/bilingual/pre_nu10/train.csv,synth=data/bilingual/synth_nu10,only=en,hours=35)
 
-Source fields: sentences= (jsonl), synth= (run dir with manifest.jsonl and audio/), only=LANG (keep
+Source fields: sentences= (jsonl) or csv= (uid|text|dur|lang list of the run), synth= (run dir
+with manifest.jsonl and audio/), only=LANG (keep
 rows of one lang), lang=LANG (write this lang), hours=H (seeded random subset of about H hours,
 e.g. hours=30 on the main-language source for the data-budget experiment). Rows are
 uid|text|dur|lang|audio with audio relative to --root, which must be the --wavs directory given

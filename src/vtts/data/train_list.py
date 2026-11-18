@@ -5,11 +5,12 @@ teacher's --wavs directory (or absolute), so one list can draw on several synthe
 (teacher/data.py); without it the audio is WAVS/<uid>.wav or .flac as before.
 
 A source is a sentence list (jsonl with id, text, lang) plus a synthesis run (SYNTH/manifest.jsonl
-and SYNTH/audio/<id>.flac). Options per source: only (keep rows of one lang), lang (write this
-lang instead of the sentence's), hours (keep a seeded random subset of about this many hours).
-Rows are left out when the manifest status is not ok, the audio file is missing, the text holds
-"|", or (lang zh, ko, ja) the text has characters the pair front-end cannot read, so the ids
-always match the audio.
+and SYNTH/audio/<id>.flac), or, for a run whose manifest is not at hand, an existing list made by
+scripts/data/synth_to_csv.py (csv=, uid|text|dur|lang) plus the run's audio. Options per source:
+only (keep rows of one lang), lang (write this lang instead of the sentence's), hours (keep a
+seeded random subset of about this many hours). Rows are left out when the manifest status is not
+ok, the audio file is missing, the text holds "|", or (lang zh, ko, ja) the text has characters
+the pair front-end cannot read, so the ids always match the audio.
 """
 
 from __future__ import annotations
@@ -19,7 +20,7 @@ import random
 from dataclasses import dataclass
 from pathlib import Path
 
-LIST_FIELDS = ("sentences", "synth", "only", "lang", "hours")
+LIST_FIELDS = ("sentences", "csv", "synth", "only", "lang", "hours")
 
 
 def unreadable(text: str, lang: str) -> bool:
@@ -41,25 +42,27 @@ def unreadable(text: str, lang: str) -> bool:
 
 @dataclass(frozen=True)
 class Source:
-    sentences: Path
+    sentences: Path | None
     synth: Path
     only: str | None = None
     lang: str | None = None
     hours: float | None = None
+    csv: Path | None = None
 
 
 def parse_source(spec: str) -> Source:
-    """"sentences=PATH,synth=DIR[,only=en][,lang=zh][,hours=30]"."""
+    """"sentences=PATH|csv=PATH,synth=DIR[,only=en][,lang=zh][,hours=30]"."""
     kv: dict[str, str] = {}
     for part in spec.split(","):
         key, sep, val = part.partition("=")
         if not sep or key.strip() not in LIST_FIELDS:
             raise ValueError(f"bad source field {part!r} (fields: {', '.join(LIST_FIELDS)})")
         kv[key.strip()] = val.strip()
-    if "sentences" not in kv or "synth" not in kv:
-        raise ValueError(f"source needs sentences= and synth=: {spec!r}")
-    return Source(Path(kv["sentences"]), Path(kv["synth"]), kv.get("only"), kv.get("lang"),
-                  float(kv["hours"]) if "hours" in kv else None)
+    if ("sentences" in kv) == ("csv" in kv) or "synth" not in kv:
+        raise ValueError(f"source needs synth= and one of sentences= or csv=: {spec!r}")
+    return Source(Path(kv["sentences"]) if "sentences" in kv else None, Path(kv["synth"]),
+                  kv.get("only"), kv.get("lang"), float(kv["hours"]) if "hours" in kv else None,
+                  Path(kv["csv"]) if "csv" in kv else None)
 
 
 def _jsonl(path: Path) -> list[dict]:
@@ -71,14 +74,27 @@ def _audio_ref(path: Path, root: Path) -> str:
     return p.relative_to(r).as_posix() if p.is_relative_to(r) else str(p)
 
 
-def source_rows(src: Source, root: Path, seed: int = 0) -> list[tuple[str, str, float, str, str]]:
-    """(uid, text, dur, lang, audio) of one source, sorted by uid."""
+def _texts_and_durations(src: Source) -> tuple[dict[str, tuple[str, str]], dict[str, float]]:
+    text: dict[str, tuple[str, str]] = {}
+    dur: dict[str, float] = {}
+    if src.csv is not None:
+        for line in src.csv.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                uid, t, d, lang, *_ = line.split("|")
+                if src.only is None or lang == src.only:
+                    text[uid], dur[uid] = (t, lang), float(d)
+        return text, dur
     text = {r["id"]: (r["text"], r["lang"]) for r in _jsonl(src.sentences)
             if src.only is None or r["lang"] == src.only}
-    dur: dict[str, float] = {}
     for r in _jsonl(src.synth / "manifest.jsonl"):
         if r["status"] == "ok" and r["id"] in text:
             dur[r["id"]] = r["dur"]
+    return text, dur
+
+
+def source_rows(src: Source, root: Path, seed: int = 0) -> list[tuple[str, str, float, str, str]]:
+    """(uid, text, dur, lang, audio) of one source, sorted by uid."""
+    text, dur = _texts_and_durations(src)
     rows = []
     for uid in sorted(dur):
         t, lang = text[uid]
@@ -106,7 +122,7 @@ def build_rows(sources: list[Source], root: Path, seed: int = 0) -> list[str]:
     for src in sources:
         for uid, text, dur, lang, audio in source_rows(src, root, seed):
             if uid in seen:
-                raise ValueError(f"duplicate id {uid} in {src.sentences}")
+                raise ValueError(f"duplicate id {uid} in {src.csv or src.sentences}")
             seen.add(uid)
             out.append(f"{uid}|{text}|{dur:.3f}|{lang}|{audio}")
     return out
