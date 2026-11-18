@@ -181,13 +181,36 @@ VOCAB_SIZE_ESEN = len(TOKENS_ESEN)
 TOKEN_SETS[TOKEN_SET_ESEN] = TOKENS_ESEN
 
 
+# ---------------- token set "id-en": Indonesian + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes from the spelling rules of src/vtts/frontend/id/: six vowels (e = the e of "enak",
+# @ = the schwa of "besar"), the stressed vowels (the schwa is never stressed) and consonants
+# (? = glottal stop: final k, apostrophe; sy, kh for loanwords; v is read f).
+
+TOKEN_SET_IDEN = "id-en"
+
+ID_VOWELS = ("a", "i", "u", "e", "@", "o")
+ID_STRESSED = ("a", "i", "u", "e", "o")
+ID_CONSONANTS = ("p", "b", "t", "d", "k", "g", "?", "c", "j", "f", "s", "z", "sy", "kh", "h", "m",
+                 "n", "ny", "ng", "l", "r", "w", "y")
+
+TOKENS_IDEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"ID:{v}" for v in ID_VOWELS)
+    + tuple(f"ID:{v}1" for v in ID_STRESSED)
+    + tuple(f"ID:{c}" for c in ID_CONSONANTS)
+)
+VOCAB_SIZE_IDEN = len(TOKENS_IDEN)
+
+TOKEN_SETS[TOKEN_SET_IDEN] = TOKENS_IDEN
+
+
 # ---------------- text modes of the pair token sets ----------------
 # text_to_ids(text, mode) with a pair mode returns ids of that mode's token set; the modes vi, en
 # and auto use vi-en. A new pair adds its token set above, one entry here, its language module
 # (languages.py) and its tagging rule (lang.py).
 
 PAIR_MODES: dict[str, str] = {"zh": TOKEN_SET_ZHEN, "ko": TOKEN_SET_KOEN, "ja": TOKEN_SET_JAEN,
-                              "es": TOKEN_SET_ESEN}
+                              "es": TOKEN_SET_ESEN, "id": TOKEN_SET_IDEN}
 
 _TOKEN_INDEX: dict[str, dict[str, int]] = {}
 

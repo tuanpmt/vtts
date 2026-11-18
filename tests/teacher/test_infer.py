@@ -55,7 +55,7 @@ def test_synthesize_pair_languages_use_pair_token_sets(tmp_path, monkeypatch):
     seen = []
     monkeypatch.setattr(t, "synthesize_ids", lambda ids: seen.append(ids) or np.zeros(10, np.float32))
     for lang, text in [("zh", "打开Wi-Fi设置。"), ("ko", "Wi-Fi를 켜 주세요."), ("ja", "Wi-Fiを設定してください。"),
-                       ("es", "Abre GitHub, por favor.")]:
+                       ("es", "Abre GitHub, por favor."), ("id", "Tolong buka GitHub, ya.")]:
         seen.clear()
         t.synthesize(text, lang=lang)
         assert seen == text_to_ids(text, lang) == [encode_text(text, lang)]  # as in training

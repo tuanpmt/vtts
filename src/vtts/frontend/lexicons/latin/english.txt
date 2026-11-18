@@ -213,6 +213,7 @@ camera
 drone
 console
 remote
+vacuum
 screen
 touch
 keyboard
@@ -406,6 +407,7 @@ master
 card
 cards
 wifi
+wi-fi
 bluetooth
 ok
 okay

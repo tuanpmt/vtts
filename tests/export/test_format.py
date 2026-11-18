@@ -34,7 +34,7 @@ def test_offsets_aligned(tmp_path):
 
 
 @pytest.mark.parametrize("vocab,name", [(65, "v1"), (107, "vi-en"), (171, "zh-en"), (153, "ko-en"),
-                                        (144, "ja-en"), (138, "es-en")])
+                                        (144, "ja-en"), (138, "es-en"), (141, "id-en")])
 def test_token_set_derived_from_vocab(tmp_path, vocab, name):
     from vtts.export.format import TOKEN_SET_CODES, token_set_of
 

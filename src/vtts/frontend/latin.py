@@ -28,6 +28,7 @@ from .lexicons import load_words
 # Pair language -> its letters outside ASCII (a word with one of them is that language).
 LATIN_PAIRS: dict[str, str] = {
     "es": "áéíóúüñÁÉÍÓÚÜÑ",
+    "id": "",  # Indonesian has no letters of its own
 }
 
 
@@ -65,10 +66,12 @@ def latin_word_lang(core: str, code: str) -> str:
 
 # ---------------- spelling checks shared by the languages' valid_spelling ----------------
 
-def consonant_runs(w: str, vowels: str = "aeiou") -> list[tuple[str, bool, bool]] | None:
+def consonant_runs(w: str, vowels: str = "aeiou",
+                   y_vowel: bool = True) -> list[tuple[str, bool, bool]] | None:
     """(consonant run, at the start, at the end) of a word whose digraphs were replaced by one
-    upper-case letter; y is a vowel unless a vowel follows. None when the word has no vowel."""
-    is_v = [ch in vowels or (ch == "y" and not (k + 1 < len(w) and w[k + 1] in vowels))
+    upper-case letter; with y_vowel, y is a vowel unless a vowel follows. None when the word has
+    no vowel."""
+    is_v = [ch in vowels or (y_vowel and ch == "y" and not (k + 1 < len(w) and w[k + 1] in vowels))
             for k, ch in enumerate(w)]
     if not any(is_v):
         return None

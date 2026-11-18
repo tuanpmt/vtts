@@ -42,7 +42,7 @@ def _plain_words(text: str) -> list[str]:
     return out
 
 
-LATIN_PAIR_LANGS = ("es",)
+LATIN_PAIR_LANGS = ("es", "id")
 PAIR_LANGS = ("zh", "ko", "ja", *LATIN_PAIR_LANGS)
 WHISPER_LANGUAGE = {"vi": "vi", "en": "en", "mixed": "vi", "zh": "zh", "ko": "ko", "ja": "ja",
                     **{code: code for code in LATIN_PAIR_LANGS}}

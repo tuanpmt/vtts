@@ -1,0 +1,43 @@
+# Words read in Indonesian in the id-en pair even when they are also in lexicons/latin/english.txt
+# or their spelling does not fit the Indonesian rules (frontend/latin.py, rule 1). One lower-case
+# word per line.
+#
+# Indonesian words that are also English entries
+menu
+mode
+model
+salad
+yoga
+visa
+bank
+master
+# Indonesian (or fully adopted) words whose spelling breaks the rules
+film
+allah
+makassar
+mekkah
+muhammad
+quran
+alquran
+koordinasi
+kooperasi
+pizza
+taksi
+tv
+ok
+oke
+# Units and abbreviations read by the Indonesian normalizer
+km
+kg
+cm
+mm
+ml
+mg
+dll
+dsb
+dst
+yg
+dgn
+tdk
+utk
+krn

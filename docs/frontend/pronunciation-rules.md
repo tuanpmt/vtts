@@ -314,7 +314,7 @@ The counters are a table (`COUNTERS`: reading, geminated reading, reading after 
 
 Spanish (and the other Latin-script pairs) share their letters with English, so `lang.py` asks `latin.latin_word_lang` for each plain word, in this order:
 
-1. A word with the language's own letters (Spanish á é í ó ú ü ñ) is that language.
+1. A word with the language's own letters (Spanish á é í ó ú ü ñ; Indonesian has none) is that language.
 2. A word in `lexicons/<lang>/native.txt` is that language (function words, words also in the English list such as Spanish `red`, `sale`, `come`, adopted words that break the spelling rules: `club`, `internet`, `pizza`).
 3. A word in `lexicons/latin/english.txt` is English (common English words and tech terms whose spelling would also fit: `update`, `online`, `router`, `google`). The list is shared by all Latin-script pairs; collisions go in the pair's `native.txt`.
 4. A word with a capital after a lower-case letter is English (`iPhone`, `GitHub`, `macOS`).
@@ -360,6 +360,41 @@ The set is dialect-neutral like the Vietnamese one: `th` (c before e/i, z) and `
 | Sr., Dra., EE. UU., etc. | señor, doctora, estados unidos, etcétera |
 
 Quotes, brackets, ¿ and ¡ are dropped; … and dashes between spaces are a pause. Training rows with letters of other scripts are left out (`unreadable_es`).
+
+## Indonesian (token set `id-en`)
+
+Python only for now (`src/vtts/frontend/id/`). `text_to_ids(text, "id")` returns ids of the token set `id-en` (model header code 7): ids 0–106 are the v2 set unchanged, followed by 34 Indonesian tokens from id 107 (vocabulary 141):
+
+| Group | Tokens |
+|---|---|
+| Vowels (6) | `ID:a i u e @ o` (`e` as in enak, `@` the schwa of besar) |
+| Stressed vowels (5) | `ID:a1 i1 u1 e1 o1` (the schwa is never stressed) |
+| Consonants (23) | `ID:p b t d k g ? c j f s z sy kh h m n ny ng l r w y` (`?` glottal stop) |
+
+**Letters** (`id/g2p_id.py`): ng, ny, sy, kh are one sound each; c as in cara, j as in jalan; v → `f`, q → `k`, x → `k s`; k at the end of a word and an apostrophe → `?` (anak, ma'af); a doubled consonant letter is read once (Allah). ai, au, oi, ei at the end of a word are diphthongs (pantai → `t a y`); elsewhere each vowel is a syllable (baik, laut).
+
+**The two e's:** the spelling does not tell the schwa (besar) from the e of enak. `lexicons/id/overrides.tsv` respells words whose e the defaults get wrong (in a reading, `e` is the schwa and `é` the other e: `enak` → énak, `mereka` → meréka, `kereta` → keréta); a word with a suffix (-nya -lah -kah -pun -ku -mu -kan -an -i) or a prefix (di- ke- se- ber- ter- per- pe- me-) uses its stem's entry (mejanya, berbeda, pedesaan). Defaults: e next to another vowel is `e` (teori, video); e in the last syllable is `e` when it ends the word (sore, sate) or is closed by a consonant other than r (boleh, bebek, hotel, persen); every other e is the schwa (besar, kemudian, komputer). Letter names come out of the normalizer with é (`KTP` → ka té pé).
+
+**Stress:** the second-to-last syllable, or the last one when the second-to-last has the schwa (be-SAR, per-GI); function words (yang, dan, di, ke, dari, dengan …) are not stressed.
+
+**Normalization** (`id/normalize_id.py`):
+
+| Text | Reading |
+|---|---|
+| 11, 21, 100, 1.000, 1.250.000 | sebelas, dua puluh satu, seratus, seribu, satu juta dua ratus lima puluh ribu |
+| 3,5 / 2.75 | tiga koma lima / dua titik tujuh puluh lima |
+| 17/08/1945, 2026-11-18 | tujuh belas agustus seribu sembilan ratus empat puluh lima, delapan belas november … |
+| pukul 14.30, jam 07:00, 9:05 | pukul empat belas lewat tiga puluh menit, jam tujuh, sembilan lewat lima menit |
+| Rp50.000, Rp 1,5 juta, $20 | lima puluh ribu rupiah, satu koma lima juta rupiah, dua puluh dolar |
+| 15%, 30 °C, 5 km, 80 km/jam | lima belas persen, tiga puluh derajat celsius, lima kilometer, delapan puluh kilometer per jam |
+| ke-1, ke-3 | pertama, ketiga |
+| 0812-3456-7890, +62 … | digit by digit (nol for 0, plus for +) |
+| 10-20, -5 | sepuluh sampai dua puluh, minus lima |
+| anak2, anak-anak | anak anak |
+| KTP, ESP32-P4, ASEAN | ka té pé, é és pé tiga dua pé empat, asean |
+| dll., Jl., No., yg | dan lain lain, jalan, nomor, yang |
+
+Known gaps: e in words missing from the exception table follows the defaults; k before a consonant is not made a glottal stop (rakyat); regional names and Arabic loanwords may need entries.
 
 ## Changing a rule or an entry
 
@@ -414,6 +449,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 
 | Date | Change |
 |---|---|
+| 2026-11-18 | Indonesian front-end in Python: token set `id-en`, spelling, e and stress rules, `lexicons/id/`, Indonesian number reading, mode `id`. |
 | 2026-11-18 | Spanish front-end in Python: token set `es-en`, spelling and stress rules, `lexicons/es/`, Spanish number reading, mode `es`; Latin-script code-switching rules (`latin.py`, `lexicons/latin/english.txt`). |
 | 2026-11-18 | Korean front-end in C: mode `VTTS_LANG_KO`, rule tables and `overrides.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-18 | Japanese front-end in Python: token set `ja-en`, `lexicons/ja/` word, context and kanji tables from Open JTalk's dictionary (98.2% mora agreement with pyopenjtalk), kana rules, Japanese number and counter reading, mode `ja`. |

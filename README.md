@@ -209,7 +209,7 @@ vtts focuses on **bilingual voices: one main language + English**, with code-swi
 - [ ] **Japanese + English**
 - [ ] **Spanish + English** (Python front-end done)
 - [ ] **Portuguese (Brazil) + English**
-- [ ] **Indonesian + English**
+- [ ] **Indonesian + English** (Python front-end done)
 - [ ] **Hindi + English**
 - [ ] **Thai + English**
 - [ ] Later, by demand: German, French

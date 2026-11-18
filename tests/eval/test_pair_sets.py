@@ -7,7 +7,7 @@ import pytest
 
 SETS = Path(__file__).resolve().parents[2] / "eval" / "sets"
 GROUPS = {"device", "numbers", "names", "questions", "long"}
-LATIN_LANGS = ["es"]
+LATIN_LANGS = ["id", "es"]
 
 
 def _rows(name):
