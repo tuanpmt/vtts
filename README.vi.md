@@ -122,7 +122,7 @@ Gõ một câu rồi Enter để board đọc ra loa. Các lệnh khác:
 | Lệnh | Tác dụng |
 |---|---|
 | `model s` / `model m` | Chọn model nhẹ hoặc model chất lượng |
-| `lang <mode>` | Chế độ đọc; các chế độ hợp lệ theo token set của model: `vi` / `en` / `auto` cho vi-en (`vi` vẫn đọc được từ tiếng Anh trong câu tiếng Việt), `zh` cho zh-en ([chi tiết](firmware/esp32/README.md#languages-and-text-modes)) |
+| `lang <mode>` | Chế độ đọc; các chế độ hợp lệ theo token set của model: `vi` / `en` / `auto` cho vi-en (`vi` vẫn đọc được từ tiếng Anh trong câu tiếng Việt), `zh` cho zh-en, `ko` cho ko-en, `hi` cho hi-en ([chi tiết](firmware/esp32/README.md#languages-and-text-modes)) |
 | `vol 0-100`, `gain dB` | Âm lượng; gain số có bộ giới hạn mềm |
 | `speed 0.7-1.6` | Tốc độ đọc (lớn hơn là chậm hơn) |
 | `expr 0.5-2.5` | Độ lên xuống của ngữ điệu (model có bộ dự đoán cao độ) |

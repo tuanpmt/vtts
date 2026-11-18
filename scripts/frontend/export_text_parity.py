@@ -12,6 +12,10 @@ sentences from the reading tables.
            --limit 3000 --out runtime/test/text_parity_ko.tsv
 --ko does the same for mode ko (token set ko-en); without data/ko/sentences.jsonl it generates Korean
 sentences from the eval sets, the templates, the exception table and random syllables.
+       uv run python scripts/frontend/export_text_parity.py --hi --sentences data/hi/sentences.jsonl \
+           data/hi/probe_src.jsonl --limit 3000 --out runtime/test/text_parity_hi.tsv
+--hi does the same for mode hi (token set hi-en): the Wikipedia sentences when present, plus sentences
+built by the corpus rules from their words, the templates, the exception table and random aksharas.
 """
 
 import argparse
@@ -317,18 +321,198 @@ def ko_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
     return out
 
 
+HI_EDGE = [
+    "नमस्ते, आप कैसे हैं?", "मैं घर जा रहा हूँ। तुम कहाँ हो॥ ठीक है", "मैं घर जा रहा हूँ।तुम कहाँ हो?", "मेरी उम्र 21 साल है।",
+    "मेरी उम्र २१ साल है।", "7:30 पर मिलते हैं", "7:00 बजे", "10:15 बजे आना", "23:59:59", "24:00 और 25:00 और 1:5", "0:05",
+    "15/08/1947 को आज़ादी मिली।", "15.08.1947", "15-08-47", "2026-11-19", "2026-13-45 और 12026-1-1", "32/13/2020",
+    "सन 1947 में", "सन् 1857 का विद्रोह", "ईस्वी 2026", "हसन 1947", "₹500", "₹ 1,25,000", "₹1.50", "₹1.05", "₹1.5",
+    "₹1", "₹01", "₹0.00", "Rs 99", "Rs. 250", "Rs.5", "रु. 250", "रु 40", "INR 1000", "US$ 20", "$20", "$5.50", "€3.5", "£7",
+    "₹5 हज़ार", "₹2 लाख", "₹3 करोड़", "₹ 7.5 करोड़", "$5 million", "50%", "50 %", "-20%", "12.5%", "5 km", "128GB", "30°C",
+    "30℃", "45°", "100 km/h", "5kWh", "2.5 kg", "500 ml", "1 L", "3 mAh", "2GHz", "5 m", "5 मीटर", "10वीं", "1वाँ", "2वीं",
+    "3वें", "4वीं", "6वाँ", "5वां", "21वीं सदी", "10 वें", "1ला", "1st", "10-20", "10 - 20", "10–20", "5-10 लोग", "1-2-3",
+    "9876543210", "+91 98765 43210", "+91-98765-43210", "011-2345-6789", "12345", "12 34 56", "1234567890123",
+    "ESP32", "ESP32-P4", "5G", "A1B2C3", "USB3.0", "RTX3060", "GPT-4o", "1,25,000", "125,000", "1,00,00,000",
+    "10000000000", "999999999999999", "1000000000000000", "12345678901234567890", "0", "00", "007", "3.14", "0.5", ".5",
+    "-5", "-3.5", "x-5", "5.", "1.2.3", "1,2345", "1,23,4567", "डॉ. शर्मा", "प्रो. वर्मा", "5 कि.मी.", "2 कि.ग्रा.",
+    "नं. 5", "पृ. 10", "लि.", "स्व. नेहरू", "R&D", "C++", "2 + 3 = 5", "3 × 4", "a@b.com", "राम-श्याम", "और... फिर",
+    "वह — जो", "हाँ…", "“उद्धरण” (कोष्ठक) [वर्ग] {घुँघराले} <कोण>", "¿क्या? ¡हाँ!", "*जोर* _रेखा_ ~लहर~ |पाइप|",
+    "मुझे YouTube पर वीडियो देखना है।", "मैंने laptop पर software update कर दिया।", "Wi-Fi को चालू करो।",
+    "मेरा फ़ोन 5G है", "YouTube खोलो, please.", "Turn on the Wi-Fi.", "Hello. नमस्ते! How are you? मैं ठीक हूँ; धन्यवाद।",
+    "km", "GB", "Rs", "km/h", "मेरा iPhone 15 Pro है", "don't और it's और o'clock", "e-mail और x-ray", "café और naïve",
+    "Ǆ ß Æ Œ ĳ ſ", "Ω ω Ж ж", "中文 और 한국어", "Việt Nam", "x²", "½", "ज़रूरी", "ज़रूरी", "फ़िल्म", "फ़िल्म", "ड़", "ड़",
+    "ऩ", "ऩ", "क़िला", "ख़ुशी", "ग़लत", "य़", "ऱ", "ऴ", "हिंदी", "ठंडा", "दांत", "संसार", "में", "कमला", "समझना", "सत्य",
+    "मित्र", "न", "ज्ञान", "क्षमा", "श्री", "ऋषि", "कृष्ण", "दुःख", "दुःख", "ॐ", "ऑफ़िस", "कॉफ़ी", "ऍ", "ॲ", "क्", "क्‍ष",
+    "क्‌ष", "क़्", "क़्", "ज़्ञ", "अंधेरा", "पंख", "चंचल", "घंटा", "अंत", "कंबल", "संयम", "सिंह", "कांड", "हँसना", "आँख",
+    "उन्होंने", "इंग्लैंड", "दुःख-सुख", "प्रातः", "अतः", "उदाहरण", "उदाहरणों", "असफल", "असफलता", "राष्ट्रपति", "करोड़पति",
+    "अ", "आ", "ा", "ि", "्", "़", "ं", "ँ", "ः", "ऽ", "॰", "।", "॥", "०१२३४५६७८९", "१०:३०", "₹१,२५,०००", "२०२६-११-१९",
+    "...", "", "।", "a", "क", "  आगे पीछे खाली  ", "कई\tटैब", "बहुत " * 120 + "लंबा।", "क" * 200 + "।",
+    "संख्या " + "1234567890" * 20 + "।", "Very long English " + "words " * 80 + "end.",
+    "हम हर रविवार को पार्क में घूमने जाते हैं और वहाँ बच्चों के साथ खेलते हैं " * 6 + "।",
+]
+
+
+def _hi_vocab(paths: list[Path]) -> list[str]:
+    """Hindi words of the given sentence files, the templates, the tests' sentences and the exception
+    table (with case suffixes)."""
+    import json
+
+    root = Path(__file__).parents[2]
+    words: set[str] = set()
+    for p in paths:
+        if p.exists():
+            for x in p.read_text(encoding="utf-8").splitlines():
+                if x.strip():
+                    words.update(json.loads(x)["text"].split())
+    for t in (root / "scripts" / "data" / "bilingual" / "templates_hi.txt").read_text(encoding="utf-8").splitlines():
+        words.update(t.replace("{T}", " ").split())
+    for name in ("test_hi_g2p.py", "test_normalize_hi.py", "test_text_hi.py"):
+        words.update(re.findall(r"[\u0900-\u0963\u0971-\u097f]+", (root / "tests" / "frontend" / name).read_text(encoding="utf-8")))
+    from vtts.frontend.hi.g2p_hi import override_table
+
+    for k in override_table():
+        words.update({k, k + "ों", k + "ें", k + "ी", k + "ा"})
+    return sorted(w.strip(".,?!") for w in words if any("\u0900" <= c <= "\u097f" for c in w) and w.strip(".,?!"))
+
+
+_HI_CONS = "कखगघङचछजझञटठडढणतथदधनपफबभमयरलवशषसहळ"
+_HI_MATRAS = ["", "", "", "ा", "ि", "ी", "ु", "ू", "े", "ै", "ो", "ौ", "ृ", "ॅ", "ॉ", "्"]
+_HI_SIGNS = ["", "", "", "", "", "ं", "ँ", "ः", "़"]
+_HI_VOWELS = "अआइईउऊएऐओऔऋऑ"
+
+
+def _hi_akshara(rnd) -> str:
+    r = rnd.random()
+    if r < 0.08:
+        return rnd.choice(_HI_VOWELS) + rnd.choice(_HI_SIGNS)
+    c = rnd.choice(_HI_CONS)
+    if rnd.random() < 0.08:
+        c += "़"
+    if rnd.random() < 0.15:  # conjunct
+        c += "्" + rnd.choice(_HI_CONS)
+    return c + rnd.choice(_HI_MATRAS) + rnd.choice(_HI_SIGNS)
+
+
+def _hi_words(rnd) -> list[str]:
+    """Random words of 1-6 aksharas, 20 per line: every branch of the schwa-deletion, nasal and
+    nukta rules."""
+    words = ["".join(_hi_akshara(rnd) for _ in range(rnd.randint(1, 6))) for _ in range(12000)]
+    return [" ".join(words[i:i + 20]) + "." for i in range(0, len(words), 20)]
+
+
+def _hi_generated(vocab: list[str], n: int, rnd) -> list[str]:
+    """Sentences by the Wikipedia corpus rules (vtts.data.wiki_corpus: Devanagari words, intra-word
+    hyphens, , . ? !, 5-30 words, ending with . ? !), plus some with numbers and Latin words."""
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "laptop",
+             "software", "update", "YouTube", "km", "GB", "Rs"]
+    out = []
+    for k in range(n):
+        words = []
+        for _ in range(rnd.randint(5, 30)):
+            w = rnd.choice(vocab)
+            if rnd.random() < 0.04:
+                w += "-" + rnd.choice(vocab)
+            if rnd.random() < 0.08:
+                w += ","
+            words.append(w)
+        if k % 3 == 0:  # mixed: numbers and Latin words
+            for _ in range(rnd.randint(1, 3)):
+                pos = rnd.randrange(len(words) + 1)
+                v = rnd.choice([str(rnd.randint(0, 100)), str(rnd.randint(0, 10 ** 7)), rnd.choice(latin),
+                                f"{rnd.randint(1, 28)}/{rnd.randint(1, 12)}/{rnd.randint(1900, 2100)}",
+                                f"{rnd.randint(0, 23)}:{rnd.randint(0, 59):02d}", f"₹{rnd.randint(1, 99999)}",
+                                f"{rnd.randint(1, 99)}%", "सन " + str(rnd.randint(1000, 2100))])
+                words.insert(pos, v)
+        out.append(" ".join(words) + rnd.choice([".", "?", "!", "।", "।", "॥"]))
+    return out
+
+
+def _indian(v: int) -> str:
+    """Indian digit grouping: 1,25,000."""
+    head, tail = str(v)[:-3], str(v)[-3:]
+    groups = []
+    while head:
+        groups.insert(0, head[-2:])
+        head = head[:-2]
+    return ",".join(groups + [tail])
+
+
+def _hi_numbers(rnd) -> list[str]:
+    def dev(t: str) -> str:
+        return t.translate(str.maketrans("0123456789", "०१२३४५६७८९"))
+
+    out = []
+    for _ in range(2500):
+        k = rnd.randint(0, 17)
+        v = rnd.choice([rnd.randint(0, 99), rnd.randint(0, 99999), rnd.randint(0, 10 ** 9), rnd.randint(0, 10 ** 13),
+                        rnd.randint(0, 10 ** 20)])
+        a, b = rnd.randint(0, 40), rnd.randint(0, 70)
+        indian = _indian(v)
+        t = ["कुल {} लोग", "{:,} रुपये", "₹{}", "₹" + indian, "{}.5%", "{} km", "{}GB", "{}वीं बार", "{}-{} दिन",
+             "{}:{} बजे", "{}/{}/{}", "सन {}", "-{} डिग्री", "{}.{}", "फ़ोन 98{}", "+91 {}", "Rs {}", "{} से {}"][k]
+        text = t.format(v, a, b) if "{" in t else t
+        out.append(dev(text) if rnd.random() < 0.25 else text)
+    for _ in range(500):
+        out.append(f"{rnd.randint(1, 35)}/{rnd.randint(0, 13)}/{rnd.choice([rnd.randint(0, 99), rnd.randint(1000, 2999)])} और "
+                   f"{rnd.randint(1900, 2100)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)} को "
+                   f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    return out
+
+
+def _hi_regex_fuzz(n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the normalize_hi regex passes react to."""
+    atoms = (list("0123456789") * 4 + list(":/.,-–%'+&@=×° ") * 2
+             + ["०", "५", "९", "।", "॥", "॰", "बजे", "सन", "सन्", "ईस्वी", "हज़ार", "लाख", "करोड़", "वाँ", "वीं", "वें", "वे",
+                "₹", "Rs", "Rs.", "रु.", "रु", "INR", "US$", "$", "€", "£", "km", "km/h", "m", "g", "GB", "kWh", "°C", "℃",
+                "डॉ.", "कि.मी.", "नं.", "…", "—", "...", "“", "”", "(", ")", "ESP", "A", "B", "Z", "x", "ab", "Ok", "é",
+                "क", "ा", "ं", " ", "  ", "\u00a0", "+91", "_"])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 16))) for _ in range(n)]
+
+
+def hi_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
+    """mode "hi" cases: edge cases, Hindi sentences (the given files when present) and sentences built
+    by the corpus rules from their words, the mixed-style sentences (templates_hi x terms_en), random
+    words (schwa deletion, nasals, nukta), number/date/time/money cases and regex-dense random strings."""
+    import json
+    import random
+
+    rnd = random.Random(0)
+    here = Path(__file__).parents[2] / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_hi.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(HI_EDGE)
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows
+    texts += rnd.sample(mixed, min(len(mixed), 2000))
+    texts += _hi_generated(_hi_vocab(paths), 2000, rnd)
+    texts += _hi_words(rnd)
+    texts += _hi_numbers(rnd)
+    texts += _hi_regex_fuzz(fuzz, rnd)
+    out = []
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        out.append(f"hi\t{text}\t" + ";".join(" ".join(map(str, c)) for c in text_to_ids(text, "hi")))
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--v2", action="store_true")
     ap.add_argument("--zh", action="store_true", help="mode zh (token set zh-en) cases")
     ap.add_argument("--ko", action="store_true", help="mode ko (token set ko-en) cases")
+    ap.add_argument("--hi", action="store_true", help="mode hi (token set hi-en) cases")
     ap.add_argument("--sentences", type=Path, nargs="*", default=[])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko: regex-dense random strings")
+    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko, --hi: regex-dense random strings")
     a = ap.parse_args()
-    if a.zh or a.ko:
-        lines = (zh_lines if a.zh else ko_lines)(a.sentences, a.limit, a.fuzz)
+    if a.zh or a.ko or a.hi:
+        lines = (zh_lines if a.zh else ko_lines if a.ko else hi_lines)(a.sentences, a.limit, a.fuzz)
         a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
         print(f"wrote {len(lines)} cases to {a.out}")
         return

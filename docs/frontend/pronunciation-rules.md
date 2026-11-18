@@ -435,7 +435,7 @@ Known gaps: open/closed e/o of words missing from the table follow the defaults 
 
 ## Hindi (token set `hi-en`)
 
-Python only for now (`src/vtts/frontend/hi/`). `text_to_ids(text, "hi")` returns ids of the token set `hi-en` (model header code 10): ids 0–106 are the v2 set unchanged, followed by 50 Hindi tokens from id 107 (vocabulary 157):
+Python (`src/vtts/frontend/hi/`) and C (`runtime/src/vtts_text_hi.c`, see [Device (C)](#device-c-2)). `text_to_ids(text, "hi")` returns ids of the token set `hi-en` (model header code 10): ids 0–106 are the v2 set unchanged, followed by 50 Hindi tokens from id 107 (vocabulary 157):
 
 | Group | Tokens |
 |---|---|
@@ -481,6 +481,31 @@ flowchart LR
 | । ॥ | end of sentence (`.`) |
 
 Known gaps: schwa deletion at morpheme boundaries of words missing from the table (compounds, prefixes); no stress or ह-coloured vowels (कहना is read k a h n aa); साढ़े / सवा / पौने times; ordinals like 1ला; Urdu-only letters beyond nukta consonants; ऑ is merged with औ and ॅ with ऐ.
+
+### Device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_HI` gives exactly `text_to_ids(text, "hi")` (module `runtime/src/vtts_text_hi.c`, entry `hi` in `LANGS`). As for Korean there is no blob: `runtime/tools/gen_text_tables.py` compiles the letter tables, `overrides.tsv`, `numbers.tsv` and the normalizer's strings into `vtts_text_tables.h` (`hindi_tables()`, about 6 KB of tables; the module, code and tables, adds about 25 KB to the ESP32-P4 firmware). Only English words need the VLEX lexicon.
+
+```mermaid
+flowchart LR
+    PY["g2p_hi.py dicts<br/>+ overrides.tsv + numbers.tsv<br/>+ normalize_hi.py strings"] --> GEN["gen_text_tables.py"]
+    GEN --> H["vtts_text_tables.h<br/>(VTTS_HI_*)"]
+    H --> N["vtts_hi_normalize<br/>(NFC + regex passes)"]
+    H --> G["vtts_hi_word_ids<br/>(overrides → letters → nasals → schwa deletion)"]
+    N --> G
+```
+
+| Part | How it is ported | Size |
+|---|---|---|
+| Letters | one 4-byte row per code point U+0900–U+097F: kind (consonant, independent vowel, matra, anusvara, chandrabindu, visarga, virama, nukta, ॐ, precomposed nukta letter) and phoneme indices (with the nukta form of a consonant); `HOMORGANIC`, `SHORT`, `FINAL_KEEP` as arrays indexed by phoneme | 0.7 KB |
+| Exceptions | `overrides.tsv`: the word (NFC with the nukta letters decomposed, the form the C reads) and its phoneme indices | 0.6 KB |
+| Normalizer strings | numbers 0–99, scales, months, letter names, abbreviations, units and currencies (longest first), symbols, ordinal endings and stems, the literals of the code (माइनस, दशमलव, बजे ...), `\w` bits of the Devanagari blocks, combining classes, the ASCII fold of U+00C0–U+024F | 4 KB |
+
+- **Words:** like `_parse`, `_nasals` and `_delete_schwas` over an array of segments (phoneme index, consonant or vowel, inherent schwa, sign); the nasal decisions use the segments before any insertion, and the medial rule runs right to left over the list as it shrinks, as in Python. A word gets at most 318 tokens (one chunk).
+- **Normalization** follows `normalize_hi` pass by pass: NFC for Devanagari (nukta letters, canonical order of the marks) and Devanagari digits, abbreviations, danda, dropped characters, ISO and d/m/y dates, times with बजे, years after सन / ईस्वी, money (rupees and paise), phone numbers, percent, units, ordinals, ranges, pauses, product codes, numbers, Latin words (folded to ASCII, then the English normalizer), symbols. Where regex backtracking can change a match (the alternation `\d{1,3}(,\d{2,3})+|\d+` with an optional fraction, `\s?` before units, `%` and ordinal endings, the optional country code and digit groups of a phone number), the candidate ends are tried in the order the regex engine tries them. Numbers of any length are read like Python (from 10¹⁵ digit by digit).
+- **Tagging and chunks:** a word with a Devanagari letter or sign is Hindi, a plain Latin word is English unless it is a unit or currency word of the normalizer (km, GB, Rs), anything else is Hindi. Sentences also end right after । and ॥ (and `。！？；`, as for Chinese and Korean).
+- **Tests:** `runtime/test/text_parity_hi.tsv` (10,951 cases: edge cases, the Wikipedia probe sentences, 2,000 mixed template sentences, 2,000 sentences built by the corpus rules from their words with numbers and Latin words mixed in, 12,000 random words of 1–6 aksharas for the schwa, nasal and nukta rules, 3,000 number, date, time, money and phone cases with Devanagari digits, 3,000 regex-dense random strings) must match exactly, and a fuzz run in hi mode must stay inside its buffers and inside the hi-en ids: `make -C runtime hi_test` (or `test`) or `uv run pytest tests/export`. A test also checks that `vtts_text_tables.h` holds the current Hindi tables. After changing a Hindi rule or table, run `uv run python runtime/tools/gen_text_tables.py` and regenerate the fixture with `uv run python scripts/frontend/export_text_parity.py --hi --sentences data/hi/sentences.jsonl data/hi/probe_src.jsonl --limit 3000 --out runtime/test/text_parity_hi.tsv`.
+- **Known gaps (pathological input only):** Latin letters followed by separate combining marks (U+0300–U+036F) are not composed (Python's NFC may join them into one letter); only ASCII and Devanagari digits count as digits and `\w` outside Devanagari follows the runtime's letter classes; a Devanagari word of more than 318 tokens is cut (Python gives an over-long chunk); the control characters U+001C–U+001F and U+0085 are not whitespace in C; a sentence is cut at 4,096 code points, 2,048 items or 1,024 chunks, and a Hindi run whose normalized form exceeds 2,048 code points is dropped.
 
 ## Thai (token set `th-en`)
 
@@ -589,6 +614,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 
 | Date | Change |
 |---|---|
+| 2026-11-19 | Hindi front-end in C: mode `VTTS_LANG_HI`, letter tables, `overrides.tsv` and `numbers.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-19 | Hindi front-end in Python: token set `hi-en`, Devanagari letters, nasals and schwa deletion, `lexicons/hi/` (numbers 0-99, overrides), Hindi number reading, mode `hi`. |
 | 2026-11-19 | Thai front-end in Python: token set `th-en`, word list from PyThaiNLP, syllable patterns, consonant classes and tone rules, `lexicons/th/`, Thai number reading, mode `th`. |
 | 2026-11-18 | Portuguese (Brazil) front-end in Python: token set `pt-en`, spelling, nasal, stress and vowel-quality rules, `lexicons/pt/`, Portuguese number reading, mode `pt`. |

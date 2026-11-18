@@ -78,14 +78,19 @@ def test_token_set_old_files_by_vocab(tmp_path):
 
 def test_token_set_codes_match_c_header():
     """Every code of the C header is the Python one; codes the runtime does not know yet (token
-    sets with a Python front-end only) come after them, so the runtime loads them as unknown."""
+    sets with a Python front-end only) come after them or have an "unknown" slot in the runtime's
+    table (vtts_model.c), so the runtime loads them as unknown."""
     from vtts.export.format import TOKEN_SET_CODES, TOKEN_SET_SIZES
 
     h = (Path(__file__).parents[2] / "runtime" / "include" / "vtts.h").read_text()
     in_c = {m.group(1).lower().replace("_", "-"): int(m.group(2))
             for m in re.finditer(r"VTTS_TOKSET_(\w+) = (\d+)", h) if m.group(1) != "UNKNOWN"}
     assert len(in_c) >= 5 and all(TOKEN_SET_CODES[name] == code for name, code in in_c.items())
-    assert all(c > max(in_c.values()) for n, c in TOKEN_SET_CODES.items() if n not in in_c)
+    src = (Path(__file__).parents[2] / "runtime" / "src" / "vtts_model.c").read_text()
+    table = re.search(r"TOKEN_SETS\[\] = \{(.*?)\};", src, re.DOTALL).group(1)
+    slots = re.findall(r'\{"([\w-]+)", (\d+)\}', table)
+    assert all(slots[code] == (name, str(TOKEN_SET_SIZES[name])) for name, code in in_c.items())
+    assert all(c >= len(slots) or slots[c][0] == "unknown" for n, c in TOKEN_SET_CODES.items() if n not in in_c)
     assert len(set(TOKEN_SET_CODES.values())) == len(TOKEN_SET_CODES)
     assert len(set(TOKEN_SET_SIZES.values())) == len(TOKEN_SET_SIZES)  # vocab -> set unambiguous
 

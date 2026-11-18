@@ -31,6 +31,13 @@ static const char *const BENCH_KO[] = {
     "오늘은 2026년 11월 14일 토요일입니다.",
 };
 
+static const char *const BENCH_HI[] = {
+    "नमस्ते, मैं आपका वॉइस असिस्टेंट हूँ।",
+    "कमरे का तापमान अभी 26 डिग्री है, नमी 65% है।",
+    "कल सुबह 6:30 बजे का अलार्म लगा दिया गया है।",
+    "आज शनिवार है, 14/11/2026।",
+};
+
 const char *synth_lang_name(int k) { return g.lang[k] < 0 ? "none" : vtts_text_lang_name((vtts_lang)g.lang[k]); }
 
 /* PCM kept only while `dump` or resampled playback needs it: up to KEEP_SECONDS of int16 in PSRAM,
@@ -115,7 +122,7 @@ int synth_text(const char *text, int64_t *total_us) {
         printf("ERROR token set %s has no on-device text front-end; send ids (scripts/device/say.py --lang)\n",
                vtts_token_set_name(vtts_token_set(&g.models[g.cur])));
         chunks = 0;
-    } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en), KO (ko-en) */
+    } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en), KO (ko-en), HI (hi-en) */
         vtts_text_opts o = {.lang = (vtts_lang)g.lang[g.cur], .lex = g.has_lex ? &g.lex : NULL,
                             .zh = g.has_zh ? &g.zh : NULL};
         chunks = vtts_text_to_ids_ex(text, g.ws, &o, on_ids, NULL);
@@ -133,7 +140,8 @@ void synth_report(const char *tag, int idx, int chunks, int64_t total_us) {
 }
 
 void synth_bench(void) {
-    const char *const *set = g.lang[g.cur] == VTTS_LANG_ZH ? BENCH_ZH : g.lang[g.cur] == VTTS_LANG_KO ? BENCH_KO : BENCH;
+    const int lang = g.lang[g.cur];
+    const char *const *set = lang == VTTS_LANG_ZH ? BENCH_ZH : lang == VTTS_LANG_KO ? BENCH_KO : lang == VTTS_LANG_HI ? BENCH_HI : BENCH;
     for (int k = 0; k < 4; k++) {
         int64_t us;
         int c = synth_text(set[k], &us);

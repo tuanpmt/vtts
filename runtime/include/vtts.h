@@ -30,7 +30,7 @@ enum {
 enum { VTTS_DEC_HIFIGAN = 0, VTTS_DEC_ISTFT = 1, VTTS_DEC_VOCOS = 2 };
 
 /* Token set a model was trained with (dim `token_set`, docs/model-format.md). Files without the
- * dim map by vocab: 65 -> V1, 107 -> VI_EN, 171 -> ZH_EN, 153 -> KO_EN, 144 -> JA_EN, any other
+ * dim map by vocab: 65 -> V1, 107 -> VI_EN, 171 -> ZH_EN, 153 -> KO_EN, 144 -> JA_EN, 157 -> HI_EN, any other
  * vocab > 65 -> VI_EN and <= 65 -> V1 (the rule the firmware used before the dim existed). */
 typedef enum {
     VTTS_TOKSET_UNKNOWN = 0, /* a code newer than this runtime: only raw ids can be used */
@@ -38,7 +38,9 @@ typedef enum {
     VTTS_TOKSET_VI_EN = 2,   /* "vi-en" (v2), 107 ids */
     VTTS_TOKSET_ZH_EN = 3,   /* "zh-en", 171 ids */
     VTTS_TOKSET_KO_EN = 4,   /* "ko-en", 153 ids */
-    VTTS_TOKSET_JA_EN = 5    /* "ja-en", 144 ids */
+    VTTS_TOKSET_JA_EN = 5,   /* "ja-en", 144 ids */
+    /* 6..9 (es-en, id-en, pt-en, th-en) load as UNKNOWN: no device front-end yet */
+    VTTS_TOKSET_HI_EN = 10   /* "hi-en", 157 ids */
 } vtts_token_set_t;
 
 typedef struct {
@@ -117,7 +119,7 @@ void vtts_set_expressiveness(vtts_model *m, float e);
 /* Token set of a loaded model (vtts_token_set_t); see the enum for files without the dim. */
 int vtts_token_set(const vtts_model *m);
 
-/* "v1", "vi-en", "zh-en", "ko-en", "ja-en" or "unknown". */
+/* "v1", "vi-en", "zh-en", "ko-en", "ja-en", "hi-en" or "unknown". */
 const char *vtts_token_set_name(int token_set);
 
 /* Number of ids of a token set (0 for VTTS_TOKSET_UNKNOWN). */

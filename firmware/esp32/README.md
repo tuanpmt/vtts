@@ -46,13 +46,14 @@ The firmware chooses the text front-end from the token set recorded in each mode
 | `vi-en` | `vi`, `en`, `auto` | `vi` | Vietnamese + English (`vi` also reads English words; `auto` decides per sentence) |
 | `zh-en` | `zh` | `zh` | Mandarin + English: Han characters in Mandarin, Latin words in English, numbers in Mandarin (same as `text_to_ids(text, "zh")` in Python) |
 | `ko-en` | `ko` | `ko` | Korean + English: Hangul in Korean (standard pronunciation rules and the exception table), Latin words in English, numbers in Korean with counters (same as `text_to_ids(text, "ko")` in Python). No extra blob: the Korean tables are compiled into the firmware |
+| `hi-en` | `hi` | `hi` | Hindi + English: Devanagari in Hindi (letter rules, anusvara, schwa deletion and the exception table), Latin words in English, numbers in Hindi with lakh and crore, the danda ends a sentence (same as `text_to_ids(text, "hi")` in Python). No extra blob: the Hindi tables are compiled into the firmware |
 | `ja-en` | none | | No device front-end yet: text lines print an `ERROR`; send `ids ...` from `scripts/device/say.py` |
 
-`ids <ids;ids...>` is unchanged and works with every model (ids must be below the model's vocabulary size). `bench` uses four Mandarin sentences for zh-en models, four Korean ones for ko-en models and the Vietnamese ones otherwise.
+`ids <ids;ids...>` is unchanged and works with every model (ids must be below the model's vocabulary size). `bench` uses four Mandarin sentences for zh-en models, four Korean ones for ko-en models, four Hindi ones for hi-en models and the Vietnamese ones otherwise.
 
 ## Flash budget
 
-The app partition (`partitions.csv`, `factory`, 8 MB) holds the code, both models, `lex_en.bin` and `lex_zh.bin`. With the largest models (zh-en M 2.62 MB + S 1.23 MB, int8) the image is 6.30 MB on the ESP32-P4 (2.09 MB, 25%, free) and 6.18 MB on the ESP32-S3 (2.21 MB, 26%, free); with two ko-en models (2.61 + 1.22 MB) the images are 6.29 MB (P4, 2.10 MB, 25%, free) and 6.18 MB (S3, 2.21 MB, 26%, free). The Korean front-end adds about 15 KB of code and tables and no blob. The build prints the exact numbers.
+The app partition (`partitions.csv`, `factory`, 8 MB) holds the code, both models, `lex_en.bin` and `lex_zh.bin`. With the largest models (zh-en M 2.62 MB + S 1.23 MB, int8) the image is 6.30 MB on the ESP32-P4 (2.09 MB, 25%, free) and 6.18 MB on the ESP32-S3 (2.21 MB, 26%, free); with two ko-en models (2.61 + 1.22 MB) the images are 6.29 MB (P4, 2.10 MB, 25%, free) and 6.18 MB (S3, 2.21 MB, 26%, free). The Korean front-end adds about 15 KB of code and tables and no blob, the Hindi front-end about 25 KB and no blob. The build prints the exact numbers.
 
 ## Output
 

@@ -52,7 +52,9 @@ static int set_indexed(vtts_model *m, const uint8_t *key, int32_t v) {
 }
 
 static const struct { const char *name; int size; } TOKEN_SETS[] = {
-    {"unknown", 0}, {"v1", 65}, {"vi-en", 107}, {"zh-en", 171}, {"ko-en", 153}, {"ja-en", 144}};
+    {"unknown", 0}, {"v1", 65}, {"vi-en", 107}, {"zh-en", 171}, {"ko-en", 153}, {"ja-en", 144},
+    {"unknown", 0}, {"unknown", 0}, {"unknown", 0}, {"unknown", 0}, /* 6..9: es-en id-en pt-en th-en, raw ids */
+    {"hi-en", 157}};
 #define N_TOKEN_SETS ((int)(sizeof(TOKEN_SETS) / sizeof(TOKEN_SETS[0])))
 
 /* dim token_set present (non-zero): a known code must fit the embedding; a code newer than this
@@ -60,7 +62,8 @@ static const struct { const char *name; int size; } TOKEN_SETS[] = {
 static int resolve_token_set(vtts_model *m) {
     int code = m->token_set;
     m->token_set_in_file = code != 0;
-    if (code > 0 && code < N_TOKEN_SETS) return m->vocab >= TOKEN_SETS[code].size ? VTTS_OK : VTTS_ERR_FORMAT;
+    if (code > 0 && code < N_TOKEN_SETS && TOKEN_SETS[code].size)
+        return m->vocab >= TOKEN_SETS[code].size ? VTTS_OK : VTTS_ERR_FORMAT;
     if (code != 0) { m->token_set = VTTS_TOKSET_UNKNOWN; return VTTS_OK; }
     m->token_set = m->vocab > 65 ? VTTS_TOKSET_VI_EN : VTTS_TOKSET_V1;
     for (int k = 1; k < N_TOKEN_SETS; k++)

@@ -55,7 +55,8 @@ int main(void) {
     static vtts_model m;
     /* files without the dim: by vocab, exact sizes first, else the old rule (> 65: vi-en) */
     static const int vocab_map[][2] = {{65, VTTS_TOKSET_V1},    {107, VTTS_TOKSET_VI_EN}, {171, VTTS_TOKSET_ZH_EN},
-                                       {153, VTTS_TOKSET_KO_EN}, {144, VTTS_TOKSET_JA_EN}, {100, VTTS_TOKSET_VI_EN},
+                                       {153, VTTS_TOKSET_KO_EN}, {144, VTTS_TOKSET_JA_EN}, {157, VTTS_TOKSET_HI_EN},
+                                       {100, VTTS_TOKSET_VI_EN},
                                        {256, VTTS_TOKSET_VI_EN}, {40, VTTS_TOKSET_V1}};
     for (size_t i = 0; i < sizeof vocab_map / sizeof *vocab_map; i++) {
         CHECK(load(vocab_map[i][0], NO_DIM, &m) == VTTS_OK);
@@ -75,8 +76,8 @@ int main(void) {
     /* a code from a newer exporter still loads (raw ids only) */
     CHECK(load(200, 42, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
     CHECK(load(200, -3, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
-    /* es-en, id-en, pt-en (6..8) have Python front-ends only so far: raw ids */
-    for (int ts = 6; ts <= 8; ts++) {
+    /* es-en, id-en, pt-en (6..8) have Python front-ends only so far, 9 (th-en) is reserved: raw ids */
+    for (int ts = 6; ts <= 9; ts++) {
         CHECK(load(200, ts, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
         CHECK(m.token_set_in_file && strcmp(vtts_token_set_name(ts), "unknown") == 0);
     }
@@ -86,7 +87,13 @@ int main(void) {
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_ZH_EN), "zh-en") == 0);
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_KO_EN), "ko-en") == 0);
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_JA_EN), "ja-en") == 0);
+    CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_HI_EN), "hi-en") == 0);
     CHECK(strcmp(vtts_token_set_name(99), "unknown") == 0);
+    /* hi-en (code 10): the dim and its size */
+    CHECK(load(157, VTTS_TOKSET_HI_EN, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_HI_EN && m.token_set_in_file);
+    CHECK(load(153, VTTS_TOKSET_HI_EN, &m) == VTTS_ERR_FORMAT);
+    CHECK(load(200, 11, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+    CHECK(vtts_token_set_size(VTTS_TOKSET_HI_EN) == 157 && vtts_token_set_size(7) == 0);
     CHECK(vtts_token_set_size(VTTS_TOKSET_ZH_EN) == 171 && vtts_token_set_size(99) == 0);
 
     /* text modes per token set (consistent with MODE_LANGS in src/vtts/frontend/lang.py) */
@@ -95,6 +102,7 @@ int main(void) {
     CHECK(vtts_text_default_lang(VTTS_TOKSET_VI_EN, &l) == 0 && l == VTTS_LANG_VI);
     CHECK(vtts_text_default_lang(VTTS_TOKSET_ZH_EN, &l) == 0 && l == VTTS_LANG_ZH);
     CHECK(vtts_text_default_lang(VTTS_TOKSET_KO_EN, &l) == 0 && l == VTTS_LANG_KO);
+    CHECK(vtts_text_default_lang(VTTS_TOKSET_HI_EN, &l) == 0 && l == VTTS_LANG_HI);
     CHECK(vtts_text_default_lang(VTTS_TOKSET_JA_EN, &l) < 0);
     CHECK(vtts_text_default_lang(VTTS_TOKSET_UNKNOWN, &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_V1, "vi", &l) == 0 && l == VTTS_LANG_V1);
@@ -112,11 +120,17 @@ int main(void) {
     CHECK(vtts_text_lang_for(VTTS_TOKSET_ZH_EN, "ko", &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_VI_EN, "ko", &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_JA_EN, "ko", &l) < 0);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_HI_EN, "hi", &l) == 0 && l == VTTS_LANG_HI);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_HI_EN, "en", &l) < 0);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_KO_EN, "hi", &l) < 0);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_VI_EN, "hi", &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_ZH_EN, NULL, &l) < 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_V1), "vi") == 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_VI_EN), "vi|en|auto") == 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_ZH_EN), "zh") == 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_KO_EN), "ko") == 0);
+    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_HI_EN), "hi") == 0);
+    CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_HI), "hi") == 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_JA_EN), "") == 0);
     CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_KO), "ko") == 0);
     CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_ZH), "zh") == 0);

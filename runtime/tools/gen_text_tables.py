@@ -225,6 +225,150 @@ def korean_tables() -> list[str]:
     return out
 
 
+# literal strings of normalize_hi.py (not in a table there); each must appear in its source
+HI_LITERALS = {"MINUS": "माइनस ", "POINT": " दशमलव ", "BAJE": "बजे", "BAJKAR": "बजकर", "MINUTE": "मिनट",
+               "SECOND": "सेकंड", "SE": "से", "PERCENT": "प्रतिशत", "PLUS": "प्लस ", "RUPAYA": "रुपया",
+               "RUPAYE": "रुपये", "PAISE": "पैसे", "SAU": "सौ", "SAN_H": "सन्", "SAN": "सन", "ISVI": "ईस्वी"}
+
+
+def _deva_nfd(s: str) -> str:
+    """NFC with the nukta letters decomposed: the form the C g2p compares (canonically equivalent)."""
+    from vtts.frontend.hi import g2p_hi as g
+
+    t = unicodedata.normalize("NFC", s)
+    return "".join(g.PRECOMPOSED[c] + g.NUKTA if c in g.PRECOMPOSED else c for c in t)
+
+
+def hindi_tables() -> list[str]:
+    """Token ids of the hi-en set, the letter tables of the Devanagari rules (hi/g2p_hi.py), the
+    exception table (lexicons/hi/overrides.tsv) and the strings of the normalizer (hi/normalize_hi.py,
+    lexicons/hi/numbers.tsv). Phonemes are coded as their index in g2p_hi.PHONEMES (the token order)."""
+    import re
+
+    from vtts.frontend import latin_norm
+    from vtts.frontend.hi import g2p_hi as g
+    from vtts.frontend.hi import normalize_hi as nh
+
+    src = (Path(nh.__file__)).read_text(encoding="utf-8")
+    assert all(v in src for v in HI_LITERALS.values())
+    hi = phoneme_set.token_index(phoneme_set.TOKEN_SET_HIEN)
+    ph = {p: i for i, p in enumerate(g.PHONEMES)}
+    assert [hi[f"HI:{p}"] for p in g.PHONEMES] == list(range(hi["HI:a"], hi["HI:a"] + len(g.PHONEMES)))
+    out = ["/* ---- Hindi (token set hi-en; ids 0..106 are the v2 ids) ---- */",
+           f"#define VTTS_HIEN_VOCAB {phoneme_set.VOCAB_SIZE_HIEN}",
+           f"#define VTTS_HIEN_HI0 {hi['HI:a']}  /* + phoneme index (g2p_hi.PHONEMES) */",
+           f"#define VTTS_HI_N_PHONEMES {len(g.PHONEMES)}",
+           f"#define VTTS_HI_PH_NASAL {ph[g.NASAL]}", ""]
+    out += c_list("VTTS_HI_PHONEMES", list(g.PHONEMES))
+    # per code point U+0900..U+097F: kind, a, b, c
+    K_LETTER, K_VOWEL, K_MATRA, K_ANUSVARA, K_CANDRA, K_VISARGA, K_VIRAMA, K_NUKTA, K_OM, K_PRECOMP = range(1, 11)
+    rows = []
+    for cp in range(0x900, 0x980):
+        ch = chr(cp)
+        kind, a, b, c = 0, 255, 255, 255
+        if ch in g.LETTERS:
+            kind, a, c = K_LETTER, ph[g.LETTERS[ch]], ph[g.NUKTA_LETTERS.get(ch, g.LETTERS[ch])]
+        elif ch in g.INDEPENDENT or ch in g.MATRAS:
+            parts = (g.INDEPENDENT.get(ch) or g.MATRAS[ch]).split()
+            assert len(parts) <= 2
+            kind = K_VOWEL if ch in g.INDEPENDENT else K_MATRA
+            b = ph[parts[-1]]
+            a = ph[parts[0]] if len(parts) == 2 else 255
+        elif ch == g.ANUSVARA:
+            kind = K_ANUSVARA
+        elif ch == g.CHANDRABINDU:
+            kind = K_CANDRA
+        elif ch == g.VISARGA:
+            kind = K_VISARGA
+        elif ch == g.VIRAMA:
+            kind = K_VIRAMA
+        elif ch == g.NUKTA:
+            kind = K_NUKTA
+        elif ch == "ॐ":
+            kind = K_OM
+        elif ch in g.PRECOMPOSED:
+            kind, a = K_PRECOMP, ord(g.PRECOMPOSED[ch]) - 0x900
+        rows.append(f"{{{kind}, {a}, {b}, {c}}}")
+    assert all(ord(ch) in range(0x900, 0x980) for ch in g.PRECOMPOSED)
+    out += ["/* U+0900 + i: {kind, a, b, c}; kind 1 consonant (a phoneme, c with nukta), 2 independent vowel and",
+            " * 3 matra (a consonant or 255, b vowel), 4 anusvara, 5 chandrabindu, 6 visarga, 7 virama, 8 nukta,",
+            " * 9 om, 10 precomposed nukta letter (a = base letter - U+0900), 0 ignored */",
+            "static const uint8_t VTTS_HI_CHARS[128][4] = {"]
+    out += ["    " + ", ".join(rows[i:i + 8]) + "," for i in range(0, 128, 8)] + ["};", ""]
+    for name, vals in (("HOMORGANIC", [ph[g.HOMORGANIC[p]] if p in g.HOMORGANIC else 255 for p in g.PHONEMES]),
+                       ("SHORT", [int(p in g.SHORT) for p in g.PHONEMES]),
+                       ("FINAL_KEEP", [int(p in g.FINAL_KEEP) for p in g.PHONEMES])):
+        out += [f"static const uint8_t VTTS_HI_{name}[{len(vals)}] = {{" + ", ".join(map(str, vals)) + "};"]
+    out += [""]
+    word = [0] * 160  # Python \w over U+0900..U+097F and U+A8E0..U+A8FF
+    for k, cp in enumerate(list(range(0x900, 0x980)) + list(range(0xA8E0, 0xA900))):
+        if re.match(r"\w", chr(cp)):
+            word[k // 8] |= 1 << (k % 8)
+    out += ["/* Python \\w bits: U+0900..U+097F (bits 0..127), U+A8E0..U+A8FF (128..159) */",
+            "static const uint8_t VTTS_HI_WORD_BITS[20] = {" + ", ".join(map(str, word[:20])) + "};", ""]
+    ccc = [(cp, unicodedata.combining(chr(cp))) for cp in list(range(0x300, 0x370)) + list(range(0x900, 0x980))
+           + list(range(0xA8E0, 0xA900)) if unicodedata.combining(chr(cp))]
+    out += ["/* canonical combining classes (non-zero) of U+0300..U+036F and the Devanagari blocks */",
+            "static const struct { uint16_t cp; uint8_t ccc; } VTTS_HI_CCC[] = {"]
+    out += ["    " + ", ".join(f"{{0x{c:04X}, {v}}}" for c, v in ccc[i:i + 6]) + "," for i in range(0, len(ccc), 6)]
+    out += ["};", f"#define VTTS_HI_N_CCC {len(ccc)}", ""]
+    table = g.override_table()
+    assert all(unicodedata.normalize("NFC", k) == k for k in table)
+    longest = max(len(v.split()) for v in table.values())
+    out += [f"#define VTTS_HI_OVR_MAX {longest}",
+            "/* lexicons/hi/overrides.tsv: the word (NFC, nukta letters decomposed) and its phoneme indices */",
+            "static const struct { const char *word; uint8_t n; uint8_t ph[VTTS_HI_OVR_MAX]; } VTTS_HI_OVERRIDES[] = {"]
+    for k, v in table.items():
+        ids = [ph[p] for p in v.split()]
+        out.append(f"    {{{c_str(_deva_nfd(k))}, {len(ids)}, {{{', '.join(map(str, ids))}}}}},")
+    out += ["};", f"#define VTTS_HI_N_OVERRIDES {len(table)}", ""]
+    nw = nh.number_words()
+    assert sorted(nw) == list(range(100))
+    out += c_list("VTTS_HI_NUMBERS", [nw[i] for i in range(100)])
+    assert [s for s, _ in nh.SCALES] == [10 ** 7, 10 ** 5, 1000, 100]
+    out += c_list("VTTS_HI_SCALES", [name for _, name in nh.SCALES])
+    out += c_list("VTTS_HI_MONTHS", list(nh.MONTHS))
+    out += c_list("VTTS_HI_LETTERS", [nh.LETTERS[c] for c in "abcdefghijklmnopqrstuvwxyz"])
+
+    def pairs(name: str, items: list[tuple[str, str]], comment: str) -> list[str]:
+        return ([f"static const char *const VTTS_HI_{name}[][2] = {{  /* {comment} */"]
+                + [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in items]
+                + ["};", f"#define VTTS_HI_N_{name} {len(items)}", ""])
+
+    def by_len(d: dict) -> list[tuple[str, str]]:
+        return [(k, d[k]) for k in sorted(d, key=len, reverse=True)]
+
+    out += pairs("ABBREV", by_len(nh.ABBREVIATIONS), "longest first")
+    out += pairs("UNITS", by_len(nh.UNITS), "alternation order")
+    out += pairs("CURRENCY", by_len(nh.CURRENCY), "alternation order")
+    assert all(len(k) == 1 for k in nh.SYMBOLS)
+    out += pairs("SYMBOLS", list(nh.SYMBOLS.items()), "replaced in this order")
+    out += pairs("ORD_ENDINGS", list(nh.ORDINAL_ENDINGS.items()), "alternation order")
+    out += ["static const struct { int n; const char *stem; } VTTS_HI_ORD_STEMS[] = {"]
+    out += [f"    {{{n}, {c_str(v)}}}," for n, v in nh.ORDINAL_STEMS.items()]
+    out += ["};", f"#define VTTS_HI_N_ORD_STEMS {len(nh.ORDINAL_STEMS)}", ""]
+    m = re.search(r"\(\\s\?\(\?:([^)]*)\)\)\?$", nh.MONEY.pattern)
+    assert m, nh.MONEY.pattern
+    out += c_list("VTTS_HI_MONEY_SCALES", m.group(1).split("|"))
+    out += [f"#define VTTS_HI_N_MONEY_SCALES {len(m.group(1).split('|'))}", ""]
+    out += c_list("VTTS_HI_LATIN_WORDS", sorted(nh.LATIN_WORDS))
+    out += [f"#define VTTS_HI_N_LATIN_WORDS {len(nh.LATIN_WORDS)}", ""]
+    out += ["static const uint32_t VTTS_HI_DROP[] = {  /* latin_norm.DROP: replaced by a space */"]
+    drop = [f"0x{ord(c):04X}" for c in latin_norm.DROP]
+    out += ["    " + ", ".join(drop[i:i + 8]) + "," for i in range(0, len(drop), 8)]
+    out += ["};", f"#define VTTS_HI_N_DROP {len(drop)}", ""]
+    fold = []
+    for cp in range(0xC0, 0x250):
+        f = "".join(x for x in unicodedata.normalize("NFKD", chr(cp)) if x.isascii())
+        assert len(f) <= 2
+        fold.append(c_str(f))
+    out += ["/* ASCII letters of the NFKD form of U+00C0..U+024F (the LATIN pass of normalize_hi) */",
+            f"static const char VTTS_HI_FOLD[{len(fold)}][3] = {{"]
+    out += ["    " + ", ".join(fold[i:i + 12]) + "," for i in range(0, len(fold), 12)] + ["};", ""]
+    out += [f"#define VTTS_HI_{k} {c_str(v)}" for k, v in HI_LITERALS.items()] + [""]
+    return out
+
+
 def main() -> None:
     rows = []
     for base in BASES:
@@ -255,6 +399,7 @@ def main() -> None:
     lines += english_tables()
     lines += chinese_tables()
     lines += korean_tables()
+    lines += hindi_tables()
     lines += ["#endif", ""]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({len(rows)} letters)")
