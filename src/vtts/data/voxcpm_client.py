@@ -33,6 +33,15 @@ def load_env(path: Path = DEFAULT_ENV) -> tuple[str, str]:
     return vals["VOXCPM_URL"].rstrip("/"), vals["VOXCPM_KEY"]
 
 
+def shard(items: list[dict], spec: str | None) -> list[dict]:
+    """Items for one of several synthesis services: spec "i/n" keeps every n-th item from i.
+    Shards write to the same output directory (manifest lines are appended atomically)."""
+    if not spec:
+        return items
+    i, n = (int(x) for x in spec.split("/"))
+    return items[i::n]
+
+
 def build_request(text: str, voice: str) -> dict:
     return {"model": "tts-1", "voice": voice, "response_format": "wav", "input": text}
 

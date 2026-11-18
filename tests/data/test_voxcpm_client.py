@@ -93,3 +93,12 @@ def test_bad_request_not_retried_and_key_never_logged(server, tmp_path):
     c = _run(fake, env, tmp_path / "o", [{"id": "d", "text": "d"}])
     assert c["failed"] == 1 and fake.calls["d"] == 1
     assert KEY not in (tmp_path / "o" / "manifest.jsonl").read_text()
+
+
+def test_shards_split_items_without_overlap():
+    from vtts.data.voxcpm_client import shard
+
+    items = [{"id": str(i)} for i in range(10)]
+    parts = [shard(items, f"{k}/3") for k in range(3)]
+    assert sorted(x["id"] for p in parts for x in p) == sorted(x["id"] for x in items)
+    assert shard(items, None) == items
