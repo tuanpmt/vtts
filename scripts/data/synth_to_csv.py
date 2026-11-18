@@ -4,7 +4,8 @@ Usage: uv run python scripts/data/synth_to_csv.py --sentences data/bilingual/sen
        --synth data/bilingual/synth --out data/bilingual/pre
 Only ids whose manifest status is ok and whose audio file exists are listed. Rows with lang "zh"
 (Mandarin, token set zh-en) are left out when a Han character has no reading in the front-end
-tables, so the ids always match the audio.
+tables, so the ids always match the audio. --reject leaves out ids listed by
+scripts/data/asr_filter.py.
 """
 
 import argparse
@@ -19,7 +20,10 @@ def main() -> None:
     ap.add_argument("--sentences", type=Path, required=True)
     ap.add_argument("--synth", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
+    ap.add_argument("--reject", type=Path, default=None,
+                    help="file of ids to leave out (e.g. SYNTH/rejected.txt from asr_filter.py)")
     a = ap.parse_args()
+    rejected = set(a.reject.read_text().split()) if a.reject else set()
     text = {}
     for line in a.sentences.read_text(encoding="utf-8").splitlines():
         if line.strip():
@@ -36,7 +40,7 @@ def main() -> None:
     if unreadable:
         print(f"{len(unreadable)} zh sentences left out (characters without a reading)")
     rows = [f"{i}|{text[i][0]}|{d:.3f}|{text[i][1]}" for i, d in dur.items()
-            if i in text and "|" not in text[i][0] and i not in unreadable]
+            if i in text and "|" not in text[i][0] and i not in unreadable and i not in rejected]
     (a.out / "train.csv").write_text("\n".join(rows) + "\n", encoding="utf-8")
     hours = sum(dur[r.split("|")[0]] for r in rows) / 3600
     print(f"{len(rows)} rows, {hours:.1f} h")
