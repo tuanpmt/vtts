@@ -22,7 +22,7 @@ from .vits.mel_processing import spectrogram_torch
 
 def read_rows(csv: Path) -> list[tuple[str, str, float, str | None]]:
     """uid|text|duration[|lang]; lang (vi, en, mixed) selects phoneme set v2, zh the zh-en set,
-    ko the ko-en set."""
+    ko the ko-en set, ja the ja-en set."""
     rows = []
     for line in Path(csv).read_text(encoding="utf-8").splitlines():
         if line.strip():
@@ -33,12 +33,12 @@ def read_rows(csv: Path) -> list[tuple[str, str, float, str | None]]:
 
 def encode_text(text: str, lang: str | None) -> list[int]:
     """One id sequence for a training sentence: v1 when lang is None, zh-en for "zh" (Chinese
-    with English terms), ko-en for "ko" (Korean with English terms), else v2. English rows ("en")
-    give the same ids in every pair token set, so a zh-en or ko-en teacher trains on its own rows
-    plus the vi-en English rows unchanged."""
+    with English terms), ko-en for "ko" (Korean with English terms), ja-en for "ja" (Japanese with
+    English terms), else v2. English rows ("en") give the same ids in every pair token set, so a
+    zh-en, ko-en or ja-en teacher trains on its own rows plus the vi-en English rows unchanged."""
     if lang is None:
         return encode(g2p(normalize(text)))
-    mode = {"en": "en", "zh": "zh", "ko": "ko"}.get(lang, "vi")
+    mode = {"en": "en", "zh": "zh", "ko": "ko", "ja": "ja"}.get(lang, "vi")
     to_id = token_to_id_for(mode)
     toks = [t for chunk in text_to_tokens(text, mode) for t in chunk]
     return [to_id(BOS), *(to_id(t) for t in toks), to_id(EOS)]
