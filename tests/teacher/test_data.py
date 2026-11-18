@@ -95,3 +95,15 @@ def test_encode_text_zh_uses_zhen_ids_and_english_rows_match():
     assert zh == text_to_ids("打开Wi-Fi设置。", "zh")[0]
     en = "Turn on the light, please."
     assert encode_text(en, "en") == text_to_ids(en, "zh")[0] == text_to_ids(en, "en")[0]
+
+
+def test_encode_text_ko_uses_koen_ids_and_english_rows_match():
+    from vtts.frontend.phoneme_set import VOCAB_SIZE_KOEN, VOCAB_SIZE_V2
+    from vtts.frontend.text import text_to_ids
+    from vtts.teacher.data import encode_text
+
+    ko = encode_text("Wi-Fi를 켜 주세요.", "ko")
+    assert max(ko) >= VOCAB_SIZE_V2 and max(ko) < VOCAB_SIZE_KOEN
+    assert ko == text_to_ids("Wi-Fi를 켜 주세요.", "ko")[0]
+    en = "Turn on the light, please."
+    assert encode_text(en, "en") == text_to_ids(en, "ko")[0] == text_to_ids(en, "en")[0]
