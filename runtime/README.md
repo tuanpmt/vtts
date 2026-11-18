@@ -36,6 +36,8 @@ Streaming (Vocos-style decoder) produces exactly the same output as `vtts_synthe
 
 ```bash
 make -C runtime build/vtts_cli        # host synthesizer: token ids on stdin -> one WAV per line
+make -C runtime build/vtts_say        # text -> WAV, front-end chosen from the model's token set (like the firmware)
+make -C runtime test                  # token set + text front-end tests (no model needed)
 make -C runtime build/golden_test     # built with ASan/UBSan
 uv run pytest -q tests/export         # runs the golden, streaming and text parity tests
 ```
@@ -60,11 +62,31 @@ static vtts_lex lex;   /* small reader structs; no malloc */
 static vtts_zlex zh;
 vtts_lex_init(&lex, lex_blob, lex_size);
 vtts_zlex_init(&zh, zh_blob, zh_size);          /* < 0: not a ZLEX v1 blob */
-vtts_text_opts o = {VTTS_LANG_ZH, &lex, &zh};   /* zh may be NULL for the other modes */
+vtts_text_opts o = {.lang = VTTS_LANG_ZH, .lex = &lex, .zh = &zh};  /* zh may be NULL for the other modes */
 int chunks = vtts_text_to_ids_ex(utf8, ws, &o, on_ids, user);  /* ws: vtts_text_ws, ~143 KB, PSRAM */
 ```
 
 Without `zh`, Han characters give no ids; without `lex`, English words are not pronounced (acronyms are still spelled). A zh-en model must be fed only zh-mode ids (its embedding has 171 rows). `make -C runtime test` builds both blobs and runs every text parity test and the fuzz runs (with ASan/UBSan).
+
+### Choosing the front-end from the model
+
+A model file records its token set (dim `token_set`, see [docs/model-format.md](../docs/model-format.md#token_set-added-in-format-revision-11); older files map by `vocab`). Pick the mode from it instead of guessing:
+
+```c
+int ts = vtts_token_set(&m);                    /* VTTS_TOKSET_V1, _VI_EN, _ZH_EN, _KO_EN, _JA_EN, _UNKNOWN */
+vtts_lang lang;
+if (vtts_text_default_lang(ts, &lang) < 0) { /* ko-en, ja-en: no device front-end, ids only */ }
+if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set */ }
+```
+
+| Token set | Modes (`vtts_text_modes`) | Default |
+|---|---|---|
+| `v1` | `vi` (`VTTS_LANG_V1`) | `vi` |
+| `vi-en` | `vi`, `en`, `auto` | `vi` |
+| `zh-en` | `zh` (Han → Mandarin, Latin words → English, numbers in Mandarin; the only zh-en mode of the Python front-end) | `zh` |
+| `ko-en`, `ja-en`, unknown | none (Python front-end only) | |
+
+`tools/vtts_say.c` is the host version of this path: `vtts_say MODEL.vtts OUT.wav --lex lex_en.bin --zh zh_lex.bin [--lang MODE] "text"` prints the token set, the mode and the ids of each chunk, then writes the audio.
 
 ## Porting
 
