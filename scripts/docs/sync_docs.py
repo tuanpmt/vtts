@@ -18,7 +18,7 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
-EMOJI = {"vi": "🇻🇳", "en": "🇺🇸", "zh": "🇨🇳", "ko": "🇰🇷", "ja": "🇯🇵"}
+EMOJI = {"vi": "🇻🇳", "en": "🇺🇸", "zh": "🇨🇳", "ko": "🇰🇷", "ja": "🇯🇵", "es": "🇪🇸", "pt": "🇧🇷", "id": "🇮🇩", "hi": "🇮🇳", "th": "🇹🇭"}
 LANG_NAME = {"vi": "Vietnamese", "en": "English", "zh": "Chinese"}
 RAW = "https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/"
 

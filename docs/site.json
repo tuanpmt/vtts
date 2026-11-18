@@ -84,6 +84,76 @@
       "status": "planned",
       "status_text": "Planned",
       "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Spanish + English",
+      "name_vi": "Tây Ban Nha + Anh",
+      "langs": [
+        "es",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Portuguese (Brazil) + English",
+      "name_vi": "Bồ Đào Nha (Brazil) + Anh",
+      "langs": [
+        "pt",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Indonesian + English",
+      "name_vi": "Indonesia + Anh",
+      "langs": [
+        "id",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Hindi + English",
+      "name_vi": "Hindi + Anh",
+      "langs": [
+        "hi",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Thai + English",
+      "name_vi": "Thái + Anh",
+      "langs": [
+        "th",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
     }
   ],
   "hardware": [

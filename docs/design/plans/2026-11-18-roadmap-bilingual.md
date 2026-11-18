@@ -6,8 +6,7 @@ Status: adopted 2026-11-18. Replaces the earlier plan of single-language voices.
 
 vtts ships **bilingual models**: one voice reads its main language, English, and sentences that mix both, the way people talk to devices ("Bật Bluetooth", "打开 Wi-Fi", "Spotify 틀어 줘"). English is the shared second language because product names, units and technical terms on ESP32 devices are mostly English.
 
-- First pairs: **Vietnamese + English, Chinese + English, Korean + English, Japanese + English**.
-- More pairs follow by ESP32 market size (see "Choosing the next languages").
+- Pairs on the roadmap: **Vietnamese, Chinese, Korean, Japanese, Spanish, Portuguese (Brazil), Indonesian, Hindi and Thai, each + English**, in that order. German and French follow by demand (see "Choosing the next languages").
 - **Single-language models are retired** once the Vietnamese + English voices are published: the Vietnamese prototype leaves the voice catalog, the website and the Hugging Face card. Old releases stay downloadable on GitHub.
 - Every released voice must be **Apache-2.0**: teachers are trained from random initialization (or warm-started only from another clean vtts teacher) on synthetic audio from VoxCPM2 (Apache-2.0) with designed voices. No checkpoint descended from a non-commercial or share-alike corpus may be used.
 - Vietnamese + English ships with two voices (male `nam-1`, female `nu-10`). Every other pair starts with **one voice, the female `nu-10`**; more voices are added later with the same pipeline. Each voice comes in two sizes: **Quality (M)** and **Lite (S)**. Both run on the ESP32-P4 and the ESP32-S3; an S3-tuned vocoder variant is added where it helps.
@@ -19,7 +18,7 @@ flowchart LR
     C --> D[zh-en]
     D --> E[ko-en]
     E --> F[ja-en]
-    F --> G[Next pairs by market:<br/>es, pt-BR, id, hi, th, de, fr]
+    F --> G[es-en] --> H[pt-BR-en] --> I[id-en] --> J[hi-en] --> K[th-en]
 ```
 
 ## Shared platform work
@@ -85,13 +84,14 @@ Espressif reports revenue only as Mainland China versus the rest of the world (r
 | Front-end effort: Latin-script phonetic spelling is cheap (es, pt, id); Thai and Hindi need more work | own assessment |
 | VoxCPM2 synthesis quality per language | probe (step 5 above) |
 
-Proposed order after ja-en, to be re-checked with the data probe and any sales data that becomes available:
+Order after ja-en (adopted; re-checked with the data probe and any sales data that becomes available):
 
 1. **Spanish + English** — Latin America, Spain and the US; phonetic spelling, cheap front-end.
 2. **Portuguese (Brazil) + English** — Espressif office in Brazil, large IoT market; phonetic spelling.
 3. **Indonesian + English** — large Southeast Asian market; Latin script, regular spelling.
 4. **Hindi + English** — Espressif office in India and a very large maker community; Devanagari front-end; English-only devices are common, so demand needs checking.
-5. **Thai + English**, **German + English**, **French + English** — next by demand.
+5. **Thai + English** — Southeast Asia; no spaces between words and five tones, so the front-end needs word segmentation.
+6. **German + English**, **French + English** — later, by demand.
 
 ## Order of work and compute
 
@@ -113,3 +113,11 @@ When v0.4.0 (vi-en) is published:
 - Remove the Vietnamese prototype from `docs/site.json` (voices and listening tabs), the READMEs, the website and the Hugging Face card; note in the changelog that v0.3.x models remain on the GitHub releases.
 - Firmware and runtime keep reading v1 models for one release, then the v1 token path is removed from the C front-end and the Python front-end.
 - The single-language entries ("English", "Chinese (Mandarin)") leave the voice catalog; English is covered by every pair.
+
+## Compute layout (adopted)
+
+- **Rented GPUs (Vast, single RTX 4090 per job):** all teacher and student training on the critical path. Measured: 0.24 s/step at batch 32 with bf16, about 2.5× a home RTX 3060 Ti. One job per machine, destroyed when its checkpoints are copied home.
+- **Synthesis:** one VoxCPM2 service, as now (about 3.5 h per new pair in the background).
+- **Home GPUs:** checking synthesized audio with ASR, evaluation runs, checkpoint storage and upload staging (Xeon); non-urgent training such as the ESP32-S3 vocoder variants and experiments, and a second synthesis service if the queue grows (the second home GPU).
+- Front-ends are written one language after another while training runs, not after it.
+- Budget: about 70 GPU-hours on rented RTX 4090s for all nine pairs (about 30 USD at current prices).

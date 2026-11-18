@@ -21,6 +21,11 @@
 | Chinese + English | 🇨🇳 zh + 🇺🇸 en, code-switching | M | S | **Data: Mandarin speech synthesizing; front-end next** |
 | Korean + English | 🇰🇷 ko + 🇺🇸 en, code-switching | M | S | Planned |
 | Japanese + English | 🇯🇵 ja + 🇺🇸 en, code-switching | M | S | Planned |
+| Spanish + English | 🇪🇸 es + 🇺🇸 en, code-switching | M | S | Planned |
+| Portuguese (Brazil) + English | 🇧🇷 pt + 🇺🇸 en, code-switching | M | S | Planned |
+| Indonesian + English | 🇮🇩 id + 🇺🇸 en, code-switching | M | S | Planned |
+| Hindi + English | 🇮🇳 hi + 🇺🇸 en, code-switching | M | S | Planned |
+| Thai + English | 🇹🇭 th + 🇺🇸 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
 Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" ("Connected to AirPods over Bluetooth") in one voice; the front-end picks the language per word. The English front-end runs on the device too (C, parity-tested against Python), so mixed text is handled on the chip.
@@ -202,7 +207,12 @@ vtts focuses on **bilingual voices: one main language + English**, with code-swi
 - [ ] **Chinese + English** (Mandarin speech synthesizing; pinyin front-end next)
 - [ ] **Korean + English**
 - [ ] **Japanese + English**
-- [ ] Next pairs by ESP32 market: Spanish, Portuguese (Brazil), Indonesian, Hindi, Thai, German, French
+- [ ] **Spanish + English**
+- [ ] **Portuguese (Brazil) + English**
+- [ ] **Indonesian + English**
+- [ ] **Hindi + English**
+- [ ] **Thai + English**
+- [ ] Later, by demand: German, French
 - [ ] User pronunciation dictionary
 
 Release history: [CHANGELOG.md](CHANGELOG.md).

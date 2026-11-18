@@ -23,6 +23,11 @@
 | Trung + Anh | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M | S | **Dữ liệu: đang sinh audio tiếng Trung; tiếp theo là front-end** |
 | Hàn + Anh | 🇰🇷 ko + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 | Nhật + Anh | 🇯🇵 ja + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Tây Ban Nha + Anh | 🇪🇸 es + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Bồ Đào Nha (Brazil) + Anh | 🇧🇷 pt + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Indonesia + Anh | 🇮🇩 id + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Hindi + Anh | 🇮🇳 hi + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Thái + Anh | 🇹🇭 th + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 <!-- END:voices -->
 
 Giọng song ngữ đọc được câu một thứ tiếng và câu trộn như "Đã kết nối Bluetooth với AirPods" bằng cùng một giọng; front-end chọn ngôn ngữ cho từng từ. Front-end tiếng Anh cũng chạy trên thiết bị (bản C, có test khớp với Python), nên câu trộn được xử lý ngay trên chip.
@@ -204,7 +209,12 @@ vtts tập trung vào **giọng song ngữ: một ngôn ngữ chính + tiếng A
 - [ ] **Trung + Anh** (đang sinh audio tiếng Trung; tiếp theo là front-end pinyin)
 - [ ] **Hàn + Anh**
 - [ ] **Nhật + Anh**
-- [ ] Các cặp tiếp theo theo thị trường ESP32: Tây Ban Nha, Bồ Đào Nha (Brazil), Indonesia, Hindi, Thái, Đức, Pháp
+- [ ] **Tây Ban Nha + Anh**
+- [ ] **Bồ Đào Nha (Brazil) + Anh**
+- [ ] **Indonesia + Anh**
+- [ ] **Hindi + Anh**
+- [ ] **Thái + Anh**
+- [ ] Sau đó, theo nhu cầu: Đức, Pháp
 - [ ] Từ điển phát âm của người dùng
 
 Lịch sử phát hành: [CHANGELOG.md](CHANGELOG.md).
