@@ -86,12 +86,12 @@ All work is AI-assisted: front-end code, C ports, parity tests and docs are writ
 
 | Stage | Per voice | Notes |
 |---|---|---|
-| VoxCPM2 synthesis (about 100 h of speech) | about 1 day | rate-limited API; runs while GPUs train other voices |
+| VoxCPM2 synthesis (about 100 h of speech, about 8 GB of FLAC) | about 8–9 h | about 110–118 sentences per minute; runs while GPUs train other voices. A new pair for an existing voice needs only the main language and mixed text (about 30–50 h), since the voice's English audio is reused |
 | Teacher from random initialization | 1–1.5 days of one GPU | warm-start from a clean teacher of another pair is shorter |
 | Students M and S, int8 export, on-chip check | about half a day | |
 | Front-end per language (Python, C, parity tests) | a few working sessions | in parallel with synthesis |
 
-With one voice per new pair and two GPUs, one pair takes about two days of compute, mostly synthesis. Synthesis for the next pair runs while the current pair trains, so pairs overlap.
+With one voice per new pair and two GPUs, one pair takes one to two days of compute, mostly the teacher. Synthesis for the next pair runs while the current pair trains, so pairs overlap.
 
 ## Retiring single-language models
 
