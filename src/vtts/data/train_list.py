@@ -29,6 +29,7 @@ UNREADABLE = {
     "zh": ("vtts.frontend.zh.g2p_zh", "unknown_han"),
     "ko": ("vtts.frontend.ko.g2p_ko", "unreadable_ko"),
     "ja": ("vtts.frontend.ja.g2p_ja", "unreadable_ja"),
+    "es": ("vtts.frontend.es.g2p_es", "unreadable_es"),
 }
 
 

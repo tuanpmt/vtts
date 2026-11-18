@@ -83,3 +83,12 @@ def test_corpus_cer_cjk_counts_characters():
     from vtts.eval.cer import corpus_cer, corpus_wer
     assert corpus_cer([("你好", "你好"), ("打开灯", "打开等")], "zh") == pytest.approx(1 / 5)
     assert corpus_wer([("你好", "你好"), ("打开灯", "打开等")], "zh") == pytest.approx(1 / 5)
+
+
+def test_latin_pair_cer_reads_numbers_and_keeps_spaces():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer, wer
+    assert prep_for_cer("Abre GitHub a las 7:30.", "es") == "abre git hub a las siete y treinta"
+    assert cer("Tengo 21 años.", "tengo veintiún años", "es") == 0.0
+    assert cer("La casa.", "la cosa", "es") == pytest.approx(1 / 7)  # "la casa": 7 characters
+    assert wer("La casa es grande.", "la cosa es grande", "es") == pytest.approx(1 / 4)
+    assert WHISPER_LANGUAGE["es"] == "es"

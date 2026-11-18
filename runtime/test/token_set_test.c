@@ -75,6 +75,11 @@ int main(void) {
     /* a code from a newer exporter still loads (raw ids only) */
     CHECK(load(200, 42, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
     CHECK(load(200, -3, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+    /* es-en, id-en, pt-en (6..8) have Python front-ends only so far: raw ids */
+    for (int ts = 6; ts <= 8; ts++) {
+        CHECK(load(200, ts, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+        CHECK(m.token_set_in_file && strcmp(vtts_token_set_name(ts), "unknown") == 0);
+    }
 
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_V1), "v1") == 0);
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_VI_EN), "vi-en") == 0);

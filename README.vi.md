@@ -209,7 +209,7 @@ vtts tập trung vào **giọng song ngữ: một ngôn ngữ chính + tiếng A
 - [ ] **Trung + Anh** (đang sinh audio tiếng Trung; tiếp theo là front-end pinyin)
 - [ ] **Hàn + Anh**
 - [ ] **Nhật + Anh**
-- [ ] **Tây Ban Nha + Anh**
+- [ ] **Tây Ban Nha + Anh** (front-end Python đã xong)
 - [ ] **Bồ Đào Nha (Brazil) + Anh**
 - [ ] **Indonesia + Anh**
 - [ ] **Hindi + Anh**

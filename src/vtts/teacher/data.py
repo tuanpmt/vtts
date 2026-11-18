@@ -21,8 +21,8 @@ from .vits.mel_processing import spectrogram_torch
 
 
 def read_rows(csv: Path) -> list[tuple[str, str, float, str | None, str | None]]:
-    """uid|text|duration[|lang[|audio]]; lang (vi, en, mixed) selects phoneme set v2, zh the zh-en
-    set, ko the ko-en set, ja the ja-en set. audio is the audio file relative to the wav directory
+    """uid|text|duration[|lang[|audio]]; lang (vi, en, mixed) selects phoneme set v2, a pair
+    language (PAIR_MODES: zh, ko, ja, es ...) its pair token set. audio is the audio file relative to the wav directory
     (or absolute), for lists drawn from several synthesis runs (vtts.data.train_list); without it
     the file is WAVS/<uid>.wav or WAVS/<uid>.flac."""
     rows = []
@@ -36,10 +36,10 @@ def read_rows(csv: Path) -> list[tuple[str, str, float, str | None, str | None]]
 
 
 def encode_text(text: str, lang: str | None) -> list[int]:
-    """One id sequence for a training sentence: v1 when lang is None, zh-en for "zh" (Chinese
-    with English terms), ko-en for "ko" (Korean with English terms), ja-en for "ja" (Japanese with
+    """One id sequence for a training sentence: v1 when lang is None, the pair token set for a
+    pair language (zh -> zh-en, ko -> ko-en, ja -> ja-en, es -> es-en ...; main-language text with
     English terms), else v2. English rows ("en") give the same ids in every pair token set, so a
-    zh-en, ko-en or ja-en teacher trains on its own rows plus the vi-en English rows unchanged."""
+    pair teacher trains on its own rows plus the vi-en English rows unchanged."""
     if lang is None:
         return encode(g2p(normalize(text)))
     mode = lang if lang == "en" or lang in PAIR_MODES else "vi"

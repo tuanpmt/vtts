@@ -207,7 +207,7 @@ vtts focuses on **bilingual voices: one main language + English**, with code-swi
 - [ ] **Chinese + English** (Mandarin speech synthesizing; pinyin front-end next)
 - [ ] **Korean + English**
 - [ ] **Japanese + English**
-- [ ] **Spanish + English**
+- [ ] **Spanish + English** (Python front-end done)
 - [ ] **Portuguese (Brazil) + English**
 - [ ] **Indonesian + English**
 - [ ] **Hindi + English**

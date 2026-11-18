@@ -35,6 +35,8 @@ In bilingual mode, `lang.py` tags each word:
 - A plain Latin word is Vietnamese if it is a valid Vietnamese syllable, a key in `vi/loanwords.tsv` or `vi/abbreviations.tsv`, or a short all-caps word. Otherwise it is English.
 - Digits and codes are neutral: they follow the language of the sentence.
 
+In the Latin-script pairs (es-en ...) the same question is answered by `frontend/latin.py`; see [Latin-script pairs](#latin-script-pairs-language-of-a-word).
+
 So **adding a word to `vi/loanwords.tsv` also makes it Vietnamese in bilingual mode.** Do that for words Vietnamese speakers say in a Vietnamese way (`wifi` → "oai phai", `smartphone` → "sờ mát phôn"). Leave out brand names that bilingual voices should say in English (`iPhone`); the English front-end reads them.
 
 ## Shared rules
@@ -308,6 +310,57 @@ Numbers are Sino-Japanese, written in katakana as pronounced, so the sound chang
 
 The counters are a table (`COUNTERS`: reading, geminated reading, reading after ン, last-digit and whole-number exceptions). Punctuation 、。！？ maps to `, . ! ?`; 「」『』（）・ are dropped, …… and —— are a pause. Latin words go to the English module (`Wi-Fiを設定` → Wi-Fi / を設定). Sentences also end after 。！？ without a following space.
 
+## Latin-script pairs: language of a word
+
+Spanish (and the other Latin-script pairs) share their letters with English, so `lang.py` asks `latin.latin_word_lang` for each plain word, in this order:
+
+1. A word with the language's own letters (Spanish á é í ó ú ü ñ) is that language.
+2. A word in `lexicons/<lang>/native.txt` is that language (function words, words also in the English list such as Spanish `red`, `sale`, `come`, adopted words that break the spelling rules: `club`, `internet`, `pizza`).
+3. A word in `lexicons/latin/english.txt` is English (common English words and tech terms whose spelling would also fit: `update`, `online`, `router`, `google`). The list is shared by all Latin-script pairs; collisions go in the pair's `native.txt`.
+4. A word with a capital after a lower-case letter is English (`iPhone`, `GitHub`, `macOS`).
+5. An all-caps word of 2–5 letters is the main language: an acronym spelled with its letter names (`USB` → u ese be).
+6. Otherwise the word's spelling decides (`valid_spelling` in the language's `g2p_<lang>.py`: letters, letter groups, onset and coda clusters): `casa`, `Barcelona` fit Spanish; `weekend`, `Bluetooth`, `Spotify`, `Wi-Fi` do not and are English.
+
+Digits and codes are neutral as in the other pairs. Known gaps: English names whose spelling fits the language (`Taylor`, `Elon`) are read in the main language unless listed in `english.txt`.
+
+## Spanish (token set `es-en`)
+
+Python only for now (`src/vtts/frontend/es/`); the C port comes later, so everything is rules and small tables. `text_to_ids(text, "es")` returns ids of the token set `es-en` (model header code 6): ids 0–106 are the v2 set unchanged, followed by 31 Spanish tokens from id 107 (vocabulary 138):
+
+| Group | Tokens |
+|---|---|
+| Vowels (5) | `ES:a e i o u` |
+| Stressed vowels (5) | `ES:a1 e1 i1 o1 u1` |
+| Glides (2) | `ES:j` (tiene, hoy), `ES:w` (bueno, huevo) |
+| Consonants (19) | `ES:p b t d k g f th s x ch y ll m n ny l r rr` |
+
+The set is dialect-neutral like the Vietnamese one: `th` (c before e/i, z) and `s`, `ll` and `y` stay distinct (seseo and yeísmo are left to the voice); b/v are one phoneme; allophones (spirantized b d g, assimilated n) are not marked.
+
+**Letters** (`es/g2p_es.py`): c before e/i and z → `th`; c, k, qu → `k` (u silent before e/i); ch → `ch`; g before e/i and j → `x`; gu before e/i → `g`, gü → `g w`; h silent; ll → `ll`; ñ → `ny`; v → `b`; x → `k s` (`s` at the start of a word); y before a vowel → `y`, else the vowel i; r at the start of a word or after n, l, s and rr → `rr`, else `r`. Letters of other languages are folded to a base letter (à → a, ç → s).
+
+**Syllables and stress:** in a run of vowels, a e o and accented vowels are nuclei; an unaccented i/u next to another vowel is a glide, and in i+u / u+i the second vowel is the nucleus (ciudad, cuidado, muy). The stressed vowel is the one with a written accent, else the second-to-last nucleus when the word ends in a vowel, n or s, else the last one. Function words (articles, clitic pronouns, most prepositions and conjunctions: `UNSTRESSED`) have no stressed vowel.
+
+**Tables** (`lexicons/es/`): `overrides.tsv` respells words read unlike their spelling in Spanish orthography (`méxico` → méjico, `ok` → okéi, `chalet` → chalé); `native.txt` is described above.
+
+**Normalization** (`es/normalize_es.py`, helpers in `latin_norm.py` shared with the other Latin-script pairs):
+
+| Text | Reading |
+|---|---|
+| 21 años, 1 perro, 21.000 | veintiún años, un perro, veintiún mil |
+| 1.250 / 1,250 / 1.234,5 / 3,14 / 2.5 | mil doscientos cincuenta / same / mil doscientos treinta y cuatro coma cinco / tres coma catorce / dos punto cinco |
+| 2.000.000, 1.000.000.000 | dos millones, mil millones |
+| 5/3/2026, 2026-11-18 | cinco de marzo de dos mil veintiséis, dieciocho de noviembre de … |
+| 14:30 h, 7:00, 1:15 | catorce y treinta, siete en punto, una y quince |
+| $1.250,50, 20 €, 1 € | mil doscientos cincuenta coma cincuenta dólares, veinte euros, un euro |
+| 15,5%, 25 °C, 5 km, 120 km/h | quince coma cinco por ciento, veinticinco grados, cinco kilómetros, ciento veinte kilómetros por hora |
+| 1.º, 2.ª, 3.er | primero, segunda, tercer |
+| 600 123 456, +34 …, 0034 | digit by digit (más for +) |
+| 10-20, -5 | diez a veinte, menos cinco |
+| ESP32-P4, USB, ONU | é ese pe tres dos pe cuatro, ú ese be, onu |
+| Sr., Dra., EE. UU., etc. | señor, doctora, estados unidos, etcétera |
+
+Quotes, brackets, ¿ and ¡ are dropped; … and dashes between spaces are a pause. Training rows with letters of other scripts are left out (`unreadable_es`).
+
 ## Changing a rule or an entry
 
 1. Edit the TSV file (or the rule in the normalizer).
@@ -361,6 +414,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 
 | Date | Change |
 |---|---|
+| 2026-11-18 | Spanish front-end in Python: token set `es-en`, spelling and stress rules, `lexicons/es/`, Spanish number reading, mode `es`; Latin-script code-switching rules (`latin.py`, `lexicons/latin/english.txt`). |
 | 2026-11-18 | Korean front-end in C: mode `VTTS_LANG_KO`, rule tables and `overrides.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-18 | Japanese front-end in Python: token set `ja-en`, `lexicons/ja/` word, context and kanji tables from Open JTalk's dictionary (98.2% mora agreement with pyopenjtalk), kana rules, Japanese number and counter reading, mode `ja`. |
 | 2026-11-18 | Chinese front-end in C: mode `VTTS_LANG_ZH`, `ZLEX` blob (`scripts/frontend/build_zh_blob.py`), exact parity with Python. |

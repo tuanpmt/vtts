@@ -156,12 +156,38 @@ def token_to_id_jaen(tok: str) -> int:
     return _TOKEN_TO_ID_JAEN[tok]
 
 
+# ---------------- token set "es-en": Spanish + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes from the spelling rules of src/vtts/frontend/es/: vowels, the same vowels stressed
+# (a1 = stressed a), the glides of diphthongs (j as in "tiene", w as in "bueno") and consonants.
+# Dialect-neutral like the Vietnamese set: spellings that merge in some dialects stay distinct
+# (th = c/z as in "cielo", "zapato" vs s; ll vs y). b/v are one phoneme; allophones (b d g
+# spirantized, n assimilated) are left to the model.
+
+TOKEN_SET_ESEN = "es-en"
+
+ES_VOWELS = ("a", "e", "i", "o", "u")
+ES_GLIDES = ("j", "w")
+ES_CONSONANTS = ("p", "b", "t", "d", "k", "g", "f", "th", "s", "x", "ch", "y", "ll", "m", "n",
+                 "ny", "l", "r", "rr")
+
+TOKENS_ESEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"ES:{v}" for v in ES_VOWELS)
+    + tuple(f"ES:{v}1" for v in ES_VOWELS)
+    + tuple(f"ES:{c}" for c in ES_GLIDES + ES_CONSONANTS)
+)
+VOCAB_SIZE_ESEN = len(TOKENS_ESEN)
+
+TOKEN_SETS[TOKEN_SET_ESEN] = TOKENS_ESEN
+
+
 # ---------------- text modes of the pair token sets ----------------
 # text_to_ids(text, mode) with a pair mode returns ids of that mode's token set; the modes vi, en
 # and auto use vi-en. A new pair adds its token set above, one entry here, its language module
 # (languages.py) and its tagging rule (lang.py).
 
-PAIR_MODES: dict[str, str] = {"zh": TOKEN_SET_ZHEN, "ko": TOKEN_SET_KOEN, "ja": TOKEN_SET_JAEN}
+PAIR_MODES: dict[str, str] = {"zh": TOKEN_SET_ZHEN, "ko": TOKEN_SET_KOEN, "ja": TOKEN_SET_JAEN,
+                              "es": TOKEN_SET_ESEN}
 
 _TOKEN_INDEX: dict[str, dict[str, int]] = {}
 

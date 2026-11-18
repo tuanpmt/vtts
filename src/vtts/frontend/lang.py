@@ -18,6 +18,9 @@ token set.
 - In "ja" mode a word with kana or kanji is Japanese and every plain Latin word is English.
   Japanese is written without spaces, so boundaries are inserted as for Chinese, with kana and
   kanji as one script ("Wi-Fiを設定" -> Wi-Fi / を設定).
+- In the Latin-script pair modes ("es" ...) a word with the language's own letters (á, ñ ...)
+  is that language and a plain Latin word is decided by latin.latin_word_lang (word lists,
+  CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are dropped.
 """
 
 from __future__ import annotations
@@ -26,6 +29,7 @@ import re
 import unicodedata
 from collections.abc import Callable
 
+from .latin import LATIN_PAIRS, has_letters_of, latin_word_lang
 from .lexicon import ABBREVIATIONS, LOANWORDS
 from .phoneme_set import PAIR_MODES
 from .syllable import parse_syllable
@@ -123,6 +127,7 @@ SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [
     ("ja", _has_japanese),
     ("zh", _has_han),
     ("ko", _has_hangul),
+    *((code, has_letters_of(code)) for code in LATIN_PAIRS),
     ("vi", _has_vietnamese_letters),
 ]
 
@@ -136,6 +141,8 @@ def word_lang(core: str, mode: str) -> str:
             return code
     if not _is_plain_latin(core):
         return "neutral"
+    if mode in LATIN_PAIRS:
+        return latin_word_lang(core, mode)
     if mode == "en" or mode in PAIR_MODES:
         return "en"
     parts = [p for p in re.split(r"[-']", core) if p]
@@ -155,6 +162,8 @@ def tag_words(sentence: str, mode: str) -> list[tuple[str, str]]:
         sentence = split_scripts(sentence)
     elif mode == "ja":
         sentence = split_scripts(sentence, _script_class_ja)
+    elif mode in LATIN_PAIRS:  # ¿Abriste Netflix? -> Abriste / Netflix
+        sentence = sentence.replace("¿", " ").replace("¡", " ")
     return [(c, word_lang(_core(c), lang)) for c in sentence.split()]
 
 

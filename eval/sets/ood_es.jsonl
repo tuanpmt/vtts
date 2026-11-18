@@ -1,0 +1,50 @@
+{"id": "ood_es_device_00", "text": "Se apagó la luz del salón.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_01", "text": "El purificador de aire está funcionando en modo automático.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_02", "text": "La puerta trasera no está cerrada, ¿quieres que la cierre?", "group": "device", "lang": "es"}
+{"id": "ood_es_device_03", "text": "He bajado el volumen del altavoz de la cocina.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_04", "text": "La lavadora terminará dentro de veinte minutos.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_05", "text": "He puesto el aire acondicionado a veinticuatro grados.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_06", "text": "La batería del teléfono está casi agotada.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_07", "text": "Las cortinas del dormitorio se abrirán a las siete.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_08", "text": "El horno ya está caliente, puedes meter la pizza.", "group": "device", "lang": "es"}
+{"id": "ood_es_device_09", "text": "No encuentro ningún dispositivo cerca, vuelve a intentarlo.", "group": "device", "lang": "es"}
+{"id": "ood_es_numbers_00", "text": "Ahora son las 3:45 de la tarde.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_01", "text": "La reunión empieza el 15/12/2026 a las 9:30.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_02", "text": "El precio total es de 1.250 euros.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_03", "text": "Hoy la temperatura máxima será de 32 °C.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_04", "text": "Llama al 600 123 456 para pedir cita.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_05", "text": "El 75% de los alumnos aprobó el examen.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_06", "text": "Vivo en el 3.er piso, puerta 2.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_07", "text": "La ciudad tiene 2.500.000 habitantes.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_08", "text": "El tren recorre 120 km en menos de una hora.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_numbers_09", "text": "Faltan 21 días para las vacaciones.", "group": "numbers", "lang": "es"}
+{"id": "ood_es_names_00", "text": "María y José viajan a Sevilla el mes que viene.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_01", "text": "Carlos Fernández ganó la carrera de Valencia.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_02", "text": "Lucía vive en Buenos Aires desde hace diez años.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_03", "text": "Mañana llega el tío Javier desde Bogotá.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_04", "text": "La profesora Gómez explicó la historia de Cuzco.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_05", "text": "Sofía y Mateo se conocieron en Montevideo.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_06", "text": "El museo del Prado está en el centro de Madrid.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_07", "text": "Diego Martínez juega en un equipo de Guadalajara.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_08", "text": "Isabel escribió un libro sobre la vida en Cartagena.", "group": "names", "lang": "es"}
+{"id": "ood_es_names_09", "text": "Los abuelos de Andrés nacieron en un pueblo de Asturias.", "group": "names", "lang": "es"}
+{"id": "ood_es_questions_00", "text": "¿Qué quieres cenar esta noche?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_01", "text": "¿Sabes cómo se llama esta canción?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_02", "text": "¿Cuánto tarda el autobús en llegar al aeropuerto?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_03", "text": "¿Dónde dejaste las llaves del coche?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_04", "text": "¿Puedes recordarme que llame a mi madre mañana?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_05", "text": "¿A qué hora abre la farmacia los domingos?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_06", "text": "¿Has visto mis gafas de sol?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_07", "text": "¿Por qué no vienes con nosotros a la playa?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_08", "text": "¿Cuál es el camino más corto hasta la estación?", "group": "questions", "lang": "es"}
+{"id": "ood_es_questions_09", "text": "¿Te gustaría aprender a tocar la guitarra?", "group": "questions", "lang": "es"}
+{"id": "ood_es_long_00", "text": "Aunque llovía mucho, los niños jugaron al fútbol en el patio hasta que se hizo de noche.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_01", "text": "Mi abuela cultiva tomates y pimientos en su huerto, y cada verano nos manda una caja llena.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_02", "text": "Después de varios meses de trabajo, por fin terminamos de pintar toda la casa por dentro.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_03", "text": "El médico le recomendó caminar media hora al día y beber más agua durante el verano.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_04", "text": "Cuando era pequeño, pasaba las tardes leyendo cuentos en la biblioteca de mi barrio.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_05", "text": "La exposición de fotografía estará abierta hasta finales de mes, así que todavía hay tiempo.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_06", "text": "Si salimos temprano mañana, podremos llegar a la montaña antes de que haga demasiado calor.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_07", "text": "El restaurante de la esquina prepara una paella deliciosa todos los jueves al mediodía.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_08", "text": "Nos quedamos sin gasolina en medio de la carretera y tuvimos que esperar casi dos horas.", "group": "long", "lang": "es"}
+{"id": "ood_es_long_09", "text": "Las hojas de los árboles empiezan a cambiar de color cuando llega el otoño a la ciudad.", "group": "long", "lang": "es"}

@@ -7,13 +7,20 @@ import pytest
 
 SETS = Path(__file__).resolve().parents[2] / "eval" / "sets"
 GROUPS = {"device", "numbers", "names", "questions", "long"}
+LATIN_LANGS = ["es"]
 
 
 def _rows(name):
     return [json.loads(x) for x in (SETS / f"{name}.jsonl").read_text(encoding="utf-8").splitlines() if x]
 
 
-@pytest.mark.parametrize("lang", ["zh", "ko", "ja"])
+def _english_words(text, lang):
+    from vtts.frontend.lang import split_sentences_raw, tag_words
+
+    return [w for s in split_sentences_raw(text) for w, t in tag_words(s, lang) if t == "en"]
+
+
+@pytest.mark.parametrize("lang", ["zh", "ko", "ja", *LATIN_LANGS])
 @pytest.mark.parametrize("kind", ["ood", "mixed"])
 def test_pair_set_shape_and_front_end(kind, lang):
     from vtts.data.train_list import unreadable
@@ -29,4 +36,7 @@ def test_pair_set_shape_and_front_end(kind, lang):
         assert text_to_ids(r["text"], lang), r["text"]
         assert not unreadable(r["text"], lang), r["text"]
         assert prep_for_cer(r["text"], lang)
-        assert bool(latin.search(r["text"])) == (kind == "mixed"), r["text"]
+        if lang in LATIN_LANGS:  # the same letters: English words are those the tagger reads in English
+            assert bool(_english_words(r["text"], lang)) == (kind == "mixed"), r["text"]
+        else:
+            assert bool(latin.search(r["text"])) == (kind == "mixed"), r["text"]

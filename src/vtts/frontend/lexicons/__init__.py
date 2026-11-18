@@ -25,3 +25,18 @@ def load_table(lang: str, name: str) -> dict[str, str]:
             raise ValueError(f"{path}:{n}: duplicate key {key!r}")
         table[key] = reading
     return table
+
+
+@cache
+def load_words(lang: str, name: str) -> frozenset[str]:
+    """A word list lexicons/<lang>/<name>.txt: one lower-case word per line, '#' comments."""
+    path = ROOT / lang / f"{name}.txt"
+    words = set()
+    for n, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
+        w = line.strip()
+        if not w or w.startswith("#"):
+            continue
+        if w != w.lower() or " " in w:
+            raise ValueError(f"{path}:{n}: expected one lower-case word")
+        words.add(w)
+    return frozenset(words)

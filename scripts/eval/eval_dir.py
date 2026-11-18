@@ -3,9 +3,9 @@
 Usage: uv run python scripts/eval/eval_dir.py --system NAME --set eval/sets/ood.jsonl \
        --audio DIR --out reports/NAME-ood.json [--no-mos]
 English or mixed sets: --lang en|mixed --asr openai/whisper-large-v3 --asr-language en|vi
-Pair sets (eval/sets/{ood,mixed}_{zh,ko,ja}.jsonl): --lang zh|ko|ja --asr openai/whisper-large-v3;
-the Whisper language follows --lang unless --asr-language is given. CER is character-level for
-these languages (see vtts.eval.cer).
+Pair sets (eval/sets/{ood,mixed}_<lang>.jsonl, lang in vtts.eval.cer.PAIR_LANGS: zh ko ja es):
+--lang <lang> --asr openai/whisper-large-v3; the Whisper language follows --lang unless
+--asr-language is given. CER is character-level for these languages (see vtts.eval.cer).
 """
 
 import argparse
@@ -27,10 +27,10 @@ def main() -> None:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--no-mos", action="store_true")
     ap.add_argument("--lang", default="vi", choices=sorted(WHISPER_LANGUAGE),
-                    help="text normalization for CER/WER: vi | en | mixed | zh | ko | ja")
+                    help="text normalization for CER/WER: vi | en | mixed | a pair language")
     ap.add_argument("--asr", default="vinai/PhoWhisper-large")
     ap.add_argument("--asr-language", default=None,
-                    help="force the Whisper language (en, vi, zh, ko, ja; default for zh|ko|ja: --lang)")
+                    help="force the Whisper language (default for a pair language: --lang)")
     args = ap.parse_args()
     if args.asr_language is None and args.lang in PAIR_LANGS:
         args.asr_language = WHISPER_LANGUAGE[args.lang]

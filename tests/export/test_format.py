@@ -34,7 +34,7 @@ def test_offsets_aligned(tmp_path):
 
 
 @pytest.mark.parametrize("vocab,name", [(65, "v1"), (107, "vi-en"), (171, "zh-en"), (153, "ko-en"),
-                                        (144, "ja-en")])
+                                        (144, "ja-en"), (138, "es-en")])
 def test_token_set_derived_from_vocab(tmp_path, vocab, name):
     from vtts.export.format import TOKEN_SET_CODES, token_set_of
 
@@ -76,11 +76,17 @@ def test_token_set_old_files_by_vocab(tmp_path):
 
 
 def test_token_set_codes_match_c_header():
-    from vtts.export.format import TOKEN_SET_CODES
+    """Every code of the C header is the Python one; codes the runtime does not know yet (token
+    sets with a Python front-end only) come after them, so the runtime loads them as unknown."""
+    from vtts.export.format import TOKEN_SET_CODES, TOKEN_SET_SIZES
 
     h = (Path(__file__).parents[2] / "runtime" / "include" / "vtts.h").read_text()
-    for name, code in TOKEN_SET_CODES.items():
-        assert re.search(rf"VTTS_TOKSET_{name.upper().replace('-', '_')} = {code}\b", h), name
+    in_c = {m.group(1).lower().replace("_", "-"): int(m.group(2))
+            for m in re.finditer(r"VTTS_TOKSET_(\w+) = (\d+)", h) if m.group(1) != "UNKNOWN"}
+    assert len(in_c) >= 5 and all(TOKEN_SET_CODES[name] == code for name, code in in_c.items())
+    assert all(c > max(in_c.values()) for n, c in TOKEN_SET_CODES.items() if n not in in_c)
+    assert len(set(TOKEN_SET_CODES.values())) == len(TOKEN_SET_CODES)
+    assert len(set(TOKEN_SET_SIZES.values())) == len(TOKEN_SET_SIZES)  # vocab -> set unambiguous
 
 
 def test_token_set_sizes_match_frontend():

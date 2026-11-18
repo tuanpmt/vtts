@@ -15,9 +15,11 @@ ROW = struct.Struct("<48sBBH4iIII")
 ALIGN = 16
 DECODER_IDS = {"hifigan": 0, "istft": 1, "vocos": 2}
 # Optional dim `token_set` (vtts_token_set_t in runtime/include/vtts.h); 0 or absent = derive
-# from vocab. Sizes are those of src/vtts/frontend/phoneme_set.py (checked by tests).
-TOKEN_SET_CODES = {"v1": 1, "vi-en": 2, "zh-en": 3, "ko-en": 4, "ja-en": 5}
-TOKEN_SET_SIZES = {"v1": 65, "vi-en": 107, "zh-en": 171, "ko-en": 153, "ja-en": 144}
+# from vocab. Sizes are those of src/vtts/frontend/phoneme_set.py (checked by tests). Codes from 6
+# have a Python front-end only so far: the C runtime does not know them yet and loads such models
+# with token set "unknown" (raw ids only). Reserved: 9 = th-en, 10 = hi-en.
+TOKEN_SET_CODES = {"v1": 1, "vi-en": 2, "zh-en": 3, "ko-en": 4, "ja-en": 5, "es-en": 6}
+TOKEN_SET_SIZES = {"v1": 65, "vi-en": 107, "zh-en": 171, "ko-en": 153, "ja-en": 144, "es-en": 138}
 
 
 def token_set_for_vocab(vocab: int) -> str | None:
@@ -117,7 +119,8 @@ def write_model(model, path: Path, token_set: str | None = None) -> None:
 
 def model_dims(model, token_set: str | None = None) -> dict[str, int]:
     """Dims of a Student; token_set (e.g. "zh-en") is recorded in the token_set dim, by default
-    the set the vocab names (65 -> v1, 107 -> vi-en, 171 -> zh-en, 153 -> ko-en, 144 -> ja-en)."""
+    the set the vocab names (65 -> v1, 107 -> vi-en, 171 -> zh-en, 153 -> ko-en, 144 -> ja-en,
+    138 -> es-en)."""
     d = config_dims(model.cfg)
     d["expr_milli"] = int(round(getattr(model, "expressiveness", 1.0) * 1000))
     ts = resolve_token_set(model.cfg.vocab, token_set)

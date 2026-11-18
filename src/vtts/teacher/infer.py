@@ -44,8 +44,8 @@ class Teacher:
 
     def synthesize(self, text: str, lang: str | None = None) -> np.ndarray:
         """lang None: token set v1 (Vietnamese models); "vi" | "en" | "mixed": token set v2,
-        with mixed text read in "vi" mode as in training (teacher/data.encode_text); "zh", "ko",
-        "ja": the pair token sets zh-en, ko-en, ja-en (main-language and mixed text alike)."""
+        with mixed text read in "vi" mode as in training (teacher/data.encode_text); a pair mode
+        (PAIR_MODES: zh, ko, ja, es ...): its pair token set (main-language and mixed text alike)."""
         gap = np.zeros(int(GAP_SECONDS * self.cfg.sample_rate), dtype=np.float32)
         if lang is None:
             chunks = [encode(g2p(chunk)) for chunk in split_sentences(text)]

@@ -126,10 +126,23 @@ def _ja_word(word: str) -> list[str]:
     return [t for unit in _ja_units(word) for t in unit]
 
 
+def _es_normalize(text: str) -> str:
+    from .es.normalize_es import normalize_es
+
+    return normalize_es(text)
+
+
+def _es_word(word: str) -> list[str]:
+    from .es.g2p_es import word_tokens_es
+
+    return word_tokens_es(word)
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
     "zh": LanguageModule("zh", _zh_normalize, _zh_word, _zh_units),
     "ko": LanguageModule("ko", _ko_normalize, _ko_word, _ko_units),
     "ja": LanguageModule("ja", _ja_normalize, _ja_word, _ja_units),
+    "es": LanguageModule("es", _es_normalize, _es_word),
 }

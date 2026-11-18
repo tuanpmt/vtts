@@ -5,8 +5,8 @@ Usage: uv run python scripts/data/synth_to_csv.py --sentences data/bilingual/sen
 Only ids whose manifest status is ok and whose audio file exists are listed. Rows of a pair
 language are left out when the text holds characters its front-end cannot read
 (vtts.data.train_list.UNREADABLE: Han characters without a reading for zh, Hanja or bare jamo for
-ko, kanji without a reading for ja), so the ids always match the audio. --reject leaves out ids
-listed by scripts/data/asr_filter.py.
+ko, kanji without a reading for ja, letters of other scripts for es), so the ids always match the
+audio. --reject leaves out ids listed by scripts/data/asr_filter.py.
 """
 
 import argparse

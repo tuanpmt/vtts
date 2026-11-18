@@ -52,6 +52,14 @@ def test_missing_audio_unreadable_and_pipe_rows_left_out(tmp_path):
     assert [r.split("|")[0] for r in build_rows([Source(s, syn)], root=tmp_path)] == ["a"]
 
 
+def test_unreadable_per_pair_language():
+    from vtts.data.train_list import unreadable
+
+    assert unreadable("我龘好。", "zh") and not unreadable("你好。", "zh")
+    assert unreadable("Hola Москва.", "es") and not unreadable("¿Qué tal, François?", "es")
+    assert not unreadable("Москва", "vi")  # languages without a check keep every row
+
+
 def test_lang_override_and_absolute_path_outside_root(tmp_path):
     s, syn = _run(tmp_path, "x", [("a", "Hello.", "vi", 1.0)])
     other_root = tmp_path / "elsewhere"

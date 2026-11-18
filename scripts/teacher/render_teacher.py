@@ -2,9 +2,9 @@
 
 Usage: uv run python scripts/teacher/render_teacher.py --ckpt CKPT --set eval/sets/ood.jsonl --out DIR [--lang vi]
 
---lang selects the token set: vi | en | mixed (set v2, vi-en teachers), zh | ko | ja (pair sets
-zh-en, ko-en, ja-en, for both the main-language and the mixed sets of a pair); a "lang" field in a
-row overrides it. Without --lang: token set v1 (Vietnamese-only models).
+--lang selects the token set: vi | en | mixed (set v2, vi-en teachers), or a pair mode of
+vtts.frontend.phoneme_set.PAIR_MODES (zh, ko, ja, es ...: the pair token set, for both the
+main-language and the mixed sets of a pair); a "lang" field in a row overrides it. Without --lang: token set v1 (Vietnamese-only models).
 """
 
 import argparse
@@ -23,7 +23,7 @@ def main() -> None:
     ap.add_argument("--set", type=Path, required=True)
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    ap.add_argument("--lang", default=None, help="vi | en | mixed (token set v2) | zh | ko | ja (pair token sets)")
+    ap.add_argument("--lang", default=None, help="vi | en | mixed (token set v2) | a pair mode (zh, ko, ja, es ...)")
     args = ap.parse_args()
     teacher = Teacher.load(args.ckpt, args.device)
     args.out.mkdir(parents=True, exist_ok=True)

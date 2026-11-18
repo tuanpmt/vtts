@@ -1,0 +1,63 @@
+# Words read in Spanish in the es-en pair even when they are also in lexicons/latin/english.txt or
+# their spelling does not fit the Spanish rules (frontend/latin.py, rule 1). One lower-case word
+# per line, without accents (a word with á é í ó ú ü ñ is Spanish anyway).
+#
+# Spanish words that are also English entries
+he
+has
+come
+sale
+sales
+red
+sea
+use
+visa
+coca
+cola
+yoga
+fan
+fans
+menu
+combo
+mini
+# Spanish (or fully adopted) words whose spelling breaks the rules
+pizza
+pizzas
+pizzeria
+mozzarella
+jacuzzi
+club
+clubs
+robot
+robots
+internet
+chat
+chalet
+ballet
+golf
+chef
+test
+fax
+zigzag
+iceberg
+boicot
+complot
+bistec
+tic
+ok
+# Units and abbreviations read by the Spanish normalizer
+km
+kg
+cm
+mm
+ml
+mg
+kb
+mb
+gb
+tb
+kw
+kwh
+mhz
+ghz
+etc

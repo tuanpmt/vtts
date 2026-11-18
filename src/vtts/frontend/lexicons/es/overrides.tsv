@@ -1,0 +1,18 @@
+# Words read unlike their spelling, respelled in Spanish orthography (accents mark the stress).
+# Matching: the whole word, lower case. See docs/frontend/pronunciation-rules.md.
+méxico	méjico
+mexico	méjico
+mexicano	mejicano
+mexicana	mejicana
+mexicanos	mejicanos
+mexicanas	mejicanas
+texas	téjas
+oaxaca	oajaca
+xavier	javier
+ximena	jimena
+ok	okéi
+chalet	chalé
+ballet	balé
+iceberg	áisberg
+sándwich	sánguich
+whisky	güisqui

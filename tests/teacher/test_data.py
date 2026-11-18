@@ -1,4 +1,5 @@
 import numpy as np
+import pytest
 import soundfile as sf
 import torch
 
@@ -119,6 +120,22 @@ def test_encode_text_ja_uses_jaen_ids_and_english_rows_match():
     assert ja == text_to_ids("Wi-Fiを設定してください。", "ja")[0]
     en = "Turn on the light, please."
     assert encode_text(en, "en") == text_to_ids(en, "ja")[0] == text_to_ids(en, "en")[0]
+
+
+LATIN_PAIR_ROWS = [("es", "es-en", "Abre GitHub y pon música, por favor.")]
+
+
+@pytest.mark.parametrize("lang, token_set, text", LATIN_PAIR_ROWS)
+def test_encode_text_latin_pairs_use_their_token_set(lang, token_set, text):
+    from vtts.frontend.phoneme_set import TOKEN_SETS, VOCAB_SIZE_V2
+    from vtts.frontend.text import text_to_ids
+    from vtts.teacher.data import encode_text
+
+    ids = encode_text(text, lang)
+    assert max(ids) >= VOCAB_SIZE_V2 and max(ids) < len(TOKEN_SETS[token_set])
+    assert ids == text_to_ids(text, lang)[0]
+    en = "Turn on the light, please."
+    assert encode_text(en, "en") == text_to_ids(en, lang)[0] == text_to_ids(en, "en")[0]
 
 
 def test_audio_path_column_relative_absolute_and_old_rows(tmp_path):
