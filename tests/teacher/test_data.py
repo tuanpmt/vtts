@@ -119,3 +119,26 @@ def test_encode_text_ja_uses_jaen_ids_and_english_rows_match():
     assert ja == text_to_ids("Wi-Fiを設定してください。", "ja")[0]
     en = "Turn on the light, please."
     assert encode_text(en, "en") == text_to_ids(en, "ja")[0] == text_to_ids(en, "en")[0]
+
+
+def test_audio_path_column_relative_absolute_and_old_rows(tmp_path):
+    """A fifth column names the audio file (relative to wav_dir or absolute); 3- and 4-column rows
+    still read WAVS/<uid>.wav|.flac."""
+    root = tmp_path / "data"
+    for sub in ("zh/synth/audio", "bi/synth/audio", "wavs"):
+        (root / sub).mkdir(parents=True)
+    t = np.arange(24000) / 24000
+    tone = 0.3 * np.sin(2 * np.pi * 220 * t)
+    sf.write(root / "zh/synth/audio/zh1.flac", tone, 24000, subtype="PCM_16")
+    sf.write(root / "bi/synth/audio/en1.flac", tone[:12000], 24000, subtype="PCM_16")
+    sf.write(root / "old1.wav", tone, 24000, subtype="PCM_16")
+    absolute = (root / "bi/synth/audio/en1.flac").resolve()
+    (tmp_path / "train.csv").write_text(
+        "zh1|打开灯。|1.0|zh|zh/synth/audio/zh1.flac\n"
+        f"en1|Hello.|0.5|en|{absolute}\n"
+        "old1|Xin chào.|1.0|vi\n", encoding="utf-8")
+    ds = TeacherDataset(tmp_path / "train.csv", root, None, TeacherConfig())
+    assert ds.frame_lengths() == [86, 43, 86]
+    zh, en, old = ds[0], ds[1], ds[2]
+    assert abs(zh["wav"].shape[1] - 22050) <= 256 and abs(en["wav"].shape[1] - 11025) <= 256
+    assert abs(old["wav"].shape[1] - 22050) <= 256

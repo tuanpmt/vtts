@@ -5,6 +5,9 @@ Usage (GPU box):
      --out artifacts/teacher/run1 --warmstart artifacts/warmstart/epoch=4769-step=919580.ckpt \
      --max-steps 100000 --ckpt-every 5000
 
+A pair list from several synthesis runs (scripts/data/pair_train_list.py) names each audio file
+relative to --wavs: --data data/zh/pair_nu10 --wavs data
+
 Several GPUs on one machine (DistributedDataParallel; --batch-size is per GPU):
   uv run torchrun --nproc_per_node 4 scripts/teacher/train_teacher.py ... --batch-size 16 --bf16
 """

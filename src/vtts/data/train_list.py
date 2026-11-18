@@ -1,0 +1,121 @@
+"""Teacher training lists from one or more synthesis runs.
+
+A row is uid|text|dur|lang[|audio]. The optional fifth column is the audio file, relative to the
+teacher's --wavs directory (or absolute), so one list can draw on several synthesis runs
+(teacher/data.py); without it the audio is WAVS/<uid>.wav or .flac as before.
+
+A source is a sentence list (jsonl with id, text, lang) plus a synthesis run (SYNTH/manifest.jsonl
+and SYNTH/audio/<id>.flac). Options per source: only (keep rows of one lang), lang (write this
+lang instead of the sentence's), hours (keep a seeded random subset of about this many hours).
+Rows are left out when the manifest status is not ok, the audio file is missing, the text holds
+"|", or (lang zh, ko, ja) the text has characters the pair front-end cannot read, so the ids
+always match the audio.
+"""
+
+from __future__ import annotations
+
+import json
+import random
+from dataclasses import dataclass
+from pathlib import Path
+
+LIST_FIELDS = ("sentences", "synth", "only", "lang", "hours")
+
+
+def unreadable(text: str, lang: str) -> bool:
+    """True when the pair front-end would skip characters of the text (no reading)."""
+    if lang == "zh":
+        from vtts.frontend.zh.g2p_zh import unknown_han
+
+        return bool(unknown_han(text))
+    if lang == "ko":
+        from vtts.frontend.ko.g2p_ko import unreadable_ko
+
+        return bool(unreadable_ko(text))
+    if lang == "ja":
+        from vtts.frontend.ja.g2p_ja import unreadable_ja
+
+        return bool(unreadable_ja(text))
+    return False
+
+
+@dataclass(frozen=True)
+class Source:
+    sentences: Path
+    synth: Path
+    only: str | None = None
+    lang: str | None = None
+    hours: float | None = None
+
+
+def parse_source(spec: str) -> Source:
+    """"sentences=PATH,synth=DIR[,only=en][,lang=zh][,hours=30]"."""
+    kv: dict[str, str] = {}
+    for part in spec.split(","):
+        key, sep, val = part.partition("=")
+        if not sep or key.strip() not in LIST_FIELDS:
+            raise ValueError(f"bad source field {part!r} (fields: {', '.join(LIST_FIELDS)})")
+        kv[key.strip()] = val.strip()
+    if "sentences" not in kv or "synth" not in kv:
+        raise ValueError(f"source needs sentences= and synth=: {spec!r}")
+    return Source(Path(kv["sentences"]), Path(kv["synth"]), kv.get("only"), kv.get("lang"),
+                  float(kv["hours"]) if "hours" in kv else None)
+
+
+def _jsonl(path: Path) -> list[dict]:
+    return [json.loads(x) for x in path.read_text(encoding="utf-8").splitlines() if x.strip()]
+
+
+def _audio_ref(path: Path, root: Path) -> str:
+    p, r = path.resolve(), root.resolve()
+    return p.relative_to(r).as_posix() if p.is_relative_to(r) else str(p)
+
+
+def source_rows(src: Source, root: Path, seed: int = 0) -> list[tuple[str, str, float, str, str]]:
+    """(uid, text, dur, lang, audio) of one source, sorted by uid."""
+    text = {r["id"]: (r["text"], r["lang"]) for r in _jsonl(src.sentences)
+            if src.only is None or r["lang"] == src.only}
+    dur: dict[str, float] = {}
+    for r in _jsonl(src.synth / "manifest.jsonl"):
+        if r["status"] == "ok" and r["id"] in text:
+            dur[r["id"]] = r["dur"]
+    rows = []
+    for uid in sorted(dur):
+        t, lang = text[uid]
+        lang = src.lang or lang
+        audio = src.synth / "audio" / f"{uid}.flac"
+        if "|" in t or not audio.exists() or unreadable(t, lang):
+            continue
+        rows.append((uid, t, dur[uid], lang, _audio_ref(audio, root)))
+    if src.hours is not None:
+        order = rows[:]
+        random.Random(seed).shuffle(order)
+        keep, total = set(), 0.0
+        for r in order:
+            if total + r[2] > src.hours * 3600:
+                break
+            keep.add(r[0])
+            total += r[2]
+        rows = [r for r in rows if r[0] in keep]
+    return rows
+
+
+def build_rows(sources: list[Source], root: Path, seed: int = 0) -> list[str]:
+    """train.csv lines for all sources; uids must be unique across sources (spectrogram cache)."""
+    out, seen = [], set()
+    for src in sources:
+        for uid, text, dur, lang, audio in source_rows(src, root, seed):
+            if uid in seen:
+                raise ValueError(f"duplicate id {uid} in {src.sentences}")
+            seen.add(uid)
+            out.append(f"{uid}|{text}|{dur:.3f}|{lang}|{audio}")
+    return out
+
+
+def row_hours(rows: list[str]) -> dict[str, float]:
+    """Hours per lang column."""
+    hours: dict[str, float] = {}
+    for r in rows:
+        _, _, dur, lang, *_ = r.split("|")
+        hours[lang] = hours.get(lang, 0.0) + float(dur) / 3600
+    return hours

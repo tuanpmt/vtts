@@ -20,14 +20,18 @@ from .config import TeacherConfig
 from .vits.mel_processing import spectrogram_torch
 
 
-def read_rows(csv: Path) -> list[tuple[str, str, float, str | None]]:
-    """uid|text|duration[|lang]; lang (vi, en, mixed) selects phoneme set v2, zh the zh-en set,
-    ko the ko-en set, ja the ja-en set."""
+def read_rows(csv: Path) -> list[tuple[str, str, float, str | None, str | None]]:
+    """uid|text|duration[|lang[|audio]]; lang (vi, en, mixed) selects phoneme set v2, zh the zh-en
+    set, ko the ko-en set, ja the ja-en set. audio is the audio file relative to the wav directory
+    (or absolute), for lists drawn from several synthesis runs (vtts.data.train_list); without it
+    the file is WAVS/<uid>.wav or WAVS/<uid>.flac."""
     rows = []
     for line in Path(csv).read_text(encoding="utf-8").splitlines():
         if line.strip():
-            uid, text, dur, *lang = line.split("|")
-            rows.append((uid, text, float(dur), lang[0] if lang else None))
+            uid, text, dur, *rest = line.split("|")
+            lang = rest[0] if rest else None
+            audio = rest[1] if len(rest) > 1 and rest[1] else None
+            rows.append((uid, text, float(dur), lang, audio))
     return rows
 
 
@@ -57,14 +61,17 @@ class TeacherDataset(Dataset):
         return len(self.rows)
 
     def frame_lengths(self) -> list[int]:
-        return [int(d * self.cfg.sample_rate / self.cfg.hop_length) for _, _, d, _ in self.rows]
+        return [int(d * self.cfg.sample_rate / self.cfg.hop_length) for _, _, d, _, _ in self.rows]
 
     def __getitem__(self, i: int) -> dict:
-        uid, text, _, lang = self.rows[i]
+        uid, text, _, lang, audio = self.rows[i]
         ids = torch.tensor(encode_text(text, lang), dtype=torch.long)
-        path = self.wav_dir / f"{uid}.wav"
-        if not path.exists():
-            path = self.wav_dir / f"{uid}.flac"
+        if audio is not None:
+            path = self.wav_dir / audio  # an absolute audio path replaces wav_dir
+        else:
+            path = self.wav_dir / f"{uid}.wav"
+            if not path.exists():
+                path = self.wav_dir / f"{uid}.flac"
         x, sr = sf.read(path, dtype="float32")
         if x.ndim > 1:
             x = x.mean(axis=1)
