@@ -1,6 +1,7 @@
 """Render a sentence set through the C runtime (host build) for evaluation.
 
 Usage: uv run python scripts/student/render_student_c.py --model model.vtts --set eval/sets/ood.jsonl --out DIR
+       [--lang vi|en|mixed]   (token set v2 for bilingual models; mixed is read in vi mode)
 Multi-chunk texts are rendered chunk by chunk and joined with 150 ms of silence.
 """
 
@@ -14,7 +15,7 @@ import numpy as np
 import soundfile as sf
 
 from vtts.frontend.g2p import encode, g2p
-from vtts.frontend.text import split_sentences
+from vtts.frontend.text import split_sentences, text_to_ids
 
 CLI = Path(__file__).resolve().parents[2] / "runtime" / "build" / "vtts_cli"
 
@@ -26,14 +27,20 @@ def main() -> None:
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--length-scale", type=float, default=1.0)
     ap.add_argument("--expr", type=float, default=None, help="expressiveness (prosody models only)")
+    ap.add_argument("--lang", choices=["vi", "en", "mixed"], default=None,
+                    help="token set v2 front-end (bilingual models)")
     a = ap.parse_args()
     subprocess.run(["make", "-s", "-C", str(CLI.parents[1]), "build/vtts_cli"], check=True)
     rows = [json.loads(x) for x in a.set.read_text(encoding="utf-8").splitlines() if x]
     a.out.mkdir(parents=True, exist_ok=True)
     lines, owners = [], []
     for r in rows:
-        for chunk in split_sentences(r["text"]):
-            lines.append(" ".join(map(str, encode(g2p(chunk)))))
+        if a.lang:
+            chunks = text_to_ids(r["text"], "vi" if a.lang == "mixed" else a.lang)
+        else:
+            chunks = [encode(g2p(c)) for c in split_sentences(r["text"])]
+        for ids in chunks:
+            lines.append(" ".join(map(str, ids)))
             owners.append(r["id"])
     with tempfile.TemporaryDirectory() as tmp:
         extra = [str(a.length_scale)] + ([str(a.expr)] if a.expr is not None else [])
