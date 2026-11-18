@@ -61,6 +61,12 @@ static const char *const BENCH_PT[] = {
     "O alarme de amanhã às 6:30 já está ativado.",
     "Hoje é sábado, 14/11/2026.",
 };
+static const char *const BENCH_TH[] = {
+    "สวัสดีครับ ผมเป็นผู้ช่วยเสียงของคุณ",
+    "อุณหภูมิในห้องตอนนี้ 26 องศา ความชื้น 65%",
+    "ตั้งนาฬิกาปลุกเวลา 6:30 น. พรุ่งนี้เช้าแล้ว",
+    "วันนี้วันเสาร์ที่ 14/11/2026",
+};
 
 const char *synth_lang_name(int k) { return g.lang[k] < 0 ? "none" : vtts_text_lang_name((vtts_lang)g.lang[k]); }
 
@@ -147,7 +153,7 @@ int synth_text(const char *text, int64_t *total_us) {
                vtts_token_set_name(vtts_token_set(&g.models[g.cur])));
         chunks = 0;
     } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en), KO (ko-en),
-              * HI (hi-en), JA (ja-en), ES (es-en), ID (id-en), PT (pt-en) */
+              * HI (hi-en), JA (ja-en), ES (es-en), ID (id-en), PT (pt-en), TH (th-en) */
         vtts_text_opts o = {.lang = (vtts_lang)g.lang[g.cur], .lex = g.has_lex ? &g.lex : NULL,
                             .zh = g.has_zh ? &g.zh : NULL, .ja = g.has_ja ? &g.ja : NULL};
         chunks = vtts_text_to_ids_ex(text, g.ws, &o, on_ids, NULL);
@@ -168,7 +174,7 @@ void synth_bench(void) {
     const int l = g.lang[g.cur];
     const char *const *set = l == VTTS_LANG_ZH ? BENCH_ZH : l == VTTS_LANG_KO ? BENCH_KO : l == VTTS_LANG_HI ? BENCH_HI
                              : l == VTTS_LANG_JA ? BENCH_JA : l == VTTS_LANG_ES ? BENCH_ES : l == VTTS_LANG_ID ? BENCH_ID
-                             : l == VTTS_LANG_PT ? BENCH_PT : BENCH;
+                             : l == VTTS_LANG_PT ? BENCH_PT : l == VTTS_LANG_TH ? BENCH_TH : BENCH;
     for (int k = 0; k < 4; k++) {
         int64_t us;
         int c = synth_text(set[k], &us);

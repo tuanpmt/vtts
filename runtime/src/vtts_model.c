@@ -53,8 +53,7 @@ static int set_indexed(vtts_model *m, const uint8_t *key, int32_t v) {
 
 static const struct { const char *name; int size; } TOKEN_SETS[] = {
     {"unknown", 0}, {"v1", 65},     {"vi-en", 107}, {"zh-en", 171}, {"ko-en", 153},
-    {"ja-en", 144}, {"es-en", 138}, {"id-en", 141}, {"pt-en", 150},
-    {"unknown", 0}, /* 9: th-en, raw ids */
+    {"ja-en", 144}, {"es-en", 138}, {"id-en", 141}, {"pt-en", 150}, {"th-en", 162},
     {"hi-en", 157}};
 #define N_TOKEN_SETS ((int)(sizeof(TOKEN_SETS) / sizeof(TOKEN_SETS[0])))
 
@@ -63,7 +62,7 @@ static const struct { const char *name; int size; } TOKEN_SETS[] = {
 static int resolve_token_set(vtts_model *m) {
     int code = m->token_set;
     m->token_set_in_file = code != 0;
-    if (code > 0 && code < N_TOKEN_SETS && TOKEN_SETS[code].size)
+    if (code > 0 && code < N_TOKEN_SETS && TOKEN_SETS[code].size) /* a known code (size 0: unknown here) */
         return m->vocab >= TOKEN_SETS[code].size ? VTTS_OK : VTTS_ERR_FORMAT;
     if (code != 0) { m->token_set = VTTS_TOKSET_UNKNOWN; return VTTS_OK; }
     m->token_set = m->vocab > 65 ? VTTS_TOKSET_VI_EN : VTTS_TOKSET_V1;

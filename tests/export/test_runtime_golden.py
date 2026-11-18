@@ -551,3 +551,86 @@ def test_c_text_to_audio_zh_en(tmp_path, int8):
     bad = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lang", "vi", text],
                          check=False, capture_output=True, text=True)
     assert bad.returncode == 2 and "modes: zh" in bad.stderr
+
+
+def test_c_thai_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex in VTTS_LANG_TH mode (token set th-en, word list, respellings and rules
+    compiled in, VLEX for English words) gives exactly text_to_ids(text, "th") on the fixture (the
+    Thai eval sets and unit-test strings included), and survives the Thai fuzz run."""
+    import json
+    import random
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    fixture = RUNTIME / "test" / "text_parity_th.tsv"
+    lines = fixture.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 10000
+    texts = {line.split("\t")[1] for line in lines}
+    root = Path(__file__).parents[2]
+    for name in ("ood_th.jsonl", "mixed_th.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                assert json.loads(x)["text"] in texts, f"{name} is not in the fixture"
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            "run: uv run python scripts/frontend/export_text_parity.py --th --sentences data/th/sentences.jsonl "
+            "--limit 3000 --out runtime/test/text_parity_th.tsv")
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    r = subprocess.run([exe, "--lex", str(lex), str(fixture)], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz-th", "--lex", str(lex)], check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "fuzz th: ok" in f.stdout, f.stdout + f.stderr[-2000:]
+
+
+def test_c_thai_tables_current():
+    """runtime/src/vtts_text_th_tables.h holds the current Thai tables (words.txt, overrides.tsv)."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_text_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_text_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert "\n".join(mod.thai_tables()) == (RUNTIME / "src" / "vtts_text_th_tables.h").read_text(encoding="utf-8"), (
+        "run: uv run python runtime/tools/gen_text_tables.py")
+
+
+def test_c_text_to_audio_th_en(tmp_path):
+    """Full device path on the host for a th-en model (tiny, random weights): the header's token set
+    picks the th front-end (no extra blob), ids above 106 reach the embedding, audio comes out."""
+    import wave
+
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-th-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "th.vtts"
+    write_model_int8(m, model, token_set="th-en")
+    assert token_set_of(read_model(model)[0]) == "th-en"
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "เปิดWi-Fiให้หน่อยครับ ตอนนี้ 14:30 น. อุณหภูมิ 26°C"
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), text],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set th-en header mode th lex 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "th")
+    assert max(max(c) for c in c_ids) > 106
+    with wave.open(str(wav)) as w:
+        assert w.getframerate() == 22050 and w.getnframes() > 0
+    bad = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lang", "ko", text],
+                         check=False, capture_output=True, text=True)
+    assert bad.returncode == 2 and "modes: th" in bad.stderr

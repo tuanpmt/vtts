@@ -1,10 +1,11 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* text_test.c -- device front-end must produce exactly the Python ids.
  * usage: text_test text_parity.tsv                          (text \t ids;ids...; phoneme set v1)
- *        text_test --lex LEX [--zh ZLEX] text_parity_v2.tsv (mode \t text \t ids...; mode vi|en|auto|zh|ko|hi|ja|es|id|pt)
+ *        text_test --lex LEX [--zh ZLEX] text_parity_v2.tsv (mode \t text \t ids...; mode vi|en|auto|zh|ko|hi|ja|es|id|pt|th)
  *        text_test --fuzz [--lex LEX] [--zh ZLEX] [--ja JLEX] (v1; v2, ko, hi, es, id and pt modes with --lex; zh mode
  *                                                       with --zh; ja mode with --ja)
  *        text_test --fuzz-lt [--lex LEX]                    (es, id and pt modes)
+ *        text_test --fuzz-th [--lex LEX]                    (th mode)
  *        text_test --ja JLEX --nfkc ja_nfkc.tsv             (NFKC of the JLEX data against unicodedata)
  *        text_test --ja JLEX --bench [words.tsv]           (reading lookups and ja-mode throughput) */
 #include <stdio.h>
@@ -385,6 +386,60 @@ static int fuzz_ja(vtts_text_ws *ws) {
     return 0;
 }
 
+/* Thai words (clusters, preposed vowels, tone marks, ์, ฤ, ๆ, ฯ, abbreviations), Thai digits,
+ * ASCII, numbers, dates, times, units, money, Latin words, punctuation and random bytes, runs
+ * without spaces longer than VTTS_TH_MAX_RUN; chunks must stay inside the th-en set (162 ids, no
+ * Vietnamese ids) */
+static int check_th(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= 162 || (ids[i] >= 10 && ids[i] <= 64)) *bad = 1;
+    return 0;
+}
+
+static int fuzz_th(void) {
+    static vtts_text_ws ws;
+    static char buf[20000];
+    static const char *const parts[] = {
+        "ภาษาไทย", "สวัสดี", "ครับ", "ค่ะ", "กรุงเทพฯ", "ฯลฯ", "ๆ", "ต่างๆ", "เด็กๆ", "จันทร์", "ศาสตร์", "รัฐบาล", "พฤษภาคม",
+        "ฤดู", "ฦๅ", "เสมอ", "แสดง", "สนุก", "ขนม", "อร่อย", "ปฏิบัติการ", "บุตร", "เมตร", "ทราย", "จริง", "ได้รับ", "น้ำ",
+        "พ.ศ.", "ค.ศ.", "จ.", "ดร.", "ม.ค.", "น.", "์", "ั", "ิ", "ุ", "่", "้", "๊", "๋", "ะ", "า", "ำ", "เ", "แ", "โ",
+        "ใ", "ไ", "ก", "ร", "ห", "ฺ", "๎", "ๅ", "฿", "๐", "๕", "๙", "，", "。", "！", "？", "“", "”", "（", "）", "…",
+        "—", "–", "·", "％", "１", "Ａ", "a", "Z", "e", "S", "P", "x", "'", "-", "/", ".", ",", ":", "%", "$", "€", "£",
+        "¥", "+", "=", "&", "@", "×", "0", "1", "2", "3", "5", "9", " ", " ", "\t", "ESP32", "Wi-Fi", "iPhone",
+        "19/11/2569", "2026-11-19", "14:30", "14.30 น.", "081-234-5678", "+66 81 234 5678", "0812345678", "1,234",
+        "3.14", "-5", "99%", "฿500", "$5", "5km", "16GB", "30°C", "10-20", "12345678", "\xe0\xb8", "\xff", "\x80",
+        "é", "中", "한", "ạ"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    unsigned seed = 4244;
+    int bad = 0;
+    for (int it = 0; it < 3000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        int no_space = it % 5 == 0; /* long Thai runs: segmentation and the run limit */
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; } /* random byte */
+            const char *p = parts[r % (unsigned)np];
+            if (no_space && (p[0] == ' ' || p[0] == '\t')) continue;
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int rc = run(buf, VTTS_LANG_TH, &ws, check_th, &bad);
+        if (rc < 0 || bad) { printf("fuzz th: rc %d, bad chunk %d (iteration %d)\n", rc, bad, it); return 1; }
+    }
+    if (run("", VTTS_LANG_TH, &ws, NULL, NULL) != 0 || run("。。，", VTTS_LANG_TH, &ws, NULL, NULL) != 0) {
+        puts("fuzz th: empty input must give 0 chunks");
+        return 1;
+    }
+    puts("fuzz th: ok");
+    return 0;
+}
+
 static int fuzz(void) {
     static vtts_text_ws ws;
     static char buf[20000];
@@ -416,6 +471,8 @@ static int fuzz(void) {
                 rc = run(buf, m, &ws, NULL, NULL);
                 if (rc < 0) { printf("fuzz lt: error %d\n", rc); return 1; }
             }
+            rc = run(buf, VTTS_LANG_TH, &ws, NULL, NULL);
+            if (rc < 0) { printf("fuzz th: error %d\n", rc); return 1; }
         }
     }
     if (vtts_text_to_ids("", &ws, NULL, NULL) != 0 || vtts_text_to_ids("...", &ws, NULL, NULL) != 0) {
@@ -509,6 +566,7 @@ static int mode_of(const char *m) {
     if (strcmp(m, "es") == 0) return VTTS_LANG_ES;
     if (strcmp(m, "id") == 0) return VTTS_LANG_ID;
     if (strcmp(m, "pt") == 0) return VTTS_LANG_PT;
+    if (strcmp(m, "th") == 0) return VTTS_LANG_TH;
     return VTTS_LANG_VI;
 }
 
@@ -518,6 +576,7 @@ int main(int argc, char **argv) {
     for (int i = 1; i < argc; i++) {
         if (strcmp(argv[i], "--fuzz") == 0) do_fuzz = 1;
         else if (strcmp(argv[i], "--fuzz-lt") == 0) do_fuzz_lt = 1;
+        else if (strcmp(argv[i], "--fuzz-th") == 0) do_fuzz = 2;
         else if (strcmp(argv[i], "--lex") == 0 && i + 1 < argc) {
             if (load_lex(argv[++i])) { puts("bad lexicon"); return 2; }
         } else if (strcmp(argv[i], "--zh") == 0 && i + 1 < argc) {
@@ -530,6 +589,7 @@ int main(int argc, char **argv) {
     }
     if (nfkc) return s_has_ja ? nfkc_test(nfkc) : 2;
     if (do_bench) return s_has_ja ? bench(file) : 2;
+    if (do_fuzz == 2) return fuzz_th();
     if (do_fuzz) return fuzz();
     if (do_fuzz_lt) return fuzz_lt();
     if (!file) return 2;

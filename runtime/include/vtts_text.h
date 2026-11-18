@@ -38,6 +38,10 @@
  * spelling), the language's normalizer (dates, times, phone numbers, money, percent, units, ordinals,
  * ranges, product codes, numbers, acronyms), its spelling rules and stress (tables compiled in, no
  * blob), English words with the VLEX lexicon.
+ * VTTS_LANG_TH: Thai + English, token set th-en (ids 0..106 = v2, Thai from 107), like
+ * text_to_ids(text, "th"): Thai normalization (numbers, dates, times, money, percent, units, phone
+ * numbers, abbreviations), word segmentation over the word list, the spelling rules and tones
+ * (tables compiled in, about 80 KB of flash, no blob), English words with the VLEX lexicon.
  *
  * No malloc: the caller provides a workspace (about 145 KB with the v2, zh and ko scratch; PSRAM is fine).
  * Not re-entrant per workspace.
@@ -85,14 +89,15 @@ typedef struct {
 
 typedef enum {
     VTTS_LANG_V1 = 0, VTTS_LANG_VI, VTTS_LANG_EN, VTTS_LANG_AUTO, VTTS_LANG_ZH, VTTS_LANG_KO,
-    VTTS_LANG_HI, VTTS_LANG_JA, VTTS_LANG_ES, VTTS_LANG_ID, VTTS_LANG_PT
+    VTTS_LANG_HI, VTTS_LANG_JA, VTTS_LANG_ES, VTTS_LANG_ID, VTTS_LANG_PT, VTTS_LANG_TH
 } vtts_lang;
 
 /* lang: VTTS_LANG_V1 is vtts_text_to_ids; VI, EN and AUTO select the mode of text_to_ids(text,
  * "vi" | "en" | "auto") with phoneme set v2; ZH selects text_to_ids(text, "zh") with token set
  * zh-en; KO selects text_to_ids(text, "ko") with token set ko-en; HI selects text_to_ids(text, "hi") with
  * token set hi-en; JA selects text_to_ids(text, "ja") with token set ja-en; ES, ID and PT select
- * text_to_ids(text, "es" | "id" | "pt") with token set es-en, id-en, pt-en (ES..PT are consecutive).
+ * text_to_ids(text, "es" | "id" | "pt") with token set es-en, id-en, pt-en (ES..PT are consecutive); TH
+ * selects text_to_ids(text, "th") with token set th-en.
  * lex: the English lexicon (NULL: English words are not pronounced, only acronyms are spelled). zh: the
  * Mandarin reading tables (NULL: Han characters are not pronounced; only used by VTTS_LANG_ZH). ja: the
  * Japanese reading tables (NULL: Japanese characters are not pronounced and NFKC is skipped; only used
@@ -120,14 +125,16 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
  *   hi-en "hi" (Devanagari -> Hindi, Latin -> English, numbers in Hindi)  default hi
  *   ja-en "ja" (kana/kanji -> Japanese, Latin -> English, numbers in Japanese) default ja
  *   es-en "es", id-en "id", pt-en "pt" (Latin words by latin.py rules -> the language or English)
+ *   th-en "th" (Thai -> Thai, Latin -> English, numbers in Thai)          default th
  *   unknown: no device front-end (token ids from a host front-end only).
  * vtts_text_lang_for: 0 and *out set when `mode` is valid for the set, else < 0.
  * vtts_text_default_lang: 0 and *out set, or < 0 when the set has no device front-end. */
 int vtts_text_lang_for(int token_set, const char *mode, vtts_lang *out);
 int vtts_text_default_lang(int token_set, vtts_lang *out);
-const char *vtts_text_modes(int token_set); /* "vi", "vi|en|auto", "zh", "ko", "hi", "ja", "es", "id", "pt" or "" */
+const char *vtts_text_modes(int token_set); /* "vi", "vi|en|auto", "zh", "ko", "hi", "ja", "es", "id", "pt", "th"
+                                               or "" */
 const char *vtts_text_lang_name(vtts_lang lang); /* "vi" (V1 and VI), "en", "auto", "zh", "ko", "hi", "ja", "es",
-                                                    "id", "pt" */
+                                                    "id", "pt", "th" */
 
 #ifdef __cplusplus
 }

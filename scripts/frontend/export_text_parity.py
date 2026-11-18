@@ -27,6 +27,9 @@ sequences with combining marks, half-width kana and Hangul jamo).
 --lt es|id|pt does the same for mode es, id or pt (token set es-en, id-en, pt-en); without a corpus it
 generates sentences from the eval sets, the templates, the word lists, the exception table and random
 words of the language's letters.
+       uv run python scripts/frontend/export_text_parity.py --th --out runtime/test/text_parity_th.tsv
+--th does the same for mode th (token set th-en): edge cases, the Thai eval sets and unit-test strings,
+generated sentences and regex-dense random strings.
 """
 
 import argparse
@@ -885,6 +888,138 @@ def lt_lines(lang: str, paths: list[Path], limit: int | None, fuzz: int) -> list
     return out
 
 
+TH_EDGE = [
+    "สวัสดีครับ", "ภาษาไทยไม่มีช่องว่างระหว่างคำ", "ไปไหนมา กินข้าวหรือยัง", "เด็กๆ ไปโรงเรียน", "ต่างๆ นานา",
+    "กรุงเทพฯ และ ฯลฯ", "ฯพณฯ นายกรัฐมนตรี", "พ.ศ. 2567 และ ค.ศ. 2024", "ดร. สมชาย ผศ. สมหญิง รศ. ศ.", "จ. เชียงใหม่ อ. เมือง ต. สุเทพ",
+    "ม.ค. ก.พ. มี.ค. เม.ย. พ.ค. มิ.ย. ก.ค. ส.ค. ก.ย. ต.ค. พ.ย. ธ.ค.", "รพ. ร.ร. กม. ซม. มม. กก. โทร. 02-123-4567", "ถ. สุขุมวิท",
+    "วันที่ 19/11/2569", "2026-11-19", "19/13/2569", "32/1/2024", "1/2/26", "14:30", "14:30 น.", "14.30 น.", "9.05น.",
+    "เวลา 8:00:15", "24:00 และ 25:00", "ราคา 1,250 บาท", "฿500", "฿ 1,000.50", "$5", "€3.5", "£7", "¥100", "50%", "-3.5 %",
+    "5km", "3 kg", "30°C", "25℃", "45°", "16GB", "500ml", "2 l", "10 km/h", "-5m", "x-5km", "081-234-5678",
+    "+66 81 234 5678", "02-123-4567", "0812345678", "0123", "12345678", "1234567", "10-20 คน", "10 – 20", "-5 องศา",
+    "อุณหภูมิ -5", "3.14", "1,234,567", "1,23", "1.2.3", "1000000", "2000000", "1000001", "21", "101", "11", "20",
+    "1000000000000", "100000000000000000000", "12.", ".5", "0", "00", "007", "ESP32-P4", "A1B2", "USB3.0", "RTX3060",
+    "2 + 3 = 5", "R&D", "me@example.com", "3×4", "เปิดWi-Fiให้หน่อย", "ใช้ iPhone 15 Pro", "ต่อ Bluetooth แล้ว",
+    "เปิด smart home mode", "OK ครับ", "Hello. สวัสดี! How are you? สบายดี; ขอบคุณ.", "“คำพูด” (วงเล็บ) [ก] {ข} <ค>",
+    "« อ » 「ก」『ข』 · •", "รอสักครู่… แล้ว—ไป", "รอ...ก่อน", "ภาษาไทย๑๒๓", "๒๕๖๗", "ｈｅｌｌｏ　ｗｏｒｌｄ", "１２：３０",
+    "จันทร์ ศาสตร์ การณ์ สัตว์ ลักษณ์ พระพุทธเจ้า", "รัฐบาล รัฐสภา เทศกาล พิษณุโลก อยุธยา", "พฤษภาคม ฤดู ฤๅษี ฦๅ ทฤษฎี อังกฤษ",
+    "ปฏิบัติ ปฏิบัติการ สมบัติ บุตร เมตร จักร", "ทราย ทรัพย์ จริง สร้าง ศรี ไซร้", "เสมอ แสดง เฉลิม สนุก ขนม อร่อย หนู หมา",
+    "นคร บริษัท บรม บดี", "ก๋วยเตี๋ยว ไก่ ไข่ เกี๊ยว ต๋อย", "ได้รับ อุบัติเหตุ ราชการ", "เพชร์ วงศ์ องค์ กษัตริย์", "์", "ั", "ๆ",
+    "ฯ", "กๆๆ", "ก ๆ", "฿", "ฺ", "...", "", "a", "ก", "。", "ไทย。จีน！ญี่ปุ่น？", "สวัสดี.ครับ", "ก. ข.", "น. 5",
+    "ภาษาไทย" * 200, "ก" * 300, "เด็ก" * 400 + "ครับ", "คำ " * 120 + "จบ",
+    "Very long English " + "words " * 80 + "end.", "ตัวเลข " + "1234567890" * 20,
+]
+
+
+def _th_test_strings() -> list[str]:
+    """String constants with Thai letters or digits from the Thai unit tests."""
+    import ast
+
+    root = Path(__file__).parents[2] / "tests" / "frontend"
+    out: list[str] = []
+    for name in ("test_th_g2p.py", "test_text_th.py", "test_normalize_th.py"):
+        tree = ast.parse((root / name).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                s = node.value
+                if any("ก" <= c <= "๛" for c in s) and "\n" not in s and len(s) < 2000:
+                    out.append(s)
+    return list(dict.fromkeys(out))
+
+
+def _th_generated(n: int, rnd) -> list[str]:
+    """Sentences from the word list, respelled words, random letter strings, numbers, Latin words
+    and punctuation (no Thai corpus in the repository)."""
+    from vtts.frontend.th.g2p_th import override_table, word_set
+
+    words, ovr = sorted(word_set()), sorted(override_table())
+    letters = [chr(c) for c in range(0x0E01, 0x0E4F) if c != 0x0E3F]
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "A1", "smart"]
+    numbers = ["3", "15", "100", "2567", "3.5", "1,000", "50%", "9:30", "฿20", "-7", "19/11/2569", "10-20",
+               "081-234-5678", "25°C", "5km", "๑๒"]
+    marks = [" ", " ", " ", ",", ".", "!", "?", ";", ":", "…", "“", "”", "(", ")", "ๆ", "ฯ", " ๆ "]
+    out = []
+    for _ in range(n):
+        parts = []
+        for _ in range(rnd.randint(2, 14)):
+            r = rnd.random()
+            if r < 0.55:
+                parts.append(rnd.choice(words))
+            elif r < 0.62:
+                parts.append(rnd.choice(ovr))
+            elif r < 0.72:
+                parts.append("".join(rnd.choice(letters) for _ in range(rnd.randint(1, 5))))
+            elif r < 0.82:
+                parts.append(rnd.choice(numbers))
+            elif r < 0.88:
+                parts.append(rnd.choice(latin))
+            else:
+                parts.append(rnd.choice(marks))
+        out.append("".join(parts) + rnd.choice(["", "", ".", "!", "?", " ครับ", " ค่ะ"]))
+    return out
+
+
+def _th_regex_fuzz(n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the normalize_th regex passes react to."""
+    atoms = (list("0123456789") * 4 + list(":/.,-–%'+=&@× ") * 2
+             + ["น.", "น", "ก", "พ.ศ.", "จ.", "ฯ", "ๆ", "บาท", "฿", "$", "€", "£", "¥", "km", "km/h", "kg", "m", "g",
+                "l", "ml", "GB", "MB", "°C", "°", "℃", "…", "—", "...", "“", "”", "（", "）", "　", "１", "๕", "Ａ",
+                "ESP", "A", "B", "Z", "x", "ab", "Ok", "Wi", "é", " ", "  ", "+66", "08", "02"])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 16))) for _ in range(n)]
+
+
+def th_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
+    """mode "th" cases: edge cases, the Thai eval sets, the Thai unit-test strings, the mixed-style
+    sentences (templates_th x terms_en), every respelled word, the word list in groups of 8 (with and
+    without spaces), Thai sentences (data/th/sentences.jsonl when given and present, else generated),
+    number/date/time cases and regex-dense random strings."""
+    import json
+    import random
+
+    from vtts.frontend.th.g2p_th import override_table, word_set
+
+    rnd = random.Random(0)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_th.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(TH_EDGE)
+    for name in ("ood_th.jsonl", "mixed_th.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += _th_test_strings()
+    texts += rnd.sample(mixed, min(len(mixed), 2000))
+    texts += sorted(override_table())
+    words = sorted(word_set())
+    rnd.shuffle(words)
+    for i in range(0, len(words), 8):
+        group = words[i:i + 8]
+        texts.append(" ".join(group) if (i // 8) % 2 else "".join(group))
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows if rows else _th_generated(limit or 3000, rnd)
+    nums = []
+    for _ in range(2000):
+        k = rnd.randint(0, 11)
+        v = rnd.choice([rnd.randint(0, 99), rnd.randint(0, 99999), rnd.randint(0, 10**9), rnd.randint(0, 10**22)])
+        nums.append(["{} คน", "ราคา {:,} บาท", "{}.5%", "฿{}", "ที่ {} ของ", "-{} องศา", "{}/{}/{}", "{}-{} คน",
+                     "{}:{} น.", "{}.{} น.", "0{}", "{} กม."][k].format(v, rnd.randint(0, 60), rnd.randint(0, 40)))
+    for _ in range(400):
+        nums.append(f"{rnd.randint(1900, 2600)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)} และ "
+                    f"{rnd.randint(0, 33)}/{rnd.randint(0, 13)}/{rnd.randint(1900, 2600)} "
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    texts += nums + _th_regex_fuzz(fuzz, rnd)
+    out = []
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        out.append(f"th\t{text}\t" + ";".join(" ".join(map(str, c)) for c in text_to_ids(text, "th")))
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lt", choices=("es", "id", "pt"), help="mode es|id|pt (token set es-en|id-en|pt-en) cases")
@@ -892,12 +1027,13 @@ def main() -> None:
     ap.add_argument("--zh", action="store_true", help="mode zh (token set zh-en) cases")
     ap.add_argument("--ko", action="store_true", help="mode ko (token set ko-en) cases")
     ap.add_argument("--hi", action="store_true", help="mode hi (token set hi-en) cases")
+    ap.add_argument("--th", action="store_true", help="mode th (token set th-en) cases")
     ap.add_argument("--ja", action="store_true", help="mode ja (token set ja-en) cases")
     ap.add_argument("--nfkc-out", type=Path, default=None, help="--ja: also write the NFKC fixture")
     ap.add_argument("--sentences", type=Path, nargs="*", default=[])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko, --hi, --ja, --lt: regex-dense random strings")
+    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko, --hi, --ja, --lt, --th: regex-dense random strings")
     a = ap.parse_args()
     if a.lt:
         lines = lt_lines(a.lt, a.sentences, a.limit, a.fuzz)
@@ -915,8 +1051,8 @@ def main() -> None:
             a.nfkc_out.write_text("\n".join(nl) + "\n", encoding="utf-8")
             print(f"wrote {len(nl)} NFKC cases to {a.nfkc_out}")
         return
-    if a.zh or a.ko or a.hi:
-        lines = (zh_lines if a.zh else ko_lines if a.ko else hi_lines)(a.sentences, a.limit, a.fuzz)
+    if a.zh or a.ko or a.hi or a.th:
+        lines = (zh_lines if a.zh else ko_lines if a.ko else hi_lines if a.hi else th_lines)(a.sentences, a.limit, a.fuzz)
         a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
         print(f"wrote {len(lines)} cases to {a.out}")
         return

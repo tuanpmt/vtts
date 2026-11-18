@@ -853,6 +853,7 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 #include "vtts_text_hi.h"
 #include "vtts_text_ja.h"
 #include "vtts_text_lt.h"
+#include "vtts_text_th.h"
 
 #define V2_MAX_WORDS 40
 #define V2_MAX_TOKENS 318
@@ -901,7 +902,7 @@ static int ascii_syllable(const uint32_t *w, int n) { /* parse_syllable(p.lower(
 }
 
 enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1, TAG_ZH = 2, TAG_KO = 3, TAG_HI = 4, TAG_JA = 5, TAG_ES = 6,
-       TAG_ID = 7, TAG_PT = 8 }; /* indices into LANGS; TAG_ES + VTTS_LT_* */
+       TAG_ID = 7, TAG_PT = 8, TAG_TH = 9 }; /* indices into LANGS; TAG_ES + VTTS_LT_* */
 
 static int key_eq(const uint32_t *w, int n, const char *k, int lower) {
     int i = 0;
@@ -1207,6 +1208,51 @@ static void es_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o
 static void id_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_ID); }
 static void pt_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_PT); }
 
+/* normalize_th; the passes run in en_a / en_b (Thai number words are long), the English
+ * normalizer's scratch is ws->run (free once the first pass has copied it) */
+static void th_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_th_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static int th_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
+    return vtts_en_g2p(o->lex, w, out, cap); /* a Latin word of a Thai run is read in English */
+}
+
+static void th_unit(void *user, const uint8_t *ids, int n) {
+    zh_units_t *u = user;
+    add_item(u->ws, ids, n, 0, u->n++ > 0);
+}
+
+/* _th_units: a Thai run is read syllable by syllable (en_a and en_b are its scratch: the run's
+ * words were copied to ws->words); any other word is one English unit */
+static void th_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint32_t c0 = 0;
+    if (utf8_decode(w, &c0, 1) == 1 && vtts_th_is_thai(c0)) {
+        zh_units_t u = {ws, 0};
+        vtts_th_read(w, ws->en_a, sizeof ws->en_a, ws->en_b, sizeof ws->en_b, th_unit, &u);
+        return;
+    }
+    uint8_t ids[256];
+    int n = th_word_ids(w, o, ids, (int)sizeof ids);
+    if (n > 0) add_item(ws, ids, n, 0, 0);
+}
+
+/* lang.THAI_LATIN: a boundary between Thai and Latin letters splits a chunk (เปิดWi-Fiให้) */
+static int th_latin_edge(uint32_t a, uint32_t b) {
+    return (vtts_th_is_thai(a) && ascii_alpha(b)) || (ascii_alpha(a) && vtts_th_is_thai(b));
+}
+
 static const lang_mod_t LANGS[] = {
     {"vi", vi_normalize, vi_word_ids, NULL},
     {"en", en_normalize, en_word_ids, NULL},
@@ -1217,6 +1263,7 @@ static const lang_mod_t LANGS[] = {
     {"es", es_normalize, NULL, es_add_word},
     {"id", id_normalize, NULL, id_add_word},
     {"pt", pt_normalize, NULL, pt_add_word},
+    {"th", th_normalize, th_word_ids, th_add_word},
 };
 
 static void add_word_or_mark(vtts_text_ws *ws, const char *w, const lang_mod_t *m, const vtts_text_opts *o) {
@@ -1317,6 +1364,7 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
               ja = mode == VTTS_LANG_JA;
     const int lt = mode == VTTS_LANG_ES ? VTTS_LT_ES : mode == VTTS_LANG_ID ? VTTS_LT_ID
                  : mode == VTTS_LANG_PT ? VTTS_LT_PT : -1;
+    const int th = mode == VTTS_LANG_TH;
     enum { MAXCH = 1024 };
     static int cs[MAXCH], ce[MAXCH], tag[MAXCH];
     int nc = 0;
@@ -1327,7 +1375,8 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
         if (i >= e) break;
         int j = i;
         while (j < e && !SEP(cp[j]) && (!zh || script_class(cp[j]) == script_class(cp[i])) &&
-               (!ja || vtts_ja_script_class(cp[j]) == vtts_ja_script_class(cp[i])))
+               (!ja || vtts_ja_script_class(cp[j]) == vtts_ja_script_class(cp[i])) &&
+               !(th && j > i && th_latin_edge(cp[j - 1], cp[j])))
             j++;
         cs[nc] = i; ce[nc] = j; nc++;
         i = j;
@@ -1353,6 +1402,10 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
         while (b > a && is_edge(cp[b - 1])) b--;
         if (zh) { /* word_lang in "zh" mode: Han -> zh, plain Latin -> en, neutral -> zh */
             tag[k] = has_han(cp + a, b - a) ? TAG_ZH : plain_latin(cp + a, b - a) ? TAG_EN : TAG_ZH;
+            continue;
+        }
+        if (th) { /* "th" mode: Thai letters -> th, plain Latin -> en, neutral -> th */
+            tag[k] = vtts_th_has_thai(cp + a, b - a) ? TAG_TH : plain_latin(cp + a, b - a) ? TAG_EN : TAG_TH;
             continue;
         }
         if (ko) { /* "ko" mode: Hangul (syllables or jamo) -> ko, plain Latin -> en, neutral -> ko */
@@ -1398,8 +1451,9 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     pack_items(c);
 }
 
-/* lang.py SENTENCE_END: split at whitespace after . ! ? ; and, in the zh, ko, hi, ja, es, id and pt
- * modes, right after 。！？；।॥ (the vi-en modes keep their earlier behaviour) */
+/* lang.py SENTENCE_END: split at whitespace after . ! ? ; (not after a dot that follows a Thai
+ * letter) and, in the zh, ko, hi, ja, es, id, pt and th modes, right after 。！？；।॥ (the vi-en modes
+ * keep their earlier behaviour) */
 static int cjk_end(uint32_t c) {
     return c == 0x3002 || c == 0xFF01 || c == 0xFF1F || c == 0xFF1B || c == 0x0964 || c == 0x0965;
 }
@@ -1410,7 +1464,7 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
     ctx_t ctx = {ws, cb, user, 0, 0, 0}, *c = &ctx;
     const int cjk = o->lang == VTTS_LANG_ZH || o->lang == VTTS_LANG_KO || o->lang == VTTS_LANG_HI ||
                     o->lang == VTTS_LANG_JA || o->lang == VTTS_LANG_ES || o->lang == VTTS_LANG_ID ||
-                    o->lang == VTTS_LANG_PT;
+                    o->lang == VTTS_LANG_PT || o->lang == VTTS_LANG_TH;
     int n = ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
     int a = 0, z = n;
     while (a < z && is_space_cp(ws->cp[a])) a++; /* text.strip() */
@@ -1418,7 +1472,10 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
     int s = a;
     for (int i = a; i < z && !c->stop; i++) {
         uint32_t pc = i > s ? ws->cp[i - 1] : 0;
-        if ((is_space_cp(ws->cp[i]) && (pc == '.' || pc == '!' || pc == '?' || pc == ';')) || (cjk && cjk_end(pc))) {
+        /* a dot after a Thai letter ends an abbreviation (พ.ศ. 2567), not a sentence */
+        int thai_dot = pc == '.' && i - 2 >= a && vtts_th_is_thai(ws->cp[i - 2]);
+        if ((is_space_cp(ws->cp[i]) && (pc == '.' || pc == '!' || pc == '?' || pc == ';') && !thai_dot) ||
+            (cjk && cjk_end(pc))) {
             v2_sentence(c, s, i, o);
             while (i < z && is_space_cp(ws->cp[i])) i++;
             s = i;
@@ -1439,6 +1496,7 @@ static const struct { int token_set; const char *name; vtts_lang lang; } MODES[]
     {VTTS_TOKSET_JA_EN, "ja", VTTS_LANG_JA},
     {VTTS_TOKSET_ES_EN, "es", VTTS_LANG_ES},    {VTTS_TOKSET_ID_EN, "id", VTTS_LANG_ID},
     {VTTS_TOKSET_PT_EN, "pt", VTTS_LANG_PT},
+    {VTTS_TOKSET_TH_EN, "th", VTTS_LANG_TH},
 };
 #define N_MODES ((int)(sizeof(MODES) / sizeof(MODES[0])))
 
@@ -1472,6 +1530,7 @@ const char *vtts_text_modes(int token_set) {
     case VTTS_TOKSET_ES_EN: return "es";
     case VTTS_TOKSET_ID_EN: return "id";
     case VTTS_TOKSET_PT_EN: return "pt";
+    case VTTS_TOKSET_TH_EN: return "th";
     default: return "";
     }
 }
@@ -1487,6 +1546,7 @@ const char *vtts_text_lang_name(vtts_lang lang) {
     case VTTS_LANG_ES: return "es";
     case VTTS_LANG_ID: return "id";
     case VTTS_LANG_PT: return "pt";
+    case VTTS_LANG_TH: return "th";
     default: return "vi";
     }
 }

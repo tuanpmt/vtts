@@ -26,9 +26,10 @@ build/stream_test: $(SRC) test/stream_test.c include/vtts.h
 	$(CC) $(CFLAGS) $(SAN) $(SRC) test/stream_test.c -lm -o $@
 
 TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_text_zh.c src/vtts_text_ko.c src/vtts_text_hi.c src/vtts_text_ja.c \
-           src/vtts_text_lt.c src/vtts_lex.c
+           src/vtts_text_lt.c src/vtts_text_th.c src/vtts_lex.c
 TEXT_HDR = include/vtts_text.h include/vtts_lex.h include/vtts_zlex.h include/vtts_jlex.h src/vtts_text_en.h src/vtts_text_zh.h \
-           src/vtts_text_ko.h src/vtts_text_hi.h src/vtts_text_ja.h src/vtts_text_lt.h src/vtts_text_tables.h
+           src/vtts_text_ko.h src/vtts_text_hi.h src/vtts_text_ja.h src/vtts_text_lt.h src/vtts_text_th.h \
+           src/vtts_text_tables.h src/vtts_text_th_tables.h
 build/text_test: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
@@ -115,4 +116,10 @@ test: build/token_set_test build/text_test build/lex_test build/en_norm_test bui
 	$(MAKE) hi_test
 	$(MAKE) ja_test
 	$(MAKE) lt_test
-.PHONY: zh_test ko_test hi_test ja_test ja_bench lt_test test
+	$(MAKE) th_test
+.PHONY: zh_test ko_test hi_test ja_test ja_bench lt_test th_test test
+
+# Thai (VTTS_LANG_TH) parity with text_to_ids(text, "th"); tables are compiled in (no blob).
+th_test: build/text_test build/lex_en.bin
+	./build/text_test --lex build/lex_en.bin test/text_parity_th.tsv
+	./build/text_test --fuzz-th --lex build/lex_en.bin

@@ -145,7 +145,7 @@ flowchart LR
 - **Tagging and chunks:** Han, Chinese punctuation and other text are split apart like `split_scripts`; plain Latin words are English, everything else is Chinese. Syllables of a Han run are joined without the space token and each counts as one word for the 40-word chunk limit; English words get a space on both sides.
 - **Token ids:** the zh-en ids (`VTTS_ZHEN_*` in the generated `vtts_text_tables.h`) are computed from the blob's (initial, final, tone) indices; ids 0–106 are the v2 ids, so English words use the VLEX lexicon unchanged.
 - **Tests:** `runtime/test/text_parity_zh.tsv` (edge cases, the mixed template sentences, Chinese sentences, numbers, dates and times, regex-dense random strings) must match exactly, and a fuzz run in zh mode (mixed Han, ASCII, digits, punctuation, random bytes) must stay inside its buffers: `make -C runtime test` or `uv run pytest tests/export`. After changing a Chinese rule or table, regenerate the fixture with `uv run python scripts/frontend/export_text_parity.py --zh --sentences data/zh/sentences.jsonl --limit 2500 --out runtime/test/text_parity_zh.tsv`.
-- **Known gaps (pathological input only):** only ASCII digits count as digits (Python's `\d` also takes other scripts' digits); the control characters U+001C–U+001F and U+0085 are not whitespace in C; a sentence is cut at 4,096 code points, 2,048 items or 1,024 chunks, and a Chinese run whose normalized form exceeds 6,144 code points is dropped.
+- **Known gaps (pathological input only):** only ASCII digits count as digits (Python's `\d` also takes other scripts' digits); a sentence is cut at 4,096 code points, 2,048 items or 1,024 chunks, and a Chinese run whose normalized form exceeds 6,144 code points is dropped.
 
 ## Korean (token set `ko-en`)
 
@@ -562,11 +562,11 @@ flowchart LR
 - **Normalization** follows `normalize_hi` pass by pass: NFC for Devanagari (nukta letters, canonical order of the marks) and Devanagari digits, abbreviations, danda, dropped characters, ISO and d/m/y dates, times with बजे, years after सन / ईस्वी, money (rupees and paise), phone numbers, percent, units, ordinals, ranges, pauses, product codes, numbers, Latin words (folded to ASCII, then the English normalizer), symbols. Where regex backtracking can change a match (the alternation `\d{1,3}(,\d{2,3})+|\d+` with an optional fraction, `\s?` before units, `%` and ordinal endings, the optional country code and digit groups of a phone number), the candidate ends are tried in the order the regex engine tries them. Numbers of any length are read like Python (from 10¹⁵ digit by digit).
 - **Tagging and chunks:** a word with a Devanagari letter or sign is Hindi, a plain Latin word is English unless it is a unit or currency word of the normalizer (km, GB, Rs), anything else is Hindi. Sentences also end right after । and ॥ (and `。！？；`, as for Chinese and Korean).
 - **Tests:** `runtime/test/text_parity_hi.tsv` (10,951 cases: edge cases, the Wikipedia probe sentences, 2,000 mixed template sentences, 2,000 sentences built by the corpus rules from their words with numbers and Latin words mixed in, 12,000 random words of 1–6 aksharas for the schwa, nasal and nukta rules, 3,000 number, date, time, money and phone cases with Devanagari digits, 3,000 regex-dense random strings) must match exactly, and a fuzz run in hi mode must stay inside its buffers and inside the hi-en ids: `make -C runtime hi_test` (or `test`) or `uv run pytest tests/export`. A test also checks that `vtts_text_tables.h` holds the current Hindi tables. After changing a Hindi rule or table, run `uv run python runtime/tools/gen_text_tables.py` and regenerate the fixture with `uv run python scripts/frontend/export_text_parity.py --hi --sentences data/hi/sentences.jsonl data/hi/probe_src.jsonl --limit 3000 --out runtime/test/text_parity_hi.tsv`.
-- **Known gaps (pathological input only):** Latin letters followed by separate combining marks (U+0300–U+036F) are not composed (Python's NFC may join them into one letter); only ASCII and Devanagari digits count as digits and `\w` outside Devanagari follows the runtime's letter classes; a Devanagari word of more than 318 tokens is cut (Python gives an over-long chunk); the control characters U+001C–U+001F and U+0085 are not whitespace in C; a sentence is cut at 4,096 code points, 2,048 items or 1,024 chunks, and a Hindi run whose normalized form exceeds 2,048 code points is dropped.
+- **Known gaps (pathological input only):** Latin letters followed by separate combining marks (U+0300–U+036F) are not composed (Python's NFC may join them into one letter); only ASCII and Devanagari digits count as digits and `\w` outside Devanagari follows the runtime's letter classes; a Devanagari word of more than 318 tokens is cut (Python gives an over-long chunk); a sentence is cut at 4,096 code points, 2,048 items or 1,024 chunks, and a Hindi run whose normalized form exceeds 2,048 code points is dropped.
 
 ## Thai (token set `th-en`)
 
-Python only for now (`src/vtts/frontend/th/`). `text_to_ids(text, "th")` returns ids of the token set `th-en` (model header code 9): ids 0–106 are the v2 set unchanged, followed by 55 Thai tokens from id 107 (vocabulary 162). A syllable is `TH:I:initial [TH:I:second consonant] TH:V:vowel [TH:F:final] TH:Ttone`:
+Python (`src/vtts/frontend/th/`) and C (`runtime/src/vtts_text_th.c`, see [Thai on the device (C)](#thai-on-the-device-c)). `text_to_ids(text, "th")` returns ids of the token set `th-en` (model header code 9): ids 0–106 are the v2 set unchanged, followed by 55 Thai tokens from id 107 (vocabulary 162). A syllable is `TH:I:initial [TH:I:second consonant] TH:V:vowel [TH:F:final] TH:Ttone`:
 
 | Group | Tokens |
 |---|---|
@@ -617,6 +617,37 @@ flowchart LR
 **Agreement:** 90.4% of syllables (91.0% without tones) and 99.4% of tones on syllables with the same sounds agree with TLTK's g2p (PyThaiNLP engine `tltk_g2p`) on 1,193 held-out Thai Wikipedia sentences (30,316 syllables; `scripts/frontend/eval_th_g2p.py`); the rules alone without the word list reach 88.3%. Many remaining differences are loanwords (TLTK writes final ล as l and gives English loans their falling final tone: คอมพิวเตอร์), the length of a in ไ ใ ำ, and linking vowels across words (อดีต-ตะ).
 
 Known gaps: linking and hidden vowels of Pali/Sanskrit words missing from the respellings; ทร in loanwords (read `s`, not `th r`); loanword tones; ambiguous segmentation of names; word stress and the reduction of unstressed syllables are left to the voice.
+
+### Thai on the device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_TH` gives exactly `text_to_ids(text, "th")` (module `runtime/src/vtts_text_th.c`, entry `th` in `LANGS`; mode `th` of token set `th-en`, code 9). As for Korean there is no blob: `runtime/tools/gen_text_tables.py` writes every Thai table into its own header `vtts_text_th_tables.h` (only the Thai module includes it), and only the English words need the VLEX lexicon.
+
+```mermaid
+flowchart LR
+    PY["g2p_th.py tables<br/>+ words.txt + overrides.tsv<br/>+ normalize_th.py strings"] --> GEN["gen_text_tables.py"]
+    GEN --> H["vtts_text_th_tables.h<br/>(VTTS_TH_*)"]
+    H --> N["vtts_th_normalize<br/>(regex passes)"]
+    H --> R["vtts_th_read<br/>(words → syllables → tones)"]
+    N --> R
+    R --> ID["th-en ids, one item per syllable"]
+```
+
+| Part | How it is ported | Size |
+|---|---|---|
+| Letters | Thai letters coded as code point − U+0E00 (one byte, 0x01–0x4E); one row per code: class, low sonorant, preposed, tone mark, above/below vowel, dependent sign, linking final, silent-ร initial, Python `\w`, plus the initial and final sound | 0.5 KB |
+| Spelling patterns | `VOWELS` (preposed letter, letters after the initial, vowel, short, final kind), `CLUSTERS`, the costs and the token ids | 0.5 KB |
+| Word list | `words.txt` plus the keys of `overrides.tsv` (16,493 words), sorted and front coded: a byte `0x80 + shared letters` starts each word, its other letters follow; blocks of 16 words start with a full word and are found by binary search (offsets as `uint32`) | 68,108 + 4,124 bytes |
+| Respellings | `overrides.tsv` as (word, pieces) byte strings | 1.9 KB |
+| Normalizer strings | digits, places, months, abbreviations, units, currencies, symbols, dropped characters | 1.5 KB |
+
+The whole module is about 80 KB of tables (strings and pointer tables included) and 27–36 KB of code on a 64-bit host (`-Os` / `-O2`; less on the ESP32 targets). A word lookup walks the prefixes of the text: the smallest listed word that is ≥ the prefix is found by a binary search over the 1,031 block heads and a scan of one block, and the walk stops at the first prefix no word starts with.
+
+- **Words, syllables, tones** follow `segment`, `parse_word`, `word_syllables` and `run_syllables` step by step: the same dynamic programs with the same tie-breaking (the first candidate with the lowest cost wins, candidates in the order Python generates them), the same silent-letter, linking and leading-consonant passes, the fallback for a dependent sign with nothing before it, ๆ and รัฐ + word. The DP keeps a back pointer and the index of the chosen candidate per position; the path is rebuilt by generating the candidates again.
+- **Normalization** follows `normalize_th` pass by pass (Thai digits, full-width forms, pauses, dropped quotes and brackets, ฯ abbreviations, dotted abbreviations, ๆ, product codes, dates, times with น., money, percent, units, phone numbers, ranges, negative numbers, digit strings, numbers, symbols, Latin words to the English normalizer, glued number words, spaces between Thai runs as `,`). Where regex backtracking can change a match (the number alternation with its optional fraction, `\s?` before units and `%`, the phone patterns, digit strings that end before `[\d.,]\d`), the candidate ends are tried in the order the regex engine tries them. Numbers of any length are read like Python (groups of six digits joined by ล้าน).
+- **Tagging and chunks:** a chunk is split between Thai and Latin letters, a word with a Thai letter is Thai, a plain Latin word is English, anything else is Thai. Each syllable of a Thai run is one item joined to the previous one without `SPACE`. A dot after a Thai letter does not end a sentence (in every mode, as `SENTENCE_END` in Python), and in th mode a sentence also ends after `。！？；` as for Chinese.
+- **Memory:** no new workspace: the normalizer passes run in the English scratch buffers (`en_a`, `en_b`, 6,144 code points each) and the reader uses `en_a` for its tables (about 22 KB: letter codes, the DP over at most 1,024 letters, cut points and candidates) and `en_b` for the syllables of the current word.
+- **Tests:** `runtime/test/text_parity_th.tsv` (12,997 cases: edge cases, both Thai eval sets, the strings of the Thai unit tests, 2,000 mixed template sentences, every respelled word, the whole word list in groups of eight words with and without spaces, 3,000 generated sentences, numbers, dates and times, regex-dense random strings) must match exactly, and a fuzz run in th mode (`text_test --fuzz-th`: Thai words and signs, ๆ ฯ ์, abbreviations, Thai digits, numbers, Latin words, punctuation, random bytes, runs without spaces longer than 1,024 letters) must stay inside its buffers and inside the th-en ids: `make -C runtime test` or `uv run pytest tests/export`. A test also checks that `vtts_text_th_tables.h` is current. After changing a Thai rule, word list or table, run `uv run python runtime/tools/gen_text_tables.py` and regenerate the fixture with `uv run python scripts/frontend/export_text_parity.py --th --sentences data/th/sentences.jsonl --limit 3000 --out runtime/test/text_parity_th.tsv`.
+- **Known gaps (pathological input only):** a Thai run (a clause without spaces) longer than 1,024 letters is read in pieces of 1,024 letters, so a word can be cut there; as for Korean, only ASCII and Thai digits count as digits, `\w` outside Thai, ASCII and Vietnamese letters follows the C letter test, the control characters U+001C–U+001F and U+0085 are not whitespace, a sentence is cut at 4,096 code points or 2,048 items, and a run whose normalized form exceeds 6,144 code points is dropped.
 
 ## Changing a rule or an entry
 
@@ -674,6 +705,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 | 2026-11-19 | Hindi front-end in C: mode `VTTS_LANG_HI`, letter tables, `overrides.tsv` and `numbers.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-19 | Spanish, Indonesian and Portuguese front-ends in C: modes `VTTS_LANG_ES`, `VTTS_LANG_ID`, `VTTS_LANG_PT`, all tables (and Python's Unicode classes) compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-19 | Japanese front-end in C: mode `VTTS_LANG_JA`, `JLEX` blob (`scripts/frontend/build_ja_blob.py`, reading tables and NFKC data, 721 KB), exact parity with Python. |
+| 2026-11-19 | Thai front-end in C: mode `VTTS_LANG_TH`, word list (front coded), respellings, spelling patterns and normalizer strings compiled into `vtts_text_th_tables.h` (no blob), exact parity with Python. |
 | 2026-11-19 | Hindi front-end in Python: token set `hi-en`, Devanagari letters, nasals and schwa deletion, `lexicons/hi/` (numbers 0-99, overrides), Hindi number reading, mode `hi`. |
 | 2026-11-19 | Thai front-end in Python: token set `th-en`, word list from PyThaiNLP, syllable patterns, consonant classes and tone rules, `lexicons/th/`, Thai number reading, mode `th`. |
 | 2026-11-18 | Portuguese (Brazil) front-end in Python: token set `pt-en`, spelling, nasal, stress and vowel-quality rules, `lexicons/pt/`, Portuguese number reading, mode `pt`. |

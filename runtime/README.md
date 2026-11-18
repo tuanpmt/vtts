@@ -58,6 +58,7 @@ The Python tests build and run the C tests, so `uv run pytest -q` at the reposit
 | `VTTS_LANG_HI` | hi-en (ids 0–106 = v2, Hindi from 107, 157 ids) | `lex` for English words only: the Devanagari letter tables, exception table, numbers and normalizer strings are compiled in (`src/vtts_text_tables.h`) |
 | `VTTS_LANG_JA` | ja-en (ids 0–106 = v2, Japanese from 107, 144 ids) | `lex` for English words and `ja`: JLEX blob (Japanese reading tables and NFKC data, ~721 KB, `scripts/frontend/build_ja_blob.py`) |
 | `VTTS_LANG_ES`, `VTTS_LANG_ID`, `VTTS_LANG_PT` | es-en (138 ids), id-en (141), pt-en (150); ids 0–106 = v2, the language from 107 | `lex` for English words only: normalizers, spelling rules, exception tables, word lists and Python's Unicode classes are compiled in (`src/vtts_text_lt.c`) |
+| `VTTS_LANG_TH` | th-en (ids 0–106 = v2, Thai from 107, 162 ids) | `lex` for English words only: the Thai word list (front coded, 68 KB), respellings, spelling patterns and normalizer strings are compiled in (`src/vtts_text_th_tables.h`, about 80 KB) |
 
 The blobs are read in place (flash is fine) and must stay alive while they are used:
 
@@ -92,7 +93,8 @@ if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set
 | `hi-en` | `hi` (Devanagari → Hindi, Latin words → English, numbers in Hindi; the only hi-en mode of the Python front-end) | `hi` |
 | `ja-en` | `ja` (kana/kanji → Japanese, Latin words → English, numbers in Japanese; the only ja-en mode of the Python front-end) | `ja` |
 | `es-en`, `id-en`, `pt-en` | `es`, `id`, `pt` (plain Latin words by the `latin.py` rules → the language or English, numbers in the language) | `es`, `id`, `pt` |
-| `th-en` (unknown to the runtime), unknown | none (Python front-end only) | |
+| `th-en` | `th` (Thai → Thai, Latin words → English, numbers in Thai; the only th-en mode of the Python front-end) | `th` |
+| unknown | none (Python front-end only) | |
 
 `tools/vtts_say.c` is the host version of this path: `vtts_say MODEL.vtts OUT.wav --lex lex_en.bin --zh zh_lex.bin --ja ja_lex.bin [--lang MODE] "text"` prints the token set, the mode and the ids of each chunk, then writes the audio.
 
