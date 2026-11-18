@@ -108,13 +108,16 @@ def collate(batch: list[dict], segment_frames: int = 32, hop: int = 256) -> dict
 class BucketSampler(Sampler[list[int]]):
     """Batches of similar length; buckets and batch order reshuffled every epoch.
 
+    With world_size > 1 (DistributedDataParallel) each rank gets a disjoint share of the batches.
+
     With max_frames, a batch also stops growing before (items x longest item) would exceed it,
     so buckets of long utterances get smaller batches instead of running out of GPU memory."""
 
     def __init__(self, lengths: list[int], batch_size: int, n_buckets: int = 10, seed: int = 1234,
-                 max_frames: int | None = None):
+                 max_frames: int | None = None, rank: int = 0, world_size: int = 1):
         self.lengths, self.batch_size, self.n_buckets, self.seed = lengths, batch_size, n_buckets, seed
         self.max_frames = max_frames
+        self.rank, self.world_size = rank, world_size
         self.epoch = 0
 
     def set_epoch(self, epoch: int) -> None:
@@ -141,7 +144,10 @@ class BucketSampler(Sampler[list[int]]):
             if cur:
                 batches.append(cur)
         rnd.shuffle(batches)
-        return batches
+        # multi-GPU: every rank builds the same list (same seed) and takes every world_size-th batch;
+        # the tail is dropped so all ranks run the same number of steps
+        n = len(batches) // self.world_size * self.world_size
+        return batches[self.rank:n:self.world_size]
 
     def __iter__(self):
         return iter(self._batches())

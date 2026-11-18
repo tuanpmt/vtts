@@ -64,3 +64,43 @@ def test_nan_step_skipped(tmp_path):
     assert any(r.get("skipped_nan") for r in _log(out))
     assert all(torch.equal(before[k], after["g"][k]) for k in before)
     assert after["step"] == 2
+
+
+def test_bucket_sampler_shards_disjoint_equal():
+    from vtts.teacher.data import BucketSampler
+
+    lengths = [10 + (i * 7) % 50 for i in range(103)]
+    shards = [list(BucketSampler(lengths, 4, rank=r, world_size=3)) for r in range(3)]
+    assert len({len(s) for s in shards}) == 1  # every rank runs the same number of steps
+    seen = [i for s in shards for b in s for i in b]
+    assert len(seen) == len(set(seen))  # no item on two ranks
+
+
+def _ddp_worker(rank, world, tmp, port):
+    import torch.distributed as dist
+
+    dist.init_process_group("gloo", init_method=f"tcp://127.0.0.1:{port}", rank=rank, world_size=world)
+    try:
+        from pathlib import Path
+
+        tmp = Path(tmp)
+        train(TeacherConfig(**TINY), tmp / "train.csv", tmp / "wavs", tmp / "cache", tmp / "run", None,
+              max_steps=2, ckpt_every=2, log_every=1, device="cpu")
+    finally:
+        dist.destroy_process_group()
+
+
+def test_two_process_training_cpu(tmp_path):
+    import socket
+
+    import torch.multiprocessing as mp
+
+    _data(tmp_path)
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    mp.spawn(_ddp_worker, args=(2, str(tmp_path), port), nprocs=2, join=True)
+    out = tmp_path / "run"
+    assert [r["step"] for r in _log(out) if "loss_g" in r] == [1, 2]  # rank 0 logs once per step
+    state = torch.load(latest_checkpoint(out), weights_only=False)
+    assert state["step"] == 2 and not any(k.startswith("module.") for k in state["g"])

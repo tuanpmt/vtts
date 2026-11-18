@@ -10,12 +10,15 @@ generator step with adversarial + feature-matching + mel (x c_mel) + duration + 
 
 from __future__ import annotations
 
+import contextlib
 import json
 import time
 from pathlib import Path
 
 import torch
+import torch.distributed as dist
 from torch.nn import functional as F
+from torch.nn.parallel import DistributedDataParallel as DDP
 from torch.utils.data import DataLoader
 
 from .config import TeacherConfig
@@ -68,6 +71,11 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
     out_dir.mkdir(parents=True, exist_ok=True)
     dev = torch.device(device)
     use_amp = dev.type == "cuda"
+    # multi-GPU: started with torchrun (scripts/teacher/train_teacher.py initializes the process
+    # group); each rank trains on its share of the batches and rank 0 alone logs and saves
+    ddp = dist.is_available() and dist.is_initialized()
+    rank, world = (dist.get_rank(), dist.get_world_size()) if ddp else (0, 1)
+    main = rank == 0
     # bf16 (Ampere and newer) needs no loss scaling to stay finite; the GradScaler is kept in both
     # modes because it also skips optimizer steps whose gradients are not finite, without a host sync
     autocast_dtype = torch.bfloat16 if amp_dtype == "bf16" else torch.float16
@@ -103,9 +111,14 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
         step, epoch = st["step"], st["epoch"]
     elif warmstart is not None:
         load_warmstart(g, d, warmstart)
+    g_mod, d_mod = g, d  # unwrapped modules: checkpoints never carry the "module." prefix
+    if ddp:
+        ids = [dev.index] if dev.type == "cuda" else None
+        g, d = DDP(g, device_ids=ids), DDP(d, device_ids=ids)
 
     ds = TeacherDataset(train_csv, wav_dir, cache_dir, cfg)
-    sampler = BucketSampler(ds.frame_lengths(), cfg.batch_size, max_frames=max_batch_frames)
+    sampler = BucketSampler(ds.frame_lengths(), cfg.batch_size, max_frames=max_batch_frames,
+                            rank=rank, world_size=world)
     seg_frames = cfg.segment_size // cfg.hop_length
     loader = DataLoader(ds, batch_sampler=sampler, num_workers=num_workers,
                         collate_fn=lambda b: collate(b, seg_frames, cfg.hop_length),
@@ -114,7 +127,7 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
                         prefetch_factor=4 if num_workers > 0 else None)
 
     def state() -> dict:
-        return {"g": g.state_dict(), "d": d.state_dict(), "opt_g": opt_g.state_dict(),
+        return {"g": g_mod.state_dict(), "d": d_mod.state_dict(), "opt_g": opt_g.state_dict(),
                 "opt_d": opt_d.state_dict(), "sched_g": sched_g.state_dict(),
                 "sched_d": sched_d.state_dict(), "scaler": scaler.state_dict(),
                 "step": step, "epoch": epoch, "config": cfg.__dict__}
@@ -156,7 +169,9 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
                 scaler.scale(loss_d).backward()
                 scaler.step(opt_d)
 
-            # generator step
+            # generator step; D's gradients from this loss are thrown away, so D skips the all-reduce
+            no_sync = d.no_sync() if ddp else contextlib.nullcontext()
+            no_sync.__enter__()
             with torch.autocast(dev.type, dtype=autocast_dtype, enabled=use_amp):
                 _, d_fake_g, fmap_r, fmap_g = d(y, y_hat)
             loss_dur = torch.sum(l_length.float())
@@ -170,12 +185,15 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
             skipped = skipped or (not use_amp and not torch.isfinite(loss_g))
             opt_g.zero_grad(set_to_none=True)
             if skipped:
-                _log(out_dir, {"step": step, "skipped_nan": True})
+                no_sync.__exit__(None, None, None)
+                if main:
+                    _log(out_dir, {"step": step, "skipped_nan": True})
             else:
                 scaler.scale(loss_g).backward()
+                no_sync.__exit__(None, None, None)
                 scaler.step(opt_g)
             scaler.update()
-            if not skipped and step % log_every == 0:
+            if main and not skipped and step % log_every == 0:
                 now = time.time()
                 _log(out_dir, {"step": step, "epoch": epoch, "loss_g": loss_g.item(),
                                "loss_d": loss_d.item(), "loss_mel": loss_mel.item(),
@@ -184,10 +202,11 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
                                "lr": opt_g.param_groups[0]["lr"], "scale": scaler.get_scale(),
                                "sec_per_step": (now - t_last) / log_every})
                 t_last = now
-            if step % ckpt_every == 0 or step == max_steps:
+            if main and (step % ckpt_every == 0 or step == max_steps):
                 _save(out_dir, state())
         else:
             epoch += 1
             sched_g.step()
             sched_d.step()
-    _save(out_dir, state())
+    if main:
+        _save(out_dir, state())

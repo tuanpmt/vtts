@@ -4,10 +4,17 @@ Usage (GPU box):
   uv run python scripts/teacher/train_teacher.py --data data/infore1/final --wavs data/infore1/prepared/wavs \
      --out artifacts/teacher/run1 --warmstart artifacts/warmstart/epoch=4769-step=919580.ckpt \
      --max-steps 100000 --ckpt-every 5000
+
+Several GPUs on one machine (DistributedDataParallel; --batch-size is per GPU):
+  uv run torchrun --nproc_per_node 4 scripts/teacher/train_teacher.py ... --batch-size 16 --bf16
 """
 
 import argparse
+import os
 from pathlib import Path
+
+import torch
+import torch.distributed as dist
 
 from vtts.teacher.config import TeacherConfig
 from vtts.teacher.train import train
@@ -32,10 +39,19 @@ def main() -> None:
     ap.add_argument("--lr", type=float, default=None, help="learning rate (default from the config)")
     args = ap.parse_args()
     cfg = TeacherConfig(batch_size=args.batch_size)
+    device = args.device
+    if int(os.environ.get("WORLD_SIZE", "1")) > 1:  # launched by torchrun
+        local = int(os.environ["LOCAL_RANK"])
+        torch.cuda.set_device(local)
+        dist.init_process_group("nccl")
+        device = f"cuda:{local}"
+        args.num_workers = max(1, args.num_workers // int(os.environ["WORLD_SIZE"]))
     train(cfg, args.data / "train.csv", args.wavs, None if args.no_cache else (args.cache or args.data / "spec_cache"), args.out,
-          args.warmstart, args.max_steps, args.ckpt_every, device=args.device,
+          args.warmstart, args.max_steps, args.ckpt_every, device=device,
           num_workers=args.num_workers, max_batch_frames=args.max_batch_frames,
           amp_dtype="bf16" if args.bf16 else "fp16", learning_rate=args.lr)
+    if dist.is_initialized():
+        dist.destroy_process_group()
 
 
 if __name__ == "__main__":
