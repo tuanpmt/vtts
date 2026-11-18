@@ -4,7 +4,7 @@ Templates are scripts/data/bilingual/templates_<lang>.txt ({T} = term), terms ar
 scripts/data/bilingual/terms_en.txt. Rows have the pair language as lang ("zh", "ko", "ja"), so
 the pair token set reads both the main language and the English term. Durations are estimated
 from the main-language part at the corpus rates (zh 4.5 Han characters/s, ko 5.5 syllables/s,
-ja 7.5 morae/s) plus 2.6 English words/s.
+ja 7.5 morae/s; es, id, pt, th, hi at the vtts.data.wiki_corpus rates) plus 2.6 English words/s.
 """
 
 from __future__ import annotations
@@ -14,7 +14,8 @@ from collections.abc import Callable
 from pathlib import Path
 
 TEMPLATE_DIR = Path(__file__).resolve().parents[3] / "scripts" / "data" / "bilingual"
-ID_PREFIX = {"zh": "zm", "ko": "km", "ja": "jm"}
+ID_PREFIX = {"zh": "zm", "ko": "km", "ja": "jm",
+             "es": "em", "id": "im", "pt": "pm", "th": "tm", "hi": "hm"}
 EN_RATE = 2.6  # English words per second
 
 
@@ -31,6 +32,10 @@ def _seconds_fn(lang: str) -> Callable[[str], float]:
         from vtts.data.ja_corpus import ja_seconds
 
         return ja_seconds
+    from vtts.data.wiki_corpus import LANGS, seconds
+
+    if lang in LANGS:
+        return lambda text: seconds(text, lang)
     raise ValueError(f"no mixed templates for language {lang!r}")
 
 
