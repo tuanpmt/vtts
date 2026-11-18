@@ -1,5 +1,8 @@
 """Plain-PyTorch VITS training loop: AMP on CUDA, resumable, NaN-safe.
 
+Options for fast GPUs: bf16 autocast, a learning-rate override for large batches, TF32, pinned
+memory. With AMP, steps with non-finite gradients are skipped by the GradScaler (logged `scale` drops).
+
 Loss recipe and optimizer follow Piper/VITS: discriminator step first, then the
 generator step with adversarial + feature-matching + mel (x c_mel) + duration + KL
 (x c_kl); AdamW(lr 2e-4, betas 0.8/0.99, eps 1e-9) with exponential decay per epoch.
@@ -55,7 +58,8 @@ def _one_thread(_: int) -> None:
 def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | None, out_dir: Path,
           warmstart: Path | None, max_steps: int, ckpt_every: int, device: str = "cuda",
           log_every: int = 50, num_workers: int = 0,
-          nan_steps: frozenset[int] = frozenset(), max_batch_frames: int | None = None) -> None:
+          nan_steps: frozenset[int] = frozenset(), max_batch_frames: int | None = None,
+          amp_dtype: str = "fp16", learning_rate: float | None = None) -> None:
     """Train until `max_steps`; resumes from the newest checkpoint in out_dir if any.
 
     `nan_steps` is a testing aid: the generator loss is replaced by NaN at those steps.
@@ -64,13 +68,20 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
     out_dir.mkdir(parents=True, exist_ok=True)
     dev = torch.device(device)
     use_amp = dev.type == "cuda"
+    # bf16 (Ampere and newer) needs no loss scaling to stay finite; the GradScaler is kept in both
+    # modes because it also skips optimizer steps whose gradients are not finite, without a host sync
+    autocast_dtype = torch.bfloat16 if amp_dtype == "bf16" else torch.float16
+    if dev.type == "cuda":
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+    lr = learning_rate if learning_rate is not None else cfg.learning_rate
 
     g, d = build_generator(cfg).to(dev), build_discriminator(cfg).to(dev)
     # fused AdamW: one kernel per step instead of several per tensor, and no host sync for the
     # GradScaler's inf check; the CPU-side launch overhead is what limits a slow host CPU
     fused = dev.type == "cuda"
-    opt_g = torch.optim.AdamW(g.parameters(), cfg.learning_rate, betas=cfg.betas, eps=cfg.eps, fused=fused)
-    opt_d = torch.optim.AdamW(d.parameters(), cfg.learning_rate, betas=cfg.betas, eps=cfg.eps, fused=fused)
+    opt_g = torch.optim.AdamW(g.parameters(), lr, betas=cfg.betas, eps=cfg.eps, fused=fused)
+    opt_d = torch.optim.AdamW(d.parameters(), lr, betas=cfg.betas, eps=cfg.eps, fused=fused)
     sched_g = torch.optim.lr_scheduler.ExponentialLR(opt_g, gamma=cfg.lr_decay)
     sched_d = torch.optim.lr_scheduler.ExponentialLR(opt_d, gamma=cfg.lr_decay)
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
@@ -83,6 +94,9 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
         d.load_state_dict(st["d"])
         opt_g.load_state_dict(st["opt_g"])
         opt_d.load_state_dict(st["opt_d"])
+        for opt in (opt_g, opt_d):  # a checkpoint saved without fused AdamW must not switch it off
+            for group in opt.param_groups:
+                group["fused"], group["foreach"] = fused or None, None if fused else group.get("foreach")
         sched_g.load_state_dict(st["sched_g"])
         sched_d.load_state_dict(st["sched_d"])
         scaler.load_state_dict(st["scaler"])
@@ -95,7 +109,9 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
     seg_frames = cfg.segment_size // cfg.hop_length
     loader = DataLoader(ds, batch_sampler=sampler, num_workers=num_workers,
                         collate_fn=lambda b: collate(b, seg_frames, cfg.hop_length),
-                        persistent_workers=num_workers > 0, worker_init_fn=_one_thread)
+                        persistent_workers=num_workers > 0, worker_init_fn=_one_thread,
+                        pin_memory=dev.type == "cuda",
+                        prefetch_factor=4 if num_workers > 0 else None)
 
     def state() -> dict:
         return {"g": g.state_dict(), "d": d.state_dict(), "opt_g": opt_g.state_dict(),
@@ -112,11 +128,12 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
             if step >= max_steps:
                 break
             step += 1
-            x, x_len = batch["ids"].to(dev), batch["ids_lengths"].to(dev)
-            spec, spec_len = batch["spec"].to(dev), batch["spec_lengths"].to(dev)
-            wav = batch["wav"].to(dev)
+            x, x_len = batch["ids"].to(dev, non_blocking=True), batch["ids_lengths"].to(dev, non_blocking=True)
+            spec = batch["spec"].to(dev, non_blocking=True)
+            spec_len = batch["spec_lengths"].to(dev, non_blocking=True)
+            wav = batch["wav"].to(dev, non_blocking=True)
 
-            with torch.autocast(dev.type, enabled=use_amp):
+            with torch.autocast(dev.type, dtype=autocast_dtype, enabled=use_amp):
                 y_hat, l_length, _attn, ids_slice, _x_mask, z_mask, (_z, z_p, m_p, logs_p, _m_q,
                                                                      logs_q) = g(x, x_len, spec, spec_len)
             y = slice_segments(wav, ids_slice * cfg.hop_length, cfg.segment_size)
@@ -128,17 +145,19 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
                                               cfg.win_length, cfg.mel_fmin, cfg.mel_fmax)
 
             # discriminator step (must finish before the generator re-runs D)
-            with torch.autocast(dev.type, enabled=use_amp):
+            with torch.autocast(dev.type, dtype=autocast_dtype, enabled=use_amp):
                 d_real, d_fake, _, _ = d(y, y_hat.detach())
             loss_d, _, _ = discriminator_loss([r.float() for r in d_real], [f.float() for f in d_fake])
-            skipped = not torch.isfinite(loss_d)
+            # without AMP (CPU) a host check skips the step; with AMP the GradScaler skips steps with
+            # non-finite gradients on the GPU, so the loop never waits for the device here
+            skipped = False if use_amp else not torch.isfinite(loss_d)
             opt_d.zero_grad(set_to_none=True)
             if not skipped:
                 scaler.scale(loss_d).backward()
                 scaler.step(opt_d)
 
             # generator step
-            with torch.autocast(dev.type, enabled=use_amp):
+            with torch.autocast(dev.type, dtype=autocast_dtype, enabled=use_amp):
                 _, d_fake_g, fmap_r, fmap_g = d(y, y_hat)
             loss_dur = torch.sum(l_length.float())
             loss_mel = F.l1_loss(y_mel, y_hat_mel) * cfg.c_mel
@@ -148,7 +167,7 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
             loss_g = loss_adv + loss_fm + loss_mel + loss_dur + loss_kl
             if step in nan_steps:
                 loss_g = loss_g * float("nan")
-            skipped = skipped or not torch.isfinite(loss_g)
+            skipped = skipped or (not use_amp and not torch.isfinite(loss_g))
             opt_g.zero_grad(set_to_none=True)
             if skipped:
                 _log(out_dir, {"step": step, "skipped_nan": True})
@@ -162,7 +181,7 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
                                "loss_d": loss_d.item(), "loss_mel": loss_mel.item(),
                                "loss_kl": loss_kl.item(), "loss_dur": loss_dur.item(),
                                "loss_fm": loss_fm.item(), "loss_adv": loss_adv.item(),
-                               "lr": opt_g.param_groups[0]["lr"],
+                               "lr": opt_g.param_groups[0]["lr"], "scale": scaler.get_scale(),
                                "sec_per_step": (now - t_last) / log_every})
                 t_last = now
             if step % ckpt_every == 0 or step == max_steps:

@@ -28,11 +28,14 @@ def main() -> None:
     ap.add_argument("--batch-size", type=int, default=16)
     ap.add_argument("--num-workers", type=int, default=4)
     ap.add_argument("--device", default="cuda")
+    ap.add_argument("--bf16", action="store_true", help="bf16 autocast (Ampere or newer) instead of fp16")
+    ap.add_argument("--lr", type=float, default=None, help="learning rate (default from the config)")
     args = ap.parse_args()
     cfg = TeacherConfig(batch_size=args.batch_size)
     train(cfg, args.data / "train.csv", args.wavs, None if args.no_cache else (args.cache or args.data / "spec_cache"), args.out,
           args.warmstart, args.max_steps, args.ckpt_every, device=args.device,
-          num_workers=args.num_workers, max_batch_frames=args.max_batch_frames)
+          num_workers=args.num_workers, max_batch_frames=args.max_batch_frames,
+          amp_dtype="bf16" if args.bf16 else "fp16", learning_rate=args.lr)
 
 
 if __name__ == "__main__":
