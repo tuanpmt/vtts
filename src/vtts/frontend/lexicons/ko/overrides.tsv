@@ -1,0 +1,89 @@
+# Korean words (or parts of words) that the pronunciation rules in ko/g2p_ko.py read wrongly.
+# One entry per line: written<TAB>pronounced, both Hangul. The reading is spelled as pronounced
+# (the rules still run over it and must leave it unchanged; tests check this). Entries are matched
+# anywhere inside a word, longest first, so a stem entry also covers the word with particles.
+# --- ㄴ before ㄹ read ㄴㄴ (exceptions to liquidization, rule 20)
+의견란	의견난
+생산량	생산냥
+결단력	결딴녁
+공권력	공꿘녁
+입원료	이붠뇨
+동원령	동원녕
+상견례	상견녜
+횡단로	횡단노
+음운론	으문논
+이원론	이원논
+# --- Sino-Korean ㄹ + ㄷ ㅅ ㅈ tensified (rule 26)
+갈등	갈뜽
+발전	발쩐
+발달	발딸
+일시	일씨
+물질	물찔
+출동	출똥
+열정	열쩡
+절대	절때
+결정	결쩡
+실제	실쩨
+활동	활똥
+출신	출씬
+열심	열씸
+일정	일쩡
+설정	설쩡
+철도	철또
+갈증	갈쯩
+# --- 사잇소리 (tense onset in compounds, rule 28)
+김밥	김빱
+물고기	물꼬기
+눈동자	눈똥자
+산불	산뿔
+손가락	손까락
+길가	길까
+등불	등뿔
+문법	문뻡
+인기	인끼
+사건	사껀
+조건	조껀
+성격	성껵
+여권	여꿘
+술잔	술짠
+발바닥	발빠닥
+아침밥	아침빱
+바람결	바람껼
+# --- ㄴ insertion (rule 29)
+솜이불	솜니불
+색연필	생년필
+맨입	맨닙
+한여름	한녀름
+담요	담뇨
+식용유	시굥뉴
+서울역	서울력
+휘발유	휘발류
+물약	물략
+꽃잎	꼰닙
+나뭇잎	나문닙
+깻잎	깬닙
+늑막염	능망념
+일일이	일리리
+# --- coda neutralized before a vowel-initial real morpheme, then liaison (rule 15)
+맛없	마덥
+멋없	머덥
+겉옷	거돋
+헛웃음	허두슴
+첫인상	처딘상
+# --- compounds without palatalization
+밭이랑	반니랑
+홑이불	혼니불
+# --- nouns with ㄺ before ㄱ (the ㄹ rule is for verb stems)
+닭고기	닥꼬기
+닭과	닥꽈
+흙과	흑꽈
+# --- 밟- reads ㅂ before a consonant (rule 10)
+밟다	밥따
+밟고	밥꼬
+밟지	밥찌
+밟는	밤는
+밟게	밥께
+넓죽	넙쭉
+넓둥글	넙뚱글
+# --- noun 삶 (rule 24 tensifies after the verb stem 삶-, not the noun)
+삶과	삼과

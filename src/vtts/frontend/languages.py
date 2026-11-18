@@ -9,7 +9,8 @@ splitting, chunk packing and the device protocol are shared. Each module provide
   word cannot be pronounced (it is then skipped).
 - word_units(word) -> list[list[str]] (optional): the same tokens split into syllables, for
   languages written without spaces (zh): a "word" is then a whole Han run, its syllables are
-  joined without the SPACE token and each counts as one word for chunk packing.
+  joined without the SPACE token and each counts as one word for chunk packing. Korean (ko)
+  returns one unit per word and splits only a word too long for one chunk.
 
 The C front-end has the same table (runtime/src/vtts_text.c, LANGS); see
 docs/frontend/pronunciation-rules.md, "Adding a language".
@@ -76,8 +77,36 @@ def _zh_word(word: str) -> list[str]:
     return [t for unit in _zh_units(word) for t in unit]
 
 
+def _ko_normalize(text: str) -> str:
+    from .ko.normalize_ko import normalize_ko
+
+    return normalize_ko(text)
+
+
+def _ko_word(word: str) -> list[str]:
+    """A Korean word (어절) of Hangul syllables; a Latin word (code letters) is read in English."""
+    from .ko.g2p_ko import word_tokens_ko
+    from .ko.normalize_ko import is_hangul_word
+
+    return word_tokens_ko(word) if is_hangul_word(word) else _en_word(word)
+
+
+def _ko_units(word: str) -> list[list[str]]:
+    """One unit per word; a word too long for one chunk is split into syllables so the chunk
+    packer can cut it."""
+    from .ko.g2p_ko import pronounce, syllable_tokens
+    from .ko.normalize_ko import is_hangul_word
+    from .text import _V2_MAX_TOKENS
+
+    toks = _ko_word(word)
+    if len(toks) <= _V2_MAX_TOKENS or not is_hangul_word(word):
+        return [toks] if toks else []
+    return [syllable_tokens(s) for s in pronounce(word)]
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
     "zh": LanguageModule("zh", _zh_normalize, _zh_word, _zh_units),
+    "ko": LanguageModule("ko", _ko_normalize, _ko_word, _ko_units),
 }

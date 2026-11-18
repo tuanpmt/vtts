@@ -95,3 +95,34 @@ _TOKEN_TO_ID_ZHEN = {tok: i for i, tok in enumerate(TOKENS_ZHEN)}
 
 def token_to_id_zhen(tok: str) -> int:
     return _TOKEN_TO_ID_ZHEN[tok]
+
+
+# ---------------- token set "ko-en": Korean + English (ids 0..106 = v2 unchanged) ----------------
+# Phoneme-level tokens after the standard pronunciation rules (src/vtts/frontend/ko/): a syllable
+# is [KO:I:onset] KO:V:vowel [KO:C:coda]. The silent onset ㅇ has no token; vowels include the
+# glides (ya, wa, ui, ...); codas are the 7 coda sounds. Names are romanized (Revised Romanization
+# letters; ㄹ is "r" as an onset and "l" as a coda). Korean has no lexical tone.
+
+TOKEN_SET_KOEN = "ko-en"
+
+KO_ONSETS = ("g", "kk", "k", "d", "tt", "t", "b", "pp", "p", "s", "ss", "j", "jj", "ch", "h",
+             "n", "m", "r")
+KO_VOWELS = ("a", "ae", "ya", "yae", "eo", "e", "yeo", "ye", "o", "wa", "wae", "oe", "yo", "u",
+             "wo", "we", "wi", "yu", "eu", "ui", "i")
+KO_CODAS = ("k", "n", "t", "l", "m", "p", "ng")
+
+TOKENS_KOEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"KO:I:{o}" for o in KO_ONSETS)
+    + tuple(f"KO:V:{v}" for v in KO_VOWELS)
+    + tuple(f"KO:C:{c}" for c in KO_CODAS)
+)
+VOCAB_SIZE_KOEN = len(TOKENS_KOEN)
+
+TOKEN_SETS[TOKEN_SET_KOEN] = TOKENS_KOEN
+
+_TOKEN_TO_ID_KOEN = {tok: i for i, tok in enumerate(TOKENS_KOEN)}
+
+
+def token_to_id_koen(tok: str) -> int:
+    return _TOKEN_TO_ID_KOEN[tok]
