@@ -54,3 +54,32 @@ Words come through almost as well as from the teacher; naturalness (UTMOS) drops
 ## Clean retraining
 
 These teachers were warm-started from a Vietnamese teacher trained on another corpus (VietBibleVox, CC BY-SA 4.0); `nu-10` started from an early `nam-1` checkpoint. So that the released voices carry only the synthetic VoxCPM2 audio and can be Apache-2.0, both teachers are being retrained from random initialization on that audio alone, and the students will be distilled again. The results above are kept for comparison.
+
+## Evaluation of new pairs
+
+Each new pair (zh-en, ko-en, ja-en) is scored on its own two sets plus the shared English set `eval/sets/ood_en.jsonl`. The sets are written for evaluation (not taken from the training corpora; checked against `data/*/sentences.jsonl` and `data/zh/mixed.jsonl`), 50 sentences each in five groups of 10: device prompts, numbers (digits, dates, times, percentages, money, phone numbers), names (people and places), questions and long sentences.
+
+| Set | Content | `lang` (render and score) | Whisper language |
+|---|---|---|---|
+| `eval/sets/ood_zh.jsonl` | Mandarin, no Latin letters | `zh` | `zh` |
+| `eval/sets/mixed_zh.jsonl` | Mandarin with English brand and tech terms | `zh` | `zh` |
+| `eval/sets/ood_ko.jsonl` | Korean, no Latin letters | `ko` | `ko` |
+| `eval/sets/mixed_ko.jsonl` | Korean with English terms | `ko` | `ko` |
+| `eval/sets/ood_ja.jsonl` | Japanese, no Latin letters | `ja` | `ja` |
+| `eval/sets/mixed_ja.jsonl` | Japanese with English terms | `ja` | `ja` |
+
+One `lang` value per pair covers both sets: the pair token set reads main-language and mixed text alike (as in training, where mixed rows have the pair language), and the same scoring handles the English words. Each row carries its `lang`, so `render_teacher.py` picks the token set from the row.
+
+```bash
+uv run python scripts/teacher/render_teacher.py --ckpt CKPT --set eval/sets/mixed_zh.jsonl --out DIR --lang zh
+uv run python scripts/eval/eval_dir.py --system NAME --set eval/sets/mixed_zh.jsonl --audio DIR \
+  --out reports/NAME-mixed_zh.json --lang zh --asr openai/whisper-large-v3
+```
+
+Metrics (`vtts.eval.cer`, `--lang zh|ko|ja`; the Whisper language follows `--lang`):
+
+- Reference and transcript go through the pair front-end's normalizers, so numbers are compared as read in the main language ("20%" and "百分之二十" match) and English words through the English normalizer; punctuation is dropped. Chinese is compared in Simplified characters, Japanese with katakana folded to hiragana.
+- **CER** is character-level with spaces removed: Han characters, Hangul syllables, kana and kanji, and the letters of English words. Korean word spacing and the spacing of English terms ("Wi-Fi" / "WiFi") are not errors.
+- **WER** for zh and ja counts each Han character or kana as one unit and each English word as one unit (a mixed error rate, since these languages have no spaces); for ko it counts space-separated words (어절), so it also counts spacing differences and is reported for reference only.
+- Japanese CER is orthographic: Whisper writing a word in kanji where the reference has kana (or another kanji spelling) counts as an error, so part of the Japanese CER is spelling, not speech. Check the worst clips by ear before reading a Japanese difference as a model difference.
+- Release gate as in the roadmap: mixed CER within 0.01 of the vi-en result and no regression on `ood_en`.

@@ -5,8 +5,8 @@ from vtts.teacher.config import TeacherConfig
 from vtts.teacher.infer import Teacher
 from vtts.teacher.model import build_generator
 
-TINY = dict(inter_channels=32, hidden_channels=32, filter_channels=64, n_layers=2,
-            upsample_initial_channel=32)
+TINY = {"inter_channels": 32, "hidden_channels": 32, "filter_channels": 64, "n_layers": 2,
+        "upsample_initial_channel": 32}
 
 
 def _ckpt(tmp_path):
@@ -45,3 +45,16 @@ def test_synthesize_bilingual_uses_v2_ids(tmp_path, monkeypatch):
     seen.clear()
     t.synthesize("Play some music.", lang="en")
     assert seen == text_to_ids("Play some music.", "en")
+
+
+def test_synthesize_pair_languages_use_pair_token_sets(tmp_path, monkeypatch):
+    from vtts.frontend.text import text_to_ids
+    from vtts.teacher.data import encode_text
+
+    t = Teacher.load(_ckpt(tmp_path), "cpu")
+    seen = []
+    monkeypatch.setattr(t, "synthesize_ids", lambda ids: seen.append(ids) or np.zeros(10, np.float32))
+    for lang, text in [("zh", "打开Wi-Fi设置。"), ("ko", "Wi-Fi를 켜 주세요."), ("ja", "Wi-Fiを設定してください。")]:
+        seen.clear()
+        t.synthesize(text, lang=lang)
+        assert seen == text_to_ids(text, lang) == [encode_text(text, lang)]  # as in training

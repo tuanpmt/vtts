@@ -22,7 +22,7 @@ class Teacher:
         self.g, self.cfg, self.device = g, cfg, device
 
     @classmethod
-    def load(cls, ckpt: Path, device: str = "cpu") -> "Teacher":
+    def load(cls, ckpt: Path, device: str = "cpu") -> Teacher:
         st = torch.load(ckpt, map_location=device, weights_only=False)
         known = TeacherConfig.__dataclass_fields__
         cfg = TeacherConfig(**{k: v for k, v in st.get("config", {}).items() if k in known})
@@ -43,12 +43,13 @@ class Teacher:
 
     def synthesize(self, text: str, lang: str | None = None) -> np.ndarray:
         """lang None: token set v1 (Vietnamese models); "vi" | "en" | "mixed": token set v2,
-        with mixed text read in "vi" mode as in training (teacher/data.encode_text)."""
+        with mixed text read in "vi" mode as in training (teacher/data.encode_text); "zh", "ko",
+        "ja": the pair token sets zh-en, ko-en, ja-en (main-language and mixed text alike)."""
         gap = np.zeros(int(GAP_SECONDS * self.cfg.sample_rate), dtype=np.float32)
         if lang is None:
             chunks = [encode(g2p(chunk)) for chunk in split_sentences(text)]
         else:
-            chunks = text_to_ids(text, "en" if lang == "en" else "vi")
+            chunks = text_to_ids(text, lang if lang in ("en", "zh", "ko", "ja") else "vi")
         parts: list[np.ndarray] = []
         for ids in chunks:
             if parts:
