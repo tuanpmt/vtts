@@ -29,6 +29,18 @@ enum {
 
 enum { VTTS_DEC_HIFIGAN = 0, VTTS_DEC_ISTFT = 1, VTTS_DEC_VOCOS = 2 };
 
+/* Token set a model was trained with (dim `token_set`, docs/model-format.md). Files without the
+ * dim map by vocab: 65 -> V1, 107 -> VI_EN, 171 -> ZH_EN, 153 -> KO_EN, 144 -> JA_EN, any other
+ * vocab > 65 -> VI_EN and <= 65 -> V1 (the rule the firmware used before the dim existed). */
+typedef enum {
+    VTTS_TOKSET_UNKNOWN = 0, /* a code newer than this runtime: only raw ids can be used */
+    VTTS_TOKSET_V1 = 1,      /* Vietnamese, 65 ids */
+    VTTS_TOKSET_VI_EN = 2,   /* "vi-en" (v2), 107 ids */
+    VTTS_TOKSET_ZH_EN = 3,   /* "zh-en", 171 ids */
+    VTTS_TOKSET_KO_EN = 4,   /* "ko-en", 153 ids */
+    VTTS_TOKSET_JA_EN = 5    /* "ja-en", 144 ids */
+} vtts_token_set_t;
+
 typedef struct {
     const char *name; /* points into the model blob (NUL padded field) */
     int dtype;        /* 0 = f32, 1 = i8 */
@@ -46,6 +58,8 @@ typedef struct {
     int decoder, c0, n_up, up[4], upk[4], n_res, res_d[4], res_kernel;
     int n_fft, istft_hop, v_dim, v_blocks, v_mult;
     int prosody, p_depth, expr_milli; /* prosody branch (v2) and its default expressiveness x1000 */
+    int token_set;                   /* vtts_token_set_t, resolved by vtts_init (dim or vocab) */
+    int token_set_in_file;           /* 1 when the file has the token_set dim */
     float expressiveness;            /* scales the predicted log-F0 deviation; 1 = as trained */
     /* tensors */
     int n_tensors;
@@ -99,6 +113,15 @@ void vtts_set_fast_scratch(void *p, size_t n);
 
 /* Prosody models only: scale the predicted pitch movement (1.0 = as trained, >1 livelier). */
 void vtts_set_expressiveness(vtts_model *m, float e);
+
+/* Token set of a loaded model (vtts_token_set_t); see the enum for files without the dim. */
+int vtts_token_set(const vtts_model *m);
+
+/* "v1", "vi-en", "zh-en", "ko-en", "ja-en" or "unknown". */
+const char *vtts_token_set_name(int token_set);
+
+/* Number of ids of a token set (0 for VTTS_TOKSET_UNKNOWN). */
+int vtts_token_set_size(int token_set);
 
 /* Tensor lookup by name (NULL when missing). */
 const vtts_tensor *vtts_find(const vtts_model *m, const char *name);

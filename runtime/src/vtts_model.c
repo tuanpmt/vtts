@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* vtts_model.c -- parse a VTTS v1 model blob (docs/model-format.md). */
+/* vtts_model.c -- parse a VTTS model blob (format version 1) (docs/model-format.md). */
 #include <string.h>
 
 #include "vtts.h"
@@ -33,7 +33,7 @@ static const dim_spec DIMS[] = {
     D(d_hidden, 1), D(d_depth, 1), D(d_kernel, 1), D(a_hidden, 1), D(a_token_depth, 1),
     D(a_frame_depth, 1), D(a_kernel, 1), D(decoder, 1), D(c0, 0), D(n_up, 0), D(n_res, 0),
     D(res_kernel, 0), D(n_fft, 0), D(istft_hop, 0), D(v_dim, 0), D(v_blocks, 0), D(v_mult, 0),
-    D(prosody, 0), D(p_depth, 0), D(expr_milli, 0),
+    D(prosody, 0), D(p_depth, 0), D(expr_milli, 0), D(token_set, 0),
 };
 
 static int set_indexed(vtts_model *m, const uint8_t *key, int32_t v) {
@@ -50,6 +50,29 @@ static int set_indexed(vtts_model *m, const uint8_t *key, int32_t v) {
     }
     return 0;
 }
+
+static const struct { const char *name; int size; } TOKEN_SETS[] = {
+    {"unknown", 0}, {"v1", 65}, {"vi-en", 107}, {"zh-en", 171}, {"ko-en", 153}, {"ja-en", 144}};
+#define N_TOKEN_SETS ((int)(sizeof(TOKEN_SETS) / sizeof(TOKEN_SETS[0])))
+
+/* dim token_set present (non-zero): a known code must fit the embedding; a code newer than this
+ * runtime loads as UNKNOWN. Absent (or 0): by vocab, as the firmware did before the dim. */
+static int resolve_token_set(vtts_model *m) {
+    int code = m->token_set;
+    m->token_set_in_file = code != 0;
+    if (code > 0 && code < N_TOKEN_SETS) return m->vocab >= TOKEN_SETS[code].size ? VTTS_OK : VTTS_ERR_FORMAT;
+    if (code != 0) { m->token_set = VTTS_TOKSET_UNKNOWN; return VTTS_OK; }
+    m->token_set = m->vocab > 65 ? VTTS_TOKSET_VI_EN : VTTS_TOKSET_V1;
+    for (int k = 1; k < N_TOKEN_SETS; k++)
+        if (m->vocab == TOKEN_SETS[k].size) m->token_set = k;
+    return VTTS_OK;
+}
+
+int vtts_token_set(const vtts_model *m) { return m ? m->token_set : VTTS_TOKSET_UNKNOWN; }
+
+const char *vtts_token_set_name(int ts) { return TOKEN_SETS[ts > 0 && ts < N_TOKEN_SETS ? ts : 0].name; }
+
+int vtts_token_set_size(int ts) { return TOKEN_SETS[ts > 0 && ts < N_TOKEN_SETS ? ts : 0].size; }
 
 int vtts_init(vtts_model *m, const void *blob, size_t size) {
     const uint8_t *b = (const uint8_t *)blob;
@@ -105,6 +128,7 @@ int vtts_init(vtts_model *m, const void *blob, size_t size) {
         }
     }
     m->n_tensors = (int)n_tensors;
+    if (resolve_token_set(m) != VTTS_OK) return VTTS_ERR_FORMAT;
     m->expressiveness = m->expr_milli > 0 ? (float)m->expr_milli / 1000.0f : 1.0f;
     if (m->prosody && (m->p_depth < 0 || m->p_depth > 8)) return VTTS_ERR_FORMAT;
     return VTTS_OK;

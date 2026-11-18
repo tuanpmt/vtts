@@ -14,6 +14,39 @@ DIM = struct.Struct("<32si")
 ROW = struct.Struct("<48sBBH4iIII")
 ALIGN = 16
 DECODER_IDS = {"hifigan": 0, "istft": 1, "vocos": 2}
+# Optional dim `token_set` (vtts_token_set_t in runtime/include/vtts.h); 0 or absent = derive
+# from vocab. Sizes are those of src/vtts/frontend/phoneme_set.py (checked by tests).
+TOKEN_SET_CODES = {"v1": 1, "vi-en": 2, "zh-en": 3, "ko-en": 4, "ja-en": 5}
+TOKEN_SET_SIZES = {"v1": 65, "vi-en": 107, "zh-en": 171, "ko-en": 153, "ja-en": 144}
+
+
+def token_set_for_vocab(vocab: int) -> str | None:
+    """The token set whose size is exactly vocab, else None (ambiguous)."""
+    return next((k for k, n in TOKEN_SET_SIZES.items() if n == vocab), None)
+
+
+def token_set_of(dims: dict[str, int]) -> str:
+    """Token set of a model file's dims, the way vtts_init resolves it: the token_set dim when
+    present (a code newer than this reader: "unknown"), else by vocab (exact size, else the
+    old firmware rule vocab > 65 -> vi-en)."""
+    code = dims.get("token_set", 0)
+    if code:
+        return next((k for k, c in TOKEN_SET_CODES.items() if c == code), "unknown")
+    vocab = dims["vocab"]
+    return token_set_for_vocab(vocab) or ("vi-en" if vocab > 65 else "v1")
+
+
+def resolve_token_set(vocab: int, token_set: str | None) -> str | None:
+    """The token set to record for an export: the given one (checked against the vocab), else
+    the one the vocab names unambiguously, else None (dim omitted)."""
+    if token_set is None:
+        return token_set_for_vocab(vocab)
+    if token_set not in TOKEN_SET_CODES:
+        raise ValueError(f"unknown token set {token_set!r}; one of {sorted(TOKEN_SET_CODES)}")
+    if vocab < TOKEN_SET_SIZES[token_set]:
+        raise ValueError(f"vocab {vocab} is smaller than token set {token_set} "
+                         f"({TOKEN_SET_SIZES[token_set]} ids)")
+    return token_set
 
 
 def config_dims(cfg) -> dict[str, int]:
@@ -75,16 +108,21 @@ def write_tensors(path: Path, dims: dict[str, int],
         f.write(payload)
 
 
-def write_model(model, path: Path) -> None:
-    """fp32 export of a Student."""
+def write_model(model, path: Path, token_set: str | None = None) -> None:
+    """fp32 export of a Student. token_set: see model_dims."""
     tensors = {k: (v.detach().cpu().numpy().astype(np.float32), None)
                for k, v in model.state_dict().items()}
-    write_tensors(Path(path), model_dims(model), tensors)
+    write_tensors(Path(path), model_dims(model, token_set), tensors)
 
 
-def model_dims(model) -> dict[str, int]:
+def model_dims(model, token_set: str | None = None) -> dict[str, int]:
+    """Dims of a Student; token_set (e.g. "zh-en") is recorded in the token_set dim, by default
+    the set the vocab names (65 -> v1, 107 -> vi-en, 171 -> zh-en, 153 -> ko-en, 144 -> ja-en)."""
     d = config_dims(model.cfg)
     d["expr_milli"] = int(round(getattr(model, "expressiveness", 1.0) * 1000))
+    ts = resolve_token_set(model.cfg.vocab, token_set)
+    if ts is not None:
+        d["token_set"] = TOKEN_SET_CODES[ts]
     return d
 
 
@@ -105,7 +143,7 @@ def read_model(path: Path) -> tuple[dict[str, int], dict[str, np.ndarray]]:
     data = Path(path).read_bytes()
     magic, version, n_dims, n_tensors, _ = HEADER.unpack_from(data, 0)
     if magic != MAGIC or version != VERSION:
-        raise ValueError("not a VTTS v1 file")
+        raise ValueError("not a VTTS file (format version 1)")
     dims = {}
     for i in range(n_dims):
         k, v = DIM.unpack_from(data, HEADER.size + i * DIM.size)

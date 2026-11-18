@@ -48,7 +48,7 @@ def quantize_weight(w: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
     return q.reshape(w.shape), scale
 
 
-def write_model_int8(model, path: Path) -> None:
+def write_model_int8(model, path: Path, token_set: str | None = None) -> None:
     tensors = {}
     for name, v in model.state_dict().items():
         arr = v.detach().cpu().numpy().astype(np.float32)
@@ -57,4 +57,4 @@ def write_model_int8(model, path: Path) -> None:
             tensors[name + ".q8"] = (np.ascontiguousarray(q), s)
         else:
             tensors[name] = (arr, None)
-    write_tensors(Path(path), model_dims(model), tensors)
+    write_tensors(Path(path), model_dims(model, token_set), tensors)

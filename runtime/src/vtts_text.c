@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* vtts_text.c -- device front-end (see vtts_text.h). Mirrors src/vtts/frontend (Python). */
 #include "vtts_text.h"
+#include "vtts.h" /* vtts_token_set_t */
 
 #include <string.h>
 
@@ -1236,4 +1237,50 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
     }
     if (s < z && !c->stop) v2_sentence(c, s, z, o);
     return c->chunks;
+}
+
+/* ---------------- text modes per token set ---------------- */
+
+static const struct { int token_set; const char *name; vtts_lang lang; } MODES[] = {
+    {VTTS_TOKSET_V1, "vi", VTTS_LANG_V1},       {VTTS_TOKSET_VI_EN, "vi", VTTS_LANG_VI},
+    {VTTS_TOKSET_VI_EN, "en", VTTS_LANG_EN},    {VTTS_TOKSET_VI_EN, "auto", VTTS_LANG_AUTO},
+    {VTTS_TOKSET_ZH_EN, "zh", VTTS_LANG_ZH},
+};
+#define N_MODES ((int)(sizeof(MODES) / sizeof(MODES[0])))
+
+int vtts_text_lang_for(int token_set, const char *mode, vtts_lang *out) {
+    if (!mode || !out) return -1;
+    for (int i = 0; i < N_MODES; i++)
+        if (MODES[i].token_set == token_set && strcmp(MODES[i].name, mode) == 0) {
+            *out = MODES[i].lang;
+            return 0;
+        }
+    return -1;
+}
+
+int vtts_text_default_lang(int token_set, vtts_lang *out) { /* the first mode listed */
+    for (int i = 0; i < N_MODES; i++)
+        if (MODES[i].token_set == token_set) {
+            if (out) *out = MODES[i].lang;
+            return 0;
+        }
+    return -1;
+}
+
+const char *vtts_text_modes(int token_set) {
+    switch (token_set) {
+    case VTTS_TOKSET_V1: return "vi";
+    case VTTS_TOKSET_VI_EN: return "vi|en|auto";
+    case VTTS_TOKSET_ZH_EN: return "zh";
+    default: return "";
+    }
+}
+
+const char *vtts_text_lang_name(vtts_lang lang) {
+    switch (lang) {
+    case VTTS_LANG_EN: return "en";
+    case VTTS_LANG_AUTO: return "auto";
+    case VTTS_LANG_ZH: return "zh";
+    default: return "vi";
+    }
 }

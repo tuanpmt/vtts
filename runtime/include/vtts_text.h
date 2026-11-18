@@ -79,6 +79,19 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts *o, vtts_ids_cb cb,
                         void *user);
 
+/* Text modes per model token set (token_set: vtts_token_set_t from vtts.h), the modes of
+ * MODE_LANGS in src/vtts/frontend/lang.py that the device front-end implements:
+ *   v1    "vi" (VTTS_LANG_V1)                  default vi
+ *   vi-en "vi" | "en" | "auto"                 default vi
+ *   zh-en "zh" (Han -> Mandarin, Latin -> English, numbers in Mandarin)   default zh
+ *   ko-en, ja-en, unknown: no device front-end (token ids from a host front-end only).
+ * vtts_text_lang_for: 0 and *out set when `mode` is valid for the set, else < 0.
+ * vtts_text_default_lang: 0 and *out set, or < 0 when the set has no device front-end. */
+int vtts_text_lang_for(int token_set, const char *mode, vtts_lang *out);
+int vtts_text_default_lang(int token_set, vtts_lang *out);
+const char *vtts_text_modes(int token_set); /* "vi", "vi|en|auto", "zh" or "" */
+const char *vtts_text_lang_name(vtts_lang lang); /* "vi" (V1 and VI), "en", "auto", "zh" */
+
 #ifdef __cplusplus
 }
 #endif

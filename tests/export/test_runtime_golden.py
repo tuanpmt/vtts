@@ -150,3 +150,50 @@ def test_c_mandarin_frontend_parity(tmp_path):
     assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
     f = subprocess.run([exe, "--fuzz", "--lex", str(lex), "--zh", str(zh)], check=False, capture_output=True, text=True)
     assert f.returncode == 0 and "with zh" in f.stdout, f.stdout + f.stderr[-2000:]
+
+
+def test_c_token_set_header():
+    """vtts_token_set: the token_set dim, old files by vocab; text modes per token set."""
+    subprocess.run(["make", "-s", "build/token_set_test"], cwd=RUNTIME, check=True)
+    r = subprocess.run([str(RUNTIME / "build" / "token_set_test")], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+
+
+@pytest.mark.parametrize("int8", [False, True])
+def test_c_text_to_audio_zh_en(tmp_path, int8):
+    """Full device path on the host for a zh-en model (tiny, random weights): the header's token
+    set picks the zh front-end, ids above 106 reach the embedding, audio comes out."""
+    import wave
+
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-zh-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "zh.vtts"
+    (write_model_int8 if int8 else write_model)(m, model, token_set="zh-en")
+    assert token_set_of(read_model(model)[0]) == "zh-en"
+    lex, zh = tmp_path / "lex_en.bin", tmp_path / "zh_lex.bin"
+    lex.write_bytes(build_vlex())
+    _zh_blob(zh)
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "打开Wi-Fi设置，现在是8:30。今天气温26度。"
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), "--zh", str(zh),
+                        text], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set zh-en header mode zh lex 1 zh 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "zh")
+    assert max(max(c) for c in c_ids) > 106
+    with wave.open(str(wav)) as w:
+        assert w.getframerate() == 22050 and w.getnframes() > 0
+    # modes of another token set are refused, like the firmware's `lang`
+    bad = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lang", "vi", text],
+                         check=False, capture_output=True, text=True)
+    assert bad.returncode == 2 and "modes: zh" in bad.stderr
