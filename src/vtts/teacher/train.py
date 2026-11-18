@@ -66,8 +66,11 @@ def train(cfg: TeacherConfig, train_csv: Path, wav_dir: Path, cache_dir: Path | 
     use_amp = dev.type == "cuda"
 
     g, d = build_generator(cfg).to(dev), build_discriminator(cfg).to(dev)
-    opt_g = torch.optim.AdamW(g.parameters(), cfg.learning_rate, betas=cfg.betas, eps=cfg.eps)
-    opt_d = torch.optim.AdamW(d.parameters(), cfg.learning_rate, betas=cfg.betas, eps=cfg.eps)
+    # fused AdamW: one kernel per step instead of several per tensor, and no host sync for the
+    # GradScaler's inf check; the CPU-side launch overhead is what limits a slow host CPU
+    fused = dev.type == "cuda"
+    opt_g = torch.optim.AdamW(g.parameters(), cfg.learning_rate, betas=cfg.betas, eps=cfg.eps, fused=fused)
+    opt_d = torch.optim.AdamW(d.parameters(), cfg.learning_rate, betas=cfg.betas, eps=cfg.eps, fused=fused)
     sched_g = torch.optim.lr_scheduler.ExponentialLR(opt_g, gamma=cfg.lr_decay)
     sched_d = torch.optim.lr_scheduler.ExponentialLR(opt_d, gamma=cfg.lr_decay)
     scaler = torch.amp.GradScaler("cuda", enabled=use_amp)
