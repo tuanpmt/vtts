@@ -16,6 +16,12 @@ sentences from the eval sets, the templates, the exception table and random syll
            data/hi/probe_src.jsonl --limit 3000 --out runtime/test/text_parity_hi.tsv
 --hi does the same for mode hi (token set hi-en): the Wikipedia sentences when present, plus sentences
 built by the corpus rules from their words, the templates, the exception table and random aksharas.
+       uv run python scripts/frontend/export_text_parity.py --ja --sentences data/ja/sentences.jsonl \
+           --limit 3000 --out runtime/test/text_parity_ja.tsv --nfkc-out runtime/test/ja_nfkc.tsv
+--ja does the same for mode ja (token set ja-en); without data/ja/sentences.jsonl it generates Japanese
+sentences from the reading tables (words, context keys after kanji and katakana, kanji, kana runs).
+--nfkc-out also writes the NFKC fixture of the C reader (every code point NFKC changes and random
+sequences with combining marks, half-width kana and Hangul jamo).
 """
 
 import argparse
@@ -500,17 +506,215 @@ def hi_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
     return out
 
 
+JA_EDGE = [
+    "こんにちは、世界！", "第一、第二；第三：完。", "彼は「いいよ」（本当に）と言った。", "りんごを3個ください。",
+    "学生が2人います。", "1人、2人、3人、4人、7人、10人", "鉛筆が1本、2本、3本、6本、8本、10本、100本、1000本",
+    "犬が1匹、3匹、6匹", "コーヒーを1杯、3杯", "3分の1と5分の2", "1分、3分、4分、6分、10分、30分",
+    "1階、3階、8階", "1軒と3軒", "1冊、8冊、10冊", "20歳と20才と6歳", "1か月と3ヶ月と6カ月と8ケ月", "5カ国と1ヶ国",
+    "1,250円", "4年と14年", "4時と7時と9時、4時間", "4月7月9月と11月1日と1日と14日と20日と24日", "2日間と10日間と24日間",
+    "1つ、2つ、9つ、10個、11", "13秒", "3度", "1番目と1番", "2枚", "3台", "5名", "2倍", "3号", "1位", "3割",
+    "2026年11月18日", "2026-11-18", "2026/1/1と2026.12.31と2024-13-45と12024-1-1", "9:30", "18:00", "12:30:45",
+    "0:05", "24:00と25:00と1:5", "3.14", "15%", "-5度", "マイナス5", "03-1234-5678", "090-1234-5678", "0123", "00",
+    "¥5,000", "$20", "€3.5", "£7", "25℃", "30°C", "5km", "3kg", "500ml", "2L", "16GB", "1.5m", "100km/h", "3〜5個",
+    "10-20人", "3 ~ 5 個", "1万", "3万5000", "1.5万", "3億2000万", "1兆", "12345万", "1万2345", "1万23456", "0万",
+    "1.00001万", "0.000000001万", "123456789012345678万", "1億1.5万", "3万⁠12345", "1.1万", "٣万", "１．５万",
+    "$9,3926", "¥1,26٣9", "$1,234567", "€1,234.5678,9","ESP32-P4", "5G", "Wi-Fiを設定",
+    "iPhone 15 Pro", "e-mailとx-ray", "R&DとQ&A", "C++", "A+", "me@example.com", "2+3=5", "4×5と6÷2", "rock-'n'-roll-",
+    "東京へ行きます。", "日本人とアメリカ人", "今日は一日中雨でした。", "戦後に", "人々と時々と山々", "々から始まる",
+    "川と小川", "コンピューターとスーパー", "ヴァイオリンとティーとウィキ", "きゃきゅきょ", "ゃゅょっん", "ーあー", "ゝゞヽヾ",
+    "いすゞ", "ｱｲｳｴｵ ｶﾞｷﾞ ﾊﾟﾋﾟ", "ｺﾝﾋﾟｭｰﾀｰ", "がと゛", "①②③", "㍻と㍼", "㌔㍍", "Ⅷ", "ﬁle", "１２：３０に会いましょう",
+    "ｈｅｌｌｏ　ｗｏｒｌｄ", "価格：￥１２８", "漢字とかな", "한국어とかな", "中文和日本語", "Việt Namと日本", "caféとnaïve",
+    "don'tとit's", "こんにちは。 さようなら！ 何？ はい；終わり", "うーん……それは——どうかな。", "《本》「引用」『題名』【おすすめ】〔注〕〈良い〉",
+    "Hello. こんにちは！How are you? 元気です；ありがとう。", "  前後に空白  ", "複数の\tタブ", "...", "", "。", "a", "あ", "ア", "亜",
+    "とても" + "長い" * 200 + "文。", "あ" * 400 + "。", "ア" * 300 + "。", "数字" + "1234567890" * 20 + "個。",
+    "Very long English " + "words " * 80 + "end.", "1,234,5kmと1,2345円", "1.2.3と1,23と1,234,5678", "٣個と٣٤円",
+    "1,000,000,000,000,000,000円", "100000000000000000000000", "123456789012345678本", "12345678901234567本",
+    "1万円と10000円と11000円", "A1B2C3", "USB3.0とRTX3060", "GPT-4oとLlama3", "OKです", "Hi、こんにちは！",
+    "スマートホーム smart home モード", "9時30分に起きます。", "1時間30分", "2時半", "〆切は月末です。", "ヶ月",
+    "日本語のテキストを音声に変換します。", "今日、明日、明後日", "お茶とご飯", "一人と二人", "大人と子供",
+]
+
+
+def _ja_generated(n: int, rnd) -> list[str]:
+    """Sentences built from the reading tables (no Japanese corpus in the repository): table words,
+    context keys after a kanji or katakana word, single kanji, kana runs, numbers with counters,
+    Latin words and punctuation."""
+    from vtts.frontend.ja.g2p_ja import tables
+    from vtts.frontend.ja.normalize_ja import COUNTERS
+
+    t = tables()
+    words, kanji = sorted(t.words), sorted(t.kanji)
+    after_k, after_kt = sorted(t.after["kanji"]), sorted(t.after["katakana"])
+    hira = [chr(c) for c in range(0x3041, 0x3097)]
+    kata = [chr(c) for c in range(0x30A1, 0x30FB)] + ["ー"]
+    katakana_words = ["コンピューター", "アメリカ", "テレビ", "スマホ", "メール", "パソコン", "ニュース", "カメラ"]
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "A1", "smart"]
+    counters = list(COUNTERS) + ["", "", "人", "円"]
+    particles = ["", "", "は", "が", "を", "に", "で", "と", "の", "も", "へ", "から", "まで", "です", "ます"]
+    marks = ["、", "。", "！", "？", "；", "：", ",", ".", " ", "…", "「", "」", "・", "ー"]
+    out = []
+    for _ in range(n):
+        parts = []
+        for _ in range(rnd.randint(2, 12)):
+            r = rnd.random()
+            if r < 0.35:
+                parts.append(rnd.choice(words) + rnd.choice(particles))
+            elif r < 0.45:
+                parts.append(rnd.choice(kanji) + rnd.choice(after_k))
+            elif r < 0.52:
+                parts.append(rnd.choice(katakana_words) + rnd.choice(after_kt))
+            elif r < 0.62:
+                parts.append("".join(rnd.choice(kanji) for _ in range(rnd.randint(1, 4))) + rnd.choice(["", "々"]))
+            elif r < 0.72:
+                pool = rnd.choice([hira, kata])
+                parts.append("".join(rnd.choice(pool) for _ in range(rnd.randint(1, 14))))
+            elif r < 0.85:
+                v = rnd.choice([rnd.randint(0, 30), rnd.randint(0, 100), rnd.randint(0, 99999), rnd.randint(0, 10**9)])
+                parts.append(f"{v}{rnd.choice(['', '', ' '])}{rnd.choice(counters)}")
+            elif r < 0.92:
+                parts.append(rnd.choice(latin) + rnd.choice(particles))
+            else:
+                parts.append(rnd.choice(marks))
+        out.append("".join(parts) + rnd.choice(["。", "！", "？", "", "."]))
+    return out
+
+
+def _ja_context(rnd) -> list[str]:
+    """Every context-table key after a kanji (and after 々) or after a katakana word, and every word
+    key after a kanji, a katakana and a hiragana, 12 per line: covers the choice between the context
+    and the main table."""
+    from vtts.frontend.ja.g2p_ja import tables
+
+    t = tables()
+    kanji = sorted(t.kanji)
+    kata = ["アメリカ", "コーヒー", "テレビ", "パン", "ゲーム", "ニュース"]
+    items = [rnd.choice(kanji) + k for k in t.after["kanji"]]
+    items += [rnd.choice(kanji) + "々" + k for k in rnd.sample(sorted(t.after["kanji"]), 500)]
+    items += [rnd.choice(kata) + k for k in t.after["katakana"]]
+    sample = rnd.sample(sorted(t.words), 6000)
+    items += [rnd.choice([rnd.choice(kanji), rnd.choice(kata), "の", ""]) + k + rnd.choice(["", "に", "の", "ー"])
+              for k in sample]
+    rnd.shuffle(items)
+    return ["".join(items[i:i + 12]) + "。" for i in range(0, len(items), 12)]
+
+
+def _ja_kana(rnd) -> list[str]:
+    """Every pair of kana (hiragana and katakana, with ー and the iteration marks) inside a kana run."""
+    from vtts.frontend.ja.kana import PAIRS, SINGLE, to_katakana
+
+    singles = list(SINGLE) + ["ー", "ゝ", "ゞ"]
+    pairs = list(PAIRS) + [a + b for a in singles for b in rnd.sample(singles, 12)]
+    words = []
+    for pr in pairs:
+        w = rnd.choice(singles) + pr + rnd.choice(["", "ー", "っ", "ん"])
+        words.append(w if rnd.random() < 0.5 else to_katakana(w))
+    rnd.shuffle(words)
+    return ["、".join(words[i:i + 15]) + "。" for i in range(0, len(words), 15)]
+
+
+def _ja_regex_fuzz(n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the normalize_ja regex passes react to."""
+    atoms = (list("0123456789") * 4 + list(":/.,-~%'+&@= ") * 2
+             + ["年", "月", "日", "時", "分", "秒", "本", "人", "円", "個", "つ", "か月", "分の", "万", "億", "兆", "ガツ",
+                "の", "ア", "ー", "々", "°", "°C", "°c", "℃", "¥", "$", "€", "£", "￥", "％", "：", "，", "。", "！", "？",
+                "；", "…", "‥", "—", "―", "・", "「", "」", "（", "）", "　", "１", "Ａ", "〜", "～", "×", "÷", "⁠",
+                "ESP", "A", "B", "Z", "x", "ab", "Ok", "Wi", "km", "kg", "m", "g", "l", "L", "GB", "MB", "ml", "mL",
+                "km/h", "é", "٣", " ", "  "])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 16))) for _ in range(n)]
+
+
+def ja_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
+    """mode "ja" cases: edge cases, the Japanese eval sets, the mixed-style sentences (templates_ja x
+    terms_en), Japanese sentences (data/ja/sentences.jsonl when given and present, else generated
+    from the reading tables), the context tables, kana pairs, number/date/time cases and regex-dense
+    random strings."""
+    import json
+    import random
+
+    from vtts.frontend.ja.normalize_ja import COUNTERS
+
+    rnd = random.Random(0)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_ja.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(JA_EDGE)
+    for name in ("ood_ja.jsonl", "mixed_ja.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += rnd.sample(mixed, min(len(mixed), 2000))
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows if rows else _ja_generated(limit or 3000, rnd)
+    texts += _ja_context(rnd) + _ja_kana(rnd)
+    counters = list(COUNTERS)
+    nums = []
+    for _ in range(2500):
+        k = rnd.randint(0, 13)
+        v = rnd.choice([rnd.randint(0, 30), rnd.randint(0, 999), rnd.randint(0, 99999), rnd.randint(0, 10**12),
+                        rnd.randint(0, 10**22)])
+        c = rnd.choice(counters)
+        nums.append(["{}" + c, "{} " + c + "を", "{:,}円", "{}.5%", "¥{}", "第{}回", "-{}度", "{}年{}月{}日", "{}~{}" + c,
+                     "{}:{}", "{}-{}-{}", "0{}", "{}万{}", "{}.{}億"][k].format(v, rnd.randint(0, 60), rnd.randint(0, 40)))
+    for _ in range(400):
+        nums.append(f"{rnd.randint(1900, 2100)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)}と"
+                    f"{rnd.randint(0, 13)}月{rnd.randint(0, 33)}日、"
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    texts += nums + _ja_regex_fuzz(fuzz, rnd)
+    out = []
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        out.append(f"ja\t{text}\t" + ";".join(" ".join(map(str, c)) for c in text_to_ids(text, "ja")))
+    return out
+
+
+def nfkc_lines(rnd) -> list[str]:
+    """NFKC fixture (hex code points in, out): every code point NFKC changes (one per line) and
+    random sequences of characters that compose, reorder or decompose."""
+    import sys
+    import unicodedata
+
+    def hexs(t: str) -> str:
+        return " ".join(f"{ord(c):X}" for c in t)
+
+    singles = [chr(c) for c in range(sys.maxunicode + 1) if not 0xD800 <= c <= 0xDFFF
+               and unicodedata.normalize("NFKC", chr(c)) != chr(c)]
+    marks = [chr(c) for c in range(0x300, 0x370)] + ["゙", "゚", "̣", "ཱ", "ְ"]
+    pool = (singles + marks * 20 + [chr(c) for c in range(0x1100, 0x1200)] * 2 + list("aeiouAEIOUnckかきくはひふカキハヒﾊｶ")
+            * 30 + [chr(0xAC00 + rnd.randrange(11172)) for _ in range(300)])
+    seqs = ["".join(rnd.choice(pool) for _ in range(rnd.randint(1, 10))) for _ in range(8000)]
+    return [f"{hexs(t)}\t{hexs(unicodedata.normalize('NFKC', t))}" for t in singles + seqs]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--v2", action="store_true")
     ap.add_argument("--zh", action="store_true", help="mode zh (token set zh-en) cases")
     ap.add_argument("--ko", action="store_true", help="mode ko (token set ko-en) cases")
     ap.add_argument("--hi", action="store_true", help="mode hi (token set hi-en) cases")
+    ap.add_argument("--ja", action="store_true", help="mode ja (token set ja-en) cases")
+    ap.add_argument("--nfkc-out", type=Path, default=None, help="--ja: also write the NFKC fixture")
     ap.add_argument("--sentences", type=Path, nargs="*", default=[])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko, --hi: regex-dense random strings")
+    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko, --hi, --ja: regex-dense random strings")
     a = ap.parse_args()
+    if a.ja:
+        import random
+
+        lines = ja_lines(a.sentences, a.limit, a.fuzz)
+        a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"wrote {len(lines)} cases to {a.out}")
+        if a.nfkc_out:
+            nl = nfkc_lines(random.Random(1))
+            a.nfkc_out.write_text("\n".join(nl) + "\n", encoding="utf-8")
+            print(f"wrote {len(nl)} NFKC cases to {a.nfkc_out}")
+        return
     if a.zh or a.ko or a.hi:
         lines = (zh_lines if a.zh else ko_lines if a.ko else hi_lines)(a.sentences, a.limit, a.fuzz)
         a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")

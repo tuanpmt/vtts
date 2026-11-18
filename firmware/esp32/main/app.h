@@ -47,8 +47,10 @@ typedef struct {
     int has_lex;
     vtts_zlex zh;       /* Mandarin readings (ZLEX blob in flash), for zh-en models */
     int has_zh;
+    vtts_jlex ja;       /* Japanese readings and NFKC data (JLEX blob in flash), for ja-en models */
+    int has_ja;
     /* text mode per model, from its token set (vtts_text_default_lang, console `lang`);
-     * -1: the token set has no device front-end (ja-en, unknown): only `ids` */
+     * -1: the token set has no device front-end (unknown): only `ids` */
     int lang[2];
 } app_t;
 
@@ -63,6 +65,10 @@ extern const uint8_t lex_en_end[] asm("_binary_lex_en_bin_end");
 #if VTTS_EMBED_ZH /* main/lex_zh.bin was present at build time (build.sh builds it) */
 extern const uint8_t lex_zh_start[] asm("_binary_lex_zh_bin_start");
 extern const uint8_t lex_zh_end[] asm("_binary_lex_zh_bin_end");
+#endif
+#if VTTS_EMBED_JA /* main/lex_ja.bin was present at build time (build.sh builds it) */
+extern const uint8_t lex_ja_start[] asm("_binary_lex_ja_bin_start");
+extern const uint8_t lex_ja_end[] asm("_binary_lex_ja_bin_end");
 #endif
 
 /* synth.c */

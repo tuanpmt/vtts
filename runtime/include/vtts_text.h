@@ -27,6 +27,11 @@
  * product codes, Devanagari digits; the danda ends a sentence), the Devanagari letter, nasal and
  * schwa-deletion rules with the exception table (tables compiled in, no blob), English words with
  * the VLEX lexicon.
+ * VTTS_LANG_JA: Japanese + English, token set ja-en (ids 0..106 = v2, Japanese from 107), like
+ * text_to_ids(text, "ja"): Japanese normalization (NFKC, numbers with counters and their sound
+ * changes, dates, times, money, units, phone numbers, product codes), readings by forward longest
+ * match over the JLEX blob (vtts_jlex.h: words, context tables, kanji defaults), kana -> phonemes,
+ * English words with the VLEX lexicon.
  *
  * No malloc: the caller provides a workspace (about 145 KB with the v2, zh and ko scratch; PSRAM is fine).
  * Not re-entrant per workspace.
@@ -38,6 +43,7 @@
 
 #include "vtts_lex.h"
 #include "vtts_zlex.h"
+#include "vtts_jlex.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -72,15 +78,16 @@ typedef struct {
 } vtts_text_ws;
 
 typedef enum { VTTS_LANG_V1 = 0, VTTS_LANG_VI, VTTS_LANG_EN, VTTS_LANG_AUTO, VTTS_LANG_ZH, VTTS_LANG_KO,
-               VTTS_LANG_HI } vtts_lang;
+               VTTS_LANG_HI, VTTS_LANG_JA } vtts_lang;
 
 /* lang: VTTS_LANG_V1 is vtts_text_to_ids; VI, EN and AUTO select the mode of text_to_ids(text,
  * "vi" | "en" | "auto") with phoneme set v2; ZH selects text_to_ids(text, "zh") with token set
  * zh-en; KO selects text_to_ids(text, "ko") with token set ko-en; HI selects text_to_ids(text, "hi") with
- * token set hi-en. lex: the English lexicon (NULL: English words are not pronounced, only acronyms are
- * spelled). zh: the Mandarin reading tables (NULL: Han characters are not pronounced; only used
- * by VTTS_LANG_ZH). */
-typedef struct { vtts_lang lang; const vtts_lex *lex; const vtts_zlex *zh; } vtts_text_opts;
+ * token set hi-en; JA selects text_to_ids(text, "ja") with token set ja-en. lex: the English lexicon
+ * (NULL: English words are not pronounced, only acronyms are spelled). zh: the Mandarin reading tables
+ * (NULL: Han characters are not pronounced; only used by VTTS_LANG_ZH). ja: the Japanese reading tables
+ * (NULL: Japanese characters are not pronounced and NFKC is skipped; only used by VTTS_LANG_JA). */
+typedef struct { vtts_lang lang; const vtts_lex *lex; const vtts_zlex *zh; const vtts_jlex *ja; } vtts_text_opts;
 
 /* Called once per chunk (<= 40 syllables) with ids including BOS ... EOS.
  * Return non-zero to stop. */
@@ -101,13 +108,14 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
  *   zh-en "zh" (Han -> Mandarin, Latin -> English, numbers in Mandarin)   default zh
  *   ko-en "ko" (Hangul -> Korean, Latin -> English, numbers in Korean)    default ko
  *   hi-en "hi" (Devanagari -> Hindi, Latin -> English, numbers in Hindi)  default hi
- *   ja-en, unknown: no device front-end (token ids from a host front-end only).
+ *   ja-en "ja" (kana/kanji -> Japanese, Latin -> English, numbers in Japanese) default ja
+ *   unknown: no device front-end (token ids from a host front-end only).
  * vtts_text_lang_for: 0 and *out set when `mode` is valid for the set, else < 0.
  * vtts_text_default_lang: 0 and *out set, or < 0 when the set has no device front-end. */
 int vtts_text_lang_for(int token_set, const char *mode, vtts_lang *out);
 int vtts_text_default_lang(int token_set, vtts_lang *out);
-const char *vtts_text_modes(int token_set); /* "vi", "vi|en|auto", "zh", "ko", "hi" or "" */
-const char *vtts_text_lang_name(vtts_lang lang); /* "vi" (V1 and VI), "en", "auto", "zh", "ko", "hi" */
+const char *vtts_text_modes(int token_set); /* "vi", "vi|en|auto", "zh", "ko", "hi", "ja" or "" */
+const char *vtts_text_lang_name(vtts_lang lang); /* "vi" (V1 and VI), "en", "auto", "zh", "ko", "hi", "ja" */
 
 #ifdef __cplusplus
 }

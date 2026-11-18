@@ -103,7 +103,7 @@ int main(void) {
     CHECK(vtts_text_default_lang(VTTS_TOKSET_ZH_EN, &l) == 0 && l == VTTS_LANG_ZH);
     CHECK(vtts_text_default_lang(VTTS_TOKSET_KO_EN, &l) == 0 && l == VTTS_LANG_KO);
     CHECK(vtts_text_default_lang(VTTS_TOKSET_HI_EN, &l) == 0 && l == VTTS_LANG_HI);
-    CHECK(vtts_text_default_lang(VTTS_TOKSET_JA_EN, &l) < 0);
+    CHECK(vtts_text_default_lang(VTTS_TOKSET_JA_EN, &l) == 0 && l == VTTS_LANG_JA);
     CHECK(vtts_text_default_lang(VTTS_TOKSET_UNKNOWN, &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_V1, "vi", &l) == 0 && l == VTTS_LANG_V1);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_V1, "en", &l) < 0);
@@ -124,6 +124,10 @@ int main(void) {
     CHECK(vtts_text_lang_for(VTTS_TOKSET_HI_EN, "en", &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_KO_EN, "hi", &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_VI_EN, "hi", &l) < 0);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_JA_EN, "ja", &l) == 0 && l == VTTS_LANG_JA);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_JA_EN, "en", &l) < 0);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_ZH_EN, "ja", &l) < 0);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_KO_EN, "ja", &l) < 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_ZH_EN, NULL, &l) < 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_V1), "vi") == 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_VI_EN), "vi|en|auto") == 0);
@@ -131,7 +135,9 @@ int main(void) {
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_KO_EN), "ko") == 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_HI_EN), "hi") == 0);
     CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_HI), "hi") == 0);
-    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_JA_EN), "") == 0);
+    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_JA_EN), "ja") == 0);
+    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_UNKNOWN), "") == 0);
+    CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_JA), "ja") == 0);
     CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_KO), "ko") == 0);
     CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_ZH), "zh") == 0);
     CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_V1), "vi") == 0);

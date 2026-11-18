@@ -10,3 +10,4 @@ main/lex_en.bin
 main/lex_zh.bin
 managed_components/
 dependencies.lock
+main/lex_ja.bin

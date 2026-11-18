@@ -20,7 +20,7 @@
  *   ids <ids;ids...>      speak token ids from a host front-end (scripts/device/say.py --lang)
  *   lang <mode>           text mode, valid modes per token set of the current model: v1 vi;
  *                         vi-en vi|en|auto (vi reads English words too); zh-en zh; ko-en ko; hi-en hi;
- *                         ja-en none (send ids). The front-end follows the model's token set (header)
+ *                         ja-en ja. The front-end follows the model's token set (header)
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments
  */
 #include <math.h>
@@ -83,8 +83,17 @@ void app_main(void) {
 #else
     printf("zh readings not embedded\n");
 #endif
-    for (int k = 0; k < 2; k++)
+#if VTTS_EMBED_JA
+    /* Japanese readings for ja-en models, read in place from flash */
+    g.has_ja = vtts_jlex_init(&g.ja, lex_ja_start, (size_t)(lex_ja_end - lex_ja_start)) == 0;
+    printf("ja readings %u bytes, %s\n", (unsigned)(lex_ja_end - lex_ja_start), g.has_ja ? "ok" : "invalid");
+#else
+    printf("ja readings not embedded\n");
+#endif
+    for (int k = 0; k < 2; k++) {
         if (g.lang[k] == VTTS_LANG_ZH && !g.has_zh) printf("WARNING model %c is zh-en but has no zh readings: Han text is skipped\n", k ? 'M' : 'S');
+        if (g.lang[k] == VTTS_LANG_JA && !g.has_ja) printf("WARNING model %c is ja-en but has no ja readings: Japanese text is skipped\n", k ? 'M' : 'S');
+    }
     g.arena_bytes = need;
     g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     g.arena_where = "sram";

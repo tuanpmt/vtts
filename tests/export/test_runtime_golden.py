@@ -235,6 +235,106 @@ def test_c_hindi_tables_current():
         "run: uv run python runtime/tools/gen_text_tables.py")
 
 
+def _ja_blob(path):
+    import importlib.util
+
+    script = Path(__file__).parents[2] / "scripts" / "frontend" / "build_ja_blob.py"
+    spec = importlib.util.spec_from_file_location("build_ja_blob", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    blob = mod.build_jlex()
+    mod._check(blob)
+    path.write_bytes(blob)
+    return len(blob)
+
+
+def test_c_japanese_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex in VTTS_LANG_JA mode (token set ja-en, JLEX + VLEX blobs) gives exactly
+    text_to_ids(text, "ja"), the JLEX NFKC equals unicodedata's, and the fuzz run survives (kanji,
+    kana, half-width forms, numbers with counters, ASCII, punctuation, random bytes, long runs)."""
+    import random
+    import unicodedata
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex, ja = tmp_path / "lex_en.bin", tmp_path / "ja_lex.bin"
+    lex.write_bytes(build_vlex())
+    assert _ja_blob(ja) < 2_000_000
+    fixture = RUNTIME / "test" / "text_parity_ja.tsv"
+    lines = fixture.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 10000
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            "run: uv run python scripts/frontend/export_text_parity.py --ja --sentences data/ja/sentences.jsonl "
+            "--limit 3000 --out runtime/test/text_parity_ja.tsv --nfkc-out runtime/test/ja_nfkc.tsv")
+    nfkc = RUNTIME / "test" / "ja_nfkc.tsv"
+    for line in random.Random(1).sample(nfkc.read_text(encoding="utf-8").splitlines(), 300):
+        src, want = (("".join(chr(int(h, 16)) for h in part.split())) for part in line.split("\t"))
+        assert unicodedata.normalize("NFKC", src) == want, "NFKC fixture is stale (Python's Unicode version changed)"
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    n = subprocess.run([exe, "--ja", str(ja), "--nfkc", str(nfkc)], check=False, capture_output=True, text=True)
+    assert n.returncode == 0, n.stdout[-3000:] + n.stderr[-2000:]
+    r = subprocess.run([exe, "--lex", str(lex), "--ja", str(ja), str(fixture)], check=False, capture_output=True,
+                       text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz", "--lex", str(lex), "--ja", str(ja)], check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "with ja" in f.stdout, f.stdout + f.stderr[-2000:]
+
+
+def test_c_japanese_tables_current():
+    """runtime/src/vtts_text_tables.h holds the current Japanese tables (kana, counters, normalizer)."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_text_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_text_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    want = "\n".join(mod.japanese_tables())
+    assert want in (RUNTIME / "src" / "vtts_text_tables.h").read_text(encoding="utf-8"), (
+        "run: uv run python runtime/tools/gen_text_tables.py")
+
+
+def test_c_text_to_audio_ja_en(tmp_path):
+    """Full device path on the host for a ja-en model (tiny, random weights): the header's token set
+    picks the ja front-end with the JLEX blob, ids above 106 reach the embedding, audio comes out."""
+    import wave
+
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-ja-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "ja.vtts"
+    write_model_int8(m, model, token_set="ja-en")
+    assert token_set_of(read_model(model)[0]) == "ja-en"
+    lex, ja = tmp_path / "lex_en.bin", tmp_path / "ja_lex.bin"
+    lex.write_bytes(build_vlex())
+    _ja_blob(ja)
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "Wi-Fiをオンにしますか？今は8:30で、気温は26度です。"
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), "--ja", str(ja),
+                        text], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set ja-en header mode ja lex 1 zh 0 ja 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "ja")
+    assert max(max(c) for c in c_ids) > 106
+    with wave.open(str(wav)) as w:
+        assert w.getframerate() == 22050 and w.getnframes() > 0
+    bad = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lang", "ko", text],
+                         check=False, capture_output=True, text=True)
+    assert bad.returncode == 2 and "modes: ja" in bad.stderr
+
+
 def test_c_token_set_header():
     """vtts_token_set: the token_set dim, old files by vocab; text modes per token set."""
     subprocess.run(["make", "-s", "build/token_set_test"], cwd=RUNTIME, check=True)

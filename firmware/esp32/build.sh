@@ -20,6 +20,8 @@ shift 2
 [ -f main/lex_en.bin ] || (cd ../.. && uv run python scripts/frontend/build_lexicon.py --out firmware/esp32/main/lex_en.bin)
 # Mandarin readings for zh-en models (ZLEX, ~116 KB): built once from the zh tables of the Python front-end
 [ -f main/lex_zh.bin ] || (cd ../.. && uv run python scripts/frontend/build_zh_blob.py --out firmware/esp32/main/lex_zh.bin)
+# Japanese readings and NFKC data for ja-en models (JLEX, ~720 KB): built once from the ja tables
+[ -f main/lex_ja.bin ] || (cd ../.. && uv run python scripts/frontend/build_ja_blob.py --out firmware/esp32/main/lex_ja.bin)
 ACTIVATE="$HOME/.espressif/tools/activate_idf_v6.1.sh"
 while IFS='=' read -r key value; do
     case "$key" in

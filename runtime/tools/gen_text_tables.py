@@ -369,6 +369,115 @@ def hindi_tables() -> list[str]:
     return out
 
 
+def japanese_tables() -> list[str]:
+    """Token ids of the ja-en set, the kana tables of ja/kana.py and the strings of the normalizer
+    (ja/normalize_ja.py). The reading tables are in the JLEX blob (scripts/frontend/build_ja_blob.py).
+    Kana codes: hiragana - 0x3040 (katakana are folded to hiragana first, like kana.to_hiragana)."""
+    from vtts.frontend.ja import g2p_ja
+    from vtts.frontend.ja import kana as k
+    from vtts.frontend.ja import normalize_ja as nj
+
+    j = phoneme_set.token_to_id_jaen
+
+    def ids(phs) -> list[int]:
+        return [j(f"JA:{p}") for p in phs]
+
+    def code(ch: str) -> int:
+        c = ord(ch) - 0x3040
+        assert 0 < c < 0x60, ch
+        return c
+
+    vowels = ids(k.V)
+    assert vowels == list(range(vowels[0], vowels[0] + 5))
+    out = ["/* ---- Japanese (token set ja-en; ids 0..106 are the v2 ids) ---- */",
+           f"#define VTTS_JAEN_VOCAB {phoneme_set.VOCAB_SIZE_JAEN}",
+           f"#define VTTS_JA_V0 {vowels[0]}  /* JA:a .. JA:o are V0 .. V0 + 4 */",
+           f"#define VTTS_JA_N {j('JA:N')}",
+           f"#define VTTS_JA_CL {j('JA:cl')}",
+           f"#define VTTS_JA_MAX_UNIT_MORAE {g2p_ja.MAX_UNIT_MORAE}",
+           f"#define VTTS_JA_LONG 0x{ord(k.LONG) - 0x30A0:02X}  /* code of the long-vowel mark (katakana - 0x30A0) */",
+           ""]
+    single = [[0, 0, 0] for _ in range(0x60)]
+    for ch, phs in k.SINGLE.items():
+        v = ids(phs)
+        single[code(ch)] = [len(v)] + v + [0] * (2 - len(v))
+    out += ["/* SINGLE: kana code -> (count, ids) */", "static const uint8_t VTTS_JA_SINGLE[96][3] = {"]
+    out += ["    " + " ".join("{" + ", ".join(map(str, r)) + "}," for r in single[i:i + 8]) for i in range(0, 96, 8)]
+    out += ["};", ""]
+    pairs = sorted((code(kk[0]), code(kk[1]), ids(v)) for kk, v in k.PAIRS.items())
+    out += ["/* PAIRS: (first code, second code, count, ids), sorted */",
+            "static const uint8_t VTTS_JA_PAIRS[][6] = {"]
+    out += [f"    {{{a}, {b}, {len(v)}, {', '.join(map(str, v + [0] * (3 - len(v))))}}}," for a, b, v in pairs]
+    out += ["};", f"#define VTTS_JA_N_PAIRS {len(pairs)}", ""]
+    voiced = [0] * 0x60
+    for a, b in k._VOICED.items():
+        voiced[code(a)] = code(b)
+    assert list(k.ITERATION) == ["ゝ", "ゞ"] and code("ゞ") == code("ゝ") + 1
+    out += ["/* _VOICED: kana code -> voiced kana code (0: unchanged) */", "static const uint8_t VTTS_JA_VOICED[96] = {"]
+    out += ["    " + ", ".join(map(str, voiced[i:i + 24])) + "," for i in range(0, 96, 24)]
+    out += ["};", f"#define VTTS_JA_ITER 0x{code('ゝ'):02X}  /* code of ゝ; ゞ (voiced) is + 1 */", ""]
+    out += c_list("VTTS_JA_DIGITS", list(nj.DIGITS))
+    thousands = [nj.THOUSANDS.get(d, "") for d in range(10)]
+    hundreds = [nj.HUNDREDS.get(d, "") for d in range(10)]
+    out += ["/* THOUSANDS, HUNDREDS: special readings per digit (empty: DIGITS[d] + セン / ヒャク) */"]
+    out += c_list("VTTS_JA_THOUSANDS", thousands) + c_list("VTTS_JA_HUNDREDS", hundreds)
+    out += c_list("VTTS_JA_GROUPS", list(nj.GROUPS))
+    order = sorted(nj.COUNTERS, key=len, reverse=True)  # the alternation order of _COUNTER_RE
+    assert "|".join(order) == nj._COUNTER_RE
+
+    def ending_mask(digits) -> int:
+        return sum(1 << (d if d < 10 else 10 if d == 10 else 11) for d in digits)
+
+    out += ["/* COUNTERS in the alternation order of _COUNTER_RE (longest first). gem_mask: bit d for the",
+            " * last digit d, bit 10 for ...十, bit 11 for ...百; nasal_after: '|'-separated; last[d]: reading",
+            " * of the last digit (NULL: none); whole: \"n=reading|...\" */",
+            "typedef struct { const char *key, *base, *gem; uint16_t gem_mask; const char *nasal, *nasal_after;",
+            "                 const char *last[10]; const char *whole; } vtts_ja_counter;",
+            "static const vtts_ja_counter VTTS_JA_COUNTERS[] = {"]
+    for key in order:
+        c = nj.COUNTERS[key]
+        last = ", ".join(c_str(c.last[d]) if c.last and d in c.last else "NULL" for d in range(10))
+        whole = "|".join(f"{n}={r}" for n, r in sorted((c.whole or {}).items()))
+        out.append(f"    {{{c_str(key)}, {c_str(c.base)}, {c_str(c.gem) if c.gem is not None else 'NULL'}, "
+                   f"0x{ending_mask(c.gem_digits):03X}, {c_str(c.nasal) if c.nasal is not None else 'NULL'}, "
+                   f"{c_str('|'.join(c.nasal_after))}, {{{last}}}, {c_str(whole)}}},")
+    out += ["};", f"#define VTTS_JA_N_COUNTERS {len(order)}", ""]
+    extra = {kk: v for kk, v in nj._FULLWIDTH.items() if not 0xFF01 <= kk < 0xFF5F}
+    assert all(nj._FULLWIDTH[c] == c - 0xFEE0 for c in range(0xFF01, 0xFF5F))
+    out += ["/* full-width forms: U+FF01..U+FF5E -> minus 0xFEE0, plus these */",
+            "static const uint32_t VTTS_JA_FULLWIDTH[][2] = {"]
+    out += [f"    {{0x{kk:04X}, 0x{v:04X}}}," for kk, v in extra.items()]
+    out += ["};", f"#define VTTS_JA_N_FULLWIDTH {len(extra)}", ""]
+    out += ["static const char *const VTTS_JA_SYMBOLS[][2] = {  /* replaced in this order */"]
+    out += [f"    {{{c_str(kk)}, {c_str(v)}}}," for kk, v in nj._SYMBOLS.items()]
+    out += ["};", f"#define VTTS_JA_N_SYMBOLS {len(nj._SYMBOLS)}", ""]
+    out += ["static const uint32_t VTTS_JA_DROP[] = {  /* replaced by a space */"]
+    drop = [f"0x{ord(c):04X}" for c in nj._DROP]
+    out += ["    " + ", ".join(drop[i:i + 8]) + "," for i in range(0, len(drop), 8)]
+    out += ["};", f"#define VTTS_JA_N_DROP {len(drop)}", ""]
+    units = sorted(nj.UNITS, key=len, reverse=True)  # the alternation order of the UNIT regex
+    out += ["static const char *const VTTS_JA_UNITS[][2] = {  /* alternation order */"]
+    out += [f"    {{{c_str(u)}, {c_str(nj.UNITS[u])}}}," for u in units]
+    out += ["};", f"#define VTTS_JA_N_UNITS {len(units)}", ""]
+    out += ["static const struct { uint32_t cp; const char *name; } VTTS_JA_CURRENCY[] = {"]
+    out += [f"    {{0x{ord(kk):04X}, {c_str(v)}}}," for kk, v in nj.CURRENCY.items()]
+    out += ["};", f"#define VTTS_JA_N_CURRENCY {len(nj.CURRENCY)}", ""]
+    big = [(u, v, len(str(v // 10))) for u, v in nj.BIG_UNITS]
+    out += ["/* BIG_UNITS in order: (unit, value, digits allowed after it) */",
+            "static const struct { uint32_t cp; double value; int max_digits; } VTTS_JA_BIG[] = {"]
+    out += [f"    {{0x{ord(u):04X}, {v}.0, {n}}}," for u, v, n in big]
+    out += ["};", f"#define VTTS_JA_N_BIG {len(big)}", f"#define VTTS_JA_MARK 0x{ord(nj.MARK):04X}", ""]
+    zeros = [c for c in range(0x110000) if unicodedata.category(chr(c)) == "Nd" and unicodedata.decimal(chr(c)) == 0]
+    assert all(unicodedata.decimal(chr(z + i)) == i for z in zeros for i in range(10))
+    assert sum(unicodedata.category(chr(c)) == "Nd" for c in range(0x110000)) == 10 * len(zeros)
+    out += [f"/* Python's \\d: Unicode decimal digits (category Nd, Unicode {unicodedata.unidata_version}) in runs of",
+            " * ten from these zeros */", "static const uint32_t VTTS_ND_ZEROS[] = {"]
+    zs = [f"0x{z:05X}" for z in zeros]
+    out += ["    " + ", ".join(zs[i:i + 8]) + "," for i in range(0, len(zs), 8)]
+    out += ["};", f"#define VTTS_N_ND_ZEROS {len(zeros)}", ""]
+    return out
+
+
 def main() -> None:
     rows = []
     for base in BASES:
@@ -400,6 +509,7 @@ def main() -> None:
     lines += chinese_tables()
     lines += korean_tables()
     lines += hindi_tables()
+    lines += japanese_tables()
     lines += ["#endif", ""]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({len(rows)} letters)")

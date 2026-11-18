@@ -32,7 +32,7 @@ BOARD=esp32-s3-touch-lcd-2.8 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash 
 
 The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts) (folder `vi/`). The serial console commands are listed in the [main README](../../README.md#serial-console).
 
-`build.sh` also builds the front-end blobs once, from the Python tables: `main/lex_en.bin` (VLEX, English lexicon, ~1.9 MB) and `main/lex_zh.bin` (ZLEX, Mandarin readings, ~116 KB). Both are embedded in the app image and read in place from flash. `lex_zh.bin` is optional: when it is missing at configure time the firmware builds without it and zh-en models skip Han characters (the console prints a warning at start-up).
+`build.sh` also builds the front-end blobs once, from the Python tables: `main/lex_en.bin` (VLEX, English lexicon, ~1.9 MB), `main/lex_zh.bin` (ZLEX, Mandarin readings, ~116 KB) and `main/lex_ja.bin` (JLEX, Japanese readings and NFKC data, ~721 KB). They are embedded in the app image and read in place from flash. `lex_zh.bin` and `lex_ja.bin` are optional: when one is missing at configure time the firmware builds without it and zh-en (ja-en) models skip Han characters (kana and kanji); the console prints a warning at start-up. Delete `main/lex_ja.bin` before building to save its flash when no ja-en model is used.
 
 Each board has its own build directory and `sdkconfig`. Shared configuration lives in `sdkconfig.defaults`; chip-specific settings live in `sdkconfig.defaults.esp32p4` and `sdkconfig.defaults.esp32s3`.
 
@@ -47,13 +47,13 @@ The firmware chooses the text front-end from the token set recorded in each mode
 | `zh-en` | `zh` | `zh` | Mandarin + English: Han characters in Mandarin, Latin words in English, numbers in Mandarin (same as `text_to_ids(text, "zh")` in Python) |
 | `ko-en` | `ko` | `ko` | Korean + English: Hangul in Korean (standard pronunciation rules and the exception table), Latin words in English, numbers in Korean with counters (same as `text_to_ids(text, "ko")` in Python). No extra blob: the Korean tables are compiled into the firmware |
 | `hi-en` | `hi` | `hi` | Hindi + English: Devanagari in Hindi (letter rules, anusvara, schwa deletion and the exception table), Latin words in English, numbers in Hindi with lakh and crore, the danda ends a sentence (same as `text_to_ids(text, "hi")` in Python). No extra blob: the Hindi tables are compiled into the firmware |
-| `ja-en` | none | | No device front-end yet: text lines print an `ERROR`; send `ids ...` from `scripts/device/say.py` |
+| `ja-en` | `ja` | `ja` | Japanese + English: kana and kanji in Japanese (longest match over the JLEX tables, kanji defaults), Latin words in English, numbers in Japanese with counters and their sound changes (same as `text_to_ids(text, "ja")` in Python) |
 
-`ids <ids;ids...>` is unchanged and works with every model (ids must be below the model's vocabulary size). `bench` uses four Mandarin sentences for zh-en models, four Korean ones for ko-en models, four Hindi ones for hi-en models and the Vietnamese ones otherwise.
+`ids <ids;ids...>` is unchanged and works with every model (ids must be below the model's vocabulary size). `bench` uses four Mandarin sentences for zh-en models, four Korean ones for ko-en models, four Hindi ones for hi-en models, four Japanese ones for ja-en models and the Vietnamese ones otherwise.
 
 ## Flash budget
 
-The app partition (`partitions.csv`, `factory`, 8 MB) holds the code, both models, `lex_en.bin` and `lex_zh.bin`. With the largest models (zh-en M 2.62 MB + S 1.23 MB, int8) the image is 6.30 MB on the ESP32-P4 (2.09 MB, 25%, free) and 6.18 MB on the ESP32-S3 (2.21 MB, 26%, free); with two ko-en models (2.61 + 1.22 MB) the images are 6.29 MB (P4, 2.10 MB, 25%, free) and 6.18 MB (S3, 2.21 MB, 26%, free). The Korean front-end adds about 15 KB of code and tables and no blob, the Hindi front-end about 25 KB and no blob. The build prints the exact numbers.
+The app partition (`partitions.csv`, `factory`, 8 MB) holds the code, both models, `lex_en.bin`, `lex_zh.bin` and `lex_ja.bin`. With the largest models (zh-en M 2.62 MB + S 1.23 MB, int8) the image is 6.30 MB on the ESP32-P4 (2.09 MB, 25%, free) and 6.18 MB on the ESP32-S3 (2.21 MB, 26%, free); with two ko-en models (2.61 + 1.22 MB) the images are 6.29 MB (P4, 2.10 MB, 25%, free) and 6.18 MB (S3, 2.21 MB, 26%, free). The Korean front-end adds about 15 KB of code and tables and no blob, the Hindi front-end about 25 KB and no blob. The Japanese front-end adds `lex_ja.bin` (721 KB) and about 29 KB of code and tables: with two ja-en models (2.60 + 1.22 MB, int8) the ESP32-P4 image (86-Panel) is 7.03 MB (1.36 MB, 16%, free); every image that embeds `lex_ja.bin` grows by about 0.75 MB. The build prints the exact numbers.
 
 ## Output
 

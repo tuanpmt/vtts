@@ -25,8 +25,10 @@ build/stream_test: $(SRC) test/stream_test.c include/vtts.h
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) $(SRC) test/stream_test.c -lm -o $@
 
-TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_text_zh.c src/vtts_text_ko.c src/vtts_text_hi.c src/vtts_lex.c
-TEXT_HDR = include/vtts_text.h include/vtts_lex.h include/vtts_zlex.h src/vtts_text_en.h src/vtts_text_zh.h src/vtts_text_ko.h src/vtts_text_hi.h src/vtts_text_tables.h
+TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_text_zh.c src/vtts_text_ko.c src/vtts_text_hi.c src/vtts_text_ja.c \
+           src/vtts_lex.c
+TEXT_HDR = include/vtts_text.h include/vtts_lex.h include/vtts_zlex.h include/vtts_jlex.h src/vtts_text_en.h src/vtts_text_zh.h \
+           src/vtts_text_ko.h src/vtts_text_hi.h src/vtts_text_ja.h src/vtts_text_tables.h
 build/text_test: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
@@ -57,6 +59,12 @@ build/zh_lex.bin: ../src/vtts/frontend/lexicons/zh/chars.tsv ../src/vtts/fronten
 	mkdir -p build
 	cd .. && uv run python scripts/frontend/build_zh_blob.py --out runtime/$@
 
+build/ja_lex.bin: ../src/vtts/frontend/lexicons/ja/words.tsv ../src/vtts/frontend/lexicons/ja/after_kanji.tsv \
+                  ../src/vtts/frontend/lexicons/ja/after_katakana.tsv ../src/vtts/frontend/lexicons/ja/kanji.tsv \
+                  ../scripts/frontend/build_ja_blob.py
+	mkdir -p build
+	cd .. && uv run python scripts/frontend/build_ja_blob.py --out runtime/$@
+
 # Mandarin (VTTS_LANG_ZH) parity with text_to_ids(text, "zh") and the fuzz run in every mode.
 zh_test: build/text_test build/lex_en.bin build/zh_lex.bin
 	./build/text_test --lex build/lex_en.bin --zh build/zh_lex.bin test/text_parity_zh.tsv
@@ -72,8 +80,23 @@ hi_test: build/text_test build/lex_en.bin
 	./build/text_test --lex build/lex_en.bin test/text_parity_hi.tsv
 	./build/text_test --fuzz --lex build/lex_en.bin
 
+# Japanese (VTTS_LANG_JA) parity with text_to_ids(text, "ja"), NFKC against unicodedata, the fuzz run
+# and the reading lookup benchmark.
+ja_test: build/text_test build/lex_en.bin build/ja_lex.bin
+	./build/text_test --lex build/lex_en.bin --ja build/ja_lex.bin --nfkc test/ja_nfkc.tsv
+	./build/text_test --lex build/lex_en.bin --ja build/ja_lex.bin test/text_parity_ja.tsv
+	./build/text_test --fuzz --lex build/lex_en.bin --ja build/ja_lex.bin
+
+# Reading lookups and ja-mode throughput on the host (optimized, no sanitizers).
+build/text_bench: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
+	mkdir -p build
+	$(CC) $(CFLAGS) -Isrc $(TEXT_SRC) test/text_test.c -o $@
+
+ja_bench: build/text_bench build/lex_en.bin build/ja_lex.bin
+	./build/text_bench --lex build/lex_en.bin --ja build/ja_lex.bin --bench ../src/vtts/frontend/lexicons/ja/words.tsv
+
 # All text front-end tests (no model needed); the model golden tests run from pytest.
-test: build/token_set_test build/text_test build/lex_test build/en_norm_test build/lex_en.bin build/zh_lex.bin
+test: build/token_set_test build/text_test build/lex_test build/en_norm_test build/lex_en.bin build/zh_lex.bin build/ja_lex.bin
 	./build/token_set_test
 	./build/text_test test/text_parity.tsv
 	./build/text_test --lex build/lex_en.bin test/text_parity_v2.tsv
@@ -82,4 +105,5 @@ test: build/token_set_test build/text_test build/lex_test build/en_norm_test bui
 	$(MAKE) zh_test
 	$(MAKE) ko_test
 	$(MAKE) hi_test
-.PHONY: zh_test ko_test hi_test test
+	$(MAKE) ja_test
+.PHONY: zh_test ko_test hi_test ja_test ja_bench test

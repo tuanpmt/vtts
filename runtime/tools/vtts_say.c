@@ -1,7 +1,7 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* vtts_say.c -- host tool: text -> token ids -> WAV, with the front-end chosen from the model's
  * token set the way the firmware does (vtts_token_set, vtts_text_default_lang / vtts_text_lang_for).
- * usage: vtts_say MODEL.vtts OUT.wav [--lex VLEX] [--zh ZLEX] [--lang MODE] [--speed X] TEXT
+ * usage: vtts_say MODEL.vtts OUT.wav [--lex VLEX] [--zh ZLEX] [--ja JLEX] [--lang MODE] [--speed X] TEXT
  * Prints "token_set <name> <header|vocab> mode <mode>" and one "ids ..." line per chunk on stdout. */
 #include <stdio.h>
 #include <stdlib.h>
@@ -73,21 +73,22 @@ static void write_wav(const char *path, const float *pcm, long n, int sr) {
 }
 
 int main(int argc, char **argv) {
-    const char *lex_path = NULL, *zh_path = NULL, *mode = NULL, *text = NULL;
+    const char *lex_path = NULL, *zh_path = NULL, *ja_path = NULL, *mode = NULL, *text = NULL;
     float speed = 1.0f;
     if (argc < 4) {
-        fprintf(stderr, "usage: %s model.vtts out.wav [--lex VLEX] [--zh ZLEX] [--lang MODE] [--speed X] text\n", argv[0]);
+        fprintf(stderr, "usage: %s model.vtts out.wav [--lex VLEX] [--zh ZLEX] [--ja JLEX] [--lang MODE] [--speed X] text\n", argv[0]);
         return 2;
     }
     for (int i = 3; i < argc; i++) {
         if (strcmp(argv[i], "--lex") == 0 && i + 1 < argc) lex_path = argv[++i];
         else if (strcmp(argv[i], "--zh") == 0 && i + 1 < argc) zh_path = argv[++i];
+        else if (strcmp(argv[i], "--ja") == 0 && i + 1 < argc) ja_path = argv[++i];
         else if (strcmp(argv[i], "--lang") == 0 && i + 1 < argc) mode = argv[++i];
         else if (strcmp(argv[i], "--speed") == 0 && i + 1 < argc) speed = (float)atof(argv[++i]);
         else text = argv[i];
     }
-    size_t mb = 0, lb = 0, zb = 0;
-    void *blob = read_file(argv[1], &mb), *lex_blob = NULL, *zh_blob = NULL;
+    size_t mb = 0, lb = 0, zb = 0, jb = 0;
+    void *blob = read_file(argv[1], &mb), *lex_blob = NULL, *zh_blob = NULL, *ja_blob = NULL;
     static vtts_model m;
     int rc = blob ? vtts_init(&m, blob, mb) : VTTS_ERR_ARGS;
     if (rc) { fprintf(stderr, "init failed %d\n", rc); return 1; }
@@ -100,18 +101,21 @@ int main(int argc, char **argv) {
     }
     static vtts_lex lex;
     static vtts_zlex zh;
-    int has_lex = 0, has_zh = 0;
+    static vtts_jlex ja;
+    int has_lex = 0, has_zh = 0, has_ja = 0;
     if (lex_path && (lex_blob = read_file(lex_path, &lb))) has_lex = vtts_lex_init(&lex, lex_blob, lb) == 0;
     if (zh_path && (zh_blob = read_file(zh_path, &zb))) has_zh = vtts_zlex_init(&zh, zh_blob, zb) == 0;
-    printf("token_set %s %s mode %s lex %d zh %d\n", vtts_token_set_name(ts), m.token_set_in_file ? "header" : "vocab",
-           vtts_text_lang_name(lang), has_lex, has_zh);
+    if (ja_path && (ja_blob = read_file(ja_path, &jb))) has_ja = vtts_jlex_init(&ja, ja_blob, jb) == 0;
+    printf("token_set %s %s mode %s lex %d zh %d ja %d\n", vtts_token_set_name(ts),
+           m.token_set_in_file ? "header" : "vocab", vtts_text_lang_name(lang), has_lex, has_zh, has_ja);
     vtts_text_ws *ws = malloc(sizeof *ws);
     out_t o = {.m = &m, .speed = speed, .max_id = -1};
-    vtts_text_opts opts = {.lang = lang, .lex = has_lex ? &lex : NULL, .zh = has_zh ? &zh : NULL};
+    vtts_text_opts opts = {.lang = lang, .lex = has_lex ? &lex : NULL, .zh = has_zh ? &zh : NULL,
+                           .ja = has_ja ? &ja : NULL};
     int chunks = vtts_text_to_ids_ex(text ? text : "", ws, &opts, on_ids, &o);
     printf("chunks %d samples %ld max_id %d vocab %d\n", chunks, o.n, o.max_id, m.vocab);
     if (o.err) { fprintf(stderr, "synth failed %d\n", o.err); return 1; }
     write_wav(argv[2], o.pcm, o.n, m.sample_rate);
-    free(o.pcm); free(ws); free(blob); free(lex_blob); free(zh_blob);
+    free(o.pcm); free(ws); free(blob); free(lex_blob); free(zh_blob); free(ja_blob);
     return chunks > 0 ? 0 : 1;
 }

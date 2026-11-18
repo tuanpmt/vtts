@@ -1166,4 +1166,301 @@ static const char VTTS_HI_FOLD[400][3] = {
 #define VTTS_HI_SAN "सन"
 #define VTTS_HI_ISVI "ईस्वी"
 
+/* ---- Japanese (token set ja-en; ids 0..106 are the v2 ids) ---- */
+#define VTTS_JAEN_VOCAB 144
+#define VTTS_JA_V0 107  /* JA:a .. JA:o are V0 .. V0 + 4 */
+#define VTTS_JA_N 142
+#define VTTS_JA_CL 143
+#define VTTS_JA_MAX_UNIT_MORAE 10
+#define VTTS_JA_LONG 0x5C  /* code of the long-vowel mark (katakana - 0x30A0) */
+
+/* SINGLE: kana code -> (count, ids) */
+static const uint8_t VTTS_JA_SINGLE[96][3] = {
+    {0, 0, 0}, {1, 107, 0}, {1, 107, 0}, {1, 108, 0}, {1, 108, 0}, {1, 109, 0}, {1, 109, 0}, {1, 110, 0},
+    {1, 110, 0}, {1, 111, 0}, {1, 111, 0}, {2, 112, 107}, {2, 113, 107}, {2, 112, 108}, {2, 113, 108}, {2, 112, 109},
+    {2, 113, 109}, {2, 112, 110}, {2, 113, 110}, {2, 112, 111}, {2, 113, 111}, {2, 114, 107}, {2, 115, 107}, {2, 128, 108},
+    {2, 129, 108}, {2, 114, 109}, {2, 115, 109}, {2, 114, 110}, {2, 115, 110}, {2, 114, 111}, {2, 115, 111}, {2, 116, 107},
+    {2, 117, 107}, {2, 130, 108}, {2, 129, 108}, {1, 143, 0}, {2, 137, 109}, {2, 115, 109}, {2, 116, 110}, {2, 117, 110},
+    {2, 116, 111}, {2, 117, 111}, {2, 118, 107}, {2, 118, 108}, {2, 118, 109}, {2, 118, 110}, {2, 118, 111}, {2, 119, 107},
+    {2, 120, 107}, {2, 121, 107}, {2, 119, 108}, {2, 120, 108}, {2, 121, 108}, {2, 138, 109}, {2, 120, 109}, {2, 121, 109},
+    {2, 119, 110}, {2, 120, 110}, {2, 121, 110}, {2, 119, 111}, {2, 120, 111}, {2, 121, 111}, {2, 122, 107}, {2, 122, 108},
+    {2, 122, 109}, {2, 122, 110}, {2, 122, 111}, {2, 123, 107}, {2, 123, 107}, {2, 123, 109}, {2, 123, 109}, {2, 123, 111},
+    {2, 123, 111}, {2, 124, 107}, {2, 124, 108}, {2, 124, 109}, {2, 124, 110}, {2, 124, 111}, {2, 125, 107}, {2, 125, 107},
+    {1, 108, 0}, {1, 110, 0}, {1, 111, 0}, {1, 142, 0}, {2, 139, 109}, {2, 112, 107}, {2, 112, 107}, {0, 0, 0},
+    {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0}, {0, 0, 0},
+};
+
+/* PAIRS: (first code, second code, count, ids), sorted */
+static const uint8_t VTTS_JA_PAIRS[][6] = {
+    {4, 7, 2, 123, 110, 0},
+    {6, 1, 2, 125, 107, 0},
+    {6, 3, 2, 125, 108, 0},
+    {6, 5, 2, 125, 109, 0},
+    {6, 7, 2, 125, 110, 0},
+    {6, 9, 2, 125, 111, 0},
+    {13, 7, 2, 126, 110, 0},
+    {13, 67, 2, 126, 107, 0},
+    {13, 69, 2, 126, 109, 0},
+    {13, 71, 2, 126, 111, 0},
+    {14, 7, 2, 127, 110, 0},
+    {14, 67, 2, 127, 107, 0},
+    {14, 69, 2, 127, 109, 0},
+    {14, 71, 2, 127, 111, 0},
+    {15, 1, 3, 112, 125, 107},
+    {15, 3, 3, 112, 125, 108},
+    {15, 7, 3, 112, 125, 110},
+    {15, 9, 3, 112, 125, 111},
+    {16, 1, 3, 113, 125, 107},
+    {16, 3, 3, 113, 125, 108},
+    {16, 7, 3, 113, 125, 110},
+    {16, 9, 3, 113, 125, 111},
+    {23, 7, 2, 128, 110, 0},
+    {23, 67, 2, 128, 107, 0},
+    {23, 69, 2, 128, 109, 0},
+    {23, 71, 2, 128, 111, 0},
+    {24, 7, 2, 129, 110, 0},
+    {24, 67, 2, 129, 107, 0},
+    {24, 69, 2, 129, 109, 0},
+    {24, 71, 2, 129, 111, 0},
+    {25, 1, 2, 114, 107, 0},
+    {25, 3, 2, 114, 108, 0},
+    {25, 7, 2, 114, 110, 0},
+    {25, 9, 2, 114, 111, 0},
+    {26, 1, 2, 115, 107, 0},
+    {26, 3, 2, 115, 108, 0},
+    {26, 7, 2, 115, 110, 0},
+    {26, 9, 2, 115, 111, 0},
+    {33, 7, 2, 130, 110, 0},
+    {33, 67, 2, 130, 107, 0},
+    {33, 69, 2, 130, 109, 0},
+    {33, 71, 2, 130, 111, 0},
+    {34, 7, 2, 129, 110, 0},
+    {34, 67, 2, 129, 107, 0},
+    {34, 69, 2, 129, 109, 0},
+    {34, 71, 2, 129, 111, 0},
+    {36, 1, 2, 137, 107, 0},
+    {36, 3, 2, 137, 108, 0},
+    {36, 7, 2, 137, 110, 0},
+    {36, 9, 2, 137, 111, 0},
+    {38, 1, 2, 116, 107, 0},
+    {38, 3, 2, 116, 108, 0},
+    {38, 5, 2, 116, 109, 0},
+    {38, 9, 2, 116, 111, 0},
+    {38, 69, 2, 140, 109, 0},
+    {39, 1, 2, 117, 107, 0},
+    {39, 3, 2, 117, 108, 0},
+    {39, 5, 2, 117, 109, 0},
+    {39, 9, 2, 117, 111, 0},
+    {39, 69, 2, 141, 109, 0},
+    {40, 1, 2, 116, 107, 0},
+    {40, 3, 2, 116, 108, 0},
+    {40, 5, 2, 116, 109, 0},
+    {40, 7, 2, 116, 110, 0},
+    {41, 1, 2, 117, 107, 0},
+    {41, 3, 2, 117, 108, 0},
+    {41, 5, 2, 117, 109, 0},
+    {41, 7, 2, 117, 110, 0},
+    {43, 7, 2, 131, 110, 0},
+    {43, 67, 2, 131, 107, 0},
+    {43, 69, 2, 131, 109, 0},
+    {43, 71, 2, 131, 111, 0},
+    {50, 7, 2, 132, 110, 0},
+    {50, 67, 2, 132, 107, 0},
+    {50, 69, 2, 132, 109, 0},
+    {50, 71, 2, 132, 111, 0},
+    {51, 7, 2, 133, 110, 0},
+    {51, 67, 2, 133, 107, 0},
+    {51, 69, 2, 133, 109, 0},
+    {51, 71, 2, 133, 111, 0},
+    {52, 7, 2, 134, 110, 0},
+    {52, 67, 2, 134, 107, 0},
+    {52, 69, 2, 134, 109, 0},
+    {52, 71, 2, 134, 111, 0},
+    {53, 1, 2, 138, 107, 0},
+    {53, 3, 2, 138, 108, 0},
+    {53, 7, 2, 138, 110, 0},
+    {53, 9, 2, 138, 111, 0},
+    {53, 69, 2, 132, 109, 0},
+    {63, 7, 2, 135, 110, 0},
+    {63, 67, 2, 135, 107, 0},
+    {63, 69, 2, 135, 109, 0},
+    {63, 71, 2, 135, 111, 0},
+    {74, 7, 2, 136, 110, 0},
+    {74, 67, 2, 136, 107, 0},
+    {74, 69, 2, 136, 109, 0},
+    {74, 71, 2, 136, 111, 0},
+    {84, 1, 2, 139, 107, 0},
+    {84, 3, 2, 139, 108, 0},
+    {84, 7, 2, 139, 110, 0},
+    {84, 9, 2, 139, 111, 0},
+    {84, 69, 2, 133, 109, 0},
+};
+#define VTTS_JA_N_PAIRS 102
+
+/* _VOICED: kana code -> voiced kana code (0: unchanged) */
+static const uint8_t VTTS_JA_VOICED[96] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 12, 0, 14, 0, 16, 0, 18, 0, 20, 0, 22, 0, 24,
+    0, 26, 0, 28, 0, 30, 0, 32, 0, 34, 0, 0, 37, 0, 39, 0, 41, 0, 0, 0, 0, 0, 0, 48,
+    0, 0, 51, 0, 0, 54, 0, 0, 57, 0, 0, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+};
+#define VTTS_JA_ITER 0x5D  /* code of ゝ; ゞ (voiced) is + 1 */
+
+static const char *const VTTS_JA_DIGITS[10] = {
+    "ゼロ", "イチ", "ニ", "サン", "ヨン", "ゴ",
+    "ロク", "ナナ", "ハチ", "キュー",
+};
+
+/* THOUSANDS, HUNDREDS: special readings per digit (empty: DIGITS[d] + セン / ヒャク) */
+static const char *const VTTS_JA_THOUSANDS[10] = {
+    "", "セン", "", "サンゼン", "", "",
+    "", "", "ハッセン", "",
+};
+
+static const char *const VTTS_JA_HUNDREDS[10] = {
+    "", "ヒャク", "", "サンビャク", "", "",
+    "ロッピャク", "", "ハッピャク", "",
+};
+
+static const char *const VTTS_JA_GROUPS[4] = {
+    "", "マン", "オク", "チョー",
+};
+
+/* COUNTERS in the alternation order of _COUNTER_RE (longest first). gem_mask: bit d for the
+ * last digit d, bit 10 for ...十, bit 11 for ...百; nasal_after: '|'-separated; last[d]: reading
+ * of the last digit (NULL: none); whole: "n=reading|..." */
+typedef struct { const char *key, *base, *gem; uint16_t gem_mask; const char *nasal, *nasal_after;
+                 const char *last[10]; const char *whole; } vtts_ja_counter;
+static const vtts_ja_counter VTTS_JA_COUNTERS[] = {
+    {"分の", "ブンノ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"週間", "シューカン", "シューカン", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"か月", "カゲツ", "カゲツ", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"ヶ月", "カゲツ", "カゲツ", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"カ月", "カゲツ", "カゲツ", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"ケ月", "カゲツ", "カゲツ", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"カ国", "カコク", "カコク", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"ヶ国", "カコク", "カコク", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"か国", "カコク", "カコク", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"時間", "ジカン", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, "ヨ", NULL, NULL, "シチ", NULL, "ク"}, ""},
+    {"日間", "ニチカン", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, "2=フツカカン|3=ミッカカン|4=ヨッカカン|5=イツカカン|6=ムイカカン|7=ナノカカン|8=ヨーカカン|9=ココノカカン|10=トーカカン|14=ジューヨッカカン|20=ハツカカン|24=ニジューヨッカカン"},
+    {"番目", "バンメ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"本", "ホン", "ポン", 0xD42, "ボン", "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"匹", "ヒキ", "ピキ", 0xD42, "ビキ", "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"杯", "ハイ", "パイ", 0xD42, "バイ", "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"分", "フン", "プン", 0xD42, "プン", "サン|ヨン|セン|マン|ナン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"個", "コ", "コ", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"回", "カイ", "カイ", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"階", "カイ", "カイ", 0xD42, "ガイ", "サン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"件", "ケン", "ケン", 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"軒", "ケン", "ケン", 0xD42, "ゲン", "サン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"冊", "サツ", "サツ", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"歳", "サイ", "サイ", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, "20=ハタチ"},
+    {"才", "サイ", "サイ", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, "20=ハタチ"},
+    {"点", "テン", "テン", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"頭", "トー", "トー", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"通", "ツー", "ツー", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"週", "シュー", "シュー", 0xD02, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"円", "エン", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, "ヨ", NULL, NULL, NULL, NULL, NULL}, ""},
+    {"年", "ネン", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, "ヨ", NULL, NULL, NULL, NULL, NULL}, ""},
+    {"人", "ニン", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, "ヨ", NULL, NULL, "シチ", NULL, NULL}, "1=ヒトリ|2=フタリ"},
+    {"時", "ジ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, "ヨ", NULL, NULL, "シチ", NULL, "ク"}, ""},
+    {"月", "ガツ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, "4=シガツ|7=シチガツ|9=クガツ"},
+    {"日", "ニチ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, "1=ツイタチ|2=フツカ|3=ミッカ|4=ヨッカ|5=イツカ|6=ムイカ|7=ナノカ|8=ヨーカ|9=ココノカ|10=トーカ|14=ジューヨッカ|20=ハツカ|24=ニジューヨッカ"},
+    {"つ", "", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, "1=ヒトツ|2=フタツ|3=ミッツ|4=ヨッツ|5=イツツ|6=ムッツ|7=ナナツ|8=ヤッツ|9=ココノツ|10=トー"},
+    {"秒", "ビョー", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"度", "ド", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"番", "バン", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"枚", "マイ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"台", "ダイ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"名", "メー", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"倍", "バイ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"号", "ゴー", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"位", "イ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+    {"割", "ワリ", NULL, 0xD42, NULL, "サン|セン|マン", {NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL}, ""},
+};
+#define VTTS_JA_N_COUNTERS 45
+
+/* full-width forms: U+FF01..U+FF5E -> minus 0xFEE0, plus these */
+static const uint32_t VTTS_JA_FULLWIDTH[][2] = {
+    {0x3000, 0x0020},
+    {0x3002, 0x002E},
+    {0x3001, 0x002C},
+    {0xFF61, 0x002E},
+    {0xFF64, 0x002C},
+    {0xFFE5, 0x00A5},
+    {0x301C, 0x007E},
+};
+#define VTTS_JA_N_FULLWIDTH 7
+
+static const char *const VTTS_JA_SYMBOLS[][2] = {  /* replaced in this order */
+    {"℃", "ド"},
+    {"°C", "ド"},
+    {"°c", "ド"},
+    {"°", "ド"},
+    {"+", "プラス"},
+    {"&", " and "},
+    {"@", " at "},
+    {"×", "カケル"},
+    {"÷", "ワル"},
+    {"=", "イコール"},
+};
+#define VTTS_JA_N_SYMBOLS 10
+
+static const uint32_t VTTS_JA_DROP[] = {  /* replaced by a space */
+    0x201C, 0x201D, 0x2018, 0x2019, 0x0022, 0x300C, 0x300D, 0x300E,
+    0x300F, 0x300A, 0x300B, 0x3008, 0x3009, 0x3010, 0x3011, 0x3014,
+    0x3015, 0x0028, 0x0029, 0x005B, 0x005D, 0x007B, 0x007D, 0x003C,
+    0x003E, 0x30FB, 0xFF65,
+};
+#define VTTS_JA_N_DROP 27
+
+static const char *const VTTS_JA_UNITS[][2] = {  /* alternation order */
+    {"km/h", "キロメートルジソク"},
+    {"km", "キロメートル"},
+    {"kg", "キログラム"},
+    {"cm", "センチメートル"},
+    {"mm", "ミリメートル"},
+    {"ml", "ミリリットル"},
+    {"mL", "ミリリットル"},
+    {"GB", "ギガバイト"},
+    {"MB", "メガバイト"},
+    {"m", "メートル"},
+    {"g", "グラム"},
+    {"l", "リットル"},
+    {"L", "リットル"},
+};
+#define VTTS_JA_N_UNITS 13
+
+static const struct { uint32_t cp; const char *name; } VTTS_JA_CURRENCY[] = {
+    {0x00A5, "エン"},
+    {0x0024, "ドル"},
+    {0x20AC, "ユーロ"},
+    {0x00A3, "ポンド"},
+};
+#define VTTS_JA_N_CURRENCY 4
+
+/* BIG_UNITS in order: (unit, value, digits allowed after it) */
+static const struct { uint32_t cp; double value; int max_digits; } VTTS_JA_BIG[] = {
+    {0x4E07, 10000.0, 4},
+    {0x5104, 100000000.0, 8},
+    {0x5146, 1000000000000.0, 12},
+};
+#define VTTS_JA_N_BIG 3
+#define VTTS_JA_MARK 0x2060
+
+/* Python's \d: Unicode decimal digits (category Nd, Unicode 14.0.0) in runs of
+ * ten from these zeros */
+static const uint32_t VTTS_ND_ZEROS[] = {
+    0x00030, 0x00660, 0x006F0, 0x007C0, 0x00966, 0x009E6, 0x00A66, 0x00AE6,
+    0x00B66, 0x00BE6, 0x00C66, 0x00CE6, 0x00D66, 0x00DE6, 0x00E50, 0x00ED0,
+    0x00F20, 0x01040, 0x01090, 0x017E0, 0x01810, 0x01946, 0x019D0, 0x01A80,
+    0x01A90, 0x01B50, 0x01BB0, 0x01C40, 0x01C50, 0x0A620, 0x0A8D0, 0x0A900,
+    0x0A9D0, 0x0A9F0, 0x0AA50, 0x0ABF0, 0x0FF10, 0x104A0, 0x10D30, 0x11066,
+    0x110F0, 0x11136, 0x111D0, 0x112F0, 0x11450, 0x114D0, 0x11650, 0x116C0,
+    0x11730, 0x118E0, 0x11950, 0x11C50, 0x11D50, 0x11DA0, 0x16A60, 0x16AC0,
+    0x16B50, 0x1D7CE, 0x1D7D8, 0x1D7E2, 0x1D7EC, 0x1D7F6, 0x1E140, 0x1E2F0,
+    0x1E950, 0x1FBF0,
+};
+#define VTTS_N_ND_ZEROS 66
+
 #endif

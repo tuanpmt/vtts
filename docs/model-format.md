@@ -51,7 +51,7 @@ The token set decides which text front-end produces the ids, so the firmware and
 | 2 | `vi-en` (v2) | 107 | `vi`, `en`, `auto` |
 | 3 | `zh-en` | 171 | `zh` |
 | 4 | `ko-en` | 153 | `ko` |
-| 5 | `ja-en` | 144 | none yet (ids from a host front-end) |
+| 5 | `ja-en` | 144 | `ja` |
 | 6 | `es-en` | 138 | none yet; the C runtime loads it as `unknown` (raw ids) |
 | 7 | `id-en` | 141 | none yet; the C runtime loads it as `unknown` (raw ids) |
 | 8 | `pt-en` | 150 | none yet; the C runtime loads it as `unknown` (raw ids) |
