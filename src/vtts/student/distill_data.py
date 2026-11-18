@@ -14,7 +14,8 @@ def pack_inputs(path: Path, limit: int | None, seed: int = 0) -> list[list[int]]
     """Id sequences to distill, one per chunk.
 
     A .jsonl file has one {"text", "lang"} object per line (bilingual corpus): token set v2,
-    with "mixed" read in "vi" mode as in teacher training; with a limit, a seeded random sample
+    with "mixed" read in "vi" mode as in teacher training, and lang zh / ko / ja in their pair
+    token set (zh-en, ko-en, ja-en; English rows use the shared ids); with a limit, a seeded random sample
     of whole sentences keeps the language mix. Any other file is plain text, one sentence per
     line, encoded with token set v1 (the first `limit` lines).
     """
@@ -33,7 +34,9 @@ def pack_inputs(path: Path, limit: int | None, seed: int = 0) -> list[list[int]]
     rows = [json.loads(ln) for ln in lines]
     if limit is not None and limit < len(rows):
         rows = random.Random(seed).sample(rows, limit)
-    return [ids for r in rows for ids in text_to_ids(r["text"], "en" if r.get("lang") == "en" else "vi")]
+    # pair languages (zh, ko, ja) use their pair token set; "mixed" (vi-en) is read in "vi" mode
+    modes = {"en": "en", "zh": "zh", "ko": "ko", "ja": "ja"}
+    return [ids for r in rows for ids in text_to_ids(r["text"], modes.get(r.get("lang"), "vi"))]
 
 
 @torch.inference_mode()

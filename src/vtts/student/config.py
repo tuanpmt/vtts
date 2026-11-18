@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, replace
 
 
 @dataclass(frozen=True)
@@ -66,3 +66,17 @@ PRESETS["M-vocos-p"] = replace(PRESETS["M-vocos"], prosody=True)
 PRESETS["M-vocos-p-bi"] = replace(PRESETS["M-vocos-p"], vocab=107)
 PRESETS["S-vocos-p-bi"] = replace(PRESETS["S-vocos-p"], vocab=107)
 PRESETS["M-vocos-p-bi-s3"] = replace(PRESETS["M-vocos-p-bi"], v_mult=2)
+
+# Other pairs (main language + English): the vocabulary covers the pair's token set (shared ids
+# 0..106 plus the language block); same model sizes as the vi-en presets.
+def _pair_presets() -> None:
+    from vtts.frontend.phoneme_set import TOKEN_SETS
+
+    for pair in ("zh-en", "ko-en", "ja-en"):
+        n = len(TOKEN_SETS[pair])
+        PRESETS[f"M-vocos-p-{pair}"] = replace(PRESETS["M-vocos-p"], vocab=n)
+        PRESETS[f"S-vocos-p-{pair}"] = replace(PRESETS["S-vocos-p"], vocab=n)
+        PRESETS[f"M-vocos-p-{pair}-s3"] = replace(PRESETS[f"M-vocos-p-{pair}"], v_mult=2)
+
+
+_pair_presets()
