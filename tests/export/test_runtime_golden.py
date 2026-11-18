@@ -152,11 +152,88 @@ def test_c_mandarin_frontend_parity(tmp_path):
     assert f.returncode == 0 and "with zh" in f.stdout, f.stdout + f.stderr[-2000:]
 
 
+def test_c_korean_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex in VTTS_LANG_KO mode (token set ko-en, rules and exception table compiled
+    in, VLEX for English words) gives exactly text_to_ids(text, "ko"), and survives the fuzz run
+    (Hangul, jamo, ASCII, numbers with counters, punctuation, random bytes, long words)."""
+    import random
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    fixture = RUNTIME / "test" / "text_parity_ko.tsv"
+    lines = fixture.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 10000
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            "run: uv run python scripts/frontend/export_text_parity.py --ko --sentences data/ko/sentences.jsonl "
+            "--limit 3000 --out runtime/test/text_parity_ko.tsv")
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    r = subprocess.run([exe, "--lex", str(lex), str(fixture)], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz", "--lex", str(lex)], check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "with ko" in f.stdout, f.stdout + f.stderr[-2000:]
+
+
+def test_c_korean_tables_current():
+    """runtime/src/vtts_text_tables.h holds the current Korean tables (overrides.tsv included)."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_text_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_text_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    want = "\n".join(mod.korean_tables())
+    assert want in (RUNTIME / "src" / "vtts_text_tables.h").read_text(encoding="utf-8"), (
+        "run: uv run python runtime/tools/gen_text_tables.py")
+
+
 def test_c_token_set_header():
     """vtts_token_set: the token_set dim, old files by vocab; text modes per token set."""
     subprocess.run(["make", "-s", "build/token_set_test"], cwd=RUNTIME, check=True)
     r = subprocess.run([str(RUNTIME / "build" / "token_set_test")], check=False, capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
+
+
+def test_c_text_to_audio_ko_en(tmp_path):
+    """Full device path on the host for a ko-en model (tiny, random weights): the header's token set
+    picks the ko front-end (no extra blob), ids above 106 reach the embedding, audio comes out."""
+    import wave
+
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-ko-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "ko.vtts"
+    write_model_int8(m, model, token_set="ko-en")
+    assert token_set_of(read_model(model)[0]) == "ko-en"
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "Wi-Fi를 켜 드릴까요? 지금은 8:30이고, 기온은 26도예요."
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), text],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set ko-en header mode ko lex 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "ko")
+    assert max(max(c) for c in c_ids) > 106
+    with wave.open(str(wav)) as w:
+        assert w.getframerate() == 22050 and w.getnframes() > 0
+    bad = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lang", "zh", text],
+                         check=False, capture_output=True, text=True)
+    assert bad.returncode == 2 and "modes: ko" in bad.stderr
 
 
 @pytest.mark.parametrize("int8", [False, True])

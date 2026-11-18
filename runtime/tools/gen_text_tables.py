@@ -105,6 +105,126 @@ def chinese_tables() -> list[str]:
     return out
 
 
+def korean_tables() -> list[str]:
+    """Token ids of the ko-en set, the jamo tables of the pronunciation rules (ko/g2p_ko.py), the
+    exception table (lexicons/ko/overrides.tsv) and the strings of the normalizer (ko/normalize_ko.py).
+
+    Consonant jamo are coded as their compatibility code point - 0x3130 (ㄱ 1 .. ㅎ 30, 0 = none),
+    vowels as their index in hangul.VOWELS (ㅏ 0 .. ㅣ 20, the Unicode order)."""
+    from vtts.frontend.ko import g2p_ko as g
+    from vtts.frontend.ko import hangul as h
+    from vtts.frontend.ko import normalize_ko as nk
+
+    k = phoneme_set.token_to_id_koen
+    base = 0x3130
+
+    def J(ch: str) -> int:
+        if not ch:
+            return 0
+        v = ord(ch) - base
+        assert 1 <= v <= 30, ch
+        return v
+
+    assert "".join(h.VOWELS) == "".join(chr(c) for c in range(0x314F, 0x3164))
+    vowel = {v: i for i, v in enumerate(h.VOWELS)}
+    n = 31
+
+    def arr(name: str, ctype: str, vals: list[int], comment: str) -> list[str]:
+        return [f"static const {ctype} {name}[{len(vals)}] = {{  /* {comment} */",
+                "    " + ", ".join(map(str, vals)) + ",", "};", ""]
+
+    def by_code(d: dict, f) -> list[int]:
+        vals = [0] * n
+        for key, v in d.items():
+            vals[J(key)] = f(v)
+        return vals
+
+    out = ["/* ---- Korean (token set ko-en; ids 0..106 are the v2 ids) ---- */",
+           f"#define VTTS_KOEN_VOCAB {phoneme_set.VOCAB_SIZE_KOEN}",
+           f"#define VTTS_KO_JAMO0 0x{base:04X}  /* consonant code = compatibility jamo - this */", ""]
+    out += arr("VTTS_KO_ONSETS", "uint8_t", [J(c) for c in h.ONSETS], "onset index (U+AC00 arithmetic) -> code")
+    out += arr("VTTS_KO_CODAS", "uint8_t", [J(c) for c in h.CODAS], "coda index -> code (0 = none)")
+    neutral = [255] * n
+    for key, v in g.NEUTRAL.items():
+        neutral[J(key)] = J(v)
+    out += arr("VTTS_KO_NEUTRAL", "uint8_t", neutral, "NEUTRAL: coda code -> one of the 7 (255: not a coda)")
+    liaison = [f"{{0, {c}}}" for c in range(n)]
+    for key, (stay, move) in g.LIAISON.items():
+        liaison[J(key)] = f"{{{J(stay)}, {J(move)}}}"
+    out += [f"static const uint8_t VTTS_KO_LIAISON[{n}][2] = {{  /* LIAISON: (stays, moves); default (none, coda) */",
+            "    " + ", ".join(liaison) + ",", "};", ""]
+    asp = ["{0, 0, 0}"] * n
+    for key, (stay, onset) in g.ASPIRATE_BEFORE_H.items():
+        asp[J(key)] = f"{{1, {J(stay)}, {J(onset)}}}"
+    out += [f"static const uint8_t VTTS_KO_ASP_H[{n}][3] = {{  /* ASPIRATE_BEFORE_H: (present, stays, onset) */",
+            "    " + ", ".join(asp) + ",", "};", ""]
+    out += arr("VTTS_KO_ASPIRATED", "uint8_t", by_code(g.ASPIRATED, J), "ASPIRATED (0: none)")
+    hc = ["{0, 0}"] * n
+    for key, rest in g.H_CODAS.items():
+        hc[J(key)] = f"{{1, {J(rest)}}}"
+    out += [f"static const uint8_t VTTS_KO_H_CODA[{n}][2] = {{  /* H_CODAS: (present, rest) */",
+            "    " + ", ".join(hc) + ",", "};", ""]
+    out += arr("VTTS_KO_TENSE", "uint8_t", by_code(g.TENSE, J), "TENSE (0: none)")
+    out += arr("VTTS_KO_OBSTRUENT", "uint8_t", by_code({c: 1 for c in g.OBSTRUENT_CODAS}, int), "OBSTRUENT_CODAS")
+    out += arr("VTTS_KO_STEM", "uint8_t", by_code({c: 1 for c in g.STEM_CODAS}, int), "STEM_CODAS")
+    yp = [255] * len(h.VOWELS)
+    for key, v in g.Y_TO_PLAIN.items():
+        yp[vowel[key]] = vowel[v]
+    out += arr("VTTS_KO_Y_PLAIN", "uint8_t", yp, "Y_TO_PLAIN: vowel -> vowel (255: none)")
+    out += arr("VTTS_KO_ONSET_ID", "uint8_t", by_code(g.ONSET_NAMES, lambda s: k(f"KO:I:{s}")),
+               "onset code -> token id (0: silent or none)")
+    out += arr("VTTS_KO_VOWEL_ID", "uint8_t", [k(f"KO:V:{g.VOWEL_NAMES[v]}") for v in h.VOWELS], "vowel -> token id")
+    out += arr("VTTS_KO_CODA_ID", "uint8_t", by_code(g.CODA_NAMES, lambda s: k(f"KO:C:{s}")),
+               "coda code -> token id (0: none)")
+    table = g.override_table()
+    longest = max(map(len, table))
+    assert all(h.is_hangul_syllable(c) for kv in table.items() for s in kv for c in s)
+    out += [f"#define VTTS_KO_OVR_MAX {longest}",
+            "/* lexicons/ko/overrides.tsv: syllables - U+AC00 of the written form and its reading */",
+            "static const struct { uint8_t nk, nr; uint16_t k[VTTS_KO_OVR_MAX], r[VTTS_KO_OVR_MAX]; } VTTS_KO_OVERRIDES[] = {"]
+    for key, v in table.items():
+        ks = ", ".join(str(ord(c) - h.BASE) for c in key)
+        rs = ", ".join(str(ord(c) - h.BASE) for c in v)
+        out.append(f"    {{{len(key)}, {len(v)}, {{{ks}}}, {{{rs}}}}},  /* {key} {v} */")
+    out += ["};", f"#define VTTS_KO_N_OVERRIDES {len(table)}", ""]
+    out += c_list("VTTS_KO_SINO_DIGITS", list(nk.SINO_DIGITS))
+    out += c_list("VTTS_KO_PHONE_DIGITS", list(nk.PHONE_DIGITS))
+    out += c_list("VTTS_KO_SECTION_UNITS", [u for _, u in nk._SECTION_UNITS])
+    out += c_list("VTTS_KO_GROUP_UNITS", list(nk._GROUP_UNITS))
+    out += c_list("VTTS_KO_NATIVE_ONES", list(nk.NATIVE_ONES))
+    out += c_list("VTTS_KO_NATIVE_ONES_COUNTER", list(nk.NATIVE_ONES_COUNTER))
+    out += c_list("VTTS_KO_NATIVE_TENS", list(nk.NATIVE_TENS))
+    out += ["static const struct { int month; const char *name; } VTTS_KO_MONTHS[] = {"]
+    out += [f"    {{{m}, {c_str(v)}}}," for m, v in nk.MONTHS.items()]
+    out += ["};", f"#define VTTS_KO_N_MONTHS {len(nk.MONTHS)}", ""]
+    kinds = {"native": 1, "sino": 2, "joined": 3}
+    out += ["/* counters, longest first (counter_kind): kind 1 native, 2 sino, 3 joined */",
+            "static const struct { const char *word; uint8_t kind; } VTTS_KO_COUNTERS[] = {"]
+    out += [f"    {{{c_str(c)}, {kinds[kind]}}}," for c, kind in nk._COUNTERS]
+    out += ["};", f"#define VTTS_KO_N_COUNTERS {len(nk._COUNTERS)}", ""]
+    extra = {kk: v for kk, v in nk._FULLWIDTH.items() if not 0xFF01 <= kk < 0xFF5F}
+    assert all(nk._FULLWIDTH[c] == c - 0xFEE0 for c in range(0xFF01, 0xFF5F))
+    out += ["/* full-width forms: U+FF01..U+FF5E -> minus 0xFEE0, plus these */",
+            "static const uint32_t VTTS_KO_FULLWIDTH[][2] = {"]
+    out += [f"    {{0x{kk:04X}, 0x{v:04X}}}," for kk, v in extra.items()]
+    out += ["};", f"#define VTTS_KO_N_FULLWIDTH {len(extra)}", ""]
+    out += ["static const char *const VTTS_KO_SYMBOLS[][2] = {  /* replaced in this order */"]
+    out += [f"    {{{c_str(kk)}, {c_str(v)}}}," for kk, v in nk._SYMBOLS.items()]
+    out += ["};", f"#define VTTS_KO_N_SYMBOLS {len(nk._SYMBOLS)}", ""]
+    out += ["static const uint32_t VTTS_KO_DROP[] = {  /* replaced by a space */"]
+    drop = [f"0x{ord(c):04X}" for c in nk._DROP]
+    out += ["    " + ", ".join(drop[i:i + 8]) + "," for i in range(0, len(drop), 8)]
+    out += ["};", f"#define VTTS_KO_N_DROP {len(drop)}", ""]
+    units = sorted(nk.UNITS, key=len, reverse=True)  # the alternation order of the UNIT regex
+    out += ["static const char *const VTTS_KO_UNITS[][2] = {  /* alternation order */"]
+    out += [f"    {{{c_str(u)}, {c_str(nk.UNITS[u])}}}," for u in units]
+    out += ["};", f"#define VTTS_KO_N_UNITS {len(units)}", ""]
+    out += ["static const struct { uint32_t cp; const char *name; } VTTS_KO_CURRENCY[] = {"]
+    out += [f"    {{0x{ord(kk):04X}, {c_str(v)}}}," for kk, v in nk.CURRENCY.items()]
+    out += ["};", f"#define VTTS_KO_N_CURRENCY {len(nk.CURRENCY)}", ""]
+    return out
+
+
 def main() -> None:
     rows = []
     for base in BASES:
@@ -134,6 +254,7 @@ def main() -> None:
         lines += ["};", f"#define VTTS_N_{name} {len(items)}", ""]
     lines += english_tables()
     lines += chinese_tables()
+    lines += korean_tables()
     lines += ["#endif", ""]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({len(rows)} letters)")

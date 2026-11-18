@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* text_test.c -- device front-end must produce exactly the Python ids.
  * usage: text_test text_parity.tsv                          (text \t ids;ids...; phoneme set v1)
- *        text_test --lex LEX [--zh ZLEX] text_parity_v2.tsv (mode \t text \t ids...; mode vi|en|auto|zh)
- *        text_test --fuzz [--lex LEX] [--zh ZLEX]           (v1; v2 modes with --lex; zh mode with --zh) */
+ *        text_test --lex LEX [--zh ZLEX] text_parity_v2.tsv (mode \t text \t ids...; mode vi|en|auto|zh|ko)
+ *        text_test --fuzz [--lex LEX] [--zh ZLEX]           (v1; v2 and ko modes with --lex; zh mode with --zh) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -99,6 +99,55 @@ static int fuzz_zh(vtts_text_ws *ws) {
     return 0;
 }
 
+/* Hangul words (rule-heavy syllables, exception entries), jamo, ASCII, numbers with counters, dates,
+ * times, units, money, CJK and ASCII punctuation, symbols and random bytes; chunks must stay inside
+ * the ko-en set (153 ids, no Vietnamese ids) */
+static int check_ko(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= 153 || (ids[i] >= 10 && ids[i] <= 64)) *bad = 1;
+    return 0;
+}
+
+static int fuzz_ko(vtts_text_ws *ws) {
+    static char buf[20000];
+    static const char *const parts[] = {
+        "한국어", "학교", "국물", "같이", "좋다", "앉아", "닭", "읽고", "넓다", "신라", "희망", "가져", "물고기", "김밥",
+        "솜이불", "밟다", "값을", "흙", "의", "를", "에서", "은", "ㅋ", "ㆍ", "개", "명", "번째", "시", "분", "월", "년",
+        "일", "살", "개월", "，", "。", "！", "？", "；", "：", "、", "“", "”", "（", "）", "《", "》", "…", "—", "·",
+        "　", "％", "￦", "₩", "℃", "°", "°C", "１", "Ａ", "a", "Z", "e", "S", "P", "x", "'", "-", "~", "/", ".", ",",
+        ":", "%", "$", "€", "£", "¥", "+", "&", "@", "0", "1", "2", "3", "5", "9", " ", " ", "\t", "ESP32", "Wi-Fi",
+        "iPhone", "2026-11-18", "2026. 6. 10.", "9:30", "12:00:05", "010-1234-5678", "0123", "1,234", "3.14", "-5",
+        "99%", "$5", "5km", "16GB", "3~5", "10:2", "\xea\xb0", "\xff", "\x80", "é", "中", "か", "ạ"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    unsigned seed = 4243;
+    int bad = 0;
+    for (int it = 0; it < 3000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        int no_space = it % 7 == 0; /* long words: split into syllables, item and pool limits */
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; } /* random byte */
+            const char *p = parts[r % (unsigned)np];
+            if (no_space && (p[0] == ' ' || p[0] == '\t')) continue;
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int rc = run(buf, VTTS_LANG_KO, ws, check_ko, &bad);
+        if (rc < 0 || bad) { printf("fuzz ko: rc %d, bad chunk %d (iteration %d)\n", rc, bad, it); return 1; }
+    }
+    if (run("", VTTS_LANG_KO, ws, NULL, NULL) != 0 || run("。。，", VTTS_LANG_KO, ws, NULL, NULL) != 0) {
+        puts("fuzz ko: empty input must give 0 chunks");
+        return 1;
+    }
+    return 0;
+}
+
 static int fuzz(void) {
     static vtts_text_ws ws;
     static char buf[20000];
@@ -120,6 +169,8 @@ static int fuzz(void) {
                 rc = run(buf, m, &ws, NULL, NULL);
                 if (rc < 0) { printf("fuzz v2: error %d\n", rc); return 1; }
             }
+            rc = run(buf, VTTS_LANG_KO, &ws, NULL, NULL);
+            if (rc < 0) { printf("fuzz ko: error %d\n", rc); return 1; }
         }
     }
     if (vtts_text_to_ids("", &ws, NULL, NULL) != 0 || vtts_text_to_ids("...", &ws, NULL, NULL) != 0) {
@@ -127,7 +178,8 @@ static int fuzz(void) {
         return 1;
     }
     if (s_has_zh && fuzz_zh(&ws)) return 1;
-    puts(s_has_zh ? "fuzz: ok (with zh)" : "fuzz: ok");
+    if (s_has_lex && fuzz_ko(&ws)) return 1;
+    printf("fuzz: ok%s%s\n", s_has_lex ? " (with ko)" : "", s_has_zh ? " (with zh)" : "");
     return 0;
 }
 
@@ -135,6 +187,7 @@ static int mode_of(const char *m) {
     if (strcmp(m, "en") == 0) return VTTS_LANG_EN;
     if (strcmp(m, "auto") == 0) return VTTS_LANG_AUTO;
     if (strcmp(m, "zh") == 0) return VTTS_LANG_ZH;
+    if (strcmp(m, "ko") == 0) return VTTS_LANG_KO;
     return VTTS_LANG_VI;
 }
 

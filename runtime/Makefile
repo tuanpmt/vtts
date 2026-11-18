@@ -25,8 +25,8 @@ build/stream_test: $(SRC) test/stream_test.c include/vtts.h
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) $(SRC) test/stream_test.c -lm -o $@
 
-TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_text_zh.c src/vtts_lex.c
-TEXT_HDR = include/vtts_text.h include/vtts_lex.h include/vtts_zlex.h src/vtts_text_en.h src/vtts_text_zh.h src/vtts_text_tables.h
+TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_text_zh.c src/vtts_text_ko.c src/vtts_lex.c
+TEXT_HDR = include/vtts_text.h include/vtts_lex.h include/vtts_zlex.h src/vtts_text_en.h src/vtts_text_zh.h src/vtts_text_ko.h src/vtts_text_tables.h
 build/text_test: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
@@ -62,6 +62,10 @@ zh_test: build/text_test build/lex_en.bin build/zh_lex.bin
 	./build/text_test --lex build/lex_en.bin --zh build/zh_lex.bin test/text_parity_zh.tsv
 	./build/text_test --fuzz --lex build/lex_en.bin --zh build/zh_lex.bin
 
+# Korean (VTTS_LANG_KO) parity with text_to_ids(text, "ko"); tables are compiled in (no blob).
+ko_test: build/text_test build/lex_en.bin
+	./build/text_test --lex build/lex_en.bin test/text_parity_ko.tsv
+
 # All text front-end tests (no model needed); the model golden tests run from pytest.
 test: build/token_set_test build/text_test build/lex_test build/en_norm_test build/lex_en.bin build/zh_lex.bin
 	./build/token_set_test
@@ -70,4 +74,5 @@ test: build/token_set_test build/text_test build/lex_test build/en_norm_test bui
 	./build/lex_test build/lex_en.bin test/lex_expect.tsv
 	./build/en_norm_test test/en_norm.tsv
 	$(MAKE) zh_test
-.PHONY: zh_test test
+	$(MAKE) ko_test
+.PHONY: zh_test ko_test test

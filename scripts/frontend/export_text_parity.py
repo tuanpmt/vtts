@@ -8,6 +8,10 @@ Usage: uv run python scripts/frontend/export_text_parity.py --sentences FILE... 
 --v2 writes "mode<TAB>text<TAB>ids" lines (phoneme set v2) for vi, en and auto mode; --zh writes the
 same format for mode zh (token set zh-en). Without data/zh/sentences.jsonl, --zh generates Chinese
 sentences from the reading tables.
+       uv run python scripts/frontend/export_text_parity.py --ko --sentences data/ko/sentences.jsonl \
+           --limit 3000 --out runtime/test/text_parity_ko.tsv
+--ko does the same for mode ko (token set ko-en); without data/ko/sentences.jsonl it generates Korean
+sentences from the eval sets, the templates, the exception table and random syllables.
 """
 
 import argparse
@@ -167,17 +171,164 @@ def zh_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
     return out
 
 
+KO_EDGE = [
+    "안녕하세요, 세계!", "첫째, 둘째; 셋째: 끝.", "그는 “좋아요”(정말)라고 했다.", "사과 3개", "학생 2명", "스무 살, 20살",
+    "4마리와 3시간", "1번째와 2번째", "350원", "1,250달러", "10번", "2026년 11월 18일", "6월과 10월", "2026-06-10",
+    "2026. 6. 10.", "2026.10.3", "9:30", "18:00", "12:30:45", "0:05", "3.14", "15%", "-5도", "010-1234-5678", "02-123-4567",
+    "0123", "₩5,000", "$20", "€3.5", "¥100", "£7", "25℃", "30°C", "5km", "3kg", "500ml", "2L", "16GB", "1.5m", "3~5개",
+    "10-20명", "3 ~ 5 개", "ESP32-P4", "5G", "Wi-Fi를 켜고", "iPhone 15 Pro", "e-mail과 x-ray", "R&D와 Q&A", "C++",
+    "A+", "me@example.com", "국물 좋아", "학교 국밥 앉다 읽고 넓다", "같이 굳이 닫히다", "좋다 닿소 놓는 좋아",
+    "축하 입학 앉히다", "한국어 앉아 값을", "부엌 닭 읽고", "종로 담력 국물 십만 독립", "신라 칼날 희망 가져",
+    "물고기를 김밥 솜이불 의견란 갈등", "밟다 밟고 넓죽 삶과 닭고기", "ㅋㅋㅋ 정말요?", "漢字와 한글", "かな와 한국어",
+    "Việt Nam과 한국", "café와 naïve", "don't와 it's", "안녕。 잘 가！ 뭐？ 네；끝", "음…… 그게——뭐랄까.",
+    "《책》「인용」『제목』【추천】〔주〕〈좋아〉", "ｈｅｌｌｏ　ｗｏｒｌｄ", "１２：３０에 만나요", "가격：￦１２８",
+    "Hello. 안녕! How are you? 잘 지내요; 감사합니다.", "  앞뒤 공백  ", "여러\t탭", "...", "", "。", "a", "가",
+    "아주 " + "길고 " * 200 + "끝.", "가" * 400 + "다.", "숫자 " + "1234567890" * 20 + "개.",
+    "Very long English " + "words " * 80 + "end.", "1,234,5km와 1,2345원", "1.2.3과 1,23과 1,234,5678",
+    "00시 00분", "24:00과 25:00과 1:5", "2024-13-45와 2024-1-1과 12024-1-1", "1월 2월 3월 4월 5월 6월 7월 8월 9월 10월 11월 12월",
+    "06월 010월 6월에", "1번째 11번째 1번 1개 0개 100개 99개 20개 21개", "3~5시간 1~2번째 100~200개 3-5살",
+    "-3.5% 와 - 5%", "2,000,000,000,000,000,000,000원", "100000000000000000000000",
+    "100000000과 120000000과 100005000과 10010과 1010과 110과 105과 15와 10과 0",
+    "만 원 1만 원 10000원 11000원", "3.5억", "A1B2C3", "USB3.0과 RTX3060", "GPT-4o와 Llama3", "OK 좋아요",
+    "Hi, 안녕하세요!", "스마트 홈 smart home 모드", "9시 30분에 일어나요.", "1시간 30분", "2시 반",
+]
+
+
+def _ko_vocab() -> list[str]:
+    """Korean words (어절) from the eval sets, the code-switching templates and the exception table."""
+    import json
+
+    root = Path(__file__).parents[2]
+    words: set[str] = set()
+    for name in ("ood_ko.jsonl", "mixed_ko.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                words.update(json.loads(x)["text"].split())
+    for t in (root / "scripts" / "data" / "bilingual" / "templates_ko.txt").read_text(encoding="utf-8").splitlines():
+        words.update(t.replace("{T}", " ").split())
+    from vtts.frontend.ko.g2p_ko import override_table
+
+    for k in override_table():
+        words.update({k, k + "를", k + "이", k + "과", k + "에서"})
+    return sorted(w for w in words if any("가" <= c <= "힣" for c in w))
+
+
+def _ko_generated(n: int, rnd) -> list[str]:
+    """Sentences from the vocabulary, random Hangul syllables, numbers with counters, Latin words and
+    punctuation (no Korean corpus in the repository)."""
+    from vtts.frontend.ko.normalize_ko import JOINED, NATIVE_COUNTERS, SINO_COUNTERS
+
+    vocab = _ko_vocab()
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "A1", "smart"]
+    counters = list(NATIVE_COUNTERS + SINO_COUNTERS + JOINED) + ["", "이", "를", "에서", "은"]
+    particles = ["", "", "은", "는", "이", "가", "을", "를", "에", "에서", "으로", "와", "과", "도", "만", "의"]
+    marks = [",", ".", "!", "?", ";", ":", "…", "·", "“", "”", "(", ")"]
+    out = []
+    for _ in range(n):
+        parts = []
+        for _ in range(rnd.randint(2, 12)):
+            r = rnd.random()
+            if r < 0.5:
+                parts.append(rnd.choice(vocab))
+            elif r < 0.7:
+                parts.append("".join(chr(0xAC00 + rnd.randrange(11172)) for _ in range(rnd.randint(1, 4)))
+                             + rnd.choice(particles))
+            elif r < 0.85:
+                v = rnd.choice([rnd.randint(0, 30), rnd.randint(0, 100), rnd.randint(0, 99999), rnd.randint(0, 10**9)])
+                sep = rnd.choice(["", "", " "])
+                parts.append(f"{v}{sep}{rnd.choice(counters)}")
+            elif r < 0.92:
+                parts.append(rnd.choice(latin) + rnd.choice(particles))
+            else:
+                parts.append(rnd.choice(marks))
+        out.append(" ".join(parts) + rnd.choice([".", "!", "?", "", "。"]))
+    return out
+
+
+def _ko_pairs(rnd) -> list[str]:
+    """Every (coda, next onset, next vowel) of two adjacent syllables, 20 two-syllable words per line,
+    and random three-syllable words: covers every branch of the pronunciation rules."""
+    words = []
+    for coda in range(28):
+        for onset in range(19):
+            for vowel in range(21):
+                first = 0xAC00 + (rnd.randrange(19) * 21 + rnd.randrange(21)) * 28 + coda
+                words.append(chr(first) + chr(0xAC00 + (onset * 21 + vowel) * 28 + rnd.randrange(28)))
+    rnd.shuffle(words)
+    words += ["".join(chr(0xAC00 + rnd.randrange(11172)) for _ in range(3)) for _ in range(4000)]
+    return [" ".join(words[i:i + 20]) + "." for i in range(0, len(words), 20)]
+
+
+def _ko_regex_fuzz(n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the normalize_ko regex passes react to."""
+    atoms = (list("0123456789") * 4 + list(":/.,-~%'+&@ ") * 2
+             + ["년", "월", "일", "시", "분", "개", "명", "번째", "살", "개월", "가", "한", "°", "°C", "°c", "℃", "₩", "$",
+                "€", "¥", "£", "￦", "％", "：", "，", "。", "！", "？", "；", "…", "—", "·", "ㆍ", "“", "”", "（", "）",
+                "　", "１", "Ａ", "ESP", "A", "B", "Z", "x", "ab", "Ok", "Wi", "km", "kg", "m", "g", "l", "L", "GB", "MB",
+                "ml", "é", "ㅋ", " ", "  "])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 16))) for _ in range(n)]
+
+
+def ko_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
+    """mode "ko" cases: edge cases, the Korean eval sets, the mixed-style sentences (templates_ko x
+    terms_en), Korean sentences (data/ko/sentences.jsonl when given and present, else generated),
+    every pair of adjacent syllables, number/date/time cases and regex-dense random strings."""
+    import json
+    import random
+
+    rnd = random.Random(0)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_ko.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(KO_EDGE)
+    for name in ("ood_ko.jsonl", "mixed_ko.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += rnd.sample(mixed, min(len(mixed), 2000))
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows if rows else _ko_generated(limit or 3000, rnd)
+    texts += _ko_pairs(rnd)
+    from vtts.frontend.ko.normalize_ko import NATIVE_COUNTERS, SINO_COUNTERS
+
+    counters = list(NATIVE_COUNTERS + SINO_COUNTERS)
+    nums = []
+    for _ in range(2000):
+        k = rnd.randint(0, 11)
+        v = rnd.choice([rnd.randint(0, 99), rnd.randint(0, 99999), rnd.randint(0, 10**12), rnd.randint(0, 10**22)])
+        c = rnd.choice(counters)
+        nums.append(["{}" + c, "{} " + c + "을", "{:,}원", "{}.5%", "₩{}", "제{}회", "-{}도", "{}년 {}월 {}일", "{}~{}" + c,
+                     "{}:{}", "{}-{}-{}", "0{}"][k].format(v, rnd.randint(0, 60), rnd.randint(0, 40)))
+    for _ in range(400):
+        nums.append(f"{rnd.randint(1900, 2100)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)}과 "
+                    f"{rnd.randint(1900, 2100)}. {rnd.randint(0, 13)}. {rnd.randint(0, 33)}. "
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    texts += nums + _ko_regex_fuzz(fuzz, rnd)
+    out = []
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        out.append(f"ko\t{text}\t" + ";".join(" ".join(map(str, c)) for c in text_to_ids(text, "ko")))
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--v2", action="store_true")
     ap.add_argument("--zh", action="store_true", help="mode zh (token set zh-en) cases")
+    ap.add_argument("--ko", action="store_true", help="mode ko (token set ko-en) cases")
     ap.add_argument("--sentences", type=Path, nargs="*", default=[])
     ap.add_argument("--out", type=Path, required=True)
     ap.add_argument("--limit", type=int, default=None)
-    ap.add_argument("--fuzz", type=int, default=3000, help="--zh: regex-dense random strings")
+    ap.add_argument("--fuzz", type=int, default=3000, help="--zh, --ko: regex-dense random strings")
     a = ap.parse_args()
-    if a.zh:
-        lines = zh_lines(a.sentences, a.limit, a.fuzz)
+    if a.zh or a.ko:
+        lines = (zh_lines if a.zh else ko_lines)(a.sentences, a.limit, a.fuzz)
         a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
         print(f"wrote {len(lines)} cases to {a.out}")
         return
