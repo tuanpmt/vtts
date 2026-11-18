@@ -33,6 +33,19 @@ These make every new pair cheaper, so they come first or alongside the first new
 5. **Data probe before each language:** synthesize about 50 sentences per voice with VoxCPM2 and check them with ASR and by ear. A language whose synthetic speech is not clean enough waits for a better source.
 6. **Flash budget per pair:** model M about 2.6 MB, S about 1.1 MB, English lexicon 1.9 MB, plus the main-language lexicon. The target is under 8 MB for both sizes and both lexicons, so that 16 MB flash boards keep room for the application.
 
+## Data budget per pair
+
+Vietnamese + English used about 98 h per voice. That was more than needed: the teacher reached CER 0.005, and the small student, not the amount of data, limits the released quality (the student loses about one UTMOS point against the teacher). New pairs therefore start from a smaller budget:
+
+| Part | Hours | Note |
+|---|---|---|
+| Main language | 25–30 | sentences chosen to cover syllables / characters / phones, plus numbers, names and questions |
+| Mixed main language + English terms | about 5 | device phrases, brands, units |
+| English | 0 new | the voice's English audio from vi-en (about 35 h for `nu-10`) is reused |
+| **Total new audio** | **about 30–35 h** | about 2.5–3 GB of FLAC, 3–4 h of synthesis |
+
+Validation on Chinese + English (the first new pair): train the teacher on 30 h of Chinese + the reused English and compare with the full 48 h on the same evaluation sets. Gate: Chinese and mixed CER within 0.005 of the full-data teacher and student UTMOS within 0.1. If the gate fails, the budget goes up to 50 h for the following pairs. Disk per voice: about 20 GB at peak (audio, distillation pack, checkpoints), about 3–8 GB kept afterwards.
+
 ## Pairs
 
 ### Vietnamese + English (in progress)
@@ -45,7 +58,7 @@ These make every new pair cheaper, so they come first or alongside the first new
 ### Chinese + English
 
 - Market: Mainland China is about 70% of Espressif's revenue, the largest single market by far.
-- Data: Mandarin sentences from Chinese Wikipedia (Simplified, no digits or Latin letters), about 48 h for `nu-10` (synthesizing); Chinese sentences with English terms ("打开 Wi-Fi", "发 email 给我"), and reuse each voice's English audio from vi-en where the voice is the same.
+- Data: Mandarin sentences from Chinese Wikipedia (Simplified, no digits or Latin letters), about 48 h for `nu-10` (synthesizing; also used to validate the 30 h budget, see above); Chinese sentences with English terms ("打开 Wi-Fi", "发 email 给我"), and reuse each voice's English audio from vi-en where the voice is the same.
 - Front-end: pinyin initials, finals and five tones as tokens; character readings from a default-reading table plus a phrase table for polyphones (only phrases whose reading differs from the per-character default, compact like VLEX); numbers, dates, times, percentages and units read in Chinese; Latin words go to the English module. Tone sandhi is left to the model at first and added as rules if evaluation shows errors.
 - Teacher: warm-start from a clean vi-en teacher (shared English rows and acoustics).
 
