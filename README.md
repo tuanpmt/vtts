@@ -211,7 +211,7 @@ vtts focuses on **bilingual voices: one main language + English**, with code-swi
 - [ ] **Portuguese (Brazil) + English** (Python front-end done)
 - [ ] **Indonesian + English** (Python front-end done)
 - [ ] **Hindi + English** (Python front-end done)
-- [ ] **Thai + English**
+- [ ] **Thai + English** (Python front-end done)
 - [ ] Later, by demand: German, French
 - [ ] User pronunciation dictionary
 

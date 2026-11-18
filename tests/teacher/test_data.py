@@ -122,7 +122,7 @@ def test_encode_text_ja_uses_jaen_ids_and_english_rows_match():
     assert encode_text(en, "en") == text_to_ids(en, "ja")[0] == text_to_ids(en, "en")[0]
 
 
-WORD_PAIR_ROWS = [("hi", "hi-en", "कृपया GitHub खोलो।"), ("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor.")]
+WORD_PAIR_ROWS = [("hi", "hi-en", "कृपया GitHub खोलो।"), ("th", "th-en", "ช่วยเปิด GitHub ให้หน่อยนะ"), ("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor.")]
 
 
 @pytest.mark.parametrize("lang, token_set, text", WORD_PAIR_ROWS)

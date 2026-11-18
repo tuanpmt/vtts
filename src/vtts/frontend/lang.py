@@ -18,6 +18,9 @@ token set.
 - In "ja" mode a word with kana or kanji is Japanese and every plain Latin word is English.
   Japanese is written without spaces, so boundaries are inserted as for Chinese, with kana and
   kanji as one script ("Wi-Fiを設定" -> Wi-Fi / を設定).
+- In "th" mode a word with Thai letters is Thai and every plain Latin word is English. Thai is
+  written without spaces between words; a space is put between Thai and Latin letters
+  ("เปิดWi-Fiให้" -> เปิด / Wi-Fi / ให้). Spaces between Thai runs are pauses (th/normalize_th).
 - In the Latin-script pair modes ("es", "id", "pt") a word with the language's own letters (á, ñ ...)
   is that language and a plain Latin word is decided by latin.latin_word_lang (word lists,
   CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are dropped.
@@ -38,7 +41,8 @@ from .phoneme_set import PAIR_MODES
 from .syllable import parse_syllable
 
 EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—"
-SENTENCE_END = re.compile(r"(?<=[.!?;])\s+|(?<=[。！？；।॥])\s*")
+# A dot after a Thai letter ends an abbreviation (พ.ศ. 2567, 14.30 น.), not a sentence.
+SENTENCE_END = re.compile(r"(?<=[.!?;])(?<![\u0e01-\u0e4e]\.)\s+|(?<=[。！？；।॥])\s*")
 VI_RATIO = 0.2
 
 
@@ -62,6 +66,13 @@ def _has_han(word: str) -> bool:
 def _has_hangul(word: str) -> bool:
     """Hangul syllables or compatibility jamo."""
     return any("\uac00" <= ch <= "\ud7a3" or "\u3131" <= ch <= "\u318e" for ch in word)
+
+
+def _has_thai(word: str) -> bool:
+    return any("\u0e01" <= ch <= "\u0e4e" for ch in word)
+
+
+THAI_LATIN = re.compile(r"(?<=[\u0e01-\u0e4e])(?=[A-Za-z])|(?<=[A-Za-z])(?=[\u0e01-\u0e4e])")
 
 
 def _has_japanese(word: str) -> bool:
@@ -138,6 +149,7 @@ SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [
     ("zh", _has_han),
     ("ko", _has_hangul),
     ("hi", _has_devanagari),
+    ("th", _has_thai),
     *((code, has_letters_of(code)) for code in LATIN_PAIRS),
     ("vi", _has_vietnamese_letters),
 ]
@@ -177,6 +189,8 @@ def tag_words(sentence: str, mode: str) -> list[tuple[str, str]]:
         sentence = split_scripts(sentence)
     elif mode == "ja":
         sentence = split_scripts(sentence, _script_class_ja)
+    elif mode == "th":  # เปิดWi-Fiให้ -> เปิด / Wi-Fi / ให้ (Thai words have no spaces)
+        sentence = THAI_LATIN.sub(" ", sentence)
     elif mode in LATIN_PAIRS:  # ¿Abriste Netflix? -> Abriste / Netflix
         sentence = sentence.replace("¿", " ").replace("¡", " ")
     return [(c, word_lang(_core(c), lang)) for c in sentence.split()]

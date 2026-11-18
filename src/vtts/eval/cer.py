@@ -5,7 +5,7 @@ kept as written (lower case, punctuation dropped) and only tokens with digits or
 through the Vietnamese normalizer, so English words in Vietnamese sentences are not spelled out.
 The same normalization is applied to the reference and to the ASR output.
 
-Pair languages "zh", "ko", "ja" (main-language and mixed sets of the zh-en, ko-en, ja-en pairs):
+Pair languages "zh", "ko", "ja", "th" (main-language and mixed sets of the zh-en, ko-en, ja-en pairs):
 the text goes through the pair front-end's own normalizers (sentence split, script tagging,
 numbers read in the main language, Latin words through the English normalizer), punctuation
 dropped. Chinese is converted to Simplified and Japanese katakana to hiragana. CER counts
@@ -14,7 +14,8 @@ so the spacing of Korean words and of English terms ("Wi-Fi" / "WiFi") is not an
 words: for zh and ja (written without spaces) each Han character or kana is one word and each
 Latin word one word (a mixed error rate); for ko the space-separated words (어절), so Korean WER
 also counts spacing differences. Japanese CER is orthographic: Whisper writing a word in kanji
-where the reference has kana (or the other way round) counts as an error.
+where the reference has kana (or the other way round) counts as an error. Thai CER counts Thai
+characters (spaces removed); Thai WER counts the words of the front-end's word segmentation.
 
 Latin-script pair languages (LATIN_PAIR_LANGS: es ...) go through their pair front-end the same
 way (numbers read in the main language, English words through the English normalizer, accents
@@ -45,8 +46,9 @@ def _plain_words(text: str) -> list[str]:
 
 LATIN_PAIR_LANGS = ("es", "id", "pt")
 SPACED_PAIR_LANGS = (*LATIN_PAIR_LANGS, "hi")  # words separated by spaces: CER keeps them
-PAIR_LANGS = ("zh", "ko", "ja", *SPACED_PAIR_LANGS)
+PAIR_LANGS = ("zh", "ko", "ja", "th", *SPACED_PAIR_LANGS)
 WHISPER_LANGUAGE = {"vi": "vi", "en": "en", "mixed": "vi", "zh": "zh", "ko": "ko", "ja": "ja",
+                    "th": "th",
                     **{code: code for code in SPACED_PAIR_LANGS}}
 
 
@@ -72,6 +74,11 @@ def _pair_words(text: str, lang: str) -> list[str]:
         words = [to_hiragana(w) for w in words]
     if lang == "ko" or lang in SPACED_PAIR_LANGS:
         return words
+    if lang == "th":  # Thai runs cut into words by the front-end's word segmentation
+        from vtts.frontend.th.g2p_th import segment
+        from vtts.frontend.th.normalize_th import is_thai_word
+
+        return [p for w in words for p in (segment(w.replace("ๆ", "")) if is_thai_word(w) else [w])]
     out: list[str] = []
     for w in words:  # zh, ja: one unit per character of a CJK word, Latin words whole
         out += list(w) if any(_is_cjk(ch) for ch in w) else [w]

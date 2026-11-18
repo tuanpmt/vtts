@@ -20,7 +20,7 @@ def _english_words(text, lang):
     return [w for s in split_sentences_raw(text) for w, t in tag_words(s, lang) if t == "en"]
 
 
-@pytest.mark.parametrize("lang", ["zh", "ko", "ja", *LATIN_LANGS])
+@pytest.mark.parametrize("lang", ["zh", "ko", "ja", "th", *LATIN_LANGS])
 @pytest.mark.parametrize("kind", ["ood", "mixed"])
 def test_pair_set_shape_and_front_end(kind, lang):
     from vtts.data.train_list import unreadable

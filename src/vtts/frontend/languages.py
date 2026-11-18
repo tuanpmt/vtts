@@ -9,7 +9,8 @@ splitting, chunk packing and the device protocol are shared. Each module provide
   word cannot be pronounced (it is then skipped).
 - word_units(word) -> list[list[str]] (optional): the same tokens split into syllables, for
   languages written without spaces (zh): a "word" is then a whole Han run, its syllables are
-  joined without the SPACE token and each counts as one word for chunk packing. Japanese (ja)
+  joined without the SPACE token and each counts as one word for chunk packing. Thai (th) does
+  the same with the syllables of a Thai run (a space between Thai runs is a pause). Japanese (ja)
   does the same with table words, single kanji and short kana runs as units. Korean (ko)
   returns one unit per word and splits only a word too long for one chunk.
 
@@ -175,6 +176,28 @@ def _hi_word(word: str) -> list[str]:
     return word_tokens_hi(word) if is_devanagari_word(word) else _en_word(word)
 
 
+def _th_normalize(text: str) -> str:
+    from .th.normalize_th import normalize_th
+
+    return normalize_th(text)
+
+
+def _th_units(word: str) -> list[list[str]]:
+    """Syllables of a Thai run (words found by the word list, see th/g2p_th.py); a Latin word is
+    read by the English module."""
+    from .th.g2p_th import thai_syllable_tokens
+    from .th.normalize_th import is_thai_word
+
+    if is_thai_word(word):
+        return thai_syllable_tokens(word)
+    toks = _en_word(word)
+    return [toks] if toks else []
+
+
+def _th_word(word: str) -> list[str]:
+    return [t for unit in _th_units(word) for t in unit]
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
@@ -185,4 +208,5 @@ LANGUAGES: dict[str, LanguageModule] = {
     "id": LanguageModule("id", _id_normalize, _id_word),
     "pt": LanguageModule("pt", _pt_normalize, _pt_word),
     "hi": LanguageModule("hi", _hi_normalize, _hi_word),
+    "th": LanguageModule("th", _th_normalize, _th_word, _th_units),
 }

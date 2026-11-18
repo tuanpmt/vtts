@@ -35,6 +35,7 @@ dev = [
     "pyserial>=3.5",
     "pypinyin>=0.55.0",
     "pyopenjtalk>=0.4.1",
+    "pythainlp>=5.4.0",
 ]
 
 [build-system]

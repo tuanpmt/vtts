@@ -94,6 +94,8 @@ def test_latin_pair_cer_reads_numbers_and_keeps_spaces():
     assert WHISPER_LANGUAGE["es"] == "es"
     assert cer("Tenho 21 anos.", "tenho vinte e um anos", "pt") == 0.0
     assert WHISPER_LANGUAGE["pt"] == "pt"
+    assert cer("มี 21 คน", "มียี่สิบเอ็ดคน", "th") == 0.0  # Thai: spaces and numbers do not count
+    assert WHISPER_LANGUAGE["th"] == "th"
     assert cer("Ada 21 orang.", "ada dua puluh satu orang", "id") == 0.0
     assert WHISPER_LANGUAGE["id"] == "id"
 

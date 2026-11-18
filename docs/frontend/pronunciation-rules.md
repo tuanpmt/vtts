@@ -482,6 +482,60 @@ flowchart LR
 
 Known gaps: schwa deletion at morpheme boundaries of words missing from the table (compounds, prefixes); no stress or ह-coloured vowels (कहना is read k a h n aa); साढ़े / सवा / पौने times; ordinals like 1ला; Urdu-only letters beyond nukta consonants; ऑ is merged with औ and ॅ with ऐ.
 
+## Thai (token set `th-en`)
+
+Python only for now (`src/vtts/frontend/th/`). `text_to_ids(text, "th")` returns ids of the token set `th-en` (model header code 9): ids 0–106 are the v2 set unchanged, followed by 55 Thai tokens from id 107 (vocabulary 162). A syllable is `TH:I:initial [TH:I:second consonant] TH:V:vowel [TH:F:final] TH:Ttone`:
+
+| Group | Tokens |
+|---|---|
+| Initials (21) | `TH:I:p ph b t th d k kh c ch ? m n ng f s h j r l w` (`?` the glottal stop of อ; a cluster is two initials: ปร → `p r`) |
+| Vowels (21) | `TH:V:a aa i ii ue uue u uu e ee ae aae o oo or oor oe ooe ia uea ua` (`ue` ɯ, `ae` ɛ, `or` ɔ, `oe` ɤ; doubled = long) |
+| Finals (8) | `TH:F:k p t m n ng w j` (the six final sounds and the glides) |
+| Tones (5) | `TH:T1` mid, `T2` low, `T3` falling, `T4` high, `T5` rising |
+
+Thai is written without spaces between words, so a Thai run is read like a Chinese one: its syllables follow each other without `SPACE` and each counts as one word for chunk packing. A space between two Thai runs (Thai puts spaces between clauses and sentences) is read as a pause `,`; spaces around numbers, ๆ and ฯ are not. A dot after a Thai letter ends an abbreviation, not a sentence (พ.ศ. 2567). Latin words are English; a space is put between Thai and Latin letters (เปิดWi-Fiให้).
+
+```mermaid
+flowchart LR
+    R["Thai run"] --> W["Words<br/>(words.txt, longest cover)"]
+    W --> O{"in overrides.tsv?"}
+    O -->|yes| P["respelling, one piece per syllable"]
+    O -->|no| S["syllables: lowest-cost split<br/>over the spelling patterns"]
+    P & S --> T["tone: class + mark + live/dead"]
+```
+
+**Words** (`th/g2p_th.segment`): the split of a run with the fewest characters outside `lexicons/th/words.txt` (16,377 words: PyThaiNLP's CC0 word list filtered by Thai National Corpus frequency ≥ 20, built by `scripts/frontend/build_th_lexicon.py`; a lone consonant outside the list counts 3), then the fewest pieces. Text outside the list is read in one piece. ๆ repeats the word before it.
+
+**Syllables** (`th/g2p_th.parse_word`): dynamic programming over the patterns of `VOWELS` (preposed เ แ โ ใ ไ, short/long vowels, diphthongs, ำ ไ ใ เา, ัว/ว, อ, รร) with the initial (single consonant, true cluster กร กล กว คร … ปร พล, จร ซร ศร สร with a silent ร, ทร read `s`, ห before a low sonorant) and the final. Cost 10 per syllable, +4 for an unwritten o (คน; before a final ร it is `oor n`: นคร, พร), +7 for an unwritten a (สบาย), +10 more when that a ends the word, +2 for a leading consonant split from a preposed vowel (เสมอ = ส + เมอ), +10 for an open preposed-vowel syllable before a syllable without a written vowel (แสดง is not แส-ดง); a true cluster gets −1. Letters under ์ are silent (with ิ ุ on them; with the consonant before a silent ร after a final: จันทร์, ศาสตร์); final ร after a stop is silent (บุตร, เมตร); a final ิ ุ after ั + consonant is silent (ปฏิบัติ). บ alone is read บอ (บริษัท). A final ฐ ฒ ษ ศ ธ ฏ inside a word is also read as the next initial with a (รัฐบาล, เทศกาล, พิษณุ; รัฐ also before the next word). ฤ alone is `r ue`, after a consonant `r i` (อังกฤษ), พฤ is `ph r ue`.
+
+**Tones:** the class of the initial (mid ก จ ฎ ฏ ด ต บ ป อ; high ข ฃ ฉ ฐ ถ ผ ฝ ศ ษ ส ห; low the rest), or of a leading ห, or of a mid/high consonant read with an unwritten a before a single low sonorant (สนุก, ขนม, อร่อย). A syllable is live with a long vowel or a final m n ng w j, dead with a short open vowel or a final k p t.
+
+| Class | live, no mark | dead short | dead long | ่ | ้ | ๊ | ๋ |
+|---|---|---|---|---|---|---|---|
+| mid | mid | low | low | low | falling | high | rising |
+| high | rising | low | low | low | falling | – | – |
+| low | mid | high | falling | falling | high | – | – |
+
+**Respellings** (`lexicons/th/overrides.tsv`, hand-written, 116 entries): word → syllables written in regular spelling, e.g. ราชการ → ราด-ชะ-กาน, บริษัท → บอ-ริ-สัด, ได้ → ด้าย (long a). A respelled word inside a longer word is read from its respelling (ได้ in ได้รับ). Groups: long a of ได้ ใต้ น้ำ ไม้ เจ้า; อย่า อยู่ อย่าง อยาก, ก็; linking and hidden vowels of Pali/Sanskrit words (มหาวิทยาลัย, คุณภาพ, ธรรมชาติ, ศิลปะ …); leading consonants that do not lend their class (สมาคม) or ำ that does (ตำรวจ); months.
+
+**Normalization** (`th/normalize_th.py`):
+
+| Text | Reading |
+|---|---|
+| 1, 11, 21, 101, 1001 | หนึ่ง, สิบเอ็ด, ยี่สิบเอ็ด, หนึ่งร้อยเอ็ด, หนึ่งพันเอ็ด |
+| 200000, 1000001, 21000000 | สองแสน, หนึ่งล้านหนึ่ง, ยี่สิบเอ็ดล้าน |
+| ๒๑, 3.14, -5, 1,250 | ยี่สิบเอ็ด, สามจุดหนึ่งสี่, ลบห้า, หนึ่งพันสองร้อยห้าสิบ |
+| 19/11/2569, 2026-11-19, 1 ม.ค., พ.ศ. 2567 | สิบเก้าพฤศจิกายนสองพันห้าร้อยหกสิบเก้า, …, หนึ่งมกราคม, พุทธศักราช… |
+| 14:30, 14.30 น. | สิบสี่นาฬิกาสามสิบนาที |
+| ฿1,500, $5, 5%, 25°C, 5 km, 10-20 | …บาท, ห้าดอลลาร์, ห้าเปอร์เซ็นต์, ยี่สิบห้าองศาเซลเซียส, ห้ากิโลเมตร, สิบถึงยี่สิบ |
+| 081-234-5678, 0812345678 | digit by digit |
+| กรุงเทพฯ, ฯลฯ, other ฯ | กรุงเทพมหานคร, และอื่นๆ, dropped |
+| ESP32 | letters in English, digits in Thai |
+
+**Agreement:** 90.4% of syllables (91.0% without tones) and 99.4% of tones on syllables with the same sounds agree with TLTK's g2p (PyThaiNLP engine `tltk_g2p`) on 1,193 held-out Thai Wikipedia sentences (30,316 syllables; `scripts/frontend/eval_th_g2p.py`); the rules alone without the word list reach 88.3%. Many remaining differences are loanwords (TLTK writes final ล as l and gives English loans their falling final tone: คอมพิวเตอร์), the length of a in ไ ใ ำ, and linking vowels across words (อดีต-ตะ).
+
+Known gaps: linking and hidden vowels of Pali/Sanskrit words missing from the respellings; ทร in loanwords (read `s`, not `th r`); loanword tones; ambiguous segmentation of names; word stress and the reduction of unstressed syllables are left to the voice.
+
 ## Changing a rule or an entry
 
 1. Edit the TSV file (or the rule in the normalizer).
@@ -536,6 +590,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 | Date | Change |
 |---|---|
 | 2026-11-19 | Hindi front-end in Python: token set `hi-en`, Devanagari letters, nasals and schwa deletion, `lexicons/hi/` (numbers 0-99, overrides), Hindi number reading, mode `hi`. |
+| 2026-11-19 | Thai front-end in Python: token set `th-en`, word list from PyThaiNLP, syllable patterns, consonant classes and tone rules, `lexicons/th/`, Thai number reading, mode `th`. |
 | 2026-11-18 | Portuguese (Brazil) front-end in Python: token set `pt-en`, spelling, nasal, stress and vowel-quality rules, `lexicons/pt/`, Portuguese number reading, mode `pt`. |
 | 2026-11-18 | Indonesian front-end in Python: token set `id-en`, spelling, e and stress rules, `lexicons/id/`, Indonesian number reading, mode `id`. |
 | 2026-11-18 | Spanish front-end in Python: token set `es-en`, spelling and stress rules, `lexicons/es/`, Spanish number reading, mode `es`; Latin-script code-switching rules (`latin.py`, `lexicons/latin/english.txt`). |

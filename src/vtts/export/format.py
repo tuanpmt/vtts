@@ -17,11 +17,11 @@ DECODER_IDS = {"hifigan": 0, "istft": 1, "vocos": 2}
 # Optional dim `token_set` (vtts_token_set_t in runtime/include/vtts.h); 0 or absent = derive
 # from vocab. Sizes are those of src/vtts/frontend/phoneme_set.py (checked by tests). Codes from 6
 # have a Python front-end only so far: the C runtime does not know them yet and loads such models
-# with token set "unknown" (raw ids only). Reserved: 9 = th-en.
+# with token set "unknown" (raw ids only).
 TOKEN_SET_CODES = {"v1": 1, "vi-en": 2, "zh-en": 3, "ko-en": 4, "ja-en": 5, "es-en": 6, "id-en": 7,
-                   "pt-en": 8, "hi-en": 10}
+                   "pt-en": 8, "th-en": 9, "hi-en": 10}
 TOKEN_SET_SIZES = {"v1": 65, "vi-en": 107, "zh-en": 171, "ko-en": 153, "ja-en": 144, "es-en": 138,
-                   "id-en": 141, "pt-en": 150, "hi-en": 157}
+                   "id-en": 141, "pt-en": 150, "th-en": 162, "hi-en": 157}
 
 
 def token_set_for_vocab(vocab: int) -> str | None:
@@ -105,8 +105,7 @@ def write_tensors(path: Path, dims: dict[str, int],
         rows.append(ROW.pack(name.encode(), dtype, arr.ndim, 0, *shape, t_off, arr.nbytes, s_off))
     with open(path, "wb") as f:
         f.write(HEADER.pack(MAGIC, VERSION, len(dims), len(names), offset))
-        for k, v in dims.items():
-            f.write(DIM.pack(k.encode(), int(v)))
+        f.writelines(DIM.pack(k.encode(), int(v)) for k, v in dims.items())
         f.write(b"".join(rows))
         f.write(b"\0" * _pad(table_bytes))
         f.write(payload)
@@ -122,9 +121,9 @@ def write_model(model, path: Path, token_set: str | None = None) -> None:
 def model_dims(model, token_set: str | None = None) -> dict[str, int]:
     """Dims of a Student; token_set (e.g. "zh-en") is recorded in the token_set dim, by default
     the set the vocab names (65 -> v1, 107 -> vi-en, 171 -> zh-en, 153 -> ko-en, 144 -> ja-en,
-    138 -> es-en, 141 -> id-en, 150 -> pt-en, 157 -> hi-en)."""
+    138 -> es-en, 141 -> id-en, 150 -> pt-en, 162 -> th-en, 157 -> hi-en)."""
     d = config_dims(model.cfg)
-    d["expr_milli"] = int(round(getattr(model, "expressiveness", 1.0) * 1000))
+    d["expr_milli"] = round(getattr(model, "expressiveness", 1.0) * 1000)
     ts = resolve_token_set(model.cfg.vocab, token_set)
     if ts is not None:
         d["token_set"] = TOKEN_SET_CODES[ts]
@@ -133,7 +132,7 @@ def model_dims(model, token_set: str | None = None) -> dict[str, int]:
 
 def read_table(path: Path) -> list[dict]:
     data = Path(path).read_bytes()
-    magic, version, n_dims, n_tensors, _ = HEADER.unpack_from(data, 0)
+    _magic, _version, n_dims, n_tensors, _ = HEADER.unpack_from(data, 0)
     pos = HEADER.size + DIM.size * n_dims
     rows = []
     for i in range(n_tensors):
@@ -146,7 +145,7 @@ def read_table(path: Path) -> list[dict]:
 
 def read_model(path: Path) -> tuple[dict[str, int], dict[str, np.ndarray]]:
     data = Path(path).read_bytes()
-    magic, version, n_dims, n_tensors, _ = HEADER.unpack_from(data, 0)
+    magic, version, n_dims, _n_tensors, _ = HEADER.unpack_from(data, 0)
     if magic != MAGIC or version != VERSION:
         raise ValueError("not a VTTS file (format version 1)")
     dims = {}

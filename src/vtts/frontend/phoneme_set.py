@@ -256,6 +256,35 @@ VOCAB_SIZE_HIEN = len(TOKENS_HIEN)
 TOKEN_SETS[TOKEN_SET_HIEN] = TOKENS_HIEN
 
 
+# ---------------- token set "th-en": Thai + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes from the spelling rules of src/vtts/frontend/th/: a syllable is TH:I:initial
+# [TH:I:second consonant of a cluster] TH:V:vowel [TH:F:final] TH:Ttone. Initials are the 21
+# initial sounds (? = the glottal stop of อ); vowels are the nine monophthongs short and long
+# (ue = ɯ, ae = ɛ, or = ɔ, oe = ɤ; doubled letters = long) and the diphthongs ia, uea, ua; finals
+# are the six final sounds k p t m n ng and the glides w j. Tones T1..T5: mid, low, falling, high,
+# rising (สามัญ เอก โท ตรี จัตวา).
+
+TOKEN_SET_THEN = "th-en"
+
+TH_INITIALS = ("p", "ph", "b", "t", "th", "d", "k", "kh", "c", "ch", "?", "m", "n", "ng", "f",
+               "s", "h", "j", "r", "l", "w")
+TH_VOWELS = ("a", "aa", "i", "ii", "ue", "uue", "u", "uu", "e", "ee", "ae", "aae", "o", "oo",
+             "or", "oor", "oe", "ooe", "ia", "uea", "ua")
+TH_FINALS = ("k", "p", "t", "m", "n", "ng", "w", "j")
+TH_TONE_COUNT = 5
+
+TOKENS_THEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"TH:I:{c}" for c in TH_INITIALS)
+    + tuple(f"TH:V:{v}" for v in TH_VOWELS)
+    + tuple(f"TH:F:{c}" for c in TH_FINALS)
+    + tuple(f"TH:T{i}" for i in range(1, TH_TONE_COUNT + 1))
+)
+VOCAB_SIZE_THEN = len(TOKENS_THEN)
+
+TOKEN_SETS[TOKEN_SET_THEN] = TOKENS_THEN
+
+
 # ---------------- text modes of the pair token sets ----------------
 # text_to_ids(text, mode) with a pair mode returns ids of that mode's token set; the modes vi, en
 # and auto use vi-en. A new pair adds its token set above, one entry here, its language module
@@ -263,8 +292,7 @@ TOKEN_SETS[TOKEN_SET_HIEN] = TOKENS_HIEN
 
 PAIR_MODES: dict[str, str] = {"zh": TOKEN_SET_ZHEN, "ko": TOKEN_SET_KOEN, "ja": TOKEN_SET_JAEN,
                               "es": TOKEN_SET_ESEN, "id": TOKEN_SET_IDEN,
-                              "pt": TOKEN_SET_PTEN, "hi": TOKEN_SET_HIEN}
-# Reserved model header code (export/format.py): 9 = th-en.
+                              "pt": TOKEN_SET_PTEN, "th": TOKEN_SET_THEN, "hi": TOKEN_SET_HIEN}
 
 _TOKEN_INDEX: dict[str, dict[str, int]] = {}
 
