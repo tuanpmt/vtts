@@ -19,7 +19,7 @@
  *   dump <sentence>       synthesize and send the PCM as base64 (scripts/device/say.py --dump-dir)
  *   ids <ids;ids...>      speak token ids from a host front-end (scripts/device/say.py --lang)
  *   lang <mode>           text mode, valid modes per token set of the current model: v1 vi;
- *                         vi-en vi|en|auto (vi reads English words too); zh-en zh; ko-en and ja-en
+ *                         vi-en vi|en|auto (vi reads English words too); zh-en zh; ko-en ko; ja-en
  *                         none (send ids). The front-end follows the model's token set (header)
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments
  */

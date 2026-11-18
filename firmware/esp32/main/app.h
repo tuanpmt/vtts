@@ -48,7 +48,7 @@ typedef struct {
     vtts_zlex zh;       /* Mandarin readings (ZLEX blob in flash), for zh-en models */
     int has_zh;
     /* text mode per model, from its token set (vtts_text_default_lang, console `lang`);
-     * -1: the token set has no device front-end (ko-en, ja-en): only `ids` */
+     * -1: the token set has no device front-end (ja-en, unknown): only `ids` */
     int lang[2];
 } app_t;
 

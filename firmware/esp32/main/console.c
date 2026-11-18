@@ -118,7 +118,7 @@ static const esp_console_cmd_t CMDS[] = {
     {.command = "bench", .help = "RTF on four fixed sentences, no audio (REPORT lines)", .func = cmd_bench},
     {.command = "prof", .help = "time per synthesis stage since the last prof", .func = cmd_prof},
     {.command = "model", .help = "lite (s) or quality (m) model", .hint = "s|m", .func = cmd_model},
-    {.command = "lang", .help = "text mode of the current model's token set: v1 vi; vi-en vi|en|auto (vi also reads English words); zh-en zh", .hint = "vi|en|auto|zh", .func = cmd_lang},
+    {.command = "lang", .help = "text mode of the current model's token set: v1 vi; vi-en vi|en|auto (vi also reads English words); zh-en zh; ko-en ko", .hint = "vi|en|auto|zh|ko", .func = cmd_lang},
     {.command = "vol", .help = "speaker volume", .hint = "0-100", .func = cmd_vol},
     {.command = "gain", .help = "digital gain in dB before a soft limiter", .hint = "0-24", .func = cmd_gain},
     {.command = "speed", .help = "speaking rate (length scale, higher is slower)", .hint = "0.7-1.6", .func = cmd_speed},

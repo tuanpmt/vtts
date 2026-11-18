@@ -24,6 +24,12 @@ static const char *const BENCH_ZH[] = {
     "明天早上6:30的闹钟已经设好了。",
     "今天是2026年11月14日，星期六。",
 };
+static const char *const BENCH_KO[] = {
+    "안녕하세요, 저는 당신의 음성 비서입니다.",
+    "지금 실내 온도는 26도, 습도는 65%예요.",
+    "내일 아침 6:30 알람을 맞춰 두었습니다.",
+    "오늘은 2026년 11월 14일 토요일입니다.",
+};
 
 const char *synth_lang_name(int k) { return g.lang[k] < 0 ? "none" : vtts_text_lang_name((vtts_lang)g.lang[k]); }
 
@@ -105,11 +111,11 @@ int synth_text(const char *text, int64_t *total_us) {
     int64_t t0 = esp_timer_get_time();
     int chunks;
     if (strncmp(text, "ids ", 4) == 0) chunks = synth_ids(text + 4);
-    else if (g.lang[g.cur] < 0) { /* ko-en, ja-en: no device front-end yet */
+    else if (g.lang[g.cur] < 0) { /* ja-en: no device front-end yet */
         printf("ERROR token set %s has no on-device text front-end; send ids (scripts/device/say.py --lang)\n",
                vtts_token_set_name(vtts_token_set(&g.models[g.cur])));
         chunks = 0;
-    } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en) */
+    } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en), KO (ko-en) */
         vtts_text_opts o = {.lang = (vtts_lang)g.lang[g.cur], .lex = g.has_lex ? &g.lex : NULL,
                             .zh = g.has_zh ? &g.zh : NULL};
         chunks = vtts_text_to_ids_ex(text, g.ws, &o, on_ids, NULL);
@@ -127,7 +133,7 @@ void synth_report(const char *tag, int idx, int chunks, int64_t total_us) {
 }
 
 void synth_bench(void) {
-    const char *const *set = g.lang[g.cur] == VTTS_LANG_ZH ? BENCH_ZH : BENCH;
+    const char *const *set = g.lang[g.cur] == VTTS_LANG_ZH ? BENCH_ZH : g.lang[g.cur] == VTTS_LANG_KO ? BENCH_KO : BENCH;
     for (int k = 0; k < 4; k++) {
         int64_t us;
         int c = synth_text(set[k], &us);
