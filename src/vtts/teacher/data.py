@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, Sampler
 from vtts.data.audio import resample
 from vtts.frontend.g2p import encode, g2p
 from vtts.frontend.normalize import normalize
-from vtts.frontend.phoneme_set import BOS, EOS, token_to_id_v2
+from vtts.frontend.phoneme_set import BOS, EOS, token_to_id_v2, token_to_id_zhen
 from vtts.frontend.text import text_to_tokens
 
 from .config import TeacherConfig
@@ -21,7 +21,7 @@ from .vits.mel_processing import spectrogram_torch
 
 
 def read_rows(csv: Path) -> list[tuple[str, str, float, str | None]]:
-    """uid|text|duration[|lang]; lang (vi, en, mixed) selects phoneme set v2."""
+    """uid|text|duration[|lang]; lang (vi, en, mixed) selects phoneme set v2, zh the zh-en set."""
     rows = []
     for line in Path(csv).read_text(encoding="utf-8").splitlines():
         if line.strip():
@@ -31,12 +31,15 @@ def read_rows(csv: Path) -> list[tuple[str, str, float, str | None]]:
 
 
 def encode_text(text: str, lang: str | None) -> list[int]:
-    """One id sequence for a training sentence: v1 when lang is None, else v2."""
+    """One id sequence for a training sentence: v1 when lang is None, zh-en for "zh" (Chinese
+    with English terms), else v2. English rows ("en") give the same ids in both pair token sets,
+    so a zh-en teacher trains on zh rows plus the vi-en English rows unchanged."""
     if lang is None:
         return encode(g2p(normalize(text)))
-    mode = "en" if lang == "en" else "vi"
+    mode = {"en": "en", "zh": "zh"}.get(lang, "vi")
+    to_id = token_to_id_zhen if mode == "zh" else token_to_id_v2
     toks = [t for chunk in text_to_tokens(text, mode) for t in chunk]
-    return [token_to_id_v2(BOS), *(token_to_id_v2(t) for t in toks), token_to_id_v2(EOS)]
+    return [to_id(BOS), *(to_id(t) for t in toks), to_id(EOS)]
 
 
 class TeacherDataset(Dataset):

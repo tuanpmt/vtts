@@ -83,3 +83,15 @@ def test_bucket_sampler_frame_budget():
     assert sorted(i for b in batches for i in b) == list(range(80))
     assert all(len(b) * max(lengths[i] for i in b) <= 4000 for b in batches)
     assert max(len(b) for b in batches) == 16  # short items still fill whole batches
+
+
+def test_encode_text_zh_uses_zhen_ids_and_english_rows_match():
+    from vtts.frontend.phoneme_set import VOCAB_SIZE_V2, VOCAB_SIZE_ZHEN
+    from vtts.frontend.text import text_to_ids
+    from vtts.teacher.data import encode_text
+
+    zh = encode_text("打开Wi-Fi设置。", "zh")
+    assert max(zh) >= VOCAB_SIZE_V2 and max(zh) < VOCAB_SIZE_ZHEN
+    assert zh == text_to_ids("打开Wi-Fi设置。", "zh")[0]
+    en = "Turn on the light, please."
+    assert encode_text(en, "en") == text_to_ids(en, "zh")[0] == text_to_ids(en, "en")[0]
