@@ -54,6 +54,7 @@ The Python tests build and run the C tests, so `uv run pytest -q` at the reposit
 |---|---|---|
 | `VTTS_LANG_VI`, `VTTS_LANG_EN`, `VTTS_LANG_AUTO` | v2 (vi-en) | `lex`: VLEX blob (English lexicon + letter-to-sound, ~1.9 MB, `scripts/frontend/build_lexicon.py`) |
 | `VTTS_LANG_ZH` | zh-en (ids 0–106 = v2, Mandarin from 107, 171 ids) | `lex` for English words and `zh`: ZLEX blob (Mandarin readings, ~116 KB, `scripts/frontend/build_zh_blob.py`) |
+| `VTTS_LANG_KO` | ko-en (ids 0–106 = v2, Korean from 107, 153 ids) | `lex` for English words only: the Korean rules, exception table and normalizer strings are compiled in (`src/vtts_text_tables.h`) |
 
 Both blobs are read in place (flash is fine) and must stay alive while they are used:
 
@@ -63,10 +64,10 @@ static vtts_zlex zh;
 vtts_lex_init(&lex, lex_blob, lex_size);
 vtts_zlex_init(&zh, zh_blob, zh_size);          /* < 0: not a ZLEX v1 blob */
 vtts_text_opts o = {.lang = VTTS_LANG_ZH, .lex = &lex, .zh = &zh};  /* zh may be NULL for the other modes */
-int chunks = vtts_text_to_ids_ex(utf8, ws, &o, on_ids, user);  /* ws: vtts_text_ws, ~143 KB, PSRAM */
+int chunks = vtts_text_to_ids_ex(utf8, ws, &o, on_ids, user);  /* ws: vtts_text_ws, ~145 KB, PSRAM */
 ```
 
-Without `zh`, Han characters give no ids; without `lex`, English words are not pronounced (acronyms are still spelled). A zh-en model must be fed only zh-mode ids (its embedding has 171 rows). `make -C runtime test` builds both blobs and runs every text parity test and the fuzz runs (with ASan/UBSan).
+Without `zh`, Han characters give no ids; without `lex`, English words are not pronounced (acronyms are still spelled). A zh-en model must be fed only zh-mode ids (its embedding has 171 rows), a ko-en model only ko-mode ids (153 rows). Korean needs no extra blob: `vtts_text_opts o = {.lang = VTTS_LANG_KO, .lex = &lex};`. `make -C runtime test` builds both blobs and runs every text parity test and the fuzz runs (with ASan/UBSan).
 
 ### Choosing the front-end from the model
 
@@ -75,7 +76,7 @@ A model file records its token set (dim `token_set`, see [docs/model-format.md](
 ```c
 int ts = vtts_token_set(&m);                    /* VTTS_TOKSET_V1, _VI_EN, _ZH_EN, _KO_EN, _JA_EN, _UNKNOWN */
 vtts_lang lang;
-if (vtts_text_default_lang(ts, &lang) < 0) { /* ko-en, ja-en: no device front-end, ids only */ }
+if (vtts_text_default_lang(ts, &lang) < 0) { /* ja-en: no device front-end, ids only */ }
 if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set */ }
 ```
 
@@ -84,7 +85,8 @@ if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set
 | `v1` | `vi` (`VTTS_LANG_V1`) | `vi` |
 | `vi-en` | `vi`, `en`, `auto` | `vi` |
 | `zh-en` | `zh` (Han → Mandarin, Latin words → English, numbers in Mandarin; the only zh-en mode of the Python front-end) | `zh` |
-| `ko-en`, `ja-en`, unknown | none (Python front-end only) | |
+| `ko-en` | `ko` (Hangul → Korean, Latin words → English, numbers in Korean; the only ko-en mode of the Python front-end) | `ko` |
+| `ja-en`, unknown | none (Python front-end only) | |
 
 `tools/vtts_say.c` is the host version of this path: `vtts_say MODEL.vtts OUT.wav --lex lex_en.bin --zh zh_lex.bin [--lang MODE] "text"` prints the token set, the mode and the ids of each chunk, then writes the audio.
 

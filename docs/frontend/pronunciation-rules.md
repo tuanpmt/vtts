@@ -147,7 +147,7 @@ flowchart LR
 
 ## Korean (token set `ko-en`)
 
-Python only for now (`src/vtts/frontend/ko/`); the C port comes later, so everything is rules and small tables (no morphological analyzer, no model). `text_to_ids(text, "ko")` returns ids of the token set `ko-en`: ids 0–106 are the v2 set unchanged, followed by the Korean block from id 107 (46 tokens, vocabulary 153):
+Python (`src/vtts/frontend/ko/`) and C (`runtime/src/vtts_text_ko.c`, see [Device (C)](#device-c-1)); everything is rules and small tables (no morphological analyzer, no model). `text_to_ids(text, "ko")` returns ids of the token set `ko-en`: ids 0–106 are the v2 set unchanged, followed by the Korean block from id 107 (46 tokens, vocabulary 153):
 
 | Group | Tokens | Jamo |
 |---|---|---|
@@ -208,6 +208,33 @@ An entry is matched anywhere inside a word, longest first, before the rules run,
 | ESP32-P4 | letters and digits in English: E S P three two P four |
 
 A number is joined to a following particle or to 년/월/일 and separated from a counter by a space. Latin words go to the English module (`Wi-Fi를` → `wi fi` + `를`). A word too long for one chunk is split between syllables.
+
+### Device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_KO` gives exactly `text_to_ids(text, "ko")` (module `runtime/src/vtts_text_ko.c`, entry `ko` in `LANGS`). Unlike Chinese there is no blob: the rule tables, `overrides.tsv` and the normalizer's strings are small, so `runtime/tools/gen_text_tables.py` compiles them into `vtts_text_tables.h` (about 4 KB of tables; the whole module, code and tables, is about 15 KB in the ESP32-P4 and ESP32-S3 firmware). Only the English words need the VLEX lexicon.
+
+```mermaid
+flowchart LR
+    PY["g2p_ko.py dicts<br/>+ overrides.tsv<br/>+ normalize_ko.py strings"] --> GEN["gen_text_tables.py"]
+    GEN --> H["vtts_text_tables.h<br/>(VTTS_KO_*)"]
+    H --> N["vtts_ko_normalize<br/>(regex passes)"]
+    H --> P["vtts_ko_pronounce<br/>(overrides → jamo → rules)"]
+    N --> P
+    P --> ID["vtts_ko_syllable_ids<br/>(ko-en ids)"]
+```
+
+| Part | How it is ported | Size |
+|---|---|---|
+| Jamo | consonants coded as compatibility jamo − U+3130 (ㄱ 1 … ㅎ 30), vowels as their index (ㅏ 0 … ㅣ 20); a syllable is 3 bytes (onset, vowel, coda) | |
+| Rule tables | `NEUTRAL`, `LIAISON`, `ASPIRATE_BEFORE_H`, `ASPIRATED`, `H_CODAS`, `TENSE`, `OBSTRUENT_CODAS`, `STEM_CODAS`, `Y_TO_PLAIN` and the token ids, generated from the Python dicts as arrays indexed by jamo code; the small maps inside the rule functions (palatalization, nasalization, ㄹ → ㄴ, liquidization) are written in C | 0.6 KB |
+| Exceptions | `overrides.tsv` as (written, reading) syllable offsets from U+AC00, matched longest first like `apply_overrides` | 1.1 KB |
+| Normalizer strings | digits, units of 10/10⁴, native numbers, months, counters (longest first, with their kind), symbols, dropped characters, units, currencies | 2 KB |
+
+- **Rules** run in the order of `RULES` (each rule over every pair of adjacent syllables, left to right, the last coda neutralized too), then the vowel rule per syllable; characters that are not Hangul syllables split a word into parts that do not interact, as in `pronounce`.
+- **Normalization** follows `normalize_ko` pass by pass (full-width forms, pauses, symbols, dropped quotes and brackets, units, product codes, ISO and dotted dates, phone numbers, times, money, percent, ranges, numbers with their counter, Latin words to the English normalizer). Where regex backtracking can change a match (the alternation `\d{1,3}(,\d{3})+|\d+` with an optional fraction, `\s?` before units and `%`, `\.?` after a dotted date), the candidate ends are tried in the order the regex engine tries them, so `1,2345원` and `1,234,5km` split like Python. Numbers of any length are read like Python (above 20 digits digit by digit).
+- **Tagging and chunks:** a word with Hangul (syllables or compatibility jamo) is Korean, a plain Latin word is English, anything else is Korean; no boundaries are inserted (Korean has spaces). Words are separated by the space token; a word of more than 318 tokens is split into one item per syllable, joined without the space token, so the chunk packer can cut it. Sentences also end after `。！？；` without a following space, as for Chinese.
+- **Tests:** `runtime/test/text_parity_ko.tsv` (11,369 cases: edge cases, both Korean eval sets, 2,000 mixed template sentences, 3,000 generated sentences, every (coda, next onset, next vowel) of two adjacent syllables plus 4,000 random three-syllable words, numbers, dates and times, regex-dense random strings) must match exactly, and a fuzz run in ko mode (Hangul, jamo, ASCII, numbers with counters, punctuation, random bytes, words without spaces) must stay inside its buffers and inside the ko-en ids: `make -C runtime test` or `uv run pytest tests/export`. A test also checks that `vtts_text_tables.h` holds the current Korean tables. After changing a Korean rule or table, run `uv run python runtime/tools/gen_text_tables.py` and regenerate the fixture with `uv run python scripts/frontend/export_text_parity.py --ko --sentences data/ko/sentences.jsonl --limit 3000 --out runtime/test/text_parity_ko.tsv`.
+- **Known gaps (pathological input only):** as for Chinese, only ASCII digits count as digits, the control characters U+001C–U+001F and U+0085 are not whitespace in C, a sentence is cut at 4,096 code points, 2,048 items or 1,024 chunks, and a Korean run whose normalized form exceeds 6,144 code points is dropped (a word longer than 4,095 code points as well).
 
 ## Japanese (token set `ja-en`)
 
@@ -334,6 +361,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 
 | Date | Change |
 |---|---|
+| 2026-11-18 | Korean front-end in C: mode `VTTS_LANG_KO`, rule tables and `overrides.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-18 | Japanese front-end in Python: token set `ja-en`, `lexicons/ja/` word, context and kanji tables from Open JTalk's dictionary (98.2% mora agreement with pyopenjtalk), kana rules, Japanese number and counter reading, mode `ja`. |
 | 2026-11-18 | Chinese front-end in C: mode `VTTS_LANG_ZH`, `ZLEX` blob (`scripts/frontend/build_zh_blob.py`), exact parity with Python. |
 | 2026-11-18 | Korean front-end in Python: token set `ko-en`, standard pronunciation rules as a rule table, `lexicons/ko/overrides.tsv`, Sino-Korean and native number reading, mode `ko`. |

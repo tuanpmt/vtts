@@ -50,7 +50,7 @@ The token set decides which text front-end produces the ids, so the firmware and
 | 1 | `v1` (Vietnamese) | 65 | `vi` |
 | 2 | `vi-en` (v2) | 107 | `vi`, `en`, `auto` |
 | 3 | `zh-en` | 171 | `zh` |
-| 4 | `ko-en` | 153 | none yet (ids from a host front-end) |
+| 4 | `ko-en` | 153 | `ko` |
 | 5 | `ja-en` | 144 | none yet (ids from a host front-end) |
 
 The names and sizes are those of `TOKEN_SETS` in `src/vtts/frontend/phoneme_set.py`. Reading rules (`vtts_init`, `vtts.export.format.token_set_of`):

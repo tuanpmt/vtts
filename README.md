@@ -120,7 +120,7 @@ Type a sentence and press Enter; the board speaks it. Other commands:
 | Command | Effect |
 |---|---|
 | `model s` / `model m` | Lite or quality model |
-| `lang <mode>` | Text mode; the modes follow the model's token set: `vi` / `en` / `auto` for vi-en (`vi` also reads English words in Vietnamese sentences), `zh` for zh-en ([details](firmware/esp32/README.md#languages-and-text-modes)) |
+| `lang <mode>` | Text mode; the modes follow the model's token set: `vi` / `en` / `auto` for vi-en (`vi` also reads English words in Vietnamese sentences), `zh` for zh-en, `ko` for ko-en ([details](firmware/esp32/README.md#languages-and-text-modes)) |
 | `vol 0-100`, `gain dB` | Volume; the digital gain has a soft limiter |
 | `speed 0.7-1.6` | Speaking rate (higher is slower) |
 | `expr 0.5-2.5` | Intonation range (models with a pitch predictor) |
