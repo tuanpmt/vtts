@@ -18,7 +18,9 @@
  *   selftest, fusetest    SIMD kernels against plain C, including both cores at once
  *   dump <sentence>       synthesize and send the PCM as base64 (scripts/device/say.py --dump-dir)
  *   ids <ids;ids...>      speak token ids from a host front-end (scripts/device/say.py --lang)
- *   lang vi|en|auto       text mode of bilingual models (token set v2); vi reads English words too
+ *   lang <mode>           text mode, valid modes per token set of the current model: v1 vi;
+ *                         vi-en vi|en|auto (vi reads English words too); zh-en zh; ko-en and ja-en
+ *                         none (send ids). The front-end follows the model's token set (header)
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments
  */
 #include <math.h>
@@ -45,7 +47,7 @@
 #endif
 
 app_t g = {.vol = BSP_DEFAULT_VOL, .chunk = 128, .first = 12, .gain = 1.0f, .speed = 1.0f, .rtf = {RTF_INIT_S, RTF_INIT_M},
-           .lang = VTTS_LANG_VI};
+           .lang = {-1, -1}};
 
 int64_t vtts_now_us(void) { return esp_timer_get_time(); } /* runtime profiling clock */
 
@@ -62,12 +64,27 @@ void app_main(void) {
         printf("model %c weights in %s\n", k ? 'M' : 'S', blob ? "psram" : "flash");
         int rc = vtts_init(&g.models[k], src, bytes);
         size_t ab = rc ? 0 : vtts_stream_arena_bytes(&g.models[k], VTTS_TEXT_MAX_IDS, MAX_CHUNK);
-        printf("model %c: %u bytes, init %d, arena %u\n", k ? 'M' : 'S', (unsigned)bytes, rc, (unsigned)ab);
+        /* the text front-end follows the token set recorded in the model (old files: by vocab) */
+        int ts = rc ? VTTS_TOKSET_UNKNOWN : vtts_token_set(&g.models[k]);
+        vtts_lang l;
+        g.lang[k] = vtts_text_default_lang(ts, &l) == 0 ? (int)l : -1;
+        printf("model %c: %u bytes, init %d, arena %u, token set %s (%s), lang %s\n", k ? 'M' : 'S', (unsigned)bytes, rc,
+               (unsigned)ab, vtts_token_set_name(ts), rc ? "-" : g.models[k].token_set_in_file ? "header" : "vocab",
+               synth_lang_name(k));
         if (ab > need) need = ab;
     }
     /* English lexicon for bilingual models, read in place from flash */
     g.has_lex = vtts_lex_init(&g.lex, lex_en_start, (size_t)(lex_en_end - lex_en_start)) == 0;
     printf("lexicon %u bytes, %s\n", (unsigned)(lex_en_end - lex_en_start), g.has_lex ? "ok" : "missing");
+#if VTTS_EMBED_ZH
+    /* Mandarin readings for zh-en models, read in place from flash */
+    g.has_zh = vtts_zlex_init(&g.zh, lex_zh_start, (size_t)(lex_zh_end - lex_zh_start)) == 0;
+    printf("zh readings %u bytes, %s\n", (unsigned)(lex_zh_end - lex_zh_start), g.has_zh ? "ok" : "invalid");
+#else
+    printf("zh readings not embedded\n");
+#endif
+    for (int k = 0; k < 2; k++)
+        if (g.lang[k] == VTTS_LANG_ZH && !g.has_zh) printf("WARNING model %c is zh-en but has no zh readings: Han text is skipped\n", k ? 'M' : 'S');
     g.arena_bytes = need;
     g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
     g.arena_where = "sram";

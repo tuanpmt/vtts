@@ -31,7 +31,8 @@ static int cmd_fusetest(int argc, char **argv) { (void)argc; (void)argv; return 
 
 static int cmd_model(int argc, char **argv) {
     if (argc > 1) g.cur = (argv[1][0] == 'm' || argv[1][0] == 'M') ? 1 : 0;
-    printf("model %c\n", g.cur ? 'M' : 'S');
+    printf("model %c (token set %s, lang %s)\n", g.cur ? 'M' : 'S', vtts_token_set_name(vtts_token_set(&g.models[g.cur])),
+           synth_lang_name(g.cur));
     return 0;
 }
 
@@ -86,11 +87,21 @@ static int cmd_cores(int argc, char **argv) {
     return 0;
 }
 
+/* text mode of the current model; the valid modes depend on its token set (vtts_text_modes) */
 static int cmd_lang(int argc, char **argv) {
-    if (argc > 1) g.lang = strcmp(argv[1], "en") == 0 ? VTTS_LANG_EN : strcmp(argv[1], "auto") == 0 ? VTTS_LANG_AUTO : VTTS_LANG_VI;
-    printf("lang %s (model %c: token set v%d)\n", g.lang == VTTS_LANG_EN ? "en" : g.lang == VTTS_LANG_AUTO ? "auto" : "vi",
-           g.cur ? 'M' : 'S', g.models[g.cur].vocab > 65 ? 2 : 1);
-    return 0;
+    int ts = vtts_token_set(&g.models[g.cur]), rc = 0;
+    if (argc > 1) {
+        vtts_lang l;
+        if (vtts_text_lang_for(ts, argv[1], &l) == 0) g.lang[g.cur] = (int)l;
+        else {
+            printf("ERROR lang %s is not a mode of token set %s (modes: %s)\n", argv[1], vtts_token_set_name(ts),
+                   *vtts_text_modes(ts) ? vtts_text_modes(ts) : "none, send ids");
+            rc = 1;
+        }
+    }
+    printf("lang %s (model %c: token set %s, modes %s)\n", synth_lang_name(g.cur), g.cur ? 'M' : 'S',
+           vtts_token_set_name(ts), *vtts_text_modes(ts) ? vtts_text_modes(ts) : "none");
+    return rc;
 }
 
 static int cmd_prof(int argc, char **argv) {
@@ -107,7 +118,7 @@ static const esp_console_cmd_t CMDS[] = {
     {.command = "bench", .help = "RTF on four fixed sentences, no audio (REPORT lines)", .func = cmd_bench},
     {.command = "prof", .help = "time per synthesis stage since the last prof", .func = cmd_prof},
     {.command = "model", .help = "lite (s) or quality (m) model", .hint = "s|m", .func = cmd_model},
-    {.command = "lang", .help = "text mode of bilingual models (vi also reads English words)", .hint = "vi|en|auto", .func = cmd_lang},
+    {.command = "lang", .help = "text mode of the current model's token set: v1 vi; vi-en vi|en|auto (vi also reads English words); zh-en zh", .hint = "vi|en|auto|zh", .func = cmd_lang},
     {.command = "vol", .help = "speaker volume", .hint = "0-100", .func = cmd_vol},
     {.command = "gain", .help = "digital gain in dB before a soft limiter", .hint = "0-24", .func = cmd_gain},
     {.command = "speed", .help = "speaking rate (length scale, higher is slower)", .hint = "0.7-1.6", .func = cmd_speed},

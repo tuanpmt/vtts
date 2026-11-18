@@ -45,7 +45,11 @@ typedef struct {
     vtts_text_ws *ws;   /* text front-end workspace, PSRAM */
     vtts_lex lex;       /* English lexicon (VLEX blob in flash) */
     int has_lex;
-    vtts_lang lang;     /* mode for bilingual models (token set v2): VI, EN or AUTO */
+    vtts_zlex zh;       /* Mandarin readings (ZLEX blob in flash), for zh-en models */
+    int has_zh;
+    /* text mode per model, from its token set (vtts_text_default_lang, console `lang`);
+     * -1: the token set has no device front-end (ko-en, ja-en): only `ids` */
+    int lang[2];
 } app_t;
 
 extern app_t g;
@@ -56,9 +60,14 @@ extern const uint8_t model_m_start[] asm("_binary_model_m_vtts_start");
 extern const uint8_t model_m_end[] asm("_binary_model_m_vtts_end");
 extern const uint8_t lex_en_start[] asm("_binary_lex_en_bin_start");
 extern const uint8_t lex_en_end[] asm("_binary_lex_en_bin_end");
+#if VTTS_EMBED_ZH /* main/lex_zh.bin was present at build time (build.sh builds it) */
+extern const uint8_t lex_zh_start[] asm("_binary_lex_zh_bin_start");
+extern const uint8_t lex_zh_end[] asm("_binary_lex_zh_bin_end");
+#endif
 
 /* synth.c */
 int synth_text(const char *text, int64_t *total_us); /* text or "ids ..." -> PCM; chunks */
+const char *synth_lang_name(int k); /* text mode of model k, or "none" (ids only) */
 void synth_report(const char *tag, int idx, int chunks, int64_t total_us);
 void synth_say(const char *text);  /* speak, then SAID / timing / CPU lines */
 void synth_dump(const char *text); /* PCM as base64 lines, no playback */

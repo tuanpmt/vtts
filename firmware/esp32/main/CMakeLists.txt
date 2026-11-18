@@ -9,6 +9,14 @@ if(IDF_TARGET STREQUAL "esp32s3")
 else()
     set(PORT "${RT}/ports/esp32p4/vtts_port_p4.c")
 endif()
+# lex_zh.bin (ZLEX, Mandarin readings for zh-en models, ~116 KB) is embedded when present;
+# build.sh builds it with scripts/frontend/build_zh_blob.py
+set(EMBED "model_s.vtts" "model_m.vtts" "lex_en.bin")
+set(EMBED_ZH 0)
+if(EXISTS "${CMAKE_CURRENT_LIST_DIR}/lex_zh.bin")
+    list(APPEND EMBED "lex_zh.bin")
+    set(EMBED_ZH 1)
+endif()
 idf_component_register(
     SRCS "main.c" "synth.c" "speaker.c" "console.c" "selftest.c" "${PORT}"
          "${RT}/ports/freertos/vtts_par_freertos.c"
@@ -16,6 +24,6 @@ idf_component_register(
          "${RT}/src/vtts_text.c" "${RT}/src/vtts_text_en.c" "${RT}/src/vtts_text_zh.c" "${RT}/src/vtts_lex.c"
     INCLUDE_DIRS "." "${RT}/include" "${RT}/src"
     PRIV_REQUIRES ${REQS}
-    EMBED_FILES "model_s.vtts" "model_m.vtts" "lex_en.bin")
+    EMBED_FILES ${EMBED})
 target_compile_options(${COMPONENT_LIB} PRIVATE -O2 -fno-math-errno -Wno-unused-function -DVTTS_PROFILE
-                       -DVTTS_BLOCK=64 -DVTTS_HEAD_BLOCK=16 -DVTTS_STREAM_STEP=64)
+                       -DVTTS_EMBED_ZH=${EMBED_ZH} -DVTTS_BLOCK=64 -DVTTS_HEAD_BLOCK=16 -DVTTS_STREAM_STEP=64)

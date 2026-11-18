@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Build/flash with ESP-IDF v6.1 (installed by EIM). Copies the int8 models into main/.
+# Build/flash with ESP-IDF v6.1 (installed by EIM). Copies the int8 models into main/ and builds the
+# front-end blobs (main/lex_en.bin, main/lex_zh.bin) once.
 # usage: [BOARD=<id>] ./build.sh S_MODEL.vtts M_MODEL.vtts [idf.py args...]   (default: build)
 #   BOARD is a folder in components/bsp/boards/ (default: esp32-p4-86-panel-eth-2ro); each board builds in build_<id>/
 #   with sdkconfig.<id>. Boards: see components/bsp/README.md.
@@ -17,6 +18,8 @@ cp "$2" main/model_m.vtts
 shift 2
 # English lexicon for bilingual models (VLEX, ~1.9 MB): built once from the pinned CMUdict
 [ -f main/lex_en.bin ] || (cd ../.. && uv run python scripts/frontend/build_lexicon.py --out firmware/esp32/main/lex_en.bin)
+# Mandarin readings for zh-en models (ZLEX, ~116 KB): built once from the zh tables of the Python front-end
+[ -f main/lex_zh.bin ] || (cd ../.. && uv run python scripts/frontend/build_zh_blob.py --out firmware/esp32/main/lex_zh.bin)
 ACTIVATE="$HOME/.espressif/tools/activate_idf_v6.1.sh"
 while IFS='=' read -r key value; do
     case "$key" in

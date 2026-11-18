@@ -32,7 +32,26 @@ BOARD=esp32-s3-touch-lcd-2.8 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash 
 
 The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts) (folder `vi/`). The serial console commands are listed in the [main README](../../README.md#serial-console).
 
+`build.sh` also builds the front-end blobs once, from the Python tables: `main/lex_en.bin` (VLEX, English lexicon, ~1.9 MB) and `main/lex_zh.bin` (ZLEX, Mandarin readings, ~116 KB). Both are embedded in the app image and read in place from flash. `lex_zh.bin` is optional: when it is missing at configure time the firmware builds without it and zh-en models skip Han characters (the console prints a warning at start-up).
+
 Each board has its own build directory and `sdkconfig`. Shared configuration lives in `sdkconfig.defaults`; chip-specific settings live in `sdkconfig.defaults.esp32p4` and `sdkconfig.defaults.esp32s3`.
+
+## Languages and text modes
+
+The firmware chooses the text front-end from the token set recorded in each model file (`token_set`, [docs/model-format.md](../../docs/model-format.md#token_set-added-in-format-revision-11)); files exported before the field existed map by vocabulary size (65 → v1, 107 → vi-en, 171 → zh-en, ...). Start-up prints `model S: ..., token set zh-en (header), lang zh` per model. Each model keeps its own mode; `lang <mode>` changes the current model's mode and refuses modes of other token sets.
+
+| Token set | `lang` modes | Default | Text on the device |
+|---|---|---|---|
+| `v1` | `vi` | `vi` | Vietnamese |
+| `vi-en` | `vi`, `en`, `auto` | `vi` | Vietnamese + English (`vi` also reads English words; `auto` decides per sentence) |
+| `zh-en` | `zh` | `zh` | Mandarin + English: Han characters in Mandarin, Latin words in English, numbers in Mandarin (same as `text_to_ids(text, "zh")` in Python) |
+| `ko-en`, `ja-en` | none | | No device front-end yet: text lines print an `ERROR`; send `ids ...` from `scripts/device/say.py` |
+
+`ids <ids;ids...>` is unchanged and works with every model (ids must be below the model's vocabulary size). `bench` uses four Mandarin sentences for zh-en models and the Vietnamese ones otherwise.
+
+## Flash budget
+
+The app partition (`partitions.csv`, `factory`, 8 MB) holds the code, both models, `lex_en.bin` and `lex_zh.bin`. With the largest models (zh-en M 2.62 MB + S 1.23 MB, int8) the image is 6.30 MB on the ESP32-P4 (2.09 MB, 25%, free) and 6.18 MB on the ESP32-S3 (2.21 MB, 26%, free); the build prints the exact numbers.
 
 ## Output
 

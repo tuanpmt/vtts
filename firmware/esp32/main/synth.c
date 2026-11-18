@@ -11,12 +11,21 @@
 #include "esp_timer.h"
 #include "freertos/task.h"
 
+/* four fixed sentences per text front-end (the same content in each language) */
 static const char *const BENCH[] = {
     "Xin chào, tôi là trợ lý giọng nói của bạn.",
     "Nhiệt độ trong phòng hiện là 26 độ, độ ẩm 65%.",
     "Báo thức lúc 6:30 sáng mai đã được đặt.",
     "Hôm nay là thứ Bảy, ngày 14/11/2026.",
 };
+static const char *const BENCH_ZH[] = {
+    "你好，我是你的语音助手。",
+    "现在室内温度是26度，湿度65%。",
+    "明天早上6:30的闹钟已经设好了。",
+    "今天是2026年11月14日，星期六。",
+};
+
+const char *synth_lang_name(int k) { return g.lang[k] < 0 ? "none" : vtts_text_lang_name((vtts_lang)g.lang[k]); }
 
 /* PCM kept only while `dump` or resampled playback needs it: up to KEEP_SECONDS of int16 in PSRAM,
  * or less if PSRAM is short (keep 64 KB spare) */
@@ -96,10 +105,15 @@ int synth_text(const char *text, int64_t *total_us) {
     int64_t t0 = esp_timer_get_time();
     int chunks;
     if (strncmp(text, "ids ", 4) == 0) chunks = synth_ids(text + 4);
-    else if (g.models[g.cur].vocab > 65) { /* bilingual model: token set v2 */
-        vtts_text_opts o = {g.lang, g.has_lex ? &g.lex : NULL};
+    else if (g.lang[g.cur] < 0) { /* ko-en, ja-en: no device front-end yet */
+        printf("ERROR token set %s has no on-device text front-end; send ids (scripts/device/say.py --lang)\n",
+               vtts_token_set_name(vtts_token_set(&g.models[g.cur])));
+        chunks = 0;
+    } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en) */
+        vtts_text_opts o = {.lang = (vtts_lang)g.lang[g.cur], .lex = g.has_lex ? &g.lex : NULL,
+                            .zh = g.has_zh ? &g.zh : NULL};
         chunks = vtts_text_to_ids_ex(text, g.ws, &o, on_ids, NULL);
-    } else chunks = vtts_text_to_ids(text, g.ws, on_ids, NULL); /* Vietnamese model: token set v1 */
+    }
     *total_us = esp_timer_get_time() - t0;
     return chunks;
 }
@@ -113,9 +127,10 @@ void synth_report(const char *tag, int idx, int chunks, int64_t total_us) {
 }
 
 void synth_bench(void) {
+    const char *const *set = g.lang[g.cur] == VTTS_LANG_ZH ? BENCH_ZH : BENCH;
     for (int k = 0; k < 4; k++) {
         int64_t us;
-        int c = synth_text(BENCH[k], &us);
+        int c = synth_text(set[k], &us);
         synth_report("REPORT", k, c, us);
     }
 }
