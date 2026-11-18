@@ -18,7 +18,7 @@ token set.
 - In "ja" mode a word with kana or kanji is Japanese and every plain Latin word is English.
   Japanese is written without spaces, so boundaries are inserted as for Chinese, with kana and
   kanji as one script ("Wi-Fiを設定" -> Wi-Fi / を設定).
-- In the Latin-script pair modes ("es", "id" ...) a word with the language's own letters (á, ñ ...)
+- In the Latin-script pair modes ("es", "id", "pt") a word with the language's own letters (á, ñ ...)
   is that language and a plain Latin word is decided by latin.latin_word_lang (word lists,
   CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are dropped.
 """

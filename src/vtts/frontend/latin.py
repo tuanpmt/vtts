@@ -4,11 +4,13 @@ Spanish, Indonesian and Portuguese are written in the same letters as English, s
 the language's own letters (á, ñ, ç, ã ...) needs a rule, like Vietnamese in the vi-en pair
 (lang.py). In order, for a pair language L:
 
-1. a word in lexicons/L/native.txt is L (function words and native words that look English);
+1. a word with L's own letters, in lexicons/L/native.txt (native words that look English) or a
+   unit or abbreviation of L's normalizer (km, kWh, etc) is L;
 2. a word in lexicons/latin/english.txt is English (common English words and tech terms whose
    spelling would also fit L: update, online, game, smart ...);
 3. a word with a capital letter after a lower-case one is English (iPhone, GitHub, macOS);
-4. a short all-caps word (2-5 letters) is L: an acronym, spelled with L's letter names;
+4. a single letter (a unit after a number, an initial) or a short all-caps word (2-5 letters) is
+   L: an acronym, spelled with L's letter names;
 5. a word whose spelling fits L (vtts.frontend.L.g2p_L.valid_spelling: letters, onset and coda
    clusters of L) is L; any other word is English (Facebook, Bluetooth, weekend).
 
@@ -29,12 +31,22 @@ from .lexicons import load_words
 LATIN_PAIRS: dict[str, str] = {
     "es": "áéíóúüñÁÉÍÓÚÜÑ",
     "id": "",  # Indonesian has no letters of its own
+    "pt": "áâãàçéêíóôõúüÁÂÃÀÇÉÊÍÓÔÕÚÜ",
 }
 
 
 @cache
 def _valid(code: str) -> Callable[[str], bool]:
     return importlib.import_module(f"vtts.frontend.{code}.g2p_{code}").valid_spelling
+
+
+@cache
+def _table_keys(code: str) -> frozenset[str]:
+    """Lower-case units and abbreviations (without the final '.') of the language's normalizer:
+    km, kWh, GHz, etc, vc ... are read by it, so they belong to the language."""
+    norm = importlib.import_module(f"vtts.frontend.{code}.normalize_{code}")
+    keys = list(norm.UNITS) + list(norm.ABBREVIATIONS)
+    return frozenset(k.lower().rstrip(".") for k in keys)
 
 
 @cache
@@ -50,14 +62,14 @@ def _camel(part: str) -> bool:
 def latin_word_lang(core: str, code: str) -> str:
     """code or "en" for a Latin word (letters, - and ') in the pair of code."""
     low = core.lower()
-    if has_letters_of(code)(core) or low in load_words(code, "native"):
+    if has_letters_of(code)(core) or low in load_words(code, "native") or low in _table_keys(code):
         return code
     if low in load_words("latin", "english"):
         return "en"
     parts = [p for p in re.split(r"[-']", core) if p]
     if any(_camel(p) for p in parts):
         return "en"
-    if all(p.isupper() and 2 <= len(p) <= 5 for p in parts):
+    if len(core) == 1 or all(p.isupper() and 2 <= len(p) <= 5 for p in parts):
         return code
     if all(_valid(code)(p.lower()) for p in parts):
         return code

@@ -38,6 +38,8 @@ def test_tagging_spanish_and_english_words():
     ("update", "en"), ("online", "en"), ("router", "en"), ("google", "en"), ("the", "en"),
     # CamelCase, acronyms
     ("YouTube", "en"), ("macOS", "en"), ("USB", "es"), ("GPS", "es"),
+    # units and abbreviations of the normalizer, single letters
+    ("kWh", "es"), ("GHz", "es"), ("km", "es"), ("etc", "es"), ("m", "es"), ("x", "es"),
     # spelling
     ("casa", "es"), ("Barcelona", "es"), ("perro", "es"), ("weekend", "en"),
     ("Bluetooth", "en"), ("Wi-Fi", "en"), ("Spotify", "en"), ("franco-alemana", "es"),

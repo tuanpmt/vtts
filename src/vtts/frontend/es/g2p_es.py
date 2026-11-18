@@ -58,7 +58,7 @@ def fold(word: str) -> str:
         if ch in LETTERS:
             out.append(ch)
             continue
-        base = FOLD.get(ch) or unicodedata.normalize("NFD", ch)[0]
+        base = FOLD.get(ch) or (unicodedata.normalize("NFKD", ch) or " ")[0]
         if base in LETTERS:
             out.append(base)
     return "".join(out)

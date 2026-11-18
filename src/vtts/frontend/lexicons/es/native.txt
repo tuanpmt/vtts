@@ -45,19 +45,3 @@ complot
 bistec
 tic
 ok
-# Units and abbreviations read by the Spanish normalizer
-km
-kg
-cm
-mm
-ml
-mg
-kb
-mb
-gb
-tb
-kw
-kwh
-mhz
-ghz
-etc

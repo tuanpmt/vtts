@@ -50,7 +50,7 @@ def fold(word: str) -> str:
         if ch in LETTERS or ch == "'":
             out.append(ch)
             continue
-        base = FOLD.get(ch) or unicodedata.normalize("NFD", ch)[0]
+        base = FOLD.get(ch) or (unicodedata.normalize("NFKD", ch) or " ")[0]
         if base in LETTERS:
             out.append(base)
     return "".join(out)
@@ -159,7 +159,7 @@ def word_tokens_id(word: str) -> list[str]:
 ONSETS = frozenset(["pr", "tr", "kr", "gr", "br", "dr", "fr", "bl", "kl", "gl", "pl", "fl", "sl",
                     "sp", "st", "sk", "sw", "sr", "str", "spr", "skr", "kw", "ps"])
 CODAS = frozenset("bdfghklmnprstNK")
-FINALS = frozenset("bdfghklmnprstzNK")
+FINALS = frozenset("bdfghklmnprstzNK") | {"ks", "ns", "rs"}  # teks, spons, pers
 FOREIGN = ("th", "sh", "ph", "ch", "ck", "gh", "ou", "oo", "q", "x", "wh")
 DOUBLES = frozenset(("aa", "ii", "uu", "nn", "kk"))
 DIGRAPHS = (("ng", "N"), ("ny", "J"), ("sy", "S"), ("kh", "K"))

@@ -26,18 +26,3 @@ taksi
 tv
 ok
 oke
-# Units and abbreviations read by the Indonesian normalizer
-km
-kg
-cm
-mm
-ml
-mg
-dll
-dsb
-dst
-yg
-dgn
-tdk
-utk
-krn

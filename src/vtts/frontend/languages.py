@@ -150,6 +150,18 @@ def _id_word(word: str) -> list[str]:
     return word_tokens_id(word)
 
 
+def _pt_normalize(text: str) -> str:
+    from .pt.normalize_pt import normalize_pt
+
+    return normalize_pt(text)
+
+
+def _pt_word(word: str) -> list[str]:
+    from .pt.g2p_pt import word_tokens_pt
+
+    return word_tokens_pt(word)
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
@@ -158,4 +170,5 @@ LANGUAGES: dict[str, LanguageModule] = {
     "ja": LanguageModule("ja", _ja_normalize, _ja_word, _ja_units),
     "es": LanguageModule("es", _es_normalize, _es_word),
     "id": LanguageModule("id", _id_normalize, _id_word),
+    "pt": LanguageModule("pt", _pt_normalize, _pt_word),
 }

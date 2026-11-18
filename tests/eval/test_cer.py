@@ -92,5 +92,7 @@ def test_latin_pair_cer_reads_numbers_and_keeps_spaces():
     assert cer("La casa.", "la cosa", "es") == pytest.approx(1 / 7)  # "la casa": 7 characters
     assert wer("La casa es grande.", "la cosa es grande", "es") == pytest.approx(1 / 4)
     assert WHISPER_LANGUAGE["es"] == "es"
+    assert cer("Tenho 21 anos.", "tenho vinte e um anos", "pt") == 0.0
+    assert WHISPER_LANGUAGE["pt"] == "pt"
     assert cer("Ada 21 orang.", "ada dua puluh satu orang", "id") == 0.0
     assert WHISPER_LANGUAGE["id"] == "id"

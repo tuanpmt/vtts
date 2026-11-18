@@ -204,13 +204,43 @@ VOCAB_SIZE_IDEN = len(TOKENS_IDEN)
 TOKEN_SETS[TOKEN_SET_IDEN] = TOKENS_IDEN
 
 
+# ---------------- token set "pt-en": Brazilian Portuguese + English (ids 0..106 = v2 unchanged) ----
+# Phonemes from the spelling rules of src/vtts/frontend/pt/: oral vowels, nasal vowels (an en in
+# on un), the stressed vowels with open E/O (é, ó), the glides j/w of diphthongs and nasal
+# diphthongs (pai, mão, bem) and consonants (sh zh nh lh; r = the tap of "caro", rr = the strong r
+# of "carro", "rio" and of a syllable-final r). Final unstressed e/o are written i/u (leite, carro);
+# t/d before i and syllable-final l are left to the voice (palatalized, vocalized in Brazil).
+
+TOKEN_SET_PTEN = "pt-en"
+
+PT_VOWELS = ("a", "e", "i", "o", "u")
+PT_STRESSED = ("a", "e", "E", "i", "o", "O", "u")
+PT_NASALS = ("an", "en", "in", "on", "un")
+PT_CONSONANTS = ("j", "w", "p", "b", "t", "d", "k", "g", "f", "v", "s", "z", "sh", "zh", "m", "n",
+                 "nh", "l", "lh", "r", "rr")
+
+TOKENS_PTEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"PT:{v}" for v in PT_VOWELS)
+    + tuple(f"PT:{v}1" for v in PT_STRESSED)
+    + tuple(f"PT:{v}" for v in PT_NASALS)
+    + tuple(f"PT:{v}1" for v in PT_NASALS)
+    + tuple(f"PT:{c}" for c in PT_CONSONANTS)
+)
+VOCAB_SIZE_PTEN = len(TOKENS_PTEN)
+
+TOKEN_SETS[TOKEN_SET_PTEN] = TOKENS_PTEN
+
+
 # ---------------- text modes of the pair token sets ----------------
 # text_to_ids(text, mode) with a pair mode returns ids of that mode's token set; the modes vi, en
 # and auto use vi-en. A new pair adds its token set above, one entry here, its language module
 # (languages.py) and its tagging rule (lang.py).
 
 PAIR_MODES: dict[str, str] = {"zh": TOKEN_SET_ZHEN, "ko": TOKEN_SET_KOEN, "ja": TOKEN_SET_JAEN,
-                              "es": TOKEN_SET_ESEN, "id": TOKEN_SET_IDEN}
+                              "es": TOKEN_SET_ESEN, "id": TOKEN_SET_IDEN,
+                              "pt": TOKEN_SET_PTEN}
+# Reserved model header codes (export/format.py): 9 = th-en, 10 = hi-en.
 
 _TOKEN_INDEX: dict[str, dict[str, int]] = {}
 

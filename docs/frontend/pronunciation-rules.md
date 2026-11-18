@@ -314,14 +314,14 @@ The counters are a table (`COUNTERS`: reading, geminated reading, reading after 
 
 Spanish (and the other Latin-script pairs) share their letters with English, so `lang.py` asks `latin.latin_word_lang` for each plain word, in this order:
 
-1. A word with the language's own letters (Spanish á é í ó ú ü ñ; Indonesian has none) is that language.
+1. A word with the language's own letters (Spanish á é í ó ú ü ñ; Portuguese á â ã à ç é ê í ó ô õ ú ü; Indonesian has none) is that language, and so is a unit or abbreviation of the language's normalizer (`km`, `kWh`, `etc`, `vc`).
 2. A word in `lexicons/<lang>/native.txt` is that language (function words, words also in the English list such as Spanish `red`, `sale`, `come`, adopted words that break the spelling rules: `club`, `internet`, `pizza`).
 3. A word in `lexicons/latin/english.txt` is English (common English words and tech terms whose spelling would also fit: `update`, `online`, `router`, `google`). The list is shared by all Latin-script pairs; collisions go in the pair's `native.txt`.
 4. A word with a capital after a lower-case letter is English (`iPhone`, `GitHub`, `macOS`).
-5. An all-caps word of 2–5 letters is the main language: an acronym spelled with its letter names (`USB` → u ese be).
+5. A single letter (a unit, an initial) or an all-caps word of 2–5 letters is the main language: an acronym spelled with its letter names (`USB` → u ese be).
 6. Otherwise the word's spelling decides (`valid_spelling` in the language's `g2p_<lang>.py`: letters, letter groups, onset and coda clusters): `casa`, `Barcelona` fit Spanish; `weekend`, `Bluetooth`, `Spotify`, `Wi-Fi` do not and are English.
 
-Digits and codes are neutral as in the other pairs. Known gaps: English names whose spelling fits the language (`Taylor`, `Elon`) are read in the main language unless listed in `english.txt`.
+Digits and codes are neutral as in the other pairs. On random Wikipedia introductions about 4.5% of the words (es, pt) and 9% (id, many English titles) are tagged English, nearly all foreign names and titles. Known gaps: English names whose spelling fits the language (`Taylor`, `Elon`) are read in the main language unless listed in `english.txt`; native names that break the spelling rules (Catalan `Sabadell`, Nahuatl `Chapultepec`) are read in English unless listed in `native.txt`.
 
 ## Spanish (token set `es-en`)
 
@@ -396,6 +396,43 @@ Python only for now (`src/vtts/frontend/id/`). `text_to_ids(text, "id")` returns
 
 Known gaps: e in words missing from the exception table follows the defaults; k before a consonant is not made a glottal stop (rakyat); regional names and Arabic loanwords may need entries.
 
+## Portuguese, Brazil (token set `pt-en`)
+
+Python only for now (`src/vtts/frontend/pt/`). `text_to_ids(text, "pt")` returns ids of the token set `pt-en` (model header code 8): ids 0–106 are the v2 set unchanged, followed by 43 Portuguese tokens from id 107 (vocabulary 150):
+
+| Group | Tokens |
+|---|---|
+| Vowels (5) | `PT:a e i o u` |
+| Stressed vowels (7) | `PT:a1 e1 E1 i1 o1 O1 u1` (`E`, `O` open: é, ó) |
+| Nasal vowels (5 + 5 stressed) | `PT:an en in on un`, `PT:an1 … un1` |
+| Glides (2) | `PT:j w` (pai, mau, mãe, mão, bem) |
+| Consonants (19) | `PT:p b t d k g f v s z sh zh m n nh l lh r rr` (`r` the tap of caro, `rr` the strong r of carro, rio and of a syllable-final r) |
+
+Palatalized t/d before i (tia, leite) and the vocalized final l (Brasil) are left to the voice, as is the realization of `rr` (it varies by region).
+
+**Letters** (`pt/g2p_pt.py`): c before e/i and ç → `s`, ch → `sh`; g before e/i and j → `zh`; gu/qu before e/i → `g`/`k` (u silent; a respelling with ü in the exception table makes it heard: cinquenta, frequente), before a/o → `g w`/`k w`; h silent; lh, nh; r at the start of a word, after n/l/s, before a consonant, at the end and rr → `rr`, else `r`; s between vowels → `z`, ss and sc/sç before e/i → `s`; x: at the start → `sh`, ex + vowel at the start → `z` (exemplo), before a consonant → `s` (texto), at the end → `k s`, else `sh` (caixa, lixo; táxi, próximo are in the table); z at the end → `s`.
+
+**Nasal vowels and diphthongs:** ã õ, and a vowel before m/n closing the syllable (campo → `k an1 p u`); -am at the end → `an w` (falam), -em/-ens → `en j` (bem, homens); ão → `an w`, ãe → `an j`, õe → `on j`. An unaccented i/u after a vowel is a glide (pai, muito, partiu) except before a nasal coda, nh or a final r/l (ainda, rainha, cair, Raul).
+
+**Stress and vowel quality:** the vowel with an acute or circumflex accent, else ã/õ, else the second-to-last vowel when the word ends in a, e, o (+ s), am, em, ens, else the last one; function words (o, a, de, que, em, para, com …) are not stressed. A stressed e/o is closed unless written é/ó, followed by a final l (papel, sol) or in -ela(s), -osa(s), -osos (janela, famosa); other open vowels come from `lexicons/pt/overrides.tsv` (respellings: ela → éla, hora → hóra, porta → pórta; 98 entries with the x and ü cases). An unstressed e/o at the end of a word (with an optional s) is read `i`/`u` (leite → `l e1 j t i`, carro → `k a1 rr u`, de → `d i`).
+
+**Normalization** (`pt/normalize_pt.py`):
+
+| Text | Reading |
+|---|---|
+| 21, 100, 101, 1.200, 1.234, 2026 | vinte e um, cem, cento e um, mil e duzentos, mil duzentos e trinta e quatro, dois mil e vinte e seis |
+| 2.500.000, 3,14 / 2.5 | dois milhões e quinhentos mil, três vírgula quatorze / dois ponto cinco |
+| 5/3/2026, 1/5/2024 | cinco de março de dois mil e vinte e seis, primeiro de maio de … |
+| 14h30, 7h, 1:00, 21:15 | quatorze e trinta, sete horas, uma hora, vinte e uma e quinze |
+| R$ 1.250,50, R$ 1,00, R$ 1,5 milhão, US$ 5 | mil duzentos e cinquenta reais e cinquenta centavos, um real, um vírgula cinco milhão de reais, cinco dólares |
+| 15,5%, 25 °C, 5 km, 8 GB | quinze vírgula cinco por cento, vinte e cinco graus, cinco quilômetros, oito gigabaites |
+| 1º, 2ª | primeiro, segunda |
+| (11) 98765-4321, +55 … | digit by digit (mais for +) |
+| ESP32-P4, USB, ENEM, CPF | é ésse pê três dois pê quatro, ú ésse bê, enem, cê pê éfe |
+| Sr., Dra., etc., vc, pq, tb | senhor, doutora, etcétera, você, porque, também |
+
+Known gaps: open/closed e/o of words missing from the table follow the defaults (closed); x between vowels defaults to `sh`; pretonic vowel raising (menino → minino) and sandhi between words are not marked.
+
 ## Changing a rule or an entry
 
 1. Edit the TSV file (or the rule in the normalizer).
@@ -449,6 +486,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 
 | Date | Change |
 |---|---|
+| 2026-11-18 | Portuguese (Brazil) front-end in Python: token set `pt-en`, spelling, nasal, stress and vowel-quality rules, `lexicons/pt/`, Portuguese number reading, mode `pt`. |
 | 2026-11-18 | Indonesian front-end in Python: token set `id-en`, spelling, e and stress rules, `lexicons/id/`, Indonesian number reading, mode `id`. |
 | 2026-11-18 | Spanish front-end in Python: token set `es-en`, spelling and stress rules, `lexicons/es/`, Spanish number reading, mode `es`; Latin-script code-switching rules (`latin.py`, `lexicons/latin/english.txt`). |
 | 2026-11-18 | Korean front-end in C: mode `VTTS_LANG_KO`, rule tables and `overrides.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |

@@ -1,0 +1,28 @@
+# Words read in Portuguese in the pt-en pair even when they are also in lexicons/latin/english.txt
+# or their spelling does not fit the Portuguese rules (frontend/latin.py, rule 1). One lower-case
+# word per line, without accents (a word with á â ã à ç é ê í ó ô õ ú ü is Portuguese anyway).
+#
+# Portuguese words that are also English entries
+do
+as
+come
+use
+time
+times
+visa
+menu
+combo
+yoga
+coca
+cola
+fan
+fans
+real
+# Portuguese (or fully adopted) words whose spelling breaks the rules
+pizza
+pizzas
+pizzaria
+internet
+clube
+ok
+sob
