@@ -126,3 +126,31 @@ _TOKEN_TO_ID_KOEN = {tok: i for i, tok in enumerate(TOKENS_KOEN)}
 
 def token_to_id_koen(tok: str) -> int:
     return _TOKEN_TO_ID_KOEN[tok]
+
+
+# ---------------- token set "ja-en": Japanese + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes in the style of Open JTalk (src/vtts/frontend/ja/): a mora is [JA:consonant] JA:vowel,
+# or JA:N (moraic nasal ん) or JA:cl (geminate っ). Palatalized consonants are one token (ky, sh,
+# ch, j, ...); ts f v ty dy serve loanword kana (ツァ ファ ヴァ テュ デュ). A long vowel is the vowel repeated (トー -> t o o), not a
+# separate token. Devoiced vowels and pitch accent are not marked in version 1.
+
+TOKEN_SET_JAEN = "ja-en"
+
+JA_VOWELS = ("a", "i", "u", "e", "o")
+JA_CONSONANTS = ("k", "g", "s", "z", "t", "d", "n", "h", "b", "p", "m", "y", "r", "w",
+                 "ky", "gy", "sh", "j", "ch", "ny", "hy", "by", "py", "my", "ry",
+                 "ts", "f", "v", "ty", "dy")
+JA_SPECIAL = ("N", "cl")
+
+TOKENS_JAEN: tuple[str, ...] = (
+    TOKENS_V2 + tuple(f"JA:{p}" for p in JA_VOWELS + JA_CONSONANTS + JA_SPECIAL)
+)
+VOCAB_SIZE_JAEN = len(TOKENS_JAEN)
+
+TOKEN_SETS[TOKEN_SET_JAEN] = TOKENS_JAEN
+
+_TOKEN_TO_ID_JAEN = {tok: i for i, tok in enumerate(TOKENS_JAEN)}
+
+
+def token_to_id_jaen(tok: str) -> int:
+    return _TOKEN_TO_ID_JAEN[tok]

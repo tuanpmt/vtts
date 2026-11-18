@@ -9,7 +9,8 @@ splitting, chunk packing and the device protocol are shared. Each module provide
   word cannot be pronounced (it is then skipped).
 - word_units(word) -> list[list[str]] (optional): the same tokens split into syllables, for
   languages written without spaces (zh): a "word" is then a whole Han run, its syllables are
-  joined without the SPACE token and each counts as one word for chunk packing. Korean (ko)
+  joined without the SPACE token and each counts as one word for chunk packing. Japanese (ja)
+  does the same with table words, single kanji and short kana runs as units. Korean (ko)
   returns one unit per word and splits only a word too long for one chunk.
 
 The C front-end has the same table (runtime/src/vtts_text.c, LANGS); see
@@ -104,9 +105,31 @@ def _ko_units(word: str) -> list[list[str]]:
     return [syllable_tokens(s) for s in pronounce(word)]
 
 
+def _ja_normalize(text: str) -> str:
+    from .ja.normalize_ja import normalize_ja
+
+    return normalize_ja(text)
+
+
+def _ja_units(word: str) -> list[list[str]]:
+    """Units of a Japanese run (see ja/g2p_ja.ja_units); a Latin word is read in English."""
+    from .ja.g2p_ja import ja_units
+    from .ja.normalize_ja import is_ja_word
+
+    if is_ja_word(word):
+        return ja_units(word)
+    toks = _en_word(word)
+    return [toks] if toks else []
+
+
+def _ja_word(word: str) -> list[str]:
+    return [t for unit in _ja_units(word) for t in unit]
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
     "zh": LanguageModule("zh", _zh_normalize, _zh_word, _zh_units),
     "ko": LanguageModule("ko", _ko_normalize, _ko_word, _ko_units),
+    "ja": LanguageModule("ja", _ja_normalize, _ja_word, _ja_units),
 }

@@ -34,6 +34,7 @@ dev = [
     "ruff>=0.6",
     "pyserial>=3.5",
     "pypinyin>=0.55.0",
+    "pyopenjtalk>=0.4.1",
 ]
 
 [build-system]

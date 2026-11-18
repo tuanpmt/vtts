@@ -1,0 +1,5 @@
+# Hand-edited Japanese readings that win over Open JTalk's data when the tables are rebuilt
+# (uv run python scripts/frontend/build_ja_lexicon.py ...). One entry per line: surface<TAB>reading.
+# A one-kanji key sets that kanji's default reading; any other key is a word-table entry.
+# Readings are kana spelled as pronounced (long vowels with ー: とうきょう -> トーキョー).
+今日	キョー

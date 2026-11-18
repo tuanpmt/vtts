@@ -1,7 +1,8 @@
 """Per-word language tagging for bilingual (Vietnamese + English) text.
 
 Modes: "vi" (default for Vietnamese devices), "en", "auto" (decided per sentence) for the vi-en
-token set, "zh" for the zh-en token set and "ko" for the ko-en token set.
+token set, "zh" for the zh-en token set, "ko" for the ko-en token set and "ja" for the ja-en
+token set.
 - A word with Vietnamese letters (diacritics or đ) is always Vietnamese.
 - Words with digits or symbols are "neutral" and are read in the sentence's language.
 - In "vi" mode a plain Latin word stays Vietnamese when it is a valid syllable (so unaccented
@@ -14,6 +15,9 @@ token set, "zh" for the zh-en token set and "ko" for the ko-en token set.
 - In "ko" mode a word with Hangul is Korean and every plain Latin word is English. Korean is
   written with spaces between words, so no boundaries are inserted ("Wi-Fi를" is one Korean
   word; the Korean normalizer hands its Latin part to the English normalizer).
+- In "ja" mode a word with kana or kanji is Japanese and every plain Latin word is English.
+  Japanese is written without spaces, so boundaries are inserted as for Chinese, with kana and
+  kanji as one script ("Wi-Fiを設定" -> Wi-Fi / を設定).
 """
 
 from __future__ import annotations
@@ -52,6 +56,22 @@ def _has_hangul(word: str) -> bool:
     return any("\uac00" <= ch <= "\ud7a3" or "\u3131" <= ch <= "\u318e" for ch in word)
 
 
+def _has_japanese(word: str) -> bool:
+    """Kana or kanji (a rule only in modes whose token set has Japanese, so Han text stays
+    Chinese in the zh mode)."""
+    return any(_script_class_ja(ch) == 1 for ch in word)
+
+
+def _script_class_ja(ch: str) -> int:
+    """1: kanji, kana, 々 〆 ー; 2: Japanese and full-width punctuation (・ 「」 、。); 0: other."""
+    if ("\u4e00" <= ch <= "\u9fff" or ("\u3040" <= ch <= "\u30ff" and ch != "・")
+            or ch in "々〆" or "\uff66" <= ch <= "\uff9f"):
+        return 1
+    if "\u3000" <= ch <= "\u303f" or "\uff00" <= ch <= "\uffef" or ch in "“”‘’…—・":
+        return 2
+    return 0
+
+
 def _script_class(ch: str) -> int:
     if "\u4e00" <= ch <= "\u9fff":
         return 1
@@ -60,8 +80,9 @@ def _script_class(ch: str) -> int:
     return 0
 
 
-def split_scripts(sentence: str) -> str:
-    """Spaces between Han, Chinese punctuation and other text (Chinese has no spaces)."""
+def split_scripts(sentence: str, classify: Callable[[str], int] = _script_class) -> str:
+    """Spaces between Han, Chinese punctuation and other text (Chinese has no spaces); with
+    classify=_script_class_ja, between Japanese characters, Japanese punctuation and other text."""
     out: list[str] = []
     prev = None
     for ch in sentence:
@@ -69,7 +90,7 @@ def split_scripts(sentence: str) -> str:
             prev = None
             out.append(ch)
             continue
-        cls = _script_class(ch)
+        cls = classify(ch)
         if prev is not None and cls != prev:
             out.append(" ")
         out.append(ch)
@@ -79,11 +100,11 @@ def split_scripts(sentence: str) -> str:
 
 # Languages each mode can produce (its token set): a script rule for another language is skipped.
 MODE_LANGS = {"vi": ("vi", "en"), "en": ("vi", "en"), "auto": ("vi", "en"), "zh": ("zh", "en"),
-              "ko": ("ko", "en")}
+              "ko": ("ko", "en"), "ja": ("ja", "en")}
 
 
 def sentence_lang(sentence: str, mode: str) -> str:
-    if mode in ("vi", "en", "zh", "ko"):
+    if mode in ("vi", "en", "zh", "ko", "ja"):
         return mode
     words = [_core(c) for c in sentence.split()]
     words = [w for w in words if any(ch.isalpha() for ch in w)]
@@ -98,6 +119,7 @@ def sentence_lang(sentence: str, mode: str) -> str:
 # "any non-ASCII letter" (so Han text in a vi-en mode is handled exactly as before). Plain Latin
 # words are decided by the rules below.
 SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [
+    ("ja", _has_japanese),
     ("zh", _has_han),
     ("ko", _has_hangul),
     ("vi", _has_vietnamese_letters),
@@ -113,7 +135,7 @@ def word_lang(core: str, mode: str) -> str:
             return code
     if not _is_plain_latin(core):
         return "neutral"
-    if mode in ("en", "zh", "ko"):
+    if mode in ("en", "zh", "ko", "ja"):
         return "en"
     parts = [p for p in re.split(r"[-']", core) if p]
     if all(parse_syllable(p.lower()) is not None for p in parts):
@@ -130,6 +152,8 @@ def tag_words(sentence: str, mode: str) -> list[tuple[str, str]]:
     lang = sentence_lang(sentence, mode)
     if mode == "zh":
         sentence = split_scripts(sentence)
+    elif mode == "ja":
+        sentence = split_scripts(sentence, _script_class_ja)
     return [(c, word_lang(_core(c), lang)) for c in sentence.split()]
 
 

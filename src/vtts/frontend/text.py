@@ -66,7 +66,7 @@ def split_sentences(text: str, max_syllables: int = 40) -> list[str]:
 def text_to_ids(text: str, lang: str | None = None) -> list[list[int]]:
     """lang=None: phoneme set v1 (Vietnamese only, unchanged); "vi" | "en" | "auto": set v2
     (vi-en); "zh": token set zh-en (Mandarin + English), "ko": token set ko-en (Korean +
-    English); both share ids 0..106 with v2."""
+    English), "ja": token set ja-en (Japanese + English); all share ids 0..106 with v2."""
     if lang is None:
         return [encode(g2p(chunk)) for chunk in split_sentences(text)]
     from .phoneme_set import BOS, EOS
@@ -78,9 +78,10 @@ def text_to_ids(text: str, lang: str | None = None) -> list[list[int]]:
 
 def token_to_id_for(lang: str):
     """token -> id function of the token set a mode produces (vi/en/auto: v2)."""
-    from .phoneme_set import token_to_id_koen, token_to_id_v2, token_to_id_zhen
+    from .phoneme_set import token_to_id_jaen, token_to_id_koen, token_to_id_v2, token_to_id_zhen
 
-    return {"zh": token_to_id_zhen, "ko": token_to_id_koen}.get(lang, token_to_id_v2)
+    return {"zh": token_to_id_zhen, "ko": token_to_id_koen, "ja": token_to_id_jaen}.get(
+        lang, token_to_id_v2)
 
 
 # ---------------- bilingual (phoneme set v2) ----------------
@@ -160,8 +161,8 @@ def _pack_items(items: list[tuple[str, list[str]]]) -> list[list[tuple[str, list
 
 
 def text_to_tokens(text: str, lang: str = "vi") -> list[list[str]]:
-    """Tokens per chunk (no BOS/EOS); lang is "vi", "en" or "auto" (set v2), "zh" (zh-en) or
-    "ko" (ko-en)."""
+    """Tokens per chunk (no BOS/EOS); lang is "vi", "en" or "auto" (set v2), "zh" (zh-en),
+    "ko" (ko-en) or "ja" (ja-en)."""
     from .lang import split_sentences_raw
 
     chunks: list[list[str]] = []
