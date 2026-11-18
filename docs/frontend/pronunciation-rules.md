@@ -74,7 +74,7 @@ On the device, the lexicon and the letter-to-sound table ship as one `VLEX` blob
 
 ## Chinese (Mandarin, token set `zh-en`)
 
-Python only for now (`src/vtts/frontend/zh/`); the C port comes later. `text_to_ids(text, "zh")` returns ids of the token set `zh-en`: ids 0–106 are the v2 set unchanged (so English rows can be warm-started from a vi-en teacher; the Vietnamese rows stay unused), followed by the Mandarin block from id 107: 21 initials `ZI:b` … `ZI:s`, 38 finals `ZF:a` … `ZF:i0` and tones `ZT1` … `ZT5` (5 = neutral).
+Python in `src/vtts/frontend/zh/`, ported to C with exact parity (see [Device (C)](#device-c) below). `text_to_ids(text, "zh")` returns ids of the token set `zh-en`: ids 0–106 are the v2 set unchanged (so English rows can be warm-started from a vi-en teacher; the Vietnamese rows stay unused), followed by the Mandarin block from id 107: 21 initials `ZI:b` … `ZI:s`, 38 finals `ZF:a` … `ZF:i0` and tones `ZT1` … `ZT5` (5 = neutral).
 
 A syllable is `[ZI:initial] ZF:final ZTtone`. Finals are written in full: `y`/`w` are not initials (`yi` → `i`, `you` → `iou`, `wei` → `uei`, `yun` → `vn`), `ju`/`qu`/`xu` use ü (`v`), `iu`/`ui`/`un` are `iou`/`uei`/`uen`, and the apical vowel is `ii` after zh/ch/sh/r and `i0` after z/c/s. Interjections (m, n, ng, hm, hng, yo, ê) map to the nearest regular syllable. The syllables of one Chinese run are joined without the space token; a space separates Chinese from English words.
 
@@ -117,6 +117,33 @@ Both generated tables come from pypinyin's data (MIT) through `scripts/frontend/
 | ESP32-P4, 5G | letters in English, digits one by one: E S P 三二 P 四, 五 G |
 
 Latin words inside Chinese text go to the English module (`打开Wi-Fi设置` → 打开 / Wi-Fi / 设置). Sentences also end after `。！？；` without a following space.
+
+### Device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_ZH` gives exactly `text_to_ids(text, "zh")` (module `runtime/src/vtts_text_zh.c`, entry `zh` in `LANGS`). The reading tables ship as a `ZLEX` blob of about 116 KB built by `scripts/frontend/build_zh_blob.py` from the same `chars.tsv` and `phrases.tsv` (so `overrides.tsv` is included); the blob is read in place from flash, without `malloc` or copies.
+
+```mermaid
+flowchart LR
+    TSV["chars.tsv + phrases.tsv"] --> BLD["build_zh_blob.py"]
+    BLD --> Z["ZLEX blob"]
+    Z --> SY["Syllable table<br/>(initial, final, tone)"]
+    Z --> CH["Characters: sorted keys<br/>+ syllable index"]
+    Z --> PH["Phrases of 2, 3, 4 chars:<br/>sorted keys + readings"]
+    PH & CH --> FMM["Forward maximum matching<br/>(binary search, 4 → 3 → 2, then character)"]
+    SY --> FMM
+```
+
+| Part | Layout | Size |
+|---|---|---|
+| Syllables | 1,300 entries of 4 bytes: initial (0 = none), final, tone | 5 KB |
+| Characters | 7,098 keys (code point − U+4E00, u16, sorted) then 7,098 syllable indices | 28 KB |
+| Phrases | per length 2, 3, 4: records of the keys then one syllable index per character, sorted by key | 83 KB |
+
+- **Normalization** follows `normalize_zh` pass by pass (full-width forms, pauses, symbols, dropped quotes and brackets, product codes, ISO dates, money, percent, times, years, ranges, negatives, decimals, grouped numbers, long digit strings, integers, Latin words to the English normalizer, joining Han runs), including the regex backtracking that can change a match. Numbers of up to 512 digits are read like Python.
+- **Tagging and chunks:** Han, Chinese punctuation and other text are split apart like `split_scripts`; plain Latin words are English, everything else is Chinese. Syllables of a Han run are joined without the space token and each counts as one word for the 40-word chunk limit; English words get a space on both sides.
+- **Token ids:** the zh-en ids (`VTTS_ZHEN_*` in the generated `vtts_text_tables.h`) are computed from the blob's (initial, final, tone) indices; ids 0–106 are the v2 ids, so English words use the VLEX lexicon unchanged.
+- **Tests:** `runtime/test/text_parity_zh.tsv` (edge cases, the mixed template sentences, Chinese sentences, numbers, dates and times, regex-dense random strings) must match exactly, and a fuzz run in zh mode (mixed Han, ASCII, digits, punctuation, random bytes) must stay inside its buffers: `make -C runtime test` or `uv run pytest tests/export`. After changing a Chinese rule or table, regenerate the fixture with `uv run python scripts/frontend/export_text_parity.py --zh --sentences data/zh/sentences.jsonl --limit 2500 --out runtime/test/text_parity_zh.tsv`.
+- **Known gaps (pathological input only):** only ASCII digits count as digits (Python's `\d` also takes other scripts' digits); the control characters U+001C–U+001F and U+0085 are not whitespace in C; a sentence is cut at 4,096 code points, 2,048 items or 1,024 chunks, and a Chinese run whose normalized form exceeds 6,144 code points is dropped.
 
 ## Korean (token set `ko-en`)
 
@@ -285,8 +312,9 @@ A module provides two functions:
 
 | | Python (`src/vtts/frontend/languages.py`) | C (`runtime/src/vtts_text.c`, `LANGS`) |
 |---|---|---|
-| Normalize a run | `normalize(text) -> str`: lower-case words and the marks `, . ? ! ; :` separated by spaces | `normalize(ctx, run, n, lex)`: pushes the same words into the workspace |
-| Pronounce a word | `word_tokens(word) -> list[str]`: v2 tokens, `[]` to skip the word | `word_ids(word, lex, out, cap)`: the same ids, `0` to skip |
+| Normalize a run | `normalize(text) -> str`: lower-case words and the marks `, . ? ! ; :` separated by spaces | `normalize(ctx, run, n, opts)`: pushes the same words into the workspace |
+| Pronounce a word | `word_tokens(word) -> list[str]`: v2 tokens, `[]` to skip the word | `word_ids(word, opts, out, cap)`: the same ids, `0` to skip |
+| Syllables of a word (optional, languages without spaces) | `word_units(word) -> list[list[str]]` | `add_word(ws, word, opts)`: adds one item per syllable, joined without SPACE |
 
 Steps:
 
@@ -307,6 +335,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 | Date | Change |
 |---|---|
 | 2026-11-18 | Japanese front-end in Python: token set `ja-en`, `lexicons/ja/` word, context and kanji tables from Open JTalk's dictionary (98.2% mora agreement with pyopenjtalk), kana rules, Japanese number and counter reading, mode `ja`. |
+| 2026-11-18 | Chinese front-end in C: mode `VTTS_LANG_ZH`, `ZLEX` blob (`scripts/frontend/build_zh_blob.py`), exact parity with Python. |
 | 2026-11-18 | Korean front-end in Python: token set `ko-en`, standard pronunciation rules as a rule table, `lexicons/ko/overrides.tsv`, Sino-Korean and native number reading, mode `ko`. |
 | 2026-11-18 | Chinese front-end in Python: token set `zh-en`, `lexicons/zh/` tables from pypinyin, Chinese number reading, mode `zh`. |
 | 2026-11-17 | Bilingual device front-end in C (`vtts_text_to_ids_ex`, VLEX blob), language modules in Python and C. |

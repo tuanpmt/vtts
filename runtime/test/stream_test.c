@@ -76,6 +76,7 @@ int main(int argc, char **argv) {
         printf("stream arena (320 ids, chunk 32): %zu bytes, limit %zu %s\n", worst, cap, ok ? "PASS" : "FAIL");
         fails += !ok;
     }
+    free(mb); free(gb);
     printf("%s (%d failures)\n", fails ? "FAILED" : "ALL PASS", fails);
     return fails ? 1 : 0;
 }

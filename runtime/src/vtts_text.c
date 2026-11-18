@@ -847,6 +847,7 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 /* =================== bilingual front-end (phoneme set v2), mirrors text.py =================== */
 
 #include "vtts_text_en.h"
+#include "vtts_text_zh.h"
 
 #define V2_MAX_WORDS 40
 #define V2_MAX_TOKENS 318
@@ -894,7 +895,7 @@ static int ascii_syllable(const uint32_t *w, int n) { /* parse_syllable(p.lower(
     return parse_syl(&L, &s);
 }
 
-enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1 }; /* indices into LANGS */
+enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1, TAG_ZH = 2 }; /* indices into LANGS */
 
 static int key_eq(const uint32_t *w, int n, const char *k, int lower) {
     int i = 0;
@@ -945,11 +946,12 @@ static int syl_ids(const char *word, uint8_t *out) {
     return n;
 }
 
-static void add_item(vtts_text_ws *ws, const uint8_t *ids, int n, int punct) {
+static void add_item(vtts_text_ws *ws, const uint8_t *ids, int n, int punct, int join) {
     if (ws->n_items >= VTTS_TEXT_MAX_ITEMS || ws->pool_used + n > VTTS_TEXT_POOL) return;
     ws->item_off[ws->n_items] = (uint16_t)ws->pool_used;
     ws->item_len[ws->n_items] = (uint8_t)n;
     ws->item_punct[ws->n_items] = (uint8_t)(punct ? ids[0] : 0);
+    ws->item_join[ws->n_items] = (uint8_t)join;
     memcpy(ws->pool + ws->pool_used, ids, (size_t)n);
     ws->pool_used += n;
     ws->n_items++;
@@ -959,29 +961,33 @@ static int last_is_word(const vtts_text_ws *ws) { return ws->n_items && !ws->ite
 
 /* ---- language modules (mirror src/vtts/frontend/languages.py) ----
  * normalize: the words of one same-language run into ws->words (punctuation marks included);
- * word_ids: token ids (set v2) of one normalized word, 0 if it cannot be pronounced.
+ * word_ids: token ids of one normalized word, 0 if it cannot be pronounced;
+ * add_word (optional, for a language written without spaces): adds the items of one normalized
+ * word itself, like word_units in Python (the first syllable is a word, the next ones are joined
+ * to it without SPACE).
  * Adding a language: one entry here, its tag rule in word_tag(), its tables and tests. */
 typedef struct {
     const char *code;
-    void (*normalize)(ctx_t *c, uint32_t *run, int n, const vtts_lex *lex);
-    int (*word_ids)(const char *w, const vtts_lex *lex, uint8_t *out, int cap);
+    void (*normalize)(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o);
+    int (*word_ids)(const char *w, const vtts_text_opts *o, uint8_t *out, int cap);
+    void (*add_word)(vtts_text_ws *ws, const char *w, const vtts_text_opts *o);
 } lang_mod_t;
 
-static void vi_normalize(ctx_t *c, uint32_t *run, int n, const vtts_lex *lex) {
-    (void)lex;
+static void vi_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    (void)o;
     c->collect = 1;
     scan_vi(c, run, c->ws->date_start, n);
     c->collect = 0;
 }
 
-static int vi_word_ids(const char *w, const vtts_lex *lex, uint8_t *out, int cap) {
-    (void)lex;
+static int vi_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
+    (void)o;
     return cap >= 8 ? syl_ids(w, out) : 0;
 }
 
-static void en_normalize(ctx_t *c, uint32_t *run, int n, const vtts_lex *lex) {
+static void en_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
     vtts_text_ws *ws = c->ws;
-    (void)lex;
+    (void)o;
     if (vtts_en_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, ws->en_out, (int)sizeof ws->en_out) < 0) return;
     for (char *w = ws->en_out; *w;) { /* split on single spaces */
         char *sp = strchr(w, ' ');
@@ -992,23 +998,77 @@ static void en_normalize(ctx_t *c, uint32_t *run, int n, const vtts_lex *lex) {
     }
 }
 
-static int en_word_ids(const char *w, const vtts_lex *lex, uint8_t *out, int cap) {
-    return vtts_en_g2p(lex, w, out, cap);
+static int en_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
+    return vtts_en_g2p(o->lex, w, out, cap);
+}
+
+/* one word of n code points into ws->words as UTF-8 (dropped when full, like push_raw) */
+static void push_cps(ctx_t *c, const uint32_t *cp, int n) {
+    vtts_text_ws *ws = c->ws;
+    if (ws->n_words >= VTTS_TEXT_MAX_WORDS || ws->words_used + 4 * n + 1 > VTTS_TEXT_WORD_BYTES) return;
+    int k = ws->words_used;
+    ws->word_off[ws->n_words++] = k;
+    for (int i = 0; i < n; i++) k += utf8_encode(cp[i], ws->words + k);
+    ws->words[k++] = 0;
+    ws->words_used = k;
+}
+
+/* normalize_zh; its result holds words separated by single spaces. ws->run (the input) is free
+ * once the first pass has copied it, so its halves are the English normalizer's scratch. */
+static void zh_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_zh_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static int zh_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
+    return vtts_en_g2p(o->lex, w, out, cap); /* a Latin word of a Chinese run is read in English */
+}
+
+typedef struct { vtts_text_ws *ws; int n; } zh_units_t;
+
+static void zh_unit(void *user, const uint8_t *ids, int n) {
+    zh_units_t *u = user;
+    add_item(u->ws, ids, n, 0, u->n++ > 0);
+}
+
+/* _zh_units: a Han run is read syllable by syllable; any other word is one English unit */
+static void zh_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint32_t c0 = 0;
+    if (utf8_decode(w, &c0, 1) == 1 && vtts_zh_is_han(c0)) {
+        zh_units_t u = {ws, 0};
+        if (o->zh) vtts_zh_read_han(o->zh, w, zh_unit, &u);
+        return;
+    }
+    uint8_t ids[256];
+    int n = zh_word_ids(w, o, ids, (int)sizeof ids);
+    if (n > 0) add_item(ws, ids, n, 0, 0);
 }
 
 static const lang_mod_t LANGS[] = {
-    {"vi", vi_normalize, vi_word_ids},
-    {"en", en_normalize, en_word_ids},
+    {"vi", vi_normalize, vi_word_ids, NULL},
+    {"en", en_normalize, en_word_ids, NULL},
+    {"zh", zh_normalize, zh_word_ids, zh_add_word},
 };
 
-static void add_word_or_mark(vtts_text_ws *ws, const char *w, const lang_mod_t *m, const vtts_lex *lex) {
+static void add_word_or_mark(vtts_text_ws *ws, const char *w, const lang_mod_t *m, const vtts_text_opts *o) {
     uint8_t ids[256];
     if (is_punct_word(w)) {
-        if (last_is_word(ws)) { ids[0] = (uint8_t)token_id("", w); add_item(ws, ids, 1, 1); }
+        if (last_is_word(ws)) { ids[0] = (uint8_t)token_id("", w); add_item(ws, ids, 1, 1, 0); }
         return;
     }
-    int n = m->word_ids(w, lex, ids, (int)sizeof ids);
-    if (n > 0) add_item(ws, ids, n, 0);
+    if (m->add_word) { m->add_word(ws, w, o); return; }
+    int n = m->word_ids(w, o, ids, (int)sizeof ids);
+    if (n > 0) add_item(ws, ids, n, 0, 0);
 }
 
 /* _assemble size of items [a, b): (tokens, words) */
@@ -1016,7 +1076,7 @@ static void part_size(const vtts_text_ws *ws, int a, int b, int *tok, int *words
     int t = 0, w = 0, last_punct = 0;
     for (int i = a; i < b; i++) {
         if (ws->item_punct[i]) { if (t) { t++; last_punct = 1; } continue; }
-        if (t && !last_punct) t++;
+        if (t && !last_punct && !ws->item_join[i]) t++;
         t += ws->item_len[i];
         last_punct = 0;
         w++;
@@ -1036,7 +1096,7 @@ static void emit_part(ctx_t *c, int a, int b) {
             if (n > 1) { ws->ids[n++] = t[0]; last_punct = 1; }
             continue;
         }
-        if (n > 1 && !last_punct) ws->ids[n++] = VTTS_V2_SPACE;
+        if (n > 1 && !last_punct && !ws->item_join[i]) ws->ids[n++] = VTTS_V2_SPACE;
         for (int k = 0; k < ws->item_len[i] && n < VTTS_TEXT_MAX_IDS - 1; k++) ws->ids[n++] = t[k];
         last_punct = 0;
         words++;
@@ -1076,18 +1136,33 @@ static void pack_items(ctx_t *c) {
     if (ca >= 0) emit_part(c, ca, cb);
 }
 
+/* lang.py _script_class: 1 Han, 2 CJK punctuation and full-width forms, 0 other */
+static int script_class(uint32_t c) {
+    if (vtts_zh_is_han(c)) return 1;
+    if ((c >= 0x3000 && c <= 0x303F) || (c >= 0xFF00 && c <= 0xFFEF) || c == 0x201C || c == 0x201D ||
+        c == 0x2018 || c == 0x2019 || c == 0x2026 || c == 0x2014 || c == 0x00B7)
+        return 2;
+    return 0;
+}
+
+static int has_han(const uint32_t *w, int n) {
+    for (int i = 0; i < n; i++) if (vtts_zh_is_han(w[i])) return 1;
+    return 0;
+}
+
 /* one sentence (code points [s, e) of ws->cp): tags, runs, normalization, items, chunks */
-static void v2_sentence(ctx_t *c, int s, int e, int mode, const vtts_lex *lex) {
+static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     vtts_text_ws *ws = c->ws;
     const uint32_t *cp = ws->cp;
+    const int mode = o->lang, zh = mode == VTTS_LANG_ZH;
     enum { MAXCH = 1024 };
     static int cs[MAXCH], ce[MAXCH], tag[MAXCH];
     int nc = 0;
-    for (int i = s; i < e && nc < MAXCH;) { /* sentence.split() */
+    for (int i = s; i < e && nc < MAXCH;) { /* sentence.split(); zh: split_scripts(sentence).split() */
         while (i < e && is_space_cp(cp[i])) i++;
         if (i >= e) break;
         int j = i;
-        while (j < e && !is_space_cp(cp[j])) j++;
+        while (j < e && !is_space_cp(cp[j]) && (!zh || script_class(cp[j]) == script_class(cp[i]))) j++;
         cs[nc] = i; ce[nc] = j; nc++;
         i = j;
     }
@@ -1109,6 +1184,10 @@ static void v2_sentence(ctx_t *c, int s, int e, int mode, const vtts_lex *lex) {
         int a = cs[k], b = ce[k];
         while (a < b && is_edge(cp[a])) a++;
         while (b > a && is_edge(cp[b - 1])) b--;
+        if (zh) { /* word_lang in "zh" mode: Han -> zh, plain Latin -> en, neutral -> zh */
+            tag[k] = has_han(cp + a, b - a) ? TAG_ZH : plain_latin(cp + a, b - a) ? TAG_EN : TAG_ZH;
+            continue;
+        }
         int t = word_tag(cp + a, b - a, sent_en);
         tag[k] = t == TAG_NEUTRAL ? (sent_en ? TAG_EN : TAG_VI) : t;
     }
@@ -1123,8 +1202,8 @@ static void v2_sentence(ctx_t *c, int s, int e, int mode, const vtts_lex *lex) {
         const lang_mod_t *m = &LANGS[tag[k]];
         ws->n_words = ws->words_used = 0;
         c->collect = 1;
-        m->normalize(c, ws->run, len, lex);
-        for (int w = 0; w < ws->n_words; w++) add_word_or_mark(ws, ws->words + ws->word_off[w], m, lex);
+        m->normalize(c, ws->run, len, o);
+        for (int w = 0; w < ws->n_words; w++) add_word_or_mark(ws, ws->words + ws->word_off[w], m, o);
         ws->n_words = ws->words_used = 0;
         c->collect = 0;
         k = k1;
@@ -1132,24 +1211,29 @@ static void v2_sentence(ctx_t *c, int s, int e, int mode, const vtts_lex *lex) {
     pack_items(c);
 }
 
+/* lang.py SENTENCE_END: split at whitespace after . ! ? ; and, in zh mode, right after
+ * 。！？； (the vi-en modes keep their earlier behaviour) */
+static int cjk_end(uint32_t c) { return c == 0x3002 || c == 0xFF01 || c == 0xFF1F || c == 0xFF1B; }
+
 int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts *o, vtts_ids_cb cb, void *user) {
     if (!o || o->lang == VTTS_LANG_V1) return vtts_text_to_ids(utf8, ws, cb, user);
     if (!utf8 || !ws) return -1;
     ctx_t ctx = {ws, cb, user, 0, 0, 0}, *c = &ctx;
+    const int zh = o->lang == VTTS_LANG_ZH;
     int n = ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
     int a = 0, z = n;
     while (a < z && is_space_cp(ws->cp[a])) a++; /* text.strip() */
     while (z > a && is_space_cp(ws->cp[z - 1])) z--;
     int s = a;
-    for (int i = a; i < z && !c->stop; i++) { /* split at whitespace after . ! ? ; */
+    for (int i = a; i < z && !c->stop; i++) {
         uint32_t pc = i > s ? ws->cp[i - 1] : 0;
-        if (is_space_cp(ws->cp[i]) && (pc == '.' || pc == '!' || pc == '?' || pc == ';')) {
-            v2_sentence(c, s, i, o->lang, o->lex);
+        if ((is_space_cp(ws->cp[i]) && (pc == '.' || pc == '!' || pc == '?' || pc == ';')) || (zh && cjk_end(pc))) {
+            v2_sentence(c, s, i, o);
             while (i < z && is_space_cp(ws->cp[i])) i++;
             s = i;
             i--;
         }
     }
-    if (s < z && !c->stop) v2_sentence(c, s, z, o->lang, o->lex);
+    if (s < z && !c->stop) v2_sentence(c, s, z, o);
     return c->chunks;
 }

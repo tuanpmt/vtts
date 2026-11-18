@@ -12,7 +12,11 @@
  * times (8:30, 8h30, 8h), punctuation. Not supported on device: e-mail, URLs, phone
  * numbers, ISO dates, currency and units (the host front-end handles them).
  *
- * No malloc: the caller provides a workspace (about 140 KB with the v2 scratch; PSRAM is fine).
+ * VTTS_LANG_ZH: Mandarin + English, token set zh-en (ids 0..106 = v2, Mandarin from 107), like
+ * text_to_ids(text, "zh"): Chinese normalization (numbers, dates, times, money, percent, product
+ * codes), readings from the ZLEX blob (vtts_zlex.h), English words with the VLEX lexicon.
+ *
+ * No malloc: the caller provides a workspace (about 143 KB with the v2 and zh scratch; PSRAM is fine).
  * Not re-entrant per workspace.
  */
 #ifndef VTTS_TEXT_H
@@ -21,6 +25,7 @@
 #include <stdint.h>
 
 #include "vtts_lex.h"
+#include "vtts_zlex.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,22 +47,25 @@ typedef struct {
     int word_off[VTTS_TEXT_MAX_WORDS];
     int n_words, words_used;
     int32_t ids[VTTS_TEXT_MAX_IDS];
-    /* v2 (bilingual) scratch; the whole workspace is about 140 KB, so place it in PSRAM */
+    /* v2 (bilingual) scratch; the whole workspace is about 143 KB, so place it in PSRAM */
     uint32_t run[VTTS_TEXT_MAX_CP];                     /* one language run, words joined by spaces */
     uint32_t en_a[VTTS_TEXT_EN_CAP], en_b[VTTS_TEXT_EN_CAP];
     char en_out[VTTS_TEXT_EN_CAP];
     uint16_t item_off[VTTS_TEXT_MAX_ITEMS];
     uint8_t item_len[VTTS_TEXT_MAX_ITEMS], item_punct[VTTS_TEXT_MAX_ITEMS];
+    uint8_t item_join[VTTS_TEXT_MAX_ITEMS]; /* 1: a syllable joined to the previous one without SPACE (zh) */
     uint8_t pool[VTTS_TEXT_POOL];
     int n_items, pool_used;
 } vtts_text_ws;
 
-typedef enum { VTTS_LANG_V1 = 0, VTTS_LANG_VI, VTTS_LANG_EN, VTTS_LANG_AUTO } vtts_lang;
+typedef enum { VTTS_LANG_V1 = 0, VTTS_LANG_VI, VTTS_LANG_EN, VTTS_LANG_AUTO, VTTS_LANG_ZH } vtts_lang;
 
 /* lang: VTTS_LANG_V1 is vtts_text_to_ids; VI, EN and AUTO select the mode of text_to_ids(text,
- * "vi" | "en" | "auto") with phoneme set v2. lex: the English lexicon (NULL: English words are
- * not pronounced, only acronyms are spelled). */
-typedef struct { vtts_lang lang; const vtts_lex *lex; } vtts_text_opts;
+ * "vi" | "en" | "auto") with phoneme set v2; ZH selects text_to_ids(text, "zh") with token set
+ * zh-en. lex: the English lexicon (NULL: English words are not pronounced, only acronyms are
+ * spelled). zh: the Mandarin reading tables (NULL: Han characters are not pronounced; only used
+ * by VTTS_LANG_ZH). */
+typedef struct { vtts_lang lang; const vtts_lex *lex; const vtts_zlex *zh; } vtts_text_opts;
 
 /* Called once per chunk (<= 40 syllables) with ids including BOS ... EOS.
  * Return non-zero to stop. */

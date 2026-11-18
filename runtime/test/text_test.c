@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* text_test.c -- device front-end must produce exactly the Python ids.
- * usage: text_test text_parity.tsv                 (text \t ids;ids...; phoneme set v1)
- *        text_test --lex LEX text_parity_v2.tsv    (mode \t text \t ids...; mode vi|en|auto)
- *        text_test --fuzz [--lex LEX]              (v1, and v2 auto mode when --lex is given) */
+ * usage: text_test text_parity.tsv                          (text \t ids;ids...; phoneme set v1)
+ *        text_test --lex LEX [--zh ZLEX] text_parity_v2.tsv (mode \t text \t ids...; mode vi|en|auto|zh)
+ *        text_test --fuzz [--lex LEX] [--zh ZLEX]           (v1; v2 modes with --lex; zh mode with --zh) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -19,25 +19,84 @@ static int collect(const int32_t *ids, int n, void *user) {
     return 0;
 }
 
+/* fuzz: every chunk holds BOS ... EOS, at most VTTS_TEXT_MAX_IDS ids, all inside the token set */
+static int check_ids(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= 171) *bad = 1;
+    return 0;
+}
+
 static vtts_lex s_lex;
-static int s_has_lex;
+static vtts_zlex s_zh;
+static int s_has_lex, s_has_zh;
 
 static int run(const char *text, int mode, vtts_text_ws *ws, vtts_ids_cb cb, void *user) {
-    vtts_text_opts o = {(vtts_lang)mode, s_has_lex ? &s_lex : NULL};
+    vtts_text_opts o = {(vtts_lang)mode, s_has_lex ? &s_lex : NULL, s_has_zh ? &s_zh : NULL};
     return vtts_text_to_ids_ex(text, ws, &o, cb, user);
 }
 
-static int load_lex(const char *path) {
+static uint8_t *load_file(const char *path, size_t *size) {
     FILE *f = fopen(path, "rb");
-    if (!f) return -1;
+    if (!f) return NULL;
     fseek(f, 0, SEEK_END);
     long n = ftell(f);
     rewind(f);
-    uint8_t *b = malloc((size_t)n);
-    if (!b || fread(b, 1, (size_t)n, f) != (size_t)n) return -1;
+    uint8_t *b = n > 0 ? malloc((size_t)n) : NULL;
+    if (!b || fread(b, 1, (size_t)n, f) != (size_t)n) { fclose(f); free(b); return NULL; }
     fclose(f);
-    s_has_lex = vtts_lex_init(&s_lex, b, (size_t)n) == 0;
+    *size = (size_t)n;
+    return b;
+}
+
+static int load_lex(const char *path) {
+    size_t n;
+    uint8_t *b = load_file(path, &n);
+    s_has_lex = b && vtts_lex_init(&s_lex, b, n) == 0;
     return s_has_lex ? 0 : -1;
+}
+
+static int load_zh(const char *path) {
+    size_t n;
+    uint8_t *b = load_file(path, &n);
+    s_has_zh = b && vtts_zlex_init(&s_zh, b, n) == 0;
+    return s_has_zh ? 0 : -1;
+}
+
+/* mixed Han (common characters, digits-heavy), ASCII, numbers, CJK and ASCII punctuation, symbols */
+static int fuzz_zh(vtts_text_ws *ws) {
+    static char buf[20000];
+    static const char *const parts[] = {
+        "中", "国", "银行", "行", "长", "了", "的", "一", "不", "重", "年", "月", "日", "点", "，", "。", "！", "？",
+        "；", "：", "、", "“", "”", "（", "）", "《", "》", "…", "—", "·", "　", "％", "￥", "℃", "°", "１", "Ａ",
+        "a", "Z", "e", "S", "P", "x", "'", "-", "~", "/", ".", ",", ":", "%", "$", "€", "£", "¥", "+", "&", "@",
+        "0", "1", "2", "3", "5", "9", " ", " ", "\t", "ESP32", "Wi-Fi", "iPhone", "2026-11-18", "9:30", "12:00:05",
+        "1,234", "3.14", "-5", "99%", "$5", "2024年", "3~5", "10:2", "\xe4\xb8", "\xff", "\x80", "é", "ạ", "한"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    unsigned seed = 4242;
+    int bad = 0;
+    for (int it = 0; it < 3000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; } /* random byte */
+            const char *p = parts[r % (unsigned)np];
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int rc = run(buf, VTTS_LANG_ZH, ws, check_ids, &bad);
+        if (rc < 0 || bad) { printf("fuzz zh: rc %d, bad chunk %d (iteration %d)\n", rc, bad, it); return 1; }
+    }
+    if (run("", VTTS_LANG_ZH, ws, NULL, NULL) != 0 || run("。。，", VTTS_LANG_ZH, ws, NULL, NULL) != 0) {
+        puts("fuzz zh: empty input must give 0 chunks");
+        return 1;
+    }
+    return 0;
 }
 
 static int fuzz(void) {
@@ -57,7 +116,7 @@ static int fuzz(void) {
         int rc = vtts_text_to_ids(buf, &ws, NULL, NULL);
         if (rc < 0) { printf("fuzz: error %d\n", rc); return 1; }
         if (s_has_lex) {
-            for (int m = VTTS_LANG_VI; m <= VTTS_LANG_AUTO; m++) {
+            for (int m = VTTS_LANG_VI; m <= (s_has_zh ? VTTS_LANG_ZH : VTTS_LANG_AUTO); m++) {
                 rc = run(buf, m, &ws, NULL, NULL);
                 if (rc < 0) { printf("fuzz v2: error %d\n", rc); return 1; }
             }
@@ -67,8 +126,16 @@ static int fuzz(void) {
         puts("fuzz: empty input must give 0 chunks");
         return 1;
     }
-    puts("fuzz: ok");
+    if (s_has_zh && fuzz_zh(&ws)) return 1;
+    puts(s_has_zh ? "fuzz: ok (with zh)" : "fuzz: ok");
     return 0;
+}
+
+static int mode_of(const char *m) {
+    if (strcmp(m, "en") == 0) return VTTS_LANG_EN;
+    if (strcmp(m, "auto") == 0) return VTTS_LANG_AUTO;
+    if (strcmp(m, "zh") == 0) return VTTS_LANG_ZH;
+    return VTTS_LANG_VI;
 }
 
 int main(int argc, char **argv) {
@@ -78,6 +145,8 @@ int main(int argc, char **argv) {
         if (strcmp(argv[i], "--fuzz") == 0) do_fuzz = 1;
         else if (strcmp(argv[i], "--lex") == 0 && i + 1 < argc) {
             if (load_lex(argv[++i])) { puts("bad lexicon"); return 2; }
+        } else if (strcmp(argv[i], "--zh") == 0 && i + 1 < argc) {
+            if (load_zh(argv[++i])) { puts("bad zh blob"); return 2; }
         } else file = argv[i];
     }
     if (do_fuzz) return fuzz();
@@ -95,7 +164,7 @@ int main(int argc, char **argv) {
         char *text = line, *want = tab + 1;
         int mode = VTTS_LANG_V1;
         if (s_has_lex) { /* v2 fixture: mode \t text \t ids */
-            mode = strcmp(line, "en") == 0 ? VTTS_LANG_EN : strcmp(line, "auto") == 0 ? VTTS_LANG_AUTO : VTTS_LANG_VI;
+            mode = mode_of(line);
             text = want;
             char *t2 = strchr(text, '\t');
             if (!t2) continue;
@@ -111,6 +180,7 @@ int main(int argc, char **argv) {
             bad++;
         }
     }
+    fclose(f);
     printf("%d/%d exact\n", total - bad, total);
     return bad ? 1 : 0;
 }

@@ -485,4 +485,64 @@ static const struct { uint32_t cp; const char *one, *many, *sub1, *subn; } VTTS_
 };
 #define VTTS_EN_N_CURRENCY 3
 
+/* ---- Mandarin (token set zh-en; ids 0..106 are the v2 ids) ---- */
+#define VTTS_ZHEN_ZI0 107  /* + initial index */
+#define VTTS_ZHEN_ZF0 128  /* + final index */
+#define VTTS_ZHEN_ZT1 166  /* + tone - 1 */
+#define VTTS_ZH_N_INITIALS 21
+#define VTTS_ZH_N_FINALS 38
+#define VTTS_ZH_N_TONES 5
+#define VTTS_ZHEN_VOCAB 171
+
+static const char *const VTTS_ZH_DIGITS[10] = {
+    "零", "一", "二", "三", "四", "五",
+    "六", "七", "八", "九",
+};
+
+static const char *const VTTS_ZH_SECTION_UNITS[4] = {
+    "千", "百", "十", "",
+};
+
+static const char *const VTTS_ZH_GROUP_UNITS[4] = {
+    "", "万", "亿", "万亿",
+};
+
+/* full-width forms: U+FF01..U+FF5E -> minus 0xFEE0, plus these */
+static const uint32_t VTTS_ZH_FULLWIDTH[][2] = {
+    {0x3000, 0x0020},
+    {0x3002, 0x002E},
+    {0x3001, 0x002C},
+    {0xFF61, 0x002E},
+    {0xFF64, 0x002C},
+    {0xFFE5, 0x00A5},
+};
+#define VTTS_ZH_N_FULLWIDTH 6
+
+static const char *const VTTS_ZH_SYMBOLS[][2] = {  /* replaced in this order */
+    {"℃", "摄氏度"},
+    {"°C", "摄氏度"},
+    {"°c", "摄氏度"},
+    {"°", "度"},
+    {"+", "加"},
+    {"&", " and "},
+    {"@", " at "},
+};
+#define VTTS_ZH_N_SYMBOLS 7
+
+static const uint32_t VTTS_ZH_DROP[] = {  /* replaced by a space */
+    0x201C, 0x201D, 0x2018, 0x2019, 0x0022, 0x300C, 0x300D, 0x300E,
+    0x300F, 0x300A, 0x300B, 0x3008, 0x3009, 0x3010, 0x3011, 0x3014,
+    0x3015, 0x0028, 0x0029, 0x005B, 0x005D, 0x007B, 0x007D, 0x003C,
+    0x003E, 0x00B7, 0x2022,
+};
+#define VTTS_ZH_N_DROP 27
+
+static const struct { uint32_t cp; const char *name; } VTTS_ZH_CURRENCY[] = {
+    {0x00A5, "元"},
+    {0x0024, "美元"},
+    {0x20AC, "欧元"},
+    {0x00A3, "英镑"},
+};
+#define VTTS_ZH_N_CURRENCY 4
+
 #endif

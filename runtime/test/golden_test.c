@@ -95,6 +95,7 @@ int main(int argc, char **argv) {
         fails += !ok;
         free(arena); free(dur); free(ld); free(z); free(pcm);
     }
+    free(mb); free(gb);
     printf("%s (%d failures)\n", fails ? "FAILED" : "ALL PASS", fails);
     return fails ? 1 : 0;
 }

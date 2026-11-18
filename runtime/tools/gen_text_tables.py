@@ -70,6 +70,41 @@ def english_tables() -> list[str]:
     return out
 
 
+def chinese_tables() -> list[str]:
+    """Token ids of the zh-en set and the strings of the Mandarin normalizer (zh/normalize_zh.py)."""
+    from vtts.frontend.zh import normalize_zh as nz
+
+    z = phoneme_set.token_to_id_zhen
+    out = ["/* ---- Mandarin (token set zh-en; ids 0..106 are the v2 ids) ---- */",
+           f"#define VTTS_ZHEN_ZI0 {z('ZI:' + phoneme_set.ZH_INITIALS[0])}  /* + initial index */",
+           f"#define VTTS_ZHEN_ZF0 {z('ZF:' + phoneme_set.ZH_FINALS[0])}  /* + final index */",
+           f"#define VTTS_ZHEN_ZT1 {z('ZT1')}  /* + tone - 1 */",
+           f"#define VTTS_ZH_N_INITIALS {len(phoneme_set.ZH_INITIALS)}",
+           f"#define VTTS_ZH_N_FINALS {len(phoneme_set.ZH_FINALS)}",
+           f"#define VTTS_ZH_N_TONES {phoneme_set.ZH_TONE_COUNT}",
+           f"#define VTTS_ZHEN_VOCAB {phoneme_set.VOCAB_SIZE_ZHEN}", ""]
+    out += c_list("VTTS_ZH_DIGITS", list(nz.DIGITS))
+    out += c_list("VTTS_ZH_SECTION_UNITS", [u for _, u in nz._SECTION_UNITS])
+    out += c_list("VTTS_ZH_GROUP_UNITS", list(nz._GROUP_UNITS))
+    extra = {k: v for k, v in nz._FULLWIDTH.items() if not 0xFF01 <= k < 0xFF5F}
+    assert all(nz._FULLWIDTH[c] == c - 0xFEE0 for c in range(0xFF01, 0xFF5F))
+    out += ["/* full-width forms: U+FF01..U+FF5E -> minus 0xFEE0, plus these */",
+            "static const uint32_t VTTS_ZH_FULLWIDTH[][2] = {"]
+    out += [f"    {{0x{k:04X}, 0x{v:04X}}}," for k, v in extra.items()]
+    out += ["};", f"#define VTTS_ZH_N_FULLWIDTH {len(extra)}", ""]
+    out += ["static const char *const VTTS_ZH_SYMBOLS[][2] = {  /* replaced in this order */"]
+    out += [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in nz._SYMBOLS.items()]
+    out += ["};", f"#define VTTS_ZH_N_SYMBOLS {len(nz._SYMBOLS)}", ""]
+    out += ["static const uint32_t VTTS_ZH_DROP[] = {  /* replaced by a space */"]
+    drop = [f"0x{ord(c):04X}" for c in nz._DROP]
+    out += ["    " + ", ".join(drop[i:i + 8]) + "," for i in range(0, len(drop), 8)]
+    out += ["};", f"#define VTTS_ZH_N_DROP {len(drop)}", ""]
+    out += ["static const struct { uint32_t cp; const char *name; } VTTS_ZH_CURRENCY[] = {"]
+    out += [f"    {{0x{ord(k):04X}, {c_str(v)}}}," for k, v in nz.CURRENCY.items()]
+    out += ["};", f"#define VTTS_ZH_N_CURRENCY {len(nz.CURRENCY)}", ""]
+    return out
+
+
 def main() -> None:
     rows = []
     for base in BASES:
@@ -98,6 +133,7 @@ def main() -> None:
         lines += [f"    {{{c_str(k)}, {c_str(v)}}}," for k, v in items]
         lines += ["};", f"#define VTTS_N_{name} {len(items)}", ""]
     lines += english_tables()
+    lines += chinese_tables()
     lines += ["#endif", ""]
     OUT.write_text("\n".join(lines), encoding="utf-8")
     print(f"wrote {OUT} ({len(rows)} letters)")

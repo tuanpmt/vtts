@@ -8,6 +8,7 @@ A C99 runtime that turns token ids into 22.05 kHz PCM, plus the device text fron
 |---|---|
 | `include/vtts.h` | Synthesis API: load a model, size the arena, durations, latent, decode, whole-utterance and streaming synthesis |
 | `include/vtts_text.h` | Device text front-end: UTF-8 text → token ids, one callback per sentence chunk |
+| `include/vtts_lex.h`, `include/vtts_zlex.h` | Readers of the English (VLEX) and Mandarin (ZLEX) blobs, read in place |
 | `include/vtts_port.h` | Port interface: int8 dot-product kernels and the parallel-for used to split work across cores |
 | `src/` | Model loader, synthesis graph, reference C kernels, text front-end and its generated tables |
 | `ports/esp32p4/`, `ports/esp32s3/` | SIMD int8 kernels (ESP32-P4 PIE, ESP32-S3 `ee.*` instructions) |
@@ -45,7 +46,25 @@ The Python tests build and run the C tests, so `uv run pytest -q` at the reposit
 
 `vtts_text_to_ids` mirrors the Python front-end (`src/vtts/frontend`) for the subset that devices need: Vietnamese words, letters and acronyms, product codes (ESP32, S3), loanwords, abbreviations, numbers (integers, decimals, thousands separators, negatives), percent, dates (d/m, d/m/yyyy), times (8:30, 8h30, 8h) and punctuation. E-mail addresses, URLs, phone numbers, ISO dates, currency and units are handled only by the Python front-end. The tables in `src/vtts_text_tables.h` are generated from Python, and `test/text_parity.tsv` checks that both produce identical ids.
 
-The English front-end (token set v2) is currently Python only; its C port is planned.
+`vtts_text_to_ids_ex` adds the bilingual modes, each matching `text_to_ids(text, mode)` in Python exactly:
+
+| Mode | Token set | Needs |
+|---|---|---|
+| `VTTS_LANG_VI`, `VTTS_LANG_EN`, `VTTS_LANG_AUTO` | v2 (vi-en) | `lex`: VLEX blob (English lexicon + letter-to-sound, ~1.9 MB, `scripts/frontend/build_lexicon.py`) |
+| `VTTS_LANG_ZH` | zh-en (ids 0–106 = v2, Mandarin from 107, 171 ids) | `lex` for English words and `zh`: ZLEX blob (Mandarin readings, ~116 KB, `scripts/frontend/build_zh_blob.py`) |
+
+Both blobs are read in place (flash is fine) and must stay alive while they are used:
+
+```c
+static vtts_lex lex;   /* small reader structs; no malloc */
+static vtts_zlex zh;
+vtts_lex_init(&lex, lex_blob, lex_size);
+vtts_zlex_init(&zh, zh_blob, zh_size);          /* < 0: not a ZLEX v1 blob */
+vtts_text_opts o = {VTTS_LANG_ZH, &lex, &zh};   /* zh may be NULL for the other modes */
+int chunks = vtts_text_to_ids_ex(utf8, ws, &o, on_ids, user);  /* ws: vtts_text_ws, ~143 KB, PSRAM */
+```
+
+Without `zh`, Han characters give no ids; without `lex`, English words are not pronounced (acronyms are still spelled). A zh-en model must be fed only zh-mode ids (its embedding has 171 rows). `make -C runtime test` builds both blobs and runs every text parity test and the fuzz runs (with ASan/UBSan).
 
 ## Porting
 

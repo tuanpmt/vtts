@@ -25,15 +25,39 @@ build/stream_test: $(SRC) test/stream_test.c include/vtts.h
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) $(SRC) test/stream_test.c -lm -o $@
 
-TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_lex.c
-build/text_test: $(TEXT_SRC) test/text_test.c include/vtts_text.h include/vtts_lex.h src/vtts_text_en.h src/vtts_text_tables.h
+TEXT_SRC = src/vtts_text.c src/vtts_text_en.c src/vtts_text_zh.c src/vtts_lex.c
+TEXT_HDR = include/vtts_text.h include/vtts_lex.h include/vtts_zlex.h src/vtts_text_en.h src/vtts_text_zh.h src/vtts_text_tables.h
+build/text_test: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
 
-build/lex_test: src/vtts_lex.c src/vtts_text_en.c src/vtts_text.c src/vtts_text_en.h test/lex_test.c include/vtts_lex.h src/vtts_text_tables.h
+build/lex_test: $(TEXT_SRC) test/lex_test.c $(TEXT_HDR)
 	mkdir -p build
-	$(CC) $(CFLAGS) $(SAN) -Isrc src/vtts_lex.c src/vtts_text_en.c src/vtts_text.c test/lex_test.c -o $@
+	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/lex_test.c -o $@
 
-build/en_norm_test: src/vtts_text_en.c src/vtts_text.c src/vtts_lex.c test/en_norm_test.c src/vtts_text_en.h src/vtts_text_tables.h
+build/en_norm_test: $(TEXT_SRC) test/en_norm_test.c $(TEXT_HDR)
 	mkdir -p build
-	$(CC) $(CFLAGS) $(SAN) -Isrc src/vtts_text_en.c src/vtts_text.c src/vtts_lex.c test/en_norm_test.c -o $@
+	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/en_norm_test.c -o $@
+
+# Blobs of the device front-end, built from the Python tables (needs uv at the repository root).
+build/lex_en.bin: ../src/vtts/frontend/en/vlex.py ../scripts/frontend/build_lexicon.py
+	mkdir -p build
+	cd .. && uv run python scripts/frontend/build_lexicon.py --out runtime/$@
+
+build/zh_lex.bin: ../src/vtts/frontend/lexicons/zh/chars.tsv ../src/vtts/frontend/lexicons/zh/phrases.tsv ../scripts/frontend/build_zh_blob.py
+	mkdir -p build
+	cd .. && uv run python scripts/frontend/build_zh_blob.py --out runtime/$@
+
+# Mandarin (VTTS_LANG_ZH) parity with text_to_ids(text, "zh") and the fuzz run in every mode.
+zh_test: build/text_test build/lex_en.bin build/zh_lex.bin
+	./build/text_test --lex build/lex_en.bin --zh build/zh_lex.bin test/text_parity_zh.tsv
+	./build/text_test --fuzz --lex build/lex_en.bin --zh build/zh_lex.bin
+
+# All text front-end tests (no model needed); the model golden tests run from pytest.
+test: build/text_test build/lex_test build/en_norm_test build/lex_en.bin build/zh_lex.bin
+	./build/text_test test/text_parity.tsv
+	./build/text_test --lex build/lex_en.bin test/text_parity_v2.tsv
+	./build/lex_test build/lex_en.bin test/lex_expect.tsv
+	./build/en_norm_test test/en_norm.tsv
+	$(MAKE) zh_test
+.PHONY: zh_test test
