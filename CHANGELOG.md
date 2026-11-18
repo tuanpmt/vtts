@@ -12,8 +12,14 @@ All notable changes to this project are documented here. Model files for each re
 - Firmware command `ids ...` and `say.py --lang` to play token ids from a host front-end.
 - **On-device bilingual text:** the firmware embeds the VLEX lexicon (read in place from flash) and uses the bilingual front-end for models with token set v2; `lang vi|en|auto` sets the mode. Same audio as the host front-end on ESP32-P4.
 
+- **Bilingual teacher results at 200k:** `nam-1` CER 0.005 / 0.012 / 0.018 (vi / en / mixed), UTMOS 3.41 / 4.04 / 3.47; `nu-10` CER 0.002 / 0.012 / 0.019, UTMOS 3.67 / 4.38 / 3.83 ([report](docs/reports/bilingual-teacher-eval.md)).
+- **First bilingual student** (`nam-1` M, 1.83M params, 2.6 MB): CER 0.021 / 0.014 / 0.035, RTF 0.26–0.28 on the ESP32-P4 with the on-device front-end. Not released (see below).
+- `render_student_c.py --lang` renders bilingual models through the C runtime for evaluation.
+- **Mandarin corpus builder** (`scripts/data/build_zh_corpus.py`): plain Simplified Chinese sentences from Chinese Wikipedia for the planned Chinese + English voice; synthesis with the `nu-10` voice has started.
+
 ### In progress
-- Teachers for the bilingual voices `nam-1` and `nu-10`; first `nam-1` student.
+- Retraining the `nam-1` and `nu-10` teachers from random initialization on the synthetic audio only (the first teachers were warm-started from a model trained on another corpus), so the bilingual voices can be released under Apache-2.0.
+- Chinese + English voice: front-end (pinyin, polyphones, number reading) and data.
 - User pronunciation dictionary.
 
 ## v0.3.2 (2026-11-17)

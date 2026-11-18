@@ -19,6 +19,8 @@ uv run python scripts/eval/eval_dir.py --system NAME --set eval/sets/mixed.jsonl
 | Voice | Step | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
 |---|---:|---|---|---|---|
 | `nam-1` | 100k | 0.005 / 0.013 | 0.015 / 0.029 | 0.033 / 0.066 | 3.17 / 3.82 / 3.34 |
+| `nam-1` | 200k | 0.005 / 0.014 | 0.012 / 0.020 | 0.018 / 0.041 | 3.41 / 4.04 / 3.47 |
+| `nu-10` | 200k | 0.002 / 0.007 | 0.012 / 0.018 | 0.019 / 0.042 | 3.67 / 4.38 / 3.83 |
 
 For reference, the Vietnamese prototype teacher (trained on a recorded corpus) scored CER 0.015 and UTMOS 2.50 on the same Vietnamese set.
 
@@ -26,4 +28,29 @@ For reference, the Vietnamese prototype teacher (trained on a recorded corpus) s
 
 - Part of the error is scoring, not speech: Whisper writes times as "9.30" (scored as a decimal) and codes as "VN-254"; without these, English CER is about 0.008.
 - Real errors are mostly English words inside Vietnamese sentences said with a Vietnamese accent ("dark mode", "task"), unusual brand names (Baemin), a Vietnamese name read by the English front-end ("Nguyen") and a few tone slips in Vietnamese.
-- Training loss (mel) still falls slowly, about 0.2–0.3 per 10k steps. The next evaluation at about 150k decides whether to stop the teacher and start distillation.
+- Training loss (mel) still falls slowly, about 0.2–0.3 per 10k steps.
+
+## Notes on `nam-1` at 200k (final)
+
+- Better than 100k on every set: mixed CER almost halves (0.033 → 0.018) and UTMOS rises on all three sets (+0.24 Vietnamese, +0.22 English).
+- Remaining English errors are mostly numbers as Whisper writes them (CER 0.049 in that group); device prompts and long sentences score 0.
+- Training stopped at 200k; the student is distilled from this checkpoint.
+
+## Notes on `nu-10` at 200k (final)
+
+- On par with `nam-1` at 200k for accuracy and higher UTMOS on all three sets, so training stopped at 200k as well.
+- The "whistle" score (high-frequency energy) is higher than for `nam-1` (18–29 vs 9–12); part of this is the higher female pitch, to be checked by listening after distillation.
+
+## First student (`nam-1`, M, distilled from the 200k teacher)
+
+Rendered with the C runtime on the host (same output as the chip) and scored like the teachers:
+
+| Model | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
+|---|---|---|---|---|
+| `nam-1` M student (1.83M params, 2.6 MB) | 0.021 / 0.053 | 0.014 / 0.025 | 0.035 / 0.078 | 2.40 / 3.23 / 2.49 |
+
+Words come through almost as well as from the teacher; naturalness (UTMOS) drops by about one point, the usual gap for a model this small. RTF on the ESP32-P4: 0.26–0.28.
+
+## Clean retraining
+
+These teachers were warm-started from a Vietnamese teacher trained on another corpus (VietBibleVox, CC BY-SA 4.0); `nu-10` started from an early `nam-1` checkpoint. So that the released voices carry only the synthetic VoxCPM2 audio and can be Apache-2.0, both teachers are being retrained from random initialization on that audio alone, and the students will be distilled again. The results above are kept for comparison.

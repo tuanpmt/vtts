@@ -16,8 +16,8 @@
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
 | Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.2 (non-commercial)** |
-| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: ~98 h of data, teacher in progress** |
-| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: ~98 h of data, teacher in progress** |
+| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: first student done; teachers retrained from scratch for an Apache-2.0 release** |
+| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: first student done; teachers retrained from scratch for an Apache-2.0 release** |
 | English | 🇺🇸 en | M | S | Planned |
 | Chinese (Mandarin) | 🇨🇳 zh | M | S | Planned |
 | Chinese + English | 🇨🇳 zh + 🇺🇸 en, code-switching | M | S | Planned |
@@ -211,5 +211,5 @@ Bug reports, measurements on other boards and new language front-ends are welcom
 
 - **Code:** Apache-2.0 ([LICENSE](LICENSE)). Parts derived from Piper/VITS keep their MIT license, and the CMU Pronouncing Dictionary keeps its BSD license; see [NOTICE](NOTICE).
 - **Released models:** the current Vietnamese prototype models are CC BY-NC 4.0 (non-commercial use only). Their teacher was initialized from a Piper checkpoint whose training data allows only non-commercial use, and the commercial terms of the InfoRe1 corpus are unclear. The Apache-2.0 code license does not apply to model files. PyTorch checkpoints and teachers are not released.
-- **Synthetic voices:** the bilingual voices are trained on audio generated with VoxCPM2 (Apache-2.0) from designed voices, not cloned from real people; their release license will be stated with the release. Audio from these models should be labeled as AI-generated.
+- **Synthetic voices:** the bilingual voices are trained on audio generated with VoxCPM2 (Apache-2.0) from designed voices, not cloned from real people; their teachers are being retrained from random initialization on that audio alone, so that these voices can be released under Apache-2.0. Audio from these models should be labeled as AI-generated.
 - **Built with Claude Code:** much of this project (runtime and SIMD kernels, front-ends, training and data pipelines, firmware, website and documentation) was written with [Claude Code](https://claude.com/claude-code) by Anthropic, directed and reviewed by the maintainer. Commits made this way carry a `Co-Authored-By: Claude` trailer. This does not change any license above.

@@ -18,8 +18,8 @@
 | Giọng | Ngôn ngữ | Model chất lượng (M) | Model nhẹ (S) | Trạng thái |
 |---|---|---|---|---|
 | Prototype tiếng Việt | 🇻🇳 vi | M-vocos v0.2 (1.73M tham số, 2.6 MB) | S-vocos v0.1 (0.77M tham số, 1.1 MB) | **Đã phát hành trong v0.3.2 (phi thương mại)** |
-| `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: ~98 giờ dữ liệu, đang train teacher** |
-| `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: ~98 giờ dữ liệu, đang train teacher** |
+| `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: đã có student đầu tiên; train lại teacher từ đầu để phát hành Apache-2.0** |
+| `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M | S | **Đang train: đã có student đầu tiên; train lại teacher từ đầu để phát hành Apache-2.0** |
 | Tiếng Anh | 🇺🇸 en | M | S | Dự kiến |
 | Tiếng Trung (phổ thông) | 🇨🇳 zh | M | S | Dự kiến |
 | Trung + Anh | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
@@ -213,5 +213,5 @@ Hoan nghênh báo lỗi, số đo trên board khác và front-end cho ngôn ng�
 
 - **Code:** Apache-2.0 ([LICENSE](LICENSE)). Phần lấy từ Piper/VITS giữ giấy phép MIT, CMU Pronouncing Dictionary giữ giấy phép BSD; xem [NOTICE](NOTICE).
 - **Model đã phát hành:** các model prototype tiếng Việt hiện tại theo CC BY-NC 4.0 (chỉ dùng phi thương mại). Teacher của chúng được khởi tạo từ một checkpoint Piper có dữ liệu gốc chỉ cho dùng phi thương mại, và điều khoản thương mại của bộ InfoRe1 chưa rõ. Giấy phép Apache-2.0 của code không áp dụng cho file model. Checkpoint PyTorch và teacher không được phát hành.
-- **Giọng tổng hợp:** các giọng song ngữ được train trên audio sinh bằng VoxCPM2 (Apache-2.0) từ giọng thiết kế, không clone giọng người thật; giấy phép phát hành sẽ được ghi rõ khi phát hành. Audio từ các model này nên được ghi chú là do AI tạo ra.
+- **Giọng tổng hợp:** các giọng song ngữ được train trên audio sinh bằng VoxCPM2 (Apache-2.0) từ giọng thiết kế, không clone giọng người thật; teacher của chúng đang được train lại từ khởi tạo ngẫu nhiên chỉ trên audio đó, để các giọng này phát hành được theo Apache-2.0. Audio từ các model này nên được ghi chú là do AI tạo ra.
 - **Xây dựng cùng Claude Code:** phần lớn dự án (runtime và kernel SIMD, front-end, quy trình dữ liệu và train, firmware, website, tài liệu) được viết bằng [Claude Code](https://claude.com/claude-code) của Anthropic, dưới sự định hướng và review của người duy trì dự án. Các commit làm theo cách này có dòng `Co-Authored-By: Claude`. Điều này không thay đổi các giấy phép ở trên.
