@@ -15,6 +15,7 @@ All notable changes to this project are documented here. Model files for each re
 - **Bilingual teacher results at 200k:** `nam-1` CER 0.005 / 0.012 / 0.018 (vi / en / mixed), UTMOS 3.41 / 4.04 / 3.47; `nu-10` CER 0.002 / 0.012 / 0.019, UTMOS 3.67 / 4.38 / 3.83 ([report](docs/reports/bilingual-teacher-eval.md)).
 - **First bilingual student** (`nam-1` M, 1.83M params, 2.6 MB): CER 0.021 / 0.014 / 0.035, RTF 0.26–0.28 on the ESP32-P4 with the on-device front-end. Not released (see below).
 - `render_student_c.py --lang` renders bilingual models through the C runtime for evaluation.
+- **Chinese front-end (Python):** token set `zh-en` (v2 ids 0–106 unchanged, Mandarin initials, finals and tones from id 107), `text_to_ids(text, "zh")` for Chinese with English words, readings from a default-per-character table plus a polyphone phrase table generated from pypinyin (`scripts/frontend/build_zh_lexicon.py`), Chinese number, date, time and percentage reading; teacher rows with lang `zh` use it.
 - **Mandarin corpus builder** (`scripts/data/build_zh_corpus.py`): plain Simplified Chinese sentences from Chinese Wikipedia for the planned Chinese + English voice; synthesis with the `nu-10` voice has started.
 
 ### Changed
