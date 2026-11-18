@@ -34,9 +34,14 @@ def pack_inputs(path: Path, limit: int | None, seed: int = 0) -> list[list[int]]
     rows = [json.loads(ln) for ln in lines]
     if limit is not None and limit < len(rows):
         rows = random.Random(seed).sample(rows, limit)
-    # pair languages (zh, ko, ja) use their pair token set; "mixed" (vi-en) is read in "vi" mode
-    modes = {"en": "en", "zh": "zh", "ko": "ko", "ja": "ja"}
-    return [ids for r in rows for ids in text_to_ids(r["text"], modes.get(r.get("lang"), "vi"))]
+    # pair languages (PAIR_MODES: zh, ko, ja ...) use their pair token set; "mixed" (vi-en) is read in "vi" mode
+    return [ids for r in rows for ids in text_to_ids(r["text"], _mode(r.get("lang")))]
+
+
+def _mode(lang: str | None) -> str:
+    from vtts.frontend.phoneme_set import PAIR_MODES
+
+    return lang if lang == "en" or lang in PAIR_MODES else "vi"
 
 
 @torch.inference_mode()

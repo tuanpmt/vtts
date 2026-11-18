@@ -154,3 +154,20 @@ _TOKEN_TO_ID_JAEN = {tok: i for i, tok in enumerate(TOKENS_JAEN)}
 
 def token_to_id_jaen(tok: str) -> int:
     return _TOKEN_TO_ID_JAEN[tok]
+
+
+# ---------------- text modes of the pair token sets ----------------
+# text_to_ids(text, mode) with a pair mode returns ids of that mode's token set; the modes vi, en
+# and auto use vi-en. A new pair adds its token set above, one entry here, its language module
+# (languages.py) and its tagging rule (lang.py).
+
+PAIR_MODES: dict[str, str] = {"zh": TOKEN_SET_ZHEN, "ko": TOKEN_SET_KOEN, "ja": TOKEN_SET_JAEN}
+
+_TOKEN_INDEX: dict[str, dict[str, int]] = {}
+
+
+def token_index(token_set: str) -> dict[str, int]:
+    """token -> id in a token set of TOKEN_SETS."""
+    if token_set not in _TOKEN_INDEX:
+        _TOKEN_INDEX[token_set] = {tok: i for i, tok in enumerate(TOKEN_SETS[token_set])}
+    return _TOKEN_INDEX[token_set]

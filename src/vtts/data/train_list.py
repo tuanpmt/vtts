@@ -9,12 +9,13 @@ and SYNTH/audio/<id>.flac), or, for a run whose manifest is not at hand, an exis
 scripts/data/synth_to_csv.py (csv=, uid|text|dur|lang) plus the run's audio. Options per source:
 only (keep rows of one lang), lang (write this lang instead of the sentence's), hours (keep a
 seeded random subset of about this many hours). Rows are left out when the manifest status is not
-ok, the audio file is missing, the text holds "|", or (lang zh, ko, ja) the text has characters
+ok, the audio file is missing, the text holds "|", or (pair languages) the text has characters
 the pair front-end cannot read, so the ids always match the audio.
 """
 
 from __future__ import annotations
 
+import importlib
 import json
 import random
 from dataclasses import dataclass
@@ -23,21 +24,20 @@ from pathlib import Path
 LIST_FIELDS = ("sentences", "csv", "synth", "only", "lang", "hours")
 
 
+# Pair language -> (module, function) listing the characters of a text its front-end cannot read.
+UNREADABLE = {
+    "zh": ("vtts.frontend.zh.g2p_zh", "unknown_han"),
+    "ko": ("vtts.frontend.ko.g2p_ko", "unreadable_ko"),
+    "ja": ("vtts.frontend.ja.g2p_ja", "unreadable_ja"),
+}
+
+
 def unreadable(text: str, lang: str) -> bool:
     """True when the pair front-end would skip characters of the text (no reading)."""
-    if lang == "zh":
-        from vtts.frontend.zh.g2p_zh import unknown_han
-
-        return bool(unknown_han(text))
-    if lang == "ko":
-        from vtts.frontend.ko.g2p_ko import unreadable_ko
-
-        return bool(unreadable_ko(text))
-    if lang == "ja":
-        from vtts.frontend.ja.g2p_ja import unreadable_ja
-
-        return bool(unreadable_ja(text))
-    return False
+    if lang not in UNREADABLE:
+        return False
+    module, fn = UNREADABLE[lang]
+    return bool(getattr(importlib.import_module(module), fn)(text))
 
 
 @dataclass(frozen=True)

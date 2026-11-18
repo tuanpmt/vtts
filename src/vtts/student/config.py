@@ -70,9 +70,9 @@ PRESETS["M-vocos-p-bi-s3"] = replace(PRESETS["M-vocos-p-bi"], v_mult=2)
 # Other pairs (main language + English): the vocabulary covers the pair's token set (shared ids
 # 0..106 plus the language block); same model sizes as the vi-en presets.
 def _pair_presets() -> None:
-    from vtts.frontend.phoneme_set import TOKEN_SETS
+    from vtts.frontend.phoneme_set import PAIR_MODES, TOKEN_SETS
 
-    for pair in ("zh-en", "ko-en", "ja-en"):
+    for pair in PAIR_MODES.values():
         n = len(TOKEN_SETS[pair])
         PRESETS[f"M-vocos-p-{pair}"] = replace(PRESETS["M-vocos-p"], vocab=n)
         PRESETS[f"S-vocos-p-{pair}"] = replace(PRESETS["S-vocos-p"], vocab=n)

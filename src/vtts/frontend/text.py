@@ -78,10 +78,11 @@ def text_to_ids(text: str, lang: str | None = None) -> list[list[int]]:
 
 def token_to_id_for(lang: str):
     """token -> id function of the token set a mode produces (vi/en/auto: v2)."""
-    from .phoneme_set import token_to_id_jaen, token_to_id_koen, token_to_id_v2, token_to_id_zhen
+    from .phoneme_set import PAIR_MODES, token_index, token_to_id_v2
 
-    return {"zh": token_to_id_zhen, "ko": token_to_id_koen, "ja": token_to_id_jaen}.get(
-        lang, token_to_id_v2)
+    if lang in PAIR_MODES:
+        return token_index(PAIR_MODES[lang]).__getitem__
+    return token_to_id_v2
 
 
 # ---------------- bilingual (phoneme set v2) ----------------

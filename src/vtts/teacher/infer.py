@@ -8,6 +8,7 @@ import numpy as np
 import torch
 
 from vtts.frontend.g2p import encode, g2p
+from vtts.frontend.phoneme_set import PAIR_MODES
 from vtts.frontend.text import split_sentences, text_to_ids
 
 from .config import TeacherConfig
@@ -49,7 +50,7 @@ class Teacher:
         if lang is None:
             chunks = [encode(g2p(chunk)) for chunk in split_sentences(text)]
         else:
-            chunks = text_to_ids(text, lang if lang in ("en", "zh", "ko", "ja") else "vi")
+            chunks = text_to_ids(text, lang if lang == "en" or lang in PAIR_MODES else "vi")
         parts: list[np.ndarray] = []
         for ids in chunks:
             if parts:

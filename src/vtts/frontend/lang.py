@@ -27,6 +27,7 @@ import unicodedata
 from collections.abc import Callable
 
 from .lexicon import ABBREVIATIONS, LOANWORDS
+from .phoneme_set import PAIR_MODES
 from .syllable import parse_syllable
 
 EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—"
@@ -99,12 +100,12 @@ def split_scripts(sentence: str, classify: Callable[[str], int] = _script_class)
 
 
 # Languages each mode can produce (its token set): a script rule for another language is skipped.
-MODE_LANGS = {"vi": ("vi", "en"), "en": ("vi", "en"), "auto": ("vi", "en"), "zh": ("zh", "en"),
-              "ko": ("ko", "en"), "ja": ("ja", "en")}
+MODE_LANGS = {"vi": ("vi", "en"), "en": ("vi", "en"), "auto": ("vi", "en"),
+              **{mode: (mode, "en") for mode in PAIR_MODES}}
 
 
 def sentence_lang(sentence: str, mode: str) -> str:
-    if mode in ("vi", "en", "zh", "ko", "ja"):
+    if mode in ("vi", "en") or mode in PAIR_MODES:
         return mode
     words = [_core(c) for c in sentence.split()]
     words = [w for w in words if any(ch.isalpha() for ch in w)]
@@ -135,7 +136,7 @@ def word_lang(core: str, mode: str) -> str:
             return code
     if not _is_plain_latin(core):
         return "neutral"
-    if mode in ("en", "zh", "ko", "ja"):
+    if mode == "en" or mode in PAIR_MODES:
         return "en"
     parts = [p for p in re.split(r"[-']", core) if p]
     if all(parse_syllable(p.lower()) is not None for p in parts):

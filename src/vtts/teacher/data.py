@@ -13,7 +13,7 @@ from torch.utils.data import Dataset, Sampler
 from vtts.data.audio import resample
 from vtts.frontend.g2p import encode, g2p
 from vtts.frontend.normalize import normalize
-from vtts.frontend.phoneme_set import BOS, EOS
+from vtts.frontend.phoneme_set import BOS, EOS, PAIR_MODES
 from vtts.frontend.text import text_to_tokens, token_to_id_for
 
 from .config import TeacherConfig
@@ -42,7 +42,7 @@ def encode_text(text: str, lang: str | None) -> list[int]:
     zh-en, ko-en or ja-en teacher trains on its own rows plus the vi-en English rows unchanged."""
     if lang is None:
         return encode(g2p(normalize(text)))
-    mode = {"en": "en", "zh": "zh", "ko": "ko", "ja": "ja"}.get(lang, "vi")
+    mode = lang if lang == "en" or lang in PAIR_MODES else "vi"
     to_id = token_to_id_for(mode)
     toks = [t for chunk in text_to_tokens(text, mode) for t in chunk]
     return [to_id(BOS), *(to_id(t) for t in toks), to_id(EOS)]
