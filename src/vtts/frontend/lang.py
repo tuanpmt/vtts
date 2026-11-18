@@ -21,6 +21,9 @@ token set.
 - In the Latin-script pair modes ("es", "id", "pt") a word with the language's own letters (á, ñ ...)
   is that language and a plain Latin word is decided by latin.latin_word_lang (word lists,
   CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are dropped.
+- In "hi" mode a word with Devanagari is Hindi and a plain Latin word is English, except the
+  multi-letter units and currency words of the Hindi normalizer (km, GB, Rs), which are read with
+  their number in Hindi. The danda । and double danda ॥ end a sentence (in every mode).
 """
 
 from __future__ import annotations
@@ -35,7 +38,7 @@ from .phoneme_set import PAIR_MODES
 from .syllable import parse_syllable
 
 EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—"
-SENTENCE_END = re.compile(r"(?<=[.!?;])\s+|(?<=[。！？；])\s*")
+SENTENCE_END = re.compile(r"(?<=[.!?;])\s+|(?<=[。！？；।॥])\s*")
 VI_RATIO = 0.2
 
 
@@ -65,6 +68,13 @@ def _has_japanese(word: str) -> bool:
     """Kana or kanji (a rule only in modes whose token set has Japanese, so Han text stays
     Chinese in the zh mode)."""
     return any(_script_class_ja(ch) == 1 for ch in word)
+
+
+def _has_devanagari(word: str) -> bool:
+    """Devanagari letters or signs (not only digits or the danda)."""
+    from .hi.g2p_hi import is_devanagari_word
+
+    return is_devanagari_word(word)
 
 
 def _script_class_ja(ch: str) -> int:
@@ -127,6 +137,7 @@ SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [
     ("ja", _has_japanese),
     ("zh", _has_han),
     ("ko", _has_hangul),
+    ("hi", _has_devanagari),
     *((code, has_letters_of(code)) for code in LATIN_PAIRS),
     ("vi", _has_vietnamese_letters),
 ]
@@ -143,6 +154,10 @@ def word_lang(core: str, mode: str) -> str:
         return "neutral"
     if mode in LATIN_PAIRS:
         return latin_word_lang(core, mode)
+    if mode == "hi":
+        from .hi.normalize_hi import LATIN_WORDS
+
+        return "hi" if core in LATIN_WORDS else "en"
     if mode == "en" or mode in PAIR_MODES:
         return "en"
     parts = [p for p in re.split(r"[-']", core) if p]

@@ -6,7 +6,7 @@ from vtts.student.distill_data import pack_inputs
 
 
 def test_pair_presets_cover_their_token_sets():
-    assert {"zh-en", "ko-en", "ja-en", "es-en", "id-en", "pt-en"} <= set(PAIR_MODES.values())
+    assert {"zh-en", "ko-en", "ja-en", "es-en", "id-en", "pt-en", "hi-en"} <= set(PAIR_MODES.values())
     for pair in PAIR_MODES.values():
         size = len(TOKEN_SETS[pair])
         for base in ("M-vocos-p", "S-vocos-p"):
@@ -18,7 +18,7 @@ def test_pack_inputs_uses_the_pair_token_set(tmp_path):
     rows = [{"text": "今天天气很好。", "lang": "zh"}, {"text": "Turn on the light.", "lang": "en"},
             {"text": "오늘 날씨가 좋아요.", "lang": "ko"}, {"text": "今日はいい天気です。", "lang": "ja"},
             {"text": "Hoy hace buen tiempo.", "lang": "es"}, {"text": "Hari ini cuacanya cerah.", "lang": "id"},
-            {"text": "Hoje o tempo está bom.", "lang": "pt"}]
+            {"text": "Hoje o tempo está bom.", "lang": "pt"}, {"text": "आज मौसम अच्छा है।", "lang": "hi"}]
     p = tmp_path / "s.jsonl"
     p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
     packs = pack_inputs(p, None)

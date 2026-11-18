@@ -32,6 +32,7 @@ UNREADABLE = {
     "es": ("vtts.frontend.es.g2p_es", "unreadable_es"),
     "id": ("vtts.frontend.id.g2p_id", "unreadable_id"),
     "pt": ("vtts.frontend.pt.g2p_pt", "unreadable_pt"),
+    "hi": ("vtts.frontend.hi.g2p_hi", "unreadable_hi"),
 }
 
 

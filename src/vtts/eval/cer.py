@@ -18,7 +18,8 @@ where the reference has kana (or the other way round) counts as an error.
 
 Latin-script pair languages (LATIN_PAIR_LANGS: es ...) go through their pair front-end the same
 way (numbers read in the main language, English words through the English normalizer, accents
-kept, lower case); CER counts characters with the spaces between words, WER counts words."""
+kept, lower case); CER counts characters with the spaces between words, WER counts words. Hindi
+("hi") is scored the same way (Devanagari words separated by spaces, numbers read in Hindi)."""
 
 from __future__ import annotations
 
@@ -43,9 +44,10 @@ def _plain_words(text: str) -> list[str]:
 
 
 LATIN_PAIR_LANGS = ("es", "id", "pt")
-PAIR_LANGS = ("zh", "ko", "ja", *LATIN_PAIR_LANGS)
+SPACED_PAIR_LANGS = (*LATIN_PAIR_LANGS, "hi")  # words separated by spaces: CER keeps them
+PAIR_LANGS = ("zh", "ko", "ja", *SPACED_PAIR_LANGS)
 WHISPER_LANGUAGE = {"vi": "vi", "en": "en", "mixed": "vi", "zh": "zh", "ko": "ko", "ja": "ja",
-                    **{code: code for code in LATIN_PAIR_LANGS}}
+                    **{code: code for code in SPACED_PAIR_LANGS}}
 
 
 def _is_cjk(ch: str) -> bool:
@@ -68,7 +70,7 @@ def _pair_words(text: str, lang: str) -> list[str]:
         from vtts.frontend.ja.kana import to_hiragana
 
         words = [to_hiragana(w) for w in words]
-    if lang == "ko" or lang in LATIN_PAIR_LANGS:
+    if lang == "ko" or lang in SPACED_PAIR_LANGS:
         return words
     out: list[str] = []
     for w in words:  # zh, ja: one unit per character of a CJK word, Latin words whole
@@ -106,7 +108,7 @@ def _edits(ref: Sequence, hyp: Sequence) -> int:
 
 def _chars(text: str, lang: str) -> str:
     p = prep_for_cer(text, lang)
-    return p.replace(" ", "") if lang in PAIR_LANGS and lang not in LATIN_PAIR_LANGS else p
+    return p.replace(" ", "") if lang in PAIR_LANGS and lang not in SPACED_PAIR_LANGS else p
 
 
 def cer(ref: str, hyp: str, lang: str = "vi") -> float:

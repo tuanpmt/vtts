@@ -212,7 +212,7 @@ vtts tập trung vào **giọng song ngữ: một ngôn ngữ chính + tiếng A
 - [ ] **Tây Ban Nha + Anh** (front-end Python đã xong)
 - [ ] **Bồ Đào Nha (Brazil) + Anh** (front-end Python đã xong)
 - [ ] **Indonesia + Anh** (front-end Python đã xong)
-- [ ] **Hindi + Anh**
+- [ ] **Hindi + Anh** (front-end Python đã xong)
 - [ ] **Thái + Anh**
 - [ ] Sau đó, theo nhu cầu: Đức, Pháp
 - [ ] Từ điển phát âm của người dùng

@@ -162,6 +162,19 @@ def _pt_word(word: str) -> list[str]:
     return word_tokens_pt(word)
 
 
+def _hi_normalize(text: str) -> str:
+    from .hi.normalize_hi import normalize_hi
+
+    return normalize_hi(text)
+
+
+def _hi_word(word: str) -> list[str]:
+    """A Devanagari word; a Latin word (from a mixed chunk) is read in English."""
+    from .hi.g2p_hi import is_devanagari_word, word_tokens_hi
+
+    return word_tokens_hi(word) if is_devanagari_word(word) else _en_word(word)
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
@@ -171,4 +184,5 @@ LANGUAGES: dict[str, LanguageModule] = {
     "es": LanguageModule("es", _es_normalize, _es_word),
     "id": LanguageModule("id", _id_normalize, _id_word),
     "pt": LanguageModule("pt", _pt_normalize, _pt_word),
+    "hi": LanguageModule("hi", _hi_normalize, _hi_word),
 }

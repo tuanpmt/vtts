@@ -59,6 +59,7 @@ def test_unreadable_per_pair_language():
     assert unreadable("Hola Москва.", "es") and not unreadable("¿Qué tal, François?", "es")
     assert unreadable("Halo Москва.", "id") and not unreadable("Apa kabar, Kafé?", "id")
     assert unreadable("Olá Москва.", "pt") and not unreadable("Olá, tudo bem? François", "pt")
+    assert unreadable("नमस्ते Москва।", "hi") and not unreadable("नमस्ते, François और Wi-Fi।", "hi")
     assert not unreadable("Москва", "vi")  # languages without a check keep every row
 
 

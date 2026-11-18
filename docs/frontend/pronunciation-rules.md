@@ -433,6 +433,55 @@ Palatalized t/d before i (tia, leite) and the vocalized final l (Brasil) are lef
 
 Known gaps: open/closed e/o of words missing from the table follow the defaults (closed); x between vowels defaults to `sh`; pretonic vowel raising (menino → minino) and sandhi between words are not marked.
 
+## Hindi (token set `hi-en`)
+
+Python only for now (`src/vtts/frontend/hi/`). `text_to_ids(text, "hi")` returns ids of the token set `hi-en` (model header code 10): ids 0–106 are the v2 set unchanged, followed by 50 Hindi tokens from id 107 (vocabulary 157):
+
+| Group | Tokens |
+|---|---|
+| Vowels (10) | `HI:a aa i ii u uu e ai o au` (`a` the schwa of अ; `ai` = ऐ ॅ, `au` = औ ऑ) |
+| Nasalization (1) | `HI:~` after the nasalized vowel |
+| Stops and nasals (25) | `HI:k kh g gh ng`, `c ch j jh ny` (च छ ज झ ञ), `T Th D Dh N` (retroflex), `t th d dh n`, `p ph b bh m` |
+| Others (14) | `HI:y r l v sh s h` (ष = `sh`), `R Rh` (flaps ड़ ढ़), `q x G z f` (nukta: क़ ख़ ग़ ज़ फ़) |
+
+Latin words are tagged English (`lang.py`); only the units and currency words of the Hindi normalizer (km, GB, Rs) stay Hindi so they are read with their number. Devanagari is tagged `hi` in mode `hi` only.
+
+```mermaid
+flowchart LR
+    W["Devanagari word"] --> O{"overrides.tsv?"}
+    O -->|yes| P["Phonemes"]
+    O -->|no| L["Letters: consonant + matra / virama / inherent schwa"]
+    L --> N["Anusvara: homorganic nasal or ~"]
+    N --> F["Final schwa deletion"]
+    F --> M["Medial schwa deletion VC_CV, right to left"]
+    M --> P
+```
+
+**Letters** (`hi/g2p_hi.py`): a consonant carries the inherent schwa unless a matra or the virama ् follows; the nukta (decomposed or precomposed क़ … य़) changes क ख ग ज फ ड ढ to `q x G z f R Rh`. ज्ञ → `g y`, क्ष → `k sh`, ऋ / ृ → `r i`, ॐ → `o m`, visarga ः → `h`; avagraha, ZWJ and ZWNJ are ignored. Chandrabindu ँ nasalizes its vowel (`हूँ` → `h uu ~`). Anusvara ं after a short vowel (a i u) before a stop is the nasal of that stop (`हिंदी` → `h i n d ii`, `ठंडा` → `Th a N D aa`); otherwise it nasalizes (`दांत` → `d aa ~ t`, `संसार` → `s a ~ s aa r`, `में` → `m e ~`).
+
+**Schwa deletion:** only inherent schwas without a nasal sign or visarga are deleted. Word-final: deleted (`कमल` → `k a m a l`) except in one-letter words (`न`) and after a cluster ending in य or र (`सत्य`, `मित्र`). Medial: right to left, a schwa between V C and C V is deleted (`कमला` → `k a m l aa`, `अपना` → `a p n aa`, `लड़का` → `l a R k aa`, `समझना` → `s a m a jh n aa`: the schwa after झ goes first, so the one after म keeps). `lexicons/hi/overrides.tsv` gives the phonemes of words the rule gets wrong (27 entries): prefixes (असफल), compounds (राष्ट्रपति, लखपति), reduplicated verbs (जगमगाना) and Sanskrit -aN nouns (उदाहरण, वातावरण); a test checks that every entry differs from the rule.
+
+**Normalization** (`hi/normalize_hi.py`):
+
+| Text | Reading |
+|---|---|
+| 21, 49, 99 (0–99 from `lexicons/hi/numbers.tsv`) | इक्कीस, उनचास, निन्यानबे |
+| 250, 1,25,000 / 125,000, 2,50,00,000 | दो सौ पचास, एक लाख पच्चीस हज़ार, दो करोड़ पचास लाख |
+| ५, २०२६ | पाँच, दो हज़ार छब्बीस |
+| 3.5, 0.25 | तीन दशमलव पाँच, शून्य दशमलव दो पाँच |
+| 15/08/1947, 2026-11-19, सन 1947 | पंद्रह अगस्त उन्नीस सौ सैंतालीस, उन्नीस नवंबर दो हज़ार छब्बीस, सन उन्नीस सौ सैंतालीस |
+| 7:30, 7:00 बजे | सात बजकर तीस मिनट, सात बजे |
+| ₹500, ₹1.50, Rs 99, $20 | पाँच सौ रुपये, एक रुपया पचास पैसे, निन्यानबे रुपये, बीस डॉलर |
+| 15%, 5 km, 128GB, 30°C | पंद्रह प्रतिशत, पाँच किलोमीटर, एक सौ अट्ठाईस गीगाबाइट, तीस डिग्री सेल्सियस |
+| 10वीं, 5वाँ | दसवीं, पाँचवाँ (1-4 and 6 take the stems पहल दूसर तीसर चौथ छठ) |
+| 10-20, -5 | दस से बीस, माइनस पाँच |
+| 98765 43210, +91 … | digit by digit (प्लस for +) |
+| ESP32, 5G | ई एस पी तीन दो, पाँच जी (Latin letters by their Hindi names) |
+| डॉ., प्रो., कि.मी. | डॉक्टर, प्रोफ़ेसर, किलोमीटर |
+| । ॥ | end of sentence (`.`) |
+
+Known gaps: schwa deletion at morpheme boundaries of words missing from the table (compounds, prefixes); no stress or ह-coloured vowels (कहना is read k a h n aa); साढ़े / सवा / पौने times; ordinals like 1ला; Urdu-only letters beyond nukta consonants; ऑ is merged with औ and ॅ with ऐ.
+
 ## Changing a rule or an entry
 
 1. Edit the TSV file (or the rule in the normalizer).
@@ -486,6 +535,7 @@ Applications will be able to add their own entries without rebuilding the firmwa
 
 | Date | Change |
 |---|---|
+| 2026-11-19 | Hindi front-end in Python: token set `hi-en`, Devanagari letters, nasals and schwa deletion, `lexicons/hi/` (numbers 0-99, overrides), Hindi number reading, mode `hi`. |
 | 2026-11-18 | Portuguese (Brazil) front-end in Python: token set `pt-en`, spelling, nasal, stress and vowel-quality rules, `lexicons/pt/`, Portuguese number reading, mode `pt`. |
 | 2026-11-18 | Indonesian front-end in Python: token set `id-en`, spelling, e and stress rules, `lexicons/id/`, Indonesian number reading, mode `id`. |
 | 2026-11-18 | Spanish front-end in Python: token set `es-en`, spelling and stress rules, `lexicons/es/`, Spanish number reading, mode `es`; Latin-script code-switching rules (`latin.py`, `lexicons/latin/english.txt`). |

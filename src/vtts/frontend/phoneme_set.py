@@ -232,6 +232,30 @@ VOCAB_SIZE_PTEN = len(TOKENS_PTEN)
 TOKEN_SETS[TOKEN_SET_PTEN] = TOKENS_PTEN
 
 
+# ---------------- token set "hi-en": Hindi + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes from the Devanagari rules of src/vtts/frontend/hi/ (schwa deletion applied). Vowels: a
+# (the schwa of अ), aa i ii u uu e, ai (ऐ, also ॅ), o, au (औ, also ऑ); "~" nasalizes the vowel
+# before it (chandrabindu, anusvara before a non-stop or after a long vowel). Consonants in ITRANS
+# style: c ch = च छ, T Th D Dh N = retroflex ट ठ ड ढ ण, R Rh = the flaps ड़ ढ़, ng ny = ङ ञ, sh = श
+# and ष (merged), q x G z f = the nukta consonants क़ ख़ ग़ ज़ फ़. ऋ is read r i; no stress.
+
+TOKEN_SET_HIEN = "hi-en"
+
+HI_VOWELS = ("a", "aa", "i", "ii", "u", "uu", "e", "ai", "o", "au")
+HI_NASAL = "~"
+HI_CONSONANTS = ("k", "kh", "g", "gh", "ng", "c", "ch", "j", "jh", "ny",
+                 "T", "Th", "D", "Dh", "N", "t", "th", "d", "dh", "n",
+                 "p", "ph", "b", "bh", "m", "y", "r", "l", "v", "sh", "s", "h",
+                 "R", "Rh", "q", "x", "G", "z", "f")
+
+TOKENS_HIEN: tuple[str, ...] = (
+    TOKENS_V2 + tuple(f"HI:{p}" for p in HI_VOWELS + (HI_NASAL,) + HI_CONSONANTS)
+)
+VOCAB_SIZE_HIEN = len(TOKENS_HIEN)
+
+TOKEN_SETS[TOKEN_SET_HIEN] = TOKENS_HIEN
+
+
 # ---------------- text modes of the pair token sets ----------------
 # text_to_ids(text, mode) with a pair mode returns ids of that mode's token set; the modes vi, en
 # and auto use vi-en. A new pair adds its token set above, one entry here, its language module
@@ -239,8 +263,8 @@ TOKEN_SETS[TOKEN_SET_PTEN] = TOKENS_PTEN
 
 PAIR_MODES: dict[str, str] = {"zh": TOKEN_SET_ZHEN, "ko": TOKEN_SET_KOEN, "ja": TOKEN_SET_JAEN,
                               "es": TOKEN_SET_ESEN, "id": TOKEN_SET_IDEN,
-                              "pt": TOKEN_SET_PTEN}
-# Reserved model header codes (export/format.py): 9 = th-en, 10 = hi-en.
+                              "pt": TOKEN_SET_PTEN, "hi": TOKEN_SET_HIEN}
+# Reserved model header code (export/format.py): 9 = th-en.
 
 _TOKEN_INDEX: dict[str, dict[str, int]] = {}
 

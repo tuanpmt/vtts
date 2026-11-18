@@ -1,0 +1,31 @@
+# Hindi words the schwa-deletion rule reads wrongly, with their phonemes (hi-en tokens without
+# the HI: prefix). Matching: the whole word (NFC). Mostly prefix or compound boundaries
+# (a+saphal), reduplicated verbs (jagmagaanaa) and Sanskrit -aN nouns (udaaharaN).
+# See docs/frontend/pronunciation-rules.md.
+उदाहरण	u d aa h a r a N
+आचरण	aa c a r a N
+व्याकरण	v y aa k a r a N
+अनुसरण	a n u s a r a N
+अनुकरण	a n u k a r a N
+आवरण	aa v a r a N
+विवरण	v i v a r a N
+प्रकरण	p r a k a r a N
+उपकरण	u p k a r a N
+अवतरण	a v t a r a N
+नामकरण	n aa m k a r a N
+वातावरण	v aa t aa v a r a N
+पर्यावरण	p a r y aa v a r a N
+असफल	a s a ph a l
+असफलता	a s a ph a l t aa
+असमर्थ	a s a m a r th
+मनचला	m a n c a l aa
+लहलहाना	l a h l a h aa n aa
+जगमगाना	j a g m a g aa n aa
+खटखटाना	kh a T kh a T aa n aa
+चमचमाना	c a m c a m aa n aa
+बड़बड़ाना	b a R b a R aa n aa
+गड़गड़ाहट	g a R g a R aa h a T
+राष्ट्रपति	r aa sh T r a p a t i
+सेनापति	s e n aa p a t i
+करोड़पति	k a r o R p a t i
+लखपति	l a kh p a t i

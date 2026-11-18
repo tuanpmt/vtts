@@ -56,8 +56,11 @@ def test_streaming_equals_whole(tmp_path, name):
     subprocess.run(["make", "-s", "build/stream_test"], cwd=RUNTIME, check=True)
     torch.manual_seed(0)
     m = Student(PRESETS[name]).eval()
-    with torch.no_grad():
-        m.duration.out.bias.fill_(math.log(4.0))
+    with torch.no_grad():  # 6 frames per id for every preset: frame counts (132, 36, 324) do not
+        # depend on the random init (which shifts with the vocab size) and stay clear of the C
+        # test's 200-frame threshold for the arena check
+        m.duration.out.weight.zero_()
+        m.duration.out.bias.fill_(math.log(6.0))
     from vtts.export.quant import write_model_int8
 
     write_model_int8(m, tmp_path / "m8.vtts")

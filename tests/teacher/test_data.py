@@ -122,11 +122,11 @@ def test_encode_text_ja_uses_jaen_ids_and_english_rows_match():
     assert encode_text(en, "en") == text_to_ids(en, "ja")[0] == text_to_ids(en, "en")[0]
 
 
-LATIN_PAIR_ROWS = [("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor.")]
+WORD_PAIR_ROWS = [("hi", "hi-en", "कृपया GitHub खोलो।"), ("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor.")]
 
 
-@pytest.mark.parametrize("lang, token_set, text", LATIN_PAIR_ROWS)
-def test_encode_text_latin_pairs_use_their_token_set(lang, token_set, text):
+@pytest.mark.parametrize("lang, token_set, text", WORD_PAIR_ROWS)
+def test_encode_text_word_pairs_use_their_token_set(lang, token_set, text):
     from vtts.frontend.phoneme_set import TOKEN_SETS, VOCAB_SIZE_V2
     from vtts.frontend.text import text_to_ids
     from vtts.teacher.data import encode_text

@@ -96,3 +96,11 @@ def test_latin_pair_cer_reads_numbers_and_keeps_spaces():
     assert WHISPER_LANGUAGE["pt"] == "pt"
     assert cer("Ada 21 orang.", "ada dua puluh satu orang", "id") == 0.0
     assert WHISPER_LANGUAGE["id"] == "id"
+
+
+def test_hindi_cer_reads_numbers_and_keeps_spaces():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert prep_for_cer("मेरी उम्र 21 साल है।", "hi") == "मेरी उम्र इक्कीस साल है"
+    assert cer("मेरी उम्र २१ साल है।", "मेरी उम्र इक्कीस साल है", "hi") == 0.0
+    assert prep_for_cer("YouTube खोलो।", "hi") == "you tube खोलो"
+    assert WHISPER_LANGUAGE["hi"] == "hi"
