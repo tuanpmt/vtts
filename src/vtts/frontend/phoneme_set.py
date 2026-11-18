@@ -61,3 +61,37 @@ _TOKEN_TO_ID_V2 = {tok: i for i, tok in enumerate(TOKENS_V2)}
 
 def token_to_id_v2(tok: str) -> int:
     return _TOKEN_TO_ID_V2[tok]
+
+
+# ---------------- token set "zh-en": Mandarin + English (ids 0..106 = v2 unchanged) ----------------
+# A model uses only the ids of its pair; the Vietnamese rows (8..64) stay unused by zh-en models
+# so that the English rows (65..106) can be warm-started from a vi-en teacher. Mandarin syllables
+# are [ZI:initial] ZF:final ZTtone; finals are written in full (iou, uei, uen; v for u-umlaut),
+# "ii" is the apical vowel after zh/ch/sh/r and "i0" after z/c/s. Tone 5 is the neutral tone.
+
+TOKEN_SET_V2 = "vi-en"
+TOKEN_SET_ZHEN = "zh-en"
+
+ZH_INITIALS = ("b", "p", "m", "f", "d", "t", "n", "l", "g", "k", "h", "j", "q", "x",
+               "zh", "ch", "sh", "r", "z", "c", "s")
+ZH_FINALS = ("a", "o", "e", "ai", "ei", "ao", "ou", "an", "en", "ang", "eng", "ong", "er",
+             "i", "ia", "ie", "iao", "iou", "ian", "in", "iang", "ing", "iong",
+             "u", "ua", "uo", "uai", "uei", "uan", "uen", "uang", "ueng",
+             "v", "ve", "van", "vn", "ii", "i0")
+ZH_TONE_COUNT = 5
+
+TOKENS_ZHEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"ZI:{i}" for i in ZH_INITIALS)
+    + tuple(f"ZF:{f}" for f in ZH_FINALS)
+    + tuple(f"ZT{i}" for i in range(1, ZH_TONE_COUNT + 1))
+)
+VOCAB_SIZE_ZHEN = len(TOKENS_ZHEN)
+
+TOKEN_SETS: dict[str, tuple[str, ...]] = {TOKEN_SET_V2: TOKENS_V2, TOKEN_SET_ZHEN: TOKENS_ZHEN}
+
+_TOKEN_TO_ID_ZHEN = {tok: i for i, tok in enumerate(TOKENS_ZHEN)}
+
+
+def token_to_id_zhen(tok: str) -> int:
+    return _TOKEN_TO_ID_ZHEN[tok]

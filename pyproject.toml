@@ -29,7 +29,12 @@ gpu = [
 ]
 
 [dependency-groups]
-dev = ["pytest>=8", "ruff>=0.6", "pyserial>=3.5"]
+dev = [
+    "pytest>=8",
+    "ruff>=0.6",
+    "pyserial>=3.5",
+    "pypinyin>=0.55.0",
+]
 
 [build-system]
 requires = ["hatchling"]

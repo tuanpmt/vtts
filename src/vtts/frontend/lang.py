@@ -1,12 +1,16 @@
 """Per-word language tagging for bilingual (Vietnamese + English) text.
 
-Modes: "vi" (default for Vietnamese devices), "en", "auto" (decided per sentence).
+Modes: "vi" (default for Vietnamese devices), "en", "auto" (decided per sentence) for the vi-en
+token set, and "zh" for the zh-en token set.
 - A word with Vietnamese letters (diacritics or đ) is always Vietnamese.
 - Words with digits or symbols are "neutral" and are read in the sentence's language.
 - In "vi" mode a plain Latin word stays Vietnamese when it is a valid syllable (so unaccented
   Vietnamese still reads as Vietnamese), a known loanword or abbreviation, or a short all-caps
   acronym (spelled the Vietnamese way); any other Latin word is English.
 - In "en" mode every plain Latin word is English.
+- In "zh" mode a word with Han characters is Chinese and every plain Latin word is English.
+  Chinese is written without spaces, so boundaries are first inserted between Han characters,
+  Chinese punctuation and other text ("打开Wi-Fi设置" -> 打开 / Wi-Fi / 设置).
 """
 
 from __future__ import annotations
@@ -19,7 +23,7 @@ from .lexicon import ABBREVIATIONS, LOANWORDS
 from .syllable import parse_syllable
 
 EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—"
-SENTENCE_END = re.compile(r"(?<=[.!?;])\s+")
+SENTENCE_END = re.compile(r"(?<=[.!?;])\s+|(?<=[。！？；])\s*")
 VI_RATIO = 0.2
 
 
@@ -36,8 +40,41 @@ def _is_plain_latin(word: str) -> bool:
         and any(ch.isalpha() for ch in word)
 
 
+def _has_han(word: str) -> bool:
+    return any("\u4e00" <= ch <= "\u9fff" for ch in word)
+
+
+def _script_class(ch: str) -> int:
+    if "\u4e00" <= ch <= "\u9fff":
+        return 1
+    if "\u3000" <= ch <= "\u303f" or "\uff00" <= ch <= "\uffef" or ch in "“”‘’…—·":
+        return 2
+    return 0
+
+
+def split_scripts(sentence: str) -> str:
+    """Spaces between Han, Chinese punctuation and other text (Chinese has no spaces)."""
+    out: list[str] = []
+    prev = None
+    for ch in sentence:
+        if ch.isspace():
+            prev = None
+            out.append(ch)
+            continue
+        cls = _script_class(ch)
+        if prev is not None and cls != prev:
+            out.append(" ")
+        out.append(ch)
+        prev = cls
+    return "".join(out)
+
+
+# Languages each mode can produce (its token set): a script rule for another language is skipped.
+MODE_LANGS = {"vi": ("vi", "en"), "en": ("vi", "en"), "auto": ("vi", "en"), "zh": ("zh", "en")}
+
+
 def sentence_lang(sentence: str, mode: str) -> str:
-    if mode in ("vi", "en"):
+    if mode in ("vi", "en", "zh"):
         return mode
     words = [_core(c) for c in sentence.split()]
     words = [w for w in words if any(ch.isalpha() for ch in w)]
@@ -47,21 +84,26 @@ def sentence_lang(sentence: str, mode: str) -> str:
     return "vi" if ratio >= VI_RATIO else "en"
 
 
-# Words written in a language's own script or letters belong to it whatever the mode. A new
-# language with its own script (e.g. "zh" for Han characters) adds its rule before "vi", whose
-# rule is "any non-ASCII letter". Plain Latin words are decided by the rules below.
-SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [("vi", _has_vietnamese_letters)]
+# Words written in a language's own script or letters belong to it in every mode whose token set
+# has that language. A language with its own script adds its rule before "vi", whose rule is
+# "any non-ASCII letter" (so Han text in a vi-en mode is handled exactly as before). Plain Latin
+# words are decided by the rules below.
+SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [
+    ("zh", _has_han),
+    ("vi", _has_vietnamese_letters),
+]
 
 
 def word_lang(core: str, mode: str) -> str:
     if not core:
         return "neutral"
+    allowed = MODE_LANGS.get(mode, ("vi", "en"))
     for code, rule in SCRIPT_RULES:
-        if rule(core):
+        if code in allowed and rule(core):
             return code
     if not _is_plain_latin(core):
         return "neutral"
-    if mode == "en":
+    if mode in ("en", "zh"):
         return "en"
     parts = [p for p in re.split(r"[-']", core) if p]
     if all(parse_syllable(p.lower()) is not None for p in parts):
@@ -76,6 +118,8 @@ def word_lang(core: str, mode: str) -> str:
 def tag_words(sentence: str, mode: str) -> list[tuple[str, str]]:
     """(whitespace-separated chunk, "vi" | "en" | "neutral") for one sentence."""
     lang = sentence_lang(sentence, mode)
+    if mode == "zh":
+        sentence = split_scripts(sentence)
     return [(c, word_lang(_core(c), lang)) for c in sentence.split()]
 
 

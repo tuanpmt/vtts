@@ -1,0 +1,4 @@
+# Hand-edited Mandarin readings that win over pypinyin's data when the tables are rebuilt
+# (uv run python scripts/frontend/build_zh_lexicon.py). One entry per line: key<TAB>reading.
+# A one-character key sets the character's default reading; a 2-4 character key sets a phrase.
+# Readings are numbered pinyin, one syllable per character, tone 5 = neutral, v = u-umlaut.

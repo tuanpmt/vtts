@@ -64,12 +64,14 @@ def split_sentences(text: str, max_syllables: int = 40) -> list[str]:
 
 
 def text_to_ids(text: str, lang: str | None = None) -> list[list[int]]:
-    """lang=None: phoneme set v1 (Vietnamese only, unchanged); "vi" | "en" | "auto": set v2."""
+    """lang=None: phoneme set v1 (Vietnamese only, unchanged); "vi" | "en" | "auto": set v2
+    (vi-en); "zh": token set zh-en (Mandarin + English, ids 0..106 shared with v2)."""
     if lang is None:
         return [encode(g2p(chunk)) for chunk in split_sentences(text)]
-    from .phoneme_set import BOS, EOS, token_to_id_v2
+    from .phoneme_set import BOS, EOS, token_to_id_v2, token_to_id_zhen
 
-    return [[token_to_id_v2(BOS), *(token_to_id_v2(t) for t in toks), token_to_id_v2(EOS)]
+    to_id = token_to_id_zhen if lang == "zh" else token_to_id_v2
+    return [[to_id(BOS), *(to_id(t) for t in toks), to_id(EOS)]
             for toks in text_to_tokens(text, lang)]
 
 
@@ -80,7 +82,9 @@ _V2_MAX_TOKENS = 318  # + BOS/EOS <= VTTS_TEXT_MAX_IDS (320)
 
 
 def _items(sentence: str, mode: str) -> list[tuple[str, list[str]]]:
-    """("w", tokens) per word and ("p", [mark]) per punctuation mark, in order."""
+    """("w", tokens) per word and ("p", [mark]) per punctuation mark, in order. A language
+    written without spaces (word_units) gives ("w", ...) for the first syllable of a run and
+    ("s", ...) for the following ones, which are joined without SPACE."""
     from .lang import runs
     from .languages import LANGUAGES
 
@@ -89,8 +93,12 @@ def _items(sentence: str, mode: str) -> list[tuple[str, list[str]]]:
         module = LANGUAGES[lang]
         for w in module.normalize(text).split():
             if w in PUNCTUATION:
-                if items and items[-1][0] == "w":
+                if items and items[-1][0] != "p":
                     items.append(("p", [w]))
+                continue
+            if module.word_units is not None:
+                units = [u for u in module.word_units(w) if u]
+                items.extend(("w" if k == 0 else "s", u) for k, u in enumerate(units))
                 continue
             toks = module.word_tokens(w)
             if toks:
@@ -104,6 +112,8 @@ def _assemble(items: list[tuple[str, list[str]]]) -> list[str]:
         if kind == "p":
             if out:
                 out.extend(toks)
+        elif kind == "s":
+            out.extend(toks)
         else:
             if out and out[-1] not in PUNCTUATION:
                 out.append(" ")
@@ -113,7 +123,7 @@ def _assemble(items: list[tuple[str, list[str]]]) -> list[str]:
 
 def _pack_items(items: list[tuple[str, list[str]]]) -> list[list[tuple[str, list[str]]]]:
     def size(part):
-        return len(_assemble(part)), sum(1 for k, _ in part if k == "w")
+        return len(_assemble(part)), sum(1 for k, _ in part if k != "p")
 
     pieces: list[list] = [[]]
     for it in items:
@@ -142,7 +152,7 @@ def _pack_items(items: list[tuple[str, list[str]]]) -> list[list[tuple[str, list
 
 
 def text_to_tokens(text: str, lang: str = "vi") -> list[list[str]]:
-    """Phoneme-set-v2 tokens per chunk (no BOS/EOS); lang is "vi", "en" or "auto"."""
+    """Tokens per chunk (no BOS/EOS); lang is "vi", "en" or "auto" (set v2) or "zh" (zh-en)."""
     from .lang import split_sentences_raw
 
     chunks: list[list[str]] = []
