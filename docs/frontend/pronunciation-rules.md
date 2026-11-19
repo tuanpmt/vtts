@@ -352,6 +352,20 @@ Spanish (and the other Latin-script pairs) share their letters with English, so 
 
 Digits and codes are neutral as in the other pairs. On random Wikipedia introductions about 4.5% of the words (es, pt) and 9% (id, many English titles) are tagged English, nearly all foreign names and titles. Known gaps: English names whose spelling fits the language (`Taylor`, `Elon`) are read in the main language unless listed in `english.txt`; native names that break the spelling rules (Catalan `Sabadell`, Nahuatl `Chapultepec`) are read in English unless listed in `native.txt`.
 
+### Language of a sentence
+
+Word by word, the English words whose spelling fits the main language (`I`, `a`, `an`, `am`, `time`, `minutes`, `temperature`) are read in the main language. Inside a sentence of the language that is right, but a whole English sentence then reads with an accent (in pt mode 16% of the words of `eval/sets/ood_en.jsonl`, es 21%, id 18%, de 32%, nl 47%). So after the word tags, `latin.sentence_is_english` looks at the whole sentence (the same sentences as the chunker: `. ! ? ;`). Each word (numbers and symbols aside) is:
+
+- **main**: it has the language's own letters, or it is in `lexicons/<lang>/function.txt` (frequent words of the language written in plain ASCII: pt `de que para com uma`, es `el los del pero`, id `yang dan untuk dengan`);
+- **neither**: it is in `function.txt` or `native.txt` and is also an English word (`a`, `no`, `me`, `do`, `in`, `is`, `time`);
+- **strong English**: it is in `lexicons/latin/function_en.txt` (closed-class English words: `the`, `you`, `of`, `and`, `is`, `can`, `don't`);
+- **English**: a strong word, a word of `lexicons/latin/common_en.txt` (frequent English verbs, nouns, adjectives) or a word the rules above tag English;
+- **other**: a word that fits the language's spelling and is in no list.
+
+Not counting the "neither" words, the sentence is English when it has at least 2 English words, at least one of them strong, more than 3 times as many English words as main ones, English words for at least a quarter of the words, and either for half of them or in two runs or more (in an English sentence the English words are spread out; in a sentence of the language an English term is one run: `check in`, `Low Power Mode`). Then every word is read in English, numbers included (`28 degrees` → twenty-eight), except the words with the language's own letters (`São`, `José`). A sentence of the language with English terms keeps its word tags: it has function words of its own (`Abra o Netflix`), and a term alone (`Black Friday`) has no strong English word. The `vi` mode of the vi-en pair uses the same rule with Vietnamese letters as its own letters; an English word that is also a Vietnamese syllable (`the`, `to`, `an`, `can`) is tagged Vietnamese and counts for neither, so unaccented Vietnamese stays Vietnamese.
+
+Measured with the front-end only: words of `ood_en` not read in English, before → after: es 21.4% → 0, id 18.0% → 0, pt 16.4% → 0, fr 28.4% → 0, de 32.4% → 0.8%, it 18.3% → 0, tr 24.1% → 0, pl 34.9% → 1.7%, nl 47.1% → 1.9%, sv 34.4% → 0, no 40.9% → 1.0%, da 41.1% → 2.1%, fi 15.4% → 0, ms 18.5% → 0, tl 16.0% → 0, sw 6.0% → 0, vi 29.7% → 4.8%. No sentence of the `ood_<lang>` and `mixed_<lang>` eval sets and none of the 11,322 code-switching template sentences per language (`scripts/data/bilingual`) of es, id and pt changes. The C front-end has the same rule (`sent_english` in `vtts_text.c`, lists in the generated `vtts_text_sent_tables.h`: `uv run python runtime/tools/gen_sent_tables.py`).
+
 ## Spanish (token set `es-en`)
 
 Python and C (`src/vtts/frontend/es/`; device: [Latin-script pairs on the device](#latin-script-pairs-on-the-device-c)); everything is rules and small tables. `text_to_ids(text, "es")` returns ids of the token set `es-en` (model header code 6): ids 0–106 are the v2 set unchanged, followed by 31 Spanish tokens from id 107 (vocabulary 138):

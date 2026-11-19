@@ -8,6 +8,86 @@ All notable changes to this project are documented here. Model files for each re
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
 
+## v0.8.0 (2026-11-20) — Indonesian + English, Hindi + English and Spanish + English voices
+
+Three new bilingual pairs, each with one designed female voice as a quality model (M) and a lite model (S), **Apache-2.0**:
+
+- **Indonesian + English**, voice `nu-id` (about 40, Indonesian): reads Indonesian, English and Indonesian sentences with English words ("Sinyal Wi-Fi lemah sekali, coba dekatkan router-nya."). Teacher `id_nuid` trained from random initialization for 120k steps on 45,857 sentences (20,025 Indonesian, 6,591 Indonesian with English words, 19,241 English).
+- **Hindi + English**, voice `nu-hi` (about 40, Hindi): reads Hindi in Devanagari, English, and Hinglish sentences with the English words in Latin letters ("Wi-Fi का signal बहुत कमज़ोर है"). Teacher `hi_nuhi`, 120k steps on 48,296 sentences (23,247 Hindi, 5,808 Hindi with English words, 19,241 English).
+- **Spanish + English**, voice `nu-es` (about 40, Spanish): reads Spanish, English and Spanish sentences with English words ("El deadline del proyecto es el 20/11/2026."). Teacher `es_nues`, 120k steps on 48,336 sentences (21,940 Spanish, 7,155 Spanish with English words, 19,241 English).
+
+All speech was synthesized with VoxCPM2 (Apache-2.0) from the pair's designed voice only; no recorded corpus and no warm start. Students distilled with the standard chain (front 10k, decoder 30k, joint 20k steps, 20,000-sentence pack). The earlier voices are unchanged and stay on their releases.
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-iden-nuid-m-v0.8.q8.vtts` | `nu-id` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-iden-nuid-s-v0.8.q8.vtts` | `nu-id` (female) | Lite (S) | 0.83M | 1.2 MB |
+| `vtts-hien-nuhi-m-v0.8.q8.vtts` | `nu-hi` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-hien-nuhi-s-v0.8.q8.vtts` | `nu-hi` (female) | Lite (S) | 0.83M | 1.2 MB |
+| `vtts-esen-nues-m-v0.8.q8.vtts` | `nu-es` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-esen-nues-s-v0.8.q8.vtts` | `nu-es` (female) | Lite (S) | 0.83M | 1.2 MB |
+
+Int8, 22.05 kHz, token set recorded in the file: `id-en` (141 tokens: the v2 set plus 34 Indonesian tokens), `hi-en` (157: plus 50 Hindi phonemes), `es-en` (138: plus 31 Spanish tokens); presets `{M,S}-vocos-p-{id,hi,es}-en`. No blob beyond the English lexicon for any of them.
+
+### Quality
+
+Three out-of-domain sets of 50 sentences per pair (`ood_<L>`, `mixed_<L>`, `ood_en`; `ood_hi` and `mixed_hi` are new), Whisper large-v3, audio from the int8 C runtime, and the same main-language and mixed sentences synthesized by the pair's VoxCPM2 voice as a reference. Reports: [id-en](docs/reports/id-student-eval.md), [hi-en](docs/reports/hi-student-eval.md), [es-en](docs/reports/es-student-eval.md).
+
+| Model | Main-language CER | English CER | Mixed CER | UTMOS (main / en / mixed) |
+|---|---:|---:|---:|---|
+| `nu-id` M | 0.011 | 0.022 | 0.018 | 2.42 / 3.05 / 2.57 |
+| `nu-id` S | 0.011 | 0.059 | 0.015 | 2.14 / 2.63 / 2.25 |
+| VoxCPM2 `nu-id` (reference voice) | 0.023 | — | 0.042 | 3.07 / — / 3.22 |
+| `nu-hi` M | 0.094 | 0.053 | 0.054 (Devanagari only) | 2.84 / 3.09 / 2.91 |
+| `nu-hi` S | 0.092 | 0.028 | 0.056 (Devanagari only) | 2.84 / 3.03 / 2.88 |
+| VoxCPM2 `nu-hi` (reference voice) | 0.069 | — | 0.065 (Devanagari only) | 3.41 / — / 3.55 |
+| `nu-es` M | 0.019 | 0.020 | 0.006 | 2.83 / 3.07 / 2.87 |
+| `nu-es` S | 0.017 | 0.019 | 0.009 | 2.54 / 2.81 / 2.50 |
+| VoxCPM2 `nu-es` (reference voice) | 0.020 | — | 0.037 | 3.50 / — / 3.57 |
+
+The reference voices misread raw digits; without the numbers group Indonesian is at 0.002–0.003 and Spanish at 0.006–0.008. Hindi CER includes Whisper's Hindi spelling (nukta, chandrabindu); with that merged and without numbers it is 0.081 (M) / 0.085 (S) against 0.035 for the reference voice (see the known issues). The Hindi mixed CER counts only the Devanagari of the text, because Whisper writes the English words in Devanagari (plain CER 0.28–0.29 for every system, the reference included).
+
+### Performance
+
+| Pair | Board | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|---|
+| id-en | ESP32-P4 | 0.18–0.20 / 0.07–0.12 s | 0.26–0.28 / 0.17–0.28 s |
+| id-en | ESP32-S3 | 0.40–0.44 / 0.23–0.39 s | 0.67–0.70 / 0.38–0.72 s |
+| hi-en | ESP32-P4 | 0.18–0.20 / 0.07–0.12 s | 0.27–0.28 / 0.17–0.30 s |
+| hi-en | ESP32-S3 | 0.40–0.45 / 0.23–0.41 s | 0.68–0.70 / 0.39–0.78 s |
+| es-en | ESP32-P4 | 0.17–0.21 / 0.06–0.11 s | 0.26–0.29 / 0.15–0.28 s |
+| es-en | ESP32-S3 | 0.41–0.46 / 0.20–0.39 s | 0.68–0.73 / 0.32–0.71 s |
+
+RTF from `bench` (four sentences of the main language), speech start from playing the eight website sentences. One firmware per pair with only its front-end compiled in: 6.20–6.21 MB on the ESP32-P4 (2.17–2.19 MB free in the 8 MB app partition), 6.09–6.10 MB on the ESP32-S3 (2.29–2.30 MB free). Every website clip is the ESP32-P4's own output, matches `vtts_say` on a PC and was transcribed again with Whisper before publishing (48 clips, none broken). Details: [docs/reports/performance.md](docs/reports/performance.md#indonesian--english-hindi--english-and-spanish--english-v080).
+
+### Flash a board
+
+```bash
+gh release download v0.8.0 -R tuanpmt/vtts -p 'vtts-esen-*' -D models   # or vtts-iden-* / vtts-hien-*
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-esen-nues-s-v0.8.q8.vtts ../../models/vtts-esen-nues-m-v0.8.q8.vtts -p PORT flash monitor
+```
+
+`BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. Each pair has one text mode (`id`, `hi`, `es`, the default for its models), which also reads English.
+
+### Front-end
+- **Language of a sentence in the Latin-script pairs** (es, id, pt, fr, de, it, tr, pl, nl, sv, no, da, fi, ms, tl, sw) and the `vi` mode: a whole English sentence is now read in English (numbers included) instead of word by word, where English words that fit the language's spelling (I, a, am, time, minutes) were read in the main language (pt: 16% of the words of `ood_en`, es 21%, id 18%, now 0). Sentences of the language with English terms keep their word tags. Python and C, same ids; see [pronunciation rules](docs/frontend/pronunciation-rules.md#language-of-a-sentence). Measured on the new models, English CER with word tags only → with the sentence decision: `nu-id` M 0.070 → 0.022, S 0.106 → 0.059; `nu-es` M 0.056 → 0.020, S 0.064 → 0.019.
+- **Portuguese (v0.7.0) users get better English without new models:** update the runtime / rebuild the firmware from this release and the same `nu-pt` files read whole English sentences in English (English CER 0.047 → 0.012 for M and 0.065 → 0.014 for S in one run; Portuguese and mixed sentences unchanged). This fixes the first known issue of v0.7.0.
+
+### Added
+- **Indonesian + English voice `nu-id`, Hindi + English voice `nu-hi` and Spanish + English voice `nu-es`** (M and S each), with 48 on-chip samples (ESP32-P4 dumps of 8 sentences × 2 models per pair, each checked with Whisper) on the website and Indonesian, Hindi and Spanish entries in the language picker.
+- Reports [id-student-eval.md](docs/reports/id-student-eval.md), [hi-student-eval.md](docs/reports/hi-student-eval.md), [es-student-eval.md](docs/reports/es-student-eval.md), a v0.8.0 section in [performance.md](docs/reports/performance.md), Hugging Face folders `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`.
+- Eval sets `eval/sets/ood_hi.jsonl` and `mixed_hi.jsonl` (50 sentences each, held out from the training text); `main_script_cer` (and `scripts/eval/mixed_cer.py`) supports `hi` (Devanagari only).
+
+### Known issues
+- **Hindi: the first word of a sentence is often misheard.** Its first consonant is weak or heard as another one ("बैठक" → "वैटक", "राहुल" → "नाहूं"): Whisper gets the first word wrong in 28 (M) / 23 (S) of 50 sentences against 13 for the reference voice. Hindi CER is about twice the reference voice's once Whisper's spelling variants are set aside. Hindi is understandable but the weakest of the released pairs.
+- **ESP32-S3 with two cores is not fully deterministic.** The two-core fix of v0.7.0 lowered but did not remove the PSRAM errors: 15 of 16 id-en, 10 of 16 hi-en and 12 of 16 es-en dumps matched the ESP32-P4; the others have a short burst or a changed token duration. `cores 1` gives exact output (slower). The ESP32-P4 is not affected.
+- **Hindi: numbers and acronyms in English sentences are read in Hindi** ("28 degrees" → अट्ठाईस degrees, "ESP32" with Hindi letter names); write them as words. In the Latin-script pairs (id, es) whole English sentences read numbers in English.
+- **Indonesian S on English:** Whisper sometimes hears an accented English sentence as Indonesian (2 of 50 clips), English CER 0.059 for S against 0.022 for M.
+- A very short first sentence followed by a longer one ("Halo! Saya ...", "नमस्ते! मैं ...", "¡Hola! Soy ...") can cause one playback underrun (a short gap), as with the other pairs.
+
 ## v0.7.0 (2026-11-20) — Portuguese (Brazil) + English voice
 
 A new bilingual pair with one designed female voice as a quality model (M) and a lite model (S), **Apache-2.0**:

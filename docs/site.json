@@ -116,40 +116,61 @@
       ]
     },
     {
-      "name": "Spanish + English",
-      "langs": [
-        "es",
-        "en"
-      ],
-      "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "planned",
-      "status_text": "Planned"
-    },
-    {
-      "name": "Indonesian + English",
+      "name": "`nu-id` (female)",
       "langs": [
         "id",
         "en"
       ],
       "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "planned",
-      "status_text": "Planned"
+      "quality": "M (1.84M params, 2.6 MB)",
+      "lite": "S (0.83M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.8.0 (Apache-2.0)",
+      "pair": "Indonesian + English",
+      "release": "v0.8.0",
+      "hf": "id-en-nu-id",
+      "models": [
+        "nuid-m",
+        "nuid-s"
+      ]
     },
     {
-      "name": "Hindi + English",
+      "name": "`nu-hi` (female)",
       "langs": [
         "hi",
         "en"
       ],
       "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "planned",
-      "status_text": "Planned"
+      "quality": "M (1.84M params, 2.6 MB)",
+      "lite": "S (0.83M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.8.0 (Apache-2.0)",
+      "pair": "Hindi + English",
+      "release": "v0.8.0",
+      "hf": "hi-en-nu-hi",
+      "models": [
+        "nuhi-m",
+        "nuhi-s"
+      ]
+    },
+    {
+      "name": "`nu-es` (female)",
+      "langs": [
+        "es",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M (1.84M params, 2.6 MB)",
+      "lite": "S (0.83M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.8.0 (Apache-2.0)",
+      "pair": "Spanish + English",
+      "release": "v0.8.0",
+      "hf": "es-en-nu-es",
+      "models": [
+        "nues-m",
+        "nues-s"
+      ]
     },
     {
       "name": "Thai + English",
@@ -211,7 +232,7 @@
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
       "rtf_lite": "0.41–0.42",
-      "rtf_quality": "0.69–0.70"
+      "rtf_quality": "0.68–0.70"
     }
   ],
   "boards": [
@@ -265,11 +286,11 @@
     },
     {
       "title": "Front-ends",
-      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. Japanese: kana and kanji readings by longest match over a word table, numbers with counters. Brazilian Portuguese: spelling rules with stress, nasal vowels and the two r sounds, plus per-word Portuguese or English tagging. English: CMUdict plus letter-to-sound rules learned from it."
+      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. Japanese: kana and kanji readings by longest match over a word table, numbers with counters. Brazilian Portuguese: spelling rules with stress, nasal vowels and the two r sounds, plus per-word Portuguese or English tagging. Spanish: spelling rules with stress, dialect-neutral. Indonesian: spelling rules with the two e's and stress. Hindi: Devanagari letters with schwa deletion and nasals. Latin-script pairs read a whole English sentence in English. English: CMUdict plus letter-to-sound rules learned from it."
     },
     {
       "title": "Data",
-      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 for the Chinese + English voice, 49,591 for the Japanese + English voice, 45,191 for the Portuguese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching."
+      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 for the Chinese + English voice, 49,591 for the Japanese + English voice, 45,191 for the Portuguese + English voice, 45,857 for the Indonesian + English voice, 48,296 for the Hindi + English voice, 48,336 for the Spanish + English voice), with sentences chosen to cover rare syllables, numbers and code-switching."
     },
     {
       "title": "Tooling",
@@ -771,6 +792,282 @@
           "audio": {
             "nupt-m": "audio/p4-nupt-m-question.mp3",
             "nupt-s": "audio/p4-nupt-s-question.mp3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "id-en",
+      "label": "Indonesia–English",
+      "flags": [
+        "id",
+        "en"
+      ],
+      "status": "released",
+      "note": "Released in v0.8.0 (Apache-2.0): the bilingual voice nu-id (female, about 40, Indonesian) reads Indonesian, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nuid-m",
+          "name": "nu-id Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.27",
+            "s3": "0.68"
+          }
+        },
+        {
+          "id": "nuid-s",
+          "name": "nu-id Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.18",
+            "s3": "0.42"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "Halo! Saya adalah suara yang berjalan sepenuhnya di chip ESP32 dan bisa berbicara bahasa Indonesia dan Inggris.",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-intro.mp3",
+            "nuid-s": "audio/p4-nuid-s-intro.mp3"
+          }
+        },
+        {
+          "text": "Rapat di Zoom dimulai pukul tiga sore. Tolong kirim file PowerPoint-nya sebelum rapat.",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-zoom.mp3",
+            "nuid-s": "audio/p4-nuid-s-zoom.mp3"
+          }
+        },
+        {
+          "text": "Ponselnya sudah tersambung ke Wi-Fi. Sekarang kita bisa menonton Netflix.",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-wifi.mp3",
+            "nuid-s": "audio/p4-nuid-s-wifi.mp3"
+          }
+        },
+        {
+          "text": "Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller.",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-en-intro.mp3",
+            "nuid-s": "audio/p4-nuid-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package has arrived at the front door. Would you like me to turn on the porch light?",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-en-package.mp3",
+            "nuid-s": "audio/p4-nuid-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "Jakarta diperkirakan hujan mulai sore ini, dan besok pagi suhu akan turun menjadi 24 derajat.",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-news.mp3",
+            "nuid-s": "audio/p4-nuid-s-news.mp3"
+          }
+        },
+        {
+          "text": "Baterai tinggal 15% dan suhu ruangan 28 derajat. Alarm sudah diatur pukul 06.30 pagi.",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-numbers.mp3",
+            "nuid-s": "audio/p4-nuid-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "Mau saya nyalakan lampu kamar?",
+          "audio": {
+            "nuid-m": "audio/p4-nuid-m-question.mp3",
+            "nuid-s": "audio/p4-nuid-s-question.mp3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "hi-en",
+      "label": "हिन्दी–English",
+      "flags": [
+        "hi",
+        "en"
+      ],
+      "status": "released",
+      "note": "Released in v0.8.0 (Apache-2.0): the bilingual voice nu-hi (female, about 40, Hindi) reads Hindi in Devanagari, English and Hinglish sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nuhi-m",
+          "name": "nu-hi Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.27",
+            "s3": "0.69"
+          }
+        },
+        {
+          "id": "nuhi-s",
+          "name": "nu-hi Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.19",
+            "s3": "0.42"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "नमस्ते! मैं एक आवाज़ हूँ जो पूरी तरह ESP32 चिप पर चलती है और हिंदी और अंग्रेज़ी बोलती है।",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-intro.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-intro.mp3"
+          }
+        },
+        {
+          "text": "Zoom पर मीटिंग दोपहर तीन बजे शुरू होगी। कृपया उससे पहले PowerPoint फ़ाइल भेज दीजिए।",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-zoom.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-zoom.mp3"
+          }
+        },
+        {
+          "text": "फ़ोन Wi-Fi से जुड़ गया है। अब हम Netflix देख सकते हैं।",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-wifi.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-wifi.mp3"
+          }
+        },
+        {
+          "text": "Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller.",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-en-intro.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package has arrived at the front door. Would you like me to turn on the porch light?",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-en-package.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "दिल्ली में आज शाम से बारिश होने की संभावना है, और कल सुबह तापमान गिरकर 18 डिग्री तक पहुँच जाएगा।",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-news.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-news.mp3"
+          }
+        },
+        {
+          "text": "बैटरी 15% बची है और कमरे का तापमान 28 डिग्री है। अलार्म सुबह 6:30 बजे का लगा है।",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-numbers.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "क्या मैं कमरे की बत्ती जला दूँ?",
+          "audio": {
+            "nuhi-m": "audio/p4-nuhi-m-question.mp3",
+            "nuhi-s": "audio/p4-nuhi-s-question.mp3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "es-en",
+      "label": "Español–English",
+      "flags": [
+        "es",
+        "en"
+      ],
+      "status": "released",
+      "note": "Released in v0.8.0 (Apache-2.0): the bilingual voice nu-es (female, about 40, Spanish) reads Spanish, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nues-m",
+          "name": "nu-es Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.28",
+            "s3": "0.70"
+          }
+        },
+        {
+          "id": "nues-s",
+          "name": "nu-es Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.19",
+            "s3": "0.42"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "¡Hola! Soy una voz que funciona completamente en un chip ESP32 y hablo español e inglés.",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-intro.mp3",
+            "nues-s": "audio/p4-nues-s-intro.mp3"
+          }
+        },
+        {
+          "text": "La reunión en Zoom empieza a las tres de la tarde. Por favor, envía el archivo de PowerPoint antes.",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-zoom.mp3",
+            "nues-s": "audio/p4-nues-s-zoom.mp3"
+          }
+        },
+        {
+          "text": "El móvil ya está conectado al Wi-Fi. Ahora podemos ver Netflix.",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-wifi.mp3",
+            "nues-s": "audio/p4-nues-s-wifi.mp3"
+          }
+        },
+        {
+          "text": "Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller.",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-en-intro.mp3",
+            "nues-s": "audio/p4-nues-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package has arrived at the front door. Would you like me to turn on the porch light?",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-en-package.mp3",
+            "nues-s": "audio/p4-nues-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "En Madrid va a llover a partir de esta tarde, y mañana temprano la temperatura bajará a 8 grados.",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-news.mp3",
+            "nues-s": "audio/p4-nues-s-news.mp3"
+          }
+        },
+        {
+          "text": "La batería está al 15% y la temperatura de la habitación es de 28 grados. La alarma está puesta a las 6:30 de la mañana.",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-numbers.mp3",
+            "nues-s": "audio/p4-nues-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "¿Quieres que encienda la luz del dormitorio?",
+          "audio": {
+            "nues-m": "audio/p4-nues-m-question.mp3",
+            "nues-s": "audio/p4-nues-s-question.mp3"
           }
         }
       ]

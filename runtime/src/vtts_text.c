@@ -875,6 +875,7 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 #if VTTS_ENABLE_MY
 #include "vtts_text_my.h"
 #endif
+#include "vtts_text_sent_tables.h"
 
 #define V2_MAX_WORDS 40
 #define V2_MAX_TOKENS 318
@@ -2069,6 +2070,154 @@ static int script_edge(int mode, const uint32_t *w, int n, uint32_t c) {
     return 0;
 }
 
+/* ======================= sentence language (latin.sentence_is_english) =======================
+ * In the Latin-script pair modes and the vi mode, a sentence whose words are mostly English (word
+ * lists of vtts_text_sent_tables.h, the word tags) is read in English: every chunk but those with the
+ * language's own letters, numbers included. */
+enum { EV_OTHER, EV_MAIN, EV_BOTH, EV_EN, EV_STRONG };
+
+typedef struct {
+    int vi;                                        /* the vi mode: own letters = Vietnamese letters */
+    const char *const *main, *const *both, *own;   /* main-language words, words of both, own letters */
+    int n_main, n_both;
+} sent_spec_t;
+
+static int sent_in(const char *const *list, int n, const char *w) {
+    int lo = 0, hi = n - 1;
+    while (lo <= hi) {
+        int m = (lo + hi) / 2, c = strcmp(list[m], w);
+        if (!c) return 1;
+        if (c < 0) lo = m + 1; else hi = m - 1;
+    }
+    return 0;
+}
+
+/* one of the n code points w is in the UTF-8 string set */
+static int sent_own(const char *set, const uint32_t *w, int n) {
+    uint32_t cps[64];
+    int m = utf8_decode(set, cps, 64);
+    for (int i = 0; i < n; i++)
+        for (int k = 0; k < m; k++) if (w[i] == cps[k]) return 1;
+    return 0;
+}
+
+/* core.lower().replace("’", "'") in key when it is lower-case ASCII of at most VTTS_SENT_MAX_KEY
+ * characters (else it is in no list: 0). İ lower-cases to i + U+0307 in Python. */
+static int sent_key(const uint32_t *w, int n, char *key) {
+    if (n > VTTS_SENT_MAX_KEY) return 0;
+    for (int i = 0; i < n; i++) {
+        uint32_t c = w[i] == 0x2019 ? '\'' : w[i] == 0x130 ? 0x130 : vtts_u_lower(w[i]);
+        if (c >= 0x80) return 0;
+        key[i] = (char)c;
+    }
+    key[n] = 0;
+    return 1;
+}
+
+#define SENT_LIST(L) S->main = VTTS_SENT_MAIN_##L; S->n_main = VTTS_SENT_MAIN_##L##_N; \
+                     S->both = VTTS_SENT_BOTH_##L; S->n_both = VTTS_SENT_BOTH_##L##_N; S->own = VTTS_SENT_OWN_##L
+
+/* the rule applies to the mode: fills S */
+static int sent_spec(int mode, sent_spec_t *S) {
+    memset(S, 0, sizeof *S);
+    switch (mode) {
+    case VTTS_LANG_VI: S->vi = 1; return 1;
+#if VTTS_ENABLE_ES
+    case VTTS_LANG_ES: SENT_LIST(ES); return 1;
+#endif
+#if VTTS_ENABLE_ID
+    case VTTS_LANG_ID: SENT_LIST(ID); return 1;
+#endif
+#if VTTS_ENABLE_PT
+    case VTTS_LANG_PT: SENT_LIST(PT); return 1;
+#endif
+#if VTTS_ENABLE_FR
+    case VTTS_LANG_FR: SENT_LIST(FR); return 1;
+#endif
+#if VTTS_ENABLE_DE
+    case VTTS_LANG_DE: SENT_LIST(DE); return 1;
+#endif
+#if VTTS_ENABLE_IT
+    case VTTS_LANG_IT: SENT_LIST(IT); return 1;
+#endif
+#if VTTS_ENABLE_TR
+    case VTTS_LANG_TR: SENT_LIST(TR); return 1;
+#endif
+#if VTTS_ENABLE_PL
+    case VTTS_LANG_PL: SENT_LIST(PL); return 1;
+#endif
+#if VTTS_ENABLE_FI
+    case VTTS_LANG_FI: SENT_LIST(FI); return 1;
+#endif
+#if VTTS_ENABLE_MS
+    case VTTS_LANG_MS: SENT_LIST(MS); return 1;
+#endif
+#if VTTS_ENABLE_TL
+    case VTTS_LANG_TL: SENT_LIST(TL); return 1;
+#endif
+#if VTTS_ENABLE_SW
+    case VTTS_LANG_SW: SENT_LIST(SW); return 1;
+#endif
+#if VTTS_ENABLE_NL
+    case VTTS_LANG_NL: SENT_LIST(NL); return 1;
+#endif
+#if VTTS_ENABLE_SV
+    case VTTS_LANG_SV: SENT_LIST(SV); return 1;
+#endif
+#if VTTS_ENABLE_NO
+    case VTTS_LANG_NO: SENT_LIST(NO); return 1;
+#endif
+#if VTTS_ENABLE_DA
+    case VTTS_LANG_DA: SENT_LIST(DA); return 1;
+#endif
+    default: return 0;
+    }
+}
+#undef SENT_LIST
+
+static int sent_own_letters(const sent_spec_t *S, const uint32_t *w, int n) {
+    return S->vi ? has_vi_letters(w, n) : sent_own(S->own, w, n);
+}
+
+/* latin.word_evidence of a chunk core tagged English (is_en) or the main language */
+static int sent_evidence(const sent_spec_t *S, const uint32_t *w, int n, int is_en) {
+    char key[VTTS_SENT_MAX_KEY + 1];
+    if (sent_own_letters(S, w, n)) return EV_MAIN;
+    int k = sent_key(w, n, key);
+    if (S->vi) {
+        if (!is_en)
+            return k && (sent_in(VTTS_SENT_STRONG, VTTS_SENT_STRONG_N, key) ||
+                         sent_in(VTTS_SENT_COMMON, VTTS_SENT_COMMON_N, key) || vtts_lt_english_word(key))
+                       ? EV_BOTH : EV_OTHER;
+        return k && sent_in(VTTS_SENT_STRONG, VTTS_SENT_STRONG_N, key) ? EV_STRONG : EV_EN;
+    }
+    if (k && sent_in(S->main, S->n_main, key)) return EV_MAIN;
+    if (k && sent_in(S->both, S->n_both, key)) return EV_BOTH;
+    if (k && sent_in(VTTS_SENT_STRONG, VTTS_SENT_STRONG_N, key)) return EV_STRONG;
+    return is_en || (k && sent_in(VTTS_SENT_COMMON, VTTS_SENT_COMMON_N, key)) ? EV_EN : EV_OTHER;
+}
+
+/* latin.sentence_is_english over the chunks [cs, ce) of cp (tag: TAG_EN or the main language's tag,
+ * neu: the chunk is neutral) */
+static int sent_english(const sent_spec_t *S, const uint32_t *cp, const int *cs, const int *ce, int nc,
+                        const int *tag, const unsigned char *neu) {
+    int n = 0, n_en = 0, n_strong = 0, n_main = 0, runs = 0, prev = 0;
+    for (int k = 0; k < nc; k++) {
+        if (neu[k]) continue;
+        int a = cs[k], b = ce[k];
+        while (a < b && is_edge(cp[a])) a++;
+        while (b > a && is_edge(cp[b - 1])) b--;
+        int e = sent_evidence(S, cp + a, b - a, tag[k] == TAG_EN);
+        n += e != EV_BOTH;
+        n_en += e >= EV_EN;
+        n_strong += e == EV_STRONG;
+        n_main += e == EV_MAIN;
+        runs += e >= EV_EN && !prev;
+        prev = e >= EV_EN;
+    }
+    return n_en >= 2 && n_strong >= 1 && n_en > 3 * n_main && 4 * n_en >= n && (2 * n_en >= n || runs >= 2);
+}
+
 /* one sentence (code points [s, e) of ws->cp): tags, runs, normalization, items, chunks */
 static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     vtts_text_ws *ws = c->ws;
@@ -2095,6 +2244,7 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
         for (int q = s; q < e; q++) if (ws->cp[q] == ';' || ws->cp[q] == 0x37E) ws->cp[q] = '?';
     enum { MAXCH = 1024 };
     static int cs[MAXCH], ce[MAXCH], tag[MAXCH];
+    static unsigned char neu[MAXCH]; /* the chunk is neutral (word_lang), for the sentence language */
     int nc = 0;
     /* sentence.split(); zh, ja: split_scripts(sentence).split(); es, id, pt: ¿ and ¡ are spaces */
 #define SEP(c) (is_space_cp(c) || ((lt >= 0 || fr || de || lt2 >= 0 || pl || fi || tl || sw || nx >= 0 || da) && ((c) == 0xBF || (c) == 0xA1)))
@@ -2135,6 +2285,7 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
         int a = cs[k], b = ce[k];
         while (a < b && is_edge(cp[a])) a++;
         while (b > a && is_edge(cp[b - 1])) b--;
+        neu[k] = 0;
 #if VTTS_ENABLE_ZH
         if (zh) { /* word_lang in "zh" mode: Han -> zh, plain Latin -> en, neutral -> zh */
             tag[k] = has_han(cp + a, b - a) ? TAG_ZH : plain_latin(cp + a, b - a) ? TAG_EN : TAG_ZH;
@@ -2149,7 +2300,9 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
 #endif
 #if VTTS_ENABLE_PL
         if (pl) { /* "pl" mode: Polish letters, word lists, CamelCase, acronyms, spelling (latin.py) */
-            tag[k] = vtts_pl_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_PL;
+            int r = vtts_pl_word_lang(cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_PL;
             continue;
         }
 #endif
@@ -2172,6 +2325,7 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
 #if VTTS_ENABLE_FI
         if (fi) { /* fi: as es, id, pt; the neighbours decide the words of both lists (fi_context) */
             tag[k] = vtts_fi_word_lang(cp + a, b - a); /* 1 fi, 0 en, -1 neutral; resolved below */
+            neu[k] = tag[k] < 0;
             continue;
         }
 #endif
@@ -2186,7 +2340,9 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
 #if VTTS_ENABLE_KO
 #if VTTS_ENABLE_DA
         if (da) { /* da: æ ø å é, word lists, CamelCase, acronyms, known words, compounds, spelling */
-            tag[k] = vtts_da_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_DA;
+            int r = vtts_da_word_lang(cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_DA;
             continue;
         }
 #endif
@@ -2240,55 +2396,72 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
                 ce[k] = cs[k] + split;
                 tag[k] = TAG_FR;
                 tag[++k] = TAG_EN;
+                neu[k] = 0;
                 continue;
             }
+            neu[k] = t < 0;
             tag[k] = t == 0 ? TAG_EN : TAG_FR;
             continue;
         }
 #endif
 #if VTTS_ENABLE_DE
         if (de) { /* de: German letters, word lists, CamelCase, acronyms, spelling (latin.py) */
-            tag[k] = vtts_de_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_DE;
+            int r = vtts_de_word_lang(cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_DE;
             continue;
         }
 #endif
 #if VTTS_ENABLE_IT
         if (lt2 == TAG_IT) { /* it: as es, id, pt (latin.py) */
-            tag[k] = vtts_it_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_IT;
+            int r = vtts_it_word_lang(cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_IT;
             continue;
         }
 #endif
 #if VTTS_ENABLE_TR
         if (lt2 == TAG_TR) { /* tr: as es, id, pt (latin.py) */
-            tag[k] = vtts_tr_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_TR;
+            int r = vtts_tr_word_lang(cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_TR;
             continue;
         }
 #endif
 #if VTTS_ENABLE_NX
         if (nx >= 0) { /* nl, sv, no: own letters, word lists, CamelCase, acronyms, spelling (latin.py) */
-            tag[k] = vtts_nx_word_lang(nx, cp + a, b - a) == 0 ? TAG_EN : TAG_NX + nx;
+            int r = vtts_nx_word_lang(nx, cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_NX + nx;
             continue;
         }
 #endif
 #if VTTS_ENABLE_TL
         if (tl) { /* tl: ñ and accent marks, word lists, hyphenated English, CamelCase, acronyms, spelling */
-            tag[k] = vtts_tl_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_TL;
+            int r = vtts_tl_word_lang(cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_TL;
             continue;
         }
 #endif
 #if VTTS_ENABLE_SW
         if (sw) { /* sw: word lists, CamelCase, acronyms, Swahili spelling (latin.py; ng' is one word) */
-            tag[k] = vtts_sw_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_SW;
+            int r = vtts_sw_word_lang(cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : TAG_SW;
             continue;
         }
 #endif
 #if VTTS_ENABLE_LT
         if (lt >= 0) { /* es, id, pt: own letters, word lists, CamelCase, acronyms, spelling (latin.py) */
-            tag[k] = vtts_lt_word_lang(lt, cp + a, b - a) == 0 ? TAG_EN : lt == VTTS_LT_MS ? TAG_MS : TAG_ES + lt;
+            int r = vtts_lt_word_lang(lt, cp + a, b - a);
+            neu[k] = r < 0;
+            tag[k] = r == 0 ? TAG_EN : lt == VTTS_LT_MS ? TAG_MS : TAG_ES + lt;
             continue;
         }
 #endif
         int t = word_tag(cp + a, b - a, sent_en);
+        neu[k] = t == TAG_NEUTRAL;
         tag[k] = t == TAG_NEUTRAL ? (sent_en ? TAG_EN : TAG_VI) : t;
     }
 #if VTTS_ENABLE_FI
@@ -2297,6 +2470,14 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
         for (int k = 0; k < nc; k++) tag[k] = tag[k] == 0 ? TAG_EN : TAG_FI; /* neutral -> fi */
     }
 #endif
+    sent_spec_t S;
+    if (sent_spec(mode, &S) && sent_english(&S, cp, cs, ce, nc, tag, neu))
+        for (int k = 0; k < nc; k++) { /* lang.tag_words: an English sentence, own letters aside */
+            int a = cs[k], b = ce[k];
+            while (a < b && is_edge(cp[a])) a++;
+            while (b > a && is_edge(cp[b - 1])) b--;
+            if (neu[k] || tag[k] == TAG_EN || !sent_own_letters(&S, cp + a, b - a)) tag[k] = TAG_EN;
+        }
     ws->n_items = ws->pool_used = 0;
     for (int k = 0; k < nc && !c->stop;) { /* runs of one language, chunks joined by single spaces */
         int k1 = k, len = 0;

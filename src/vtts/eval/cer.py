@@ -187,7 +187,8 @@ def corpus_wer(pairs: list[tuple[str, str]], lang: str = "vi") -> float:
 _SCRIPT = {"ko": lambda ch: "가" <= ch <= "힣",
            "zh": lambda ch: "一" <= ch <= "鿿",
            "ja": _is_cjk,
-           "th": lambda ch: "฀" <= ch <= "๿"}
+           "th": lambda ch: "฀" <= ch <= "๿",
+           "hi": lambda ch: "ऀ" <= ch <= "ॿ"}
 
 
 def _script_edits(ref: str, hyp: str, own) -> tuple[int, int]:
@@ -219,7 +220,7 @@ def _script_edits(ref: str, hyp: str, own) -> tuple[int, int]:
 
 def main_script_cer(pairs: list[tuple[str, str]], lang: str) -> float:
     """Corpus CER over the main-language characters only (Hangul for ko, Han for zh, kana and
-    kanji for ja, Thai for th), for mixed sets: the ASR writes English words in the main script
+    kanji for ja, Thai for th, Devanagari for hi), for mixed sets: the ASR writes English words in the main script
     (Google Drive -> 구글 드라이브), which plain CER counts as errors even for a perfect reading.
     Each reference character of the main script counts once; English words are skipped."""
     own = _SCRIPT[lang]

@@ -15,6 +15,9 @@
 | 🇨🇳 🇺🇸 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.69 / 0.41 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
 | 🇯🇵 🇺🇸 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.69 / 0.41 | [v0.6.0](https://github.com/tuanpmt/vtts/releases/tag/v0.6.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
 | 🇧🇷 🇺🇸 Portuguese (Brazil) + English | `nu-pt` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.69 / 0.42 | [v0.7.0](https://github.com/tuanpmt/vtts/releases/tag/v0.7.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt) |
+| 🇮🇩 🇺🇸 Indonesian + English | `nu-id` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.68 / 0.42 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id) |
+| 🇮🇳 🇺🇸 Hindi + English | `nu-hi` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.19 | 0.69 / 0.42 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi) |
+| 🇪🇸 🇺🇸 Spanish + English | `nu-es` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.70 / 0.42 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es) |
 <!-- END:released -->
 
 Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
@@ -24,12 +27,12 @@ Each voice has a quality model (M) and a lite model (S, faster, less CPU and fla
 1. Install [ESP-IDF v6.1](https://docs.espressif.com/projects/esp-idf/) and clone this repository.
 2. Download the two model files of one voice from its release (or the Hugging Face folder in the table):
    ```bash
-   gh release download v0.7.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Portuguese (Brazil) + English (nu-pt)
+   gh release download v0.8.0 -R tuanpmt/vtts -p 'vtts-esen-*' -D models   # Spanish + English (nu-es)
    ```
 3. Build and flash, lite model first:
    ```bash
    cd firmware/esp32
-   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-pten-nupt-s-v0.7.q8.vtts ../../models/vtts-pten-nupt-m-v0.7.q8.vtts -p PORT flash monitor
+   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-esen-nues-s-v0.8.q8.vtts ../../models/vtts-esen-nues-m-v0.8.q8.vtts -p PORT flash monitor
    ```
    `BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. `build.sh` picks the text front-end from the models and embeds the lexicons they need.
 4. Type a sentence on the serial console and press Enter: the board speaks it. `model s` / `model m` switches the model; the other commands are in the [firmware README](firmware/esp32/README.md#serial-console).
@@ -52,7 +55,7 @@ Each word is read by the front-end of its language (main language or English), i
 |---|---|
 | Voices, quality per pair, audio samples, planned pairs | [docs/voices.md](docs/voices.md) |
 | On-chip speed, latency, memory | [docs/reports/performance.md](docs/reports/performance.md) |
-| Evaluation reports | [vi-en](docs/reports/bilingual-student-eval.md), [ko-en](docs/reports/ko-student-eval.md), [zh-en](docs/reports/zh-student-eval.md), [ja-en](docs/reports/ja-student-eval.md), [pt-en](docs/reports/pt-student-eval.md) |
+| Evaluation reports | [vi-en](docs/reports/bilingual-student-eval.md), [ko-en](docs/reports/ko-student-eval.md), [zh-en](docs/reports/zh-student-eval.md), [ja-en](docs/reports/ja-student-eval.md), [pt-en](docs/reports/pt-student-eval.md), [id-en](docs/reports/id-student-eval.md), [hi-en](docs/reports/hi-student-eval.md), [es-en](docs/reports/es-student-eval.md) |
 | Firmware, boards, serial console | [firmware/esp32/README.md](firmware/esp32/README.md) |
 | C runtime API | [runtime/README.md](runtime/README.md) |
 | Model file format | [docs/model-format.md](docs/model-format.md) |

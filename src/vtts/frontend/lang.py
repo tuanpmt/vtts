@@ -27,6 +27,10 @@ token set.
   (word lists, CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are
   dropped. In "it" and "tr" ’ is read as ' and latin.split_elision splits an elided Italian word
   before an English one (sull'iPhone) and a Turkish suffix after an English word (iPhone'da).
+  A whole English sentence (latin.sentence_is_english: English function words and English-tagged
+  words against the language's own letters and function words) is then read in English, numbers
+  included, but for words with the language's own letters; this holds for every Latin-script pair
+  mode below and for the "vi" mode.
 - In "lo" mode a word with Lao letters is Lao and every plain Latin word is English; as in "th" a
   space is put between Lao and Latin letters, and a dot after a Lao letter does not end a sentence.
 - In "km" mode a word with Khmer letters is Khmer and every plain Latin word is English; as in
@@ -63,7 +67,15 @@ import re
 import unicodedata
 from collections.abc import Callable
 
-from .latin import APOSTROPHE_MODES, LATIN_PAIRS, has_letters_of, latin_word_lang, split_elision
+from .latin import (
+    APOSTROPHE_MODES,
+    LATIN_PAIRS,
+    has_letters_of,
+    latin_word_lang,
+    own_letters,
+    sentence_is_english,
+    split_elision,
+)
 from .lexicon import ABBREVIATIONS, LOANWORDS
 from .phoneme_set import PAIR_MODES
 from .syllable import parse_syllable
@@ -294,13 +306,18 @@ def tag_words(sentence: str, mode: str) -> list[tuple[str, str]]:
     elif mode == "el":  # the Greek question mark ; (U+037E) -> ? (also for an English word before it)
         sentence = sentence.replace(";", "?").replace("\u037e", "?")
     if mode == "fr":
-        return [t for c in sentence.split() for t in _fr_tags(c, lang)]
-    if mode in APOSTROPHE_MODES:  # sull’iPhone -> sull' / iPhone (an English word after an elision)
+        tags = [t for c in sentence.split() for t in _fr_tags(c, lang)]
+    elif mode in APOSTROPHE_MODES:  # sull’iPhone -> sull' / iPhone (an English word after an elision)
         sentence = sentence.replace("’", "'")
-        return [(c, word_lang(_core(c), lang)) for w in sentence.split() for c in split_elision(w, mode)]
-    tags = [(c, word_lang(_core(c), lang)) for c in sentence.split()]
+        tags = [(c, word_lang(_core(c), lang)) for w in sentence.split() for c in split_elision(w, mode)]
+    else:
+        tags = [(c, word_lang(_core(c), lang)) for c in sentence.split()]
     if mode in CONTEXT_PAIRS:
         tags = _by_context(tags, mode)
+    if (mode in LATIN_PAIRS or mode == "vi") and sentence_is_english(tags, mode, _core):
+        # an English sentence: every word in English but those with the language's own letters
+        own = own_letters(mode)
+        tags = [(c, t if t == mode and own(_core(c)) else "en") for c, t in tags]
     return tags
 
 

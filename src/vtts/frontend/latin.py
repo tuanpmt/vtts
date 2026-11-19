@@ -151,6 +151,105 @@ def latin_word_lang(core: str, code: str) -> str:
     return "en"
 
 
+# ---------------- sentence language ----------------
+#
+# Word by word, an English word whose spelling fits the pair language (I, a, time, minutes) is read
+# in that language, which is right inside a sentence of the language and wrong in a whole English
+# sentence. sentence_is_english sorts the tagged words of one sentence (numbers and symbols aside):
+# - main: the language's own letters, or a word of lexicons/<code>/function.txt;
+# - neither: a word of function.txt or native.txt that is also an English word (a, no, in, time);
+# - strong English: a word of lexicons/latin/function_en.txt (the, you, of, is, can't ...);
+# - English: a strong word, a word of lexicons/latin/common_en.txt or a word latin_word_lang tags
+#   English (english.txt, CamelCase, spelling that does not fit the language);
+# - other words: words that fit the language's spelling, in no list.
+# Over the words other than the "neither" ones, the sentence is English when it has at least
+# SENT_MIN_EN English words, one of them strong, more than SENT_EN_PER_MAIN times as many English
+# words as main ones, English words for at least a quarter of its words, and either for half of
+# them or in two runs or more (English words with other words between them: in an English
+# sentence they are spread out, in a sentence of the language an English term is one run).
+# lang.tag_words then reads all its words in English, numbers included, except those with the
+# language's own letters (São, Müller). A sentence of the language with English terms keeps its
+# word-by-word tags: it has function words of its own ("Abra o Netflix"), a term alone (Low Power
+# Mode, Black Friday) has no strong English word, and a term with one (check in) is one run.
+# The vi mode of the vi-en pair uses the same rule (word_evidence): its main words are those with
+# Vietnamese letters, and an English word that is also a Vietnamese syllable (the, to, an, can) is
+# tagged Vietnamese and counts for neither, so unaccented Vietnamese stays Vietnamese.
+
+SENT_MIN_EN = 2
+SENT_EN_PER_MAIN = 3
+
+
+@cache
+def _english_words() -> frozenset[str]:
+    return load_words("latin", "function_en") | load_words("latin", "common_en") | load_words("latin", "english")
+
+
+def own_letters(code: str) -> Callable[[str], bool]:
+    """The rule of the main language's own letters ("vi": any non-ASCII letter after NFC)."""
+    if code == "vi":
+        from .lang import _has_vietnamese_letters
+
+        return _has_vietnamese_letters
+    return has_letters_of(code)
+
+
+@cache
+def _sentence_sets(code: str) -> tuple[frozenset[str], frozenset[str], frozenset[str], frozenset[str]]:
+    """(main-language words, words of both, strong English, other English) of plain lower-case
+    words (the lists above)."""
+    strong = load_words("latin", "function_en")
+    common = load_words("latin", "common_en")
+    english = _english_words()
+    main, native = load_words(code, "function"), load_words(code, "native")
+    both = ((main | native) & english) | (native - main)
+    return main - english, both, strong - both, common - both
+
+
+EV_OTHER, EV_MAIN, EV_BOTH, EV_EN, EV_STRONG = range(5)
+
+
+def word_evidence(core: str, tag: str, code: str) -> int:
+    """EV_* of the core of a word that word_lang tagged tag ("en" or code) in mode code. "vi": the
+    main-language words are those with Vietnamese letters, and a word tagged Vietnamese (a valid
+    syllable, loanword or acronym) that is in an English list counts for neither."""
+    key = core.lower().replace("’", "'")
+    if code == "vi":
+        if own_letters("vi")(core):
+            return EV_MAIN
+        strong, english = load_words("latin", "function_en"), _english_words()
+        if tag == "vi":
+            return EV_BOTH if key in english else EV_OTHER
+        return EV_STRONG if key in strong else EV_EN
+    if has_letters_of(code)(core):
+        return EV_MAIN
+    main, both, strong, common = _sentence_sets(code)
+    if key in main:
+        return EV_MAIN
+    if key in both:
+        return EV_BOTH
+    if key in strong:
+        return EV_STRONG
+    return EV_EN if tag == "en" or key in common else EV_OTHER
+
+
+def sentence_is_english(tags: list[tuple[str, str]], code: str, core: Callable[[str], str]) -> bool:
+    """tags: (chunk, "en" | code | "neutral") of one sentence; core strips a chunk's edges."""
+    n = n_en = n_strong = n_main = runs = 0
+    prev = False
+    for chunk, tag in tags:
+        if tag == "neutral":
+            continue
+        e = word_evidence(core(chunk), tag, code)
+        n += e != EV_BOTH
+        n_en += e >= EV_EN
+        n_strong += e == EV_STRONG
+        n_main += e == EV_MAIN
+        runs += e >= EV_EN and not prev
+        prev = e >= EV_EN
+    return (n_en >= SENT_MIN_EN and n_strong >= 1 and n_en > SENT_EN_PER_MAIN * n_main
+            and 4 * n_en >= n and (2 * n_en >= n or runs >= 2))
+
+
 # ---------------- spelling checks shared by the languages' valid_spelling ----------------
 
 def consonant_runs(w: str, vowels: str = "aeiou",

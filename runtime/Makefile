@@ -47,6 +47,7 @@ TEXT_HDR += src/vtts_text_lo.h src/vtts_text_lo_tables.h
 TEXT_SRC += src/vtts_text_da.c
 TEXT_HDR += src/vtts_text_da.h src/vtts_text_da_tables.h
 TEXT_SRC += src/vtts_text_nsp.c src/vtts_text_km.c src/vtts_text_my.c
+TEXT_HDR += src/vtts_text_sent_tables.h
 TEXT_HDR += src/vtts_text_nsp.h src/vtts_text_km.h src/vtts_text_km_tables.h src/vtts_text_my.h src/vtts_text_my_tables.h
 build/text_test: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 	mkdir -p build

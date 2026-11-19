@@ -15,16 +15,16 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 | `nu-zh` (female) | 🇨🇳 zh + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
 | `nu-ja` (female) | 🇯🇵 ja + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0 (Apache-2.0)** |
 | `nu-pt` (female) | 🇧🇷 pt + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.7.0 (Apache-2.0)** |
-| Spanish + English | 🇪🇸 es + 🇺🇸 en, code-switching | M | S | Planned |
-| Indonesian + English | 🇮🇩 id + 🇺🇸 en, code-switching | M | S | Planned |
-| Hindi + English | 🇮🇳 hi + 🇺🇸 en, code-switching | M | S | Planned |
+| `nu-id` (female) | 🇮🇩 id + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
+| `nu-hi` (female) | 🇮🇳 hi + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
+| `nu-es` (female) | 🇪🇸 es + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
 | Thai + English | 🇹🇭 th + 🇺🇸 en, code-switching | M | S | Planned |
 | Dutch + English | 🇳🇱 nl + 🇺🇸 en, code-switching | M | S | Planned |
 | Swedish + English | 🇸🇪 sv + 🇺🇸 en, code-switching | M | S | Planned |
 | Norwegian + English | 🇳🇴 no + 🇺🇸 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
-Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`):
+Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`):
 
 | Voice | Files (lite S, quality M) | Release | Notes |
 |---|---|---|---|
@@ -33,8 +33,11 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 | `nu-zh` | `vtts-zhen-nuzh-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `zh`; embeds the 116 KB `ZLEX` blob (`main/lex_zh.bin`) |
 | `nu-ja` | `vtts-jaen-nuja-{s,m}-v0.6.q8.vtts` | v0.6.0 | Text mode `ja`; embeds the 721 KB `JLEX` blob (`main/lex_ja.bin`) |
 | `nu-pt` | `vtts-pten-nupt-{s,m}-v0.7.q8.vtts` | v0.7.0 | Text mode `pt`; no blob beyond the English lexicon |
+| `nu-id` | `vtts-iden-nuid-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `id`; no blob beyond the English lexicon |
+| `nu-hi` | `vtts-hien-nuhi-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `hi` (Devanagari, English in Latin letters); no blob beyond the English lexicon |
+| `nu-es` | `vtts-esen-nues-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `es`; no blob beyond the English lexicon |
 
-`build.sh` builds and embeds the blobs a model needs. In the single-mode pairs (ko, zh, ja, pt) English words and English sentences go through the English front-end; digits are always read in the main language.
+`build.sh` builds and embeds the blobs a model needs. In the single-mode pairs (ko, zh, ja, pt, id, hi, es) English words and English sentences go through the English front-end. In the Latin-script pairs (pt, id, es) a whole English sentence is read in English, numbers included; otherwise digits are read in the main language.
 
 ## Quality
 
@@ -88,7 +91,37 @@ The Japanese references write some numbers in kanji (十五分) and Whisper writ
 | `nu-pt` S | 0.83M | 0.019 | **0.080** | **0.022** | **2.63** / 2.69 / **2.69** |
 | VoxCPM2 `nu-pt` (reference voice) | — | 0.044 | — | 0.044 | 3.99 / — / 3.93 |
 
-The reference voice reads raw digits poorly ("R$ 1.250,00", "15h45"); without the numbers group it scores 0.001 (Portuguese) and 0.016 (mixed), M 0.005 and 0.027, S 0.013 and 0.023. The English CER is about four times that of the other pairs because the pt mode tags each Latin word by spelling, and 17% of the words of whole English sentences (I, a, an, time, temperature, minutes) fit Portuguese spelling and are read as Portuguese; Portuguese sentences with English words are not affected.
+The reference voice reads raw digits poorly ("R$ 1.250,00", "15h45"); without the numbers group it scores 0.001 (Portuguese) and 0.016 (mixed), M 0.005 and 0.027, S 0.013 and 0.023. The English CER is about four times that of the other pairs because the pt mode tags each Latin word by spelling, and 17% of the words of whole English sentences (I, a, an, time, temperature, minutes) fit Portuguese spelling and are read as Portuguese; Portuguese sentences with English words are not affected. Since v0.8.0 the runtime and firmware decide the language of each sentence first, and the same v0.7.0 models score 0.012 (M) and 0.014 (S) on English ([report](reports/pt-student-eval.md#english-sentences-in-the-pt-mode)).
+
+**Indonesian + English** ([report](reports/id-student-eval.md)):
+
+| Model | Params | Indonesian CER ↓ | English CER ↓ | Mixed CER ↓ | UTMOS ↑ (id / en / mixed) |
+|---|---:|---:|---:|---:|---|
+| `nu-id` M | 1.84M | **0.011** | **0.022** | 0.018 | **2.42 / 3.05 / 2.57** |
+| `nu-id` S | 0.83M | **0.011** | 0.059 | **0.015** | 2.14 / 2.63 / 2.25 |
+| VoxCPM2 `nu-id` (reference voice) | — | 0.023 | — | 0.042 | 3.07 / — / 3.22 |
+
+Without the numbers group: reference 0.000 / 0.009, M 0.002 / 0.018, S 0.003 / 0.014 (Indonesian / mixed); the reference voice misreads raw digits ("Rp1.250.000"). English sentences are read in English by the sentence-level decision (word tags alone: 0.070 M, 0.106 S); the S score is raised by two clips that Whisper, forced to English, wrote as Indonesian translations of the accented audio.
+
+**Hindi + English** ([report](reports/hi-student-eval.md)):
+
+| Model | Params | Hindi CER ↓ | English CER ↓ | Mixed CER (Devanagari only) ↓ | UTMOS ↑ (hi / en / mixed) |
+|---|---:|---:|---:|---:|---|
+| `nu-hi` M | 1.84M | 0.094 | 0.053 | **0.054** | **2.84 / 3.09 / 2.91** |
+| `nu-hi` S | 0.83M | **0.092** | **0.028** | 0.056 | **2.84** / 3.03 / 2.88 |
+| VoxCPM2 `nu-hi` (reference voice) | — | 0.069 | — | 0.065 | 3.41 / — / 3.55 |
+
+Whisper's Hindi spelling (nukta, chandrabindu, ये/ए) costs every system; merged, and without the numbers group, `ood_hi` scores 0.035 for the reference voice, 0.081 (M) and 0.085 (S). The main remaining error is a weak first consonant at the start of a sentence ("बैठक" heard as "वैटक"). Whisper writes the English words of Hinglish sentences in Devanagari, so the mixed CER counts only the Devanagari of the text (plain CER 0.28–0.29 for every system, the reference included).
+
+**Spanish + English** ([report](reports/es-student-eval.md)):
+
+| Model | Params | Spanish CER ↓ | English CER ↓ | Mixed CER ↓ | UTMOS ↑ (es / en / mixed) |
+|---|---:|---:|---:|---:|---|
+| `nu-es` M | 1.84M | 0.019 | 0.020 | **0.006** | **2.83 / 3.07 / 2.87** |
+| `nu-es` S | 0.83M | **0.017** | **0.019** | 0.009 | 2.54 / 2.81 / 2.50 |
+| VoxCPM2 `nu-es` (reference voice) | — | 0.020 | — | 0.037 | 3.50 / — / 3.57 |
+
+Without the numbers group: reference 0.000 / 0.005, M 0.008 / 0.005, S 0.006 / 0.010 (Spanish / mixed). English sentences are read in English by the sentence-level decision (word tags alone: 0.056 M, 0.064 S).
 
 ## Speed
 
@@ -96,7 +129,7 @@ The reference voice reads raw digits poorly ("R$ 1.250,00", "15h45"); without th
 | Board | Chip | Lite model RTF | Quality model RTF |
 |---|---|---|---|
 | Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17–0.19 | 0.26–0.28 |
-| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.41–0.42 | 0.69–0.70 |
+| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.41–0.42 | 0.68–0.70 |
 
 Both models run on both chips. RTF below 1 means faster than real time.
 <!-- END:hardware -->
@@ -105,7 +138,7 @@ Both chips use two cores and int8 SIMD kernels; all released pairs run at the sa
 
 ## Listen (generated on an ESP32-P4)
 
-Audio is produced on the chip with the firmware's `dump` command (`lang auto` for vi-en, `lang ko`, `lang zh`, `lang ja`, `lang pt` for the other pairs), sent to a PC over serial and only compressed to MP3; every clip was checked with ASR before publishing. The same clips are on the [website](https://tuanpmt.github.io/vtts/).
+Audio is produced on the chip with the firmware's `dump` command (`lang auto` for vi-en, `lang ko`, `lang zh`, `lang ja`, `lang pt`, `lang id`, `lang hi`, `lang es` for the other pairs), sent to a PC over serial and only compressed to MP3; every clip was checked with ASR before publishing. The same clips are on the [website](https://tuanpmt.github.io/vtts/).
 
 <!-- BEGIN:samples -->
 🇻🇳 🇺🇸 **Việt–English**
@@ -172,4 +205,43 @@ Audio is produced on the chip with the firmware's `dump` command (`lang auto` fo
 | Em São Paulo vai chover a partir da tarde, e amanhã cedo a temperatura deve cair para 12 graus. | [▶ nu-pt Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-m-news.mp3) | [▶ nu-pt Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-s-news.mp3) |
 | A bateria está em 15% e a temperatura da sala é de 28 graus. O alarme está marcado para as 6:30 da manhã. | [▶ nu-pt Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-m-numbers.mp3) | [▶ nu-pt Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-s-numbers.mp3) |
 | Quer que eu acenda a luz do quarto? | [▶ nu-pt Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-m-question.mp3) | [▶ nu-pt Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-s-question.mp3) |
+
+🇮🇩 🇺🇸 **Indonesia–English**
+
+| Sentence | nu-id Quality | nu-id Lite |
+|---|---|---|
+| Halo! Saya adalah suara yang berjalan sepenuhnya di chip ESP32 dan bisa berbicara bahasa Indonesia dan Inggris. | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-intro.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-intro.mp3) |
+| Rapat di Zoom dimulai pukul tiga sore. Tolong kirim file PowerPoint-nya sebelum rapat. | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-zoom.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-zoom.mp3) |
+| Ponselnya sudah tersambung ke Wi-Fi. Sekarang kita bisa menonton Netflix. | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-wifi.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-wifi.mp3) |
+| Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller. | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-en-intro.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-en-intro.mp3) |
+| Your package has arrived at the front door. Would you like me to turn on the porch light? | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-en-package.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-en-package.mp3) |
+| Jakarta diperkirakan hujan mulai sore ini, dan besok pagi suhu akan turun menjadi 24 derajat. | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-news.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-news.mp3) |
+| Baterai tinggal 15% dan suhu ruangan 28 derajat. Alarm sudah diatur pukul 06.30 pagi. | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-numbers.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-numbers.mp3) |
+| Mau saya nyalakan lampu kamar? | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-question.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-question.mp3) |
+
+🇮🇳 🇺🇸 **हिन्दी–English**
+
+| Sentence | nu-hi Quality | nu-hi Lite |
+|---|---|---|
+| नमस्ते! मैं एक आवाज़ हूँ जो पूरी तरह ESP32 चिप पर चलती है और हिंदी और अंग्रेज़ी बोलती है। | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-intro.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-intro.mp3) |
+| Zoom पर मीटिंग दोपहर तीन बजे शुरू होगी। कृपया उससे पहले PowerPoint फ़ाइल भेज दीजिए। | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-zoom.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-zoom.mp3) |
+| फ़ोन Wi-Fi से जुड़ गया है। अब हम Netflix देख सकते हैं। | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-wifi.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-wifi.mp3) |
+| Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller. | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-en-intro.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-en-intro.mp3) |
+| Your package has arrived at the front door. Would you like me to turn on the porch light? | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-en-package.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-en-package.mp3) |
+| दिल्ली में आज शाम से बारिश होने की संभावना है, और कल सुबह तापमान गिरकर 18 डिग्री तक पहुँच जाएगा। | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-news.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-news.mp3) |
+| बैटरी 15% बची है और कमरे का तापमान 28 डिग्री है। अलार्म सुबह 6:30 बजे का लगा है। | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-numbers.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-numbers.mp3) |
+| क्या मैं कमरे की बत्ती जला दूँ? | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-question.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-question.mp3) |
+
+🇪🇸 🇺🇸 **Español–English**
+
+| Sentence | nu-es Quality | nu-es Lite |
+|---|---|---|
+| ¡Hola! Soy una voz que funciona completamente en un chip ESP32 y hablo español e inglés. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-intro.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-intro.mp3) |
+| La reunión en Zoom empieza a las tres de la tarde. Por favor, envía el archivo de PowerPoint antes. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-zoom.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-zoom.mp3) |
+| El móvil ya está conectado al Wi-Fi. Ahora podemos ver Netflix. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-wifi.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-wifi.mp3) |
+| Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-en-intro.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-en-intro.mp3) |
+| Your package has arrived at the front door. Would you like me to turn on the porch light? | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-en-package.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-en-package.mp3) |
+| En Madrid va a llover a partir de esta tarde, y mañana temprano la temperatura bajará a 8 grados. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-news.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-news.mp3) |
+| La batería está al 15% y la temperatura de la habitación es de 28 grados. La alarma está puesta a las 6:30 de la mañana. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-numbers.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-numbers.mp3) |
+| ¿Quieres que encienda la luz del dormitorio? | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-question.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-question.mp3) |
 <!-- END:samples -->

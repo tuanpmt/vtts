@@ -193,6 +193,10 @@ def test_main_script_cer_skips_english_words():
     # a dropped Hangul syllable and an insertion inside a Hangul word count
     assert main_script_cer([("거실 불을 켜 드릴까요?", "거실 불 켜 드릴까요")], "ko") == pytest.approx(1 / 9)
     assert main_script_cer([("거실 불을 켜 드릴까요?", "거실 불을을 켜 드릴까요")], "ko") == pytest.approx(1 / 9)
+    # Hindi: Whisper writes English words in Devanagari (meeting -> मीटिंग); only the Devanagari of the text counts
+    hi = "Zoom पर meeting शुरू होगी"
+    assert main_script_cer([(hi, "ज़ूम पर मीटिंग शुरू होगी")], "hi") == 0.0
+    assert main_script_cer([(hi, "Zoom पर meeting शुरू होगा")], "hi") > 0.0
 
 
 def test_ja_reading_cer_ignores_spelling():

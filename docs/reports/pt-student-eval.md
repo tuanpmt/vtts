@@ -41,6 +41,15 @@ Portuguese is written in the same letters as English, so the pt mode tags each L
 
 The fix is in the front-end, not the model: the students were trained on English sentences tokenized in English, so an English text mode (or a sentence-level language decision) for the Latin-script pairs would read these sentences as the model learned them. Until then, use pt-en models for Portuguese and Portuguese-with-English text; whole English sentences are understandable but accented in places.
 
+**Update (v0.8.0 runtime and firmware): sentence language.** The front-end now decides the language of each sentence first ([pronunciation rules](../frontend/pronunciation-rules.md#language-of-a-sentence)): a whole English sentence is read in English, numbers included. The same v0.7.0 int8 files, `vtts_say --lang pt`, Whisper large-v3, before → after (UTMOS not run):
+
+| Model | English CER / WER | English `numbers` group CER | Portuguese CER | Mixed CER |
+|---|---|---|---|---|
+| `nu-pt` M | 0.047 → **0.012** / 0.090 → **0.016** | 0.124 → 0.049 | 0.008 (unchanged) | 0.026 (unchanged) |
+| `nu-pt` S | 0.065 → **0.014** / 0.110 → **0.020** | 0.129 → 0.049 | 0.019 (unchanged) | 0.022 (unchanged) |
+
+The English "before" here (0.047 / 0.065) is lower than in the release run above (0.089 / 0.080); both columns of this table come from one run on the same machine, so compare them with each other. 43 of the 50 English sentences change ids; no Portuguese or mixed sentence does (same ids, so the same audio). Words of `ood_en` read as Portuguese: 79 of 482 → 0.
+
 ## Where the errors are
 
 - **Names that fit Portuguese spelling** inside mixed sentences are read the Portuguese way: "Elon Musk" → "O aluno nosso" (S), "router" → "Luther"/"Rudder", "gym" → "dia em" (M), "livestream" → "Westin" (M).

@@ -1,6 +1,6 @@
 # On-chip performance
 
-Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English and the v0.7.0 Portuguese (Brazil) + English models (S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
+Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English and the v0.8.0 Indonesian + English, Hindi + English and Spanish + English models (S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
 
 Everything lives in PSRAM: the models, the working arena (about 1.9 MB) and the activations. Internal SRAM stays free for the application and for DMA.
 
@@ -133,6 +133,31 @@ The pt-en models (v0.7.0) have the same architecture with a token table of 150 (
 - Image with the two pt-en models and the English lexicon (no blob of its own; the Portuguese front-end is compiled in only for a pt-en model): 6.22 MB on the ESP32-P4 (2.17 MB free in the 8 MB app partition) and 6.10 MB on the ESP32-S3 (2.28 MB free).
 - **ESP32-P4:** the dumps match `vtts_say` on a PC (correlation ≥ 0.9993, SNR 28–57 dB) for all 16 clips. All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: CER 0.014 (M) and 0.009 (S) on average over the six Portuguese and mixed clips (the errors: "ESP32", read with Portuguese letter names, heard as "SP32"; "à Netflix" as "a Netflix"; "às 6:30" written "6h30"); the English clips score 0–0.09, the only error being "ESP32" again (spelled the Portuguese way, heard as "SPP-S2"). None is broken.
 - **ESP32-S3 with two cores:** all 16 dumps of the measurement run are identical to the ESP32-P4 dumps of the same text (SNR ≥ 95 dB, the int16 rounding), so the two-core fix holds for pt-en too.
+
+## Indonesian + English, Hindi + English and Spanish + English (v0.8.0)
+
+The id-en, hi-en and es-en models (v0.8.0) have the same architecture with token tables of 141, 157 and 138 (S 0.83M, M 1.84M parameters). One firmware per pair, with only that pair's front-end compiled in (`vtts: optional languages compiled in: id` / `hi` / `es`), measured with `lang id` / `lang hi` / `lang es`: `bench` uses four sentences of the main language, `dump` and playback the eight website sentences (main language, main language with English words, English).
+
+| Pair | Chip | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---|---|---:|---:|---:|---:|---:|---:|
+| id-en | ESP32-P4 | S (lite) | 0.18–0.20 (mean 0.18) | 0.17–0.20 | 0.06–0.11 s | 0.07–0.12 s (median 0.09) | 18–20% / 13–14% | 0 in 8 |
+| id-en | ESP32-P4 | M (quality) | 0.26–0.28 (mean 0.27) | 0.26–0.30 | 0.10–0.21 s | 0.17–0.28 s (median 0.24) | 25–29% / 19–22% | 1 in 8 |
+| id-en | ESP32-S3 | S (lite) | 0.40–0.44 (mean 0.42) | 0.41–0.45 | 0.12–0.28 s | 0.23–0.39 s (median 0.32) | 39–42% / 9–10% | 2 in 8 |
+| id-en | ESP32-S3 | M (quality) | 0.67–0.70 (mean 0.68) | 0.66–0.75 | 0.23–0.55 s | 0.38–0.72 s (median 0.57) | 58–64% / 17–20% | 2 in 8 |
+| hi-en | ESP32-P4 | S (lite) | 0.18–0.20 (mean 0.19) | 0.17–0.20 | 0.06–0.12 s | 0.07–0.12 s (median 0.09) | 18–20% / 13–14% | 0 in 8 |
+| hi-en | ESP32-P4 | M (quality) | 0.27–0.28 (mean 0.27) | 0.26–0.30 | 0.11–0.23 s | 0.17–0.30 s (median 0.23) | 25–30% / 19–22% | 1 in 8 |
+| hi-en | ESP32-S3 | S (lite) | 0.40–0.45 (mean 0.42) | 0.41–0.45 | 0.14–0.30 s | 0.23–0.41 s (median 0.30) | 39–42% / 9–10% | 2 in 8 |
+| hi-en | ESP32-S3 | M (quality) | 0.68–0.70 (mean 0.69) | 0.67–0.74 | 0.27–0.60 s | 0.39–0.78 s (median 0.55) | 57–64% / 17–20% | 1 in 8 |
+| es-en | ESP32-P4 | S (lite) | 0.17–0.21 (mean 0.19) | 0.18–0.20 | 0.06–0.11 s | 0.06–0.11 s (median 0.09) | 18–20% / 13–14% | 0 in 8 |
+| es-en | ESP32-P4 | M (quality) | 0.26–0.29 (mean 0.28) | 0.26–0.31 | 0.10–0.21 s | 0.15–0.28 s (median 0.25) | 26–30% / 19–22% | 2 in 8 |
+| es-en | ESP32-S3 | S (lite) | 0.41–0.46 (mean 0.42) | 0.41–0.46 | 0.12–0.27 s | 0.20–0.39 s (median 0.32) | 39–43% / 9–10% | 2 in 8 |
+| es-en | ESP32-S3 | M (quality) | 0.68–0.73 (mean 0.70) | 0.68–0.74 | 0.22–0.54 s | 0.32–0.71 s (median 0.58) | 58–64% / 17–19% | 2 in 8 |
+
+- Speed is the same as the other pairs within 0.01 RTF; the larger Hindi token table costs nothing measurable.
+- Every underrun was on a text that starts with a one-word sentence followed by a longer one ("Halo! Saya adalah ...", "नमस्ते! मैं ...", "¡Hola! Soy ...", "Hello! I am a text-to-speech voice ..."), as with the other pairs.
+- Images with the two models of the pair and the English lexicon (no blob of their own; the Indonesian and Spanish rules and the Hindi tables are compiled in): id-en 6.21 MB on the ESP32-P4 (2.17 MB free in the 8 MB app partition) and 6.10 MB on the ESP32-S3 (2.29 MB free); hi-en 6.20 MB on the ESP32-P4 (2.19 MB free) and 6.09 MB on the ESP32-S3 (2.30 MB free); es-en 6.21 MB on the ESP32-P4 (2.18 MB free) and 6.10 MB on the ESP32-S3 (2.29 MB free). Devanagari needs no blob: the Hindi module with its tables adds about 25 KB.
+- **ESP32-P4:** the dumps match `vtts_say` on a PC for all 48 clips (id-en correlation ≥ 0.9997, SNR 32–78 dB; hi-en ≥ 0.9995, SNR 30–42 dB; es-en ≥ 0.998, SNR 24–67 dB). All 48 published clips, decoded from MP3 and transcribed with Whisper large-v3: id-en CER 0 for 15 of 16 (M intro: "ESP32" heard as "ISP32"); hi-en Devanagari CER 0.11 (M) and 0.12 (S) on average over the six Hindi and mixed clips (first consonants and Whisper's spelling, see the [hi-en report](hi-student-eval.md#on-the-chip)), English clips 0–0.08; es-en CER 0 for 12 of 16, the others 0.010–0.021 ("ESP32" heard as "SP32"). None is broken.
+- **ESP32-S3 with two cores: not always deterministic again.** In the measurement run 15 of the 16 id-en dumps were identical to the ESP32-P4 (the 16th, S news, differs for 0.25 s, up to 0.15 full scale) but only 10 of the 16 hi-en dumps (S and M, three with a different length: a token duration changed) and 12 of the 16 es-en dumps (three with a different length). A second hi-en run on the ESP32-S3, four sentences three times each with `cores 2` and once with `cores 1`: 7 of the 24 two-core dumps differ from the ESP32-P4 (3 with another length, up to 0.45 full scale), every one-core dump is identical. So the [two-core fix](#esp32-s3-two-core-fix) lowers the rate of the PSRAM errors but does not remove them; `cores 1` gives exact output, at the cost of speed. The website samples come from the ESP32-P4.
 
 ## Where the time goes
 
