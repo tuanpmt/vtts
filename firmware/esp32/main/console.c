@@ -118,7 +118,7 @@ static const esp_console_cmd_t CMDS[] = {
     {.command = "bench", .help = "RTF on four fixed sentences, no audio (REPORT lines)", .func = cmd_bench},
     {.command = "prof", .help = "time per synthesis stage since the last prof", .func = cmd_prof},
     {.command = "model", .help = "lite (s) or quality (m) model", .hint = "s|m", .func = cmd_model},
-    {.command = "lang", .help = "text mode of the current model's token set: v1 vi; vi-en vi|en|auto (vi also reads English words); zh-en zh; ko-en ko; hi-en hi; ja-en ja; es-en es; id-en id; pt-en pt; th-en th; fr-en fr; de-en de; it-en it; tr-en tr; ru-en ru; pl-en pl; ar-en ar; fi-en fi; el-en el; ms-en ms; tl-en tl; sw-en sw; nl-en nl; sv-en sv; no-en no (each when built in)", .hint = "vi|en|auto|zh|ko|hi|ja|es|id|pt|th|fr|de|it|tr|ru|pl|ar|fi|el|ms|tl|sw|nl|sv|no", .func = cmd_lang},
+    {.command = "lang", .help = "text mode of the current model's token set: v1 vi; vi-en vi|en|auto (vi also reads English words); zh-en zh; ko-en ko; hi-en hi; ja-en ja; es-en es; id-en id; pt-en pt; th-en th; fr-en fr; de-en de; it-en it; tr-en tr; ru-en ru; pl-en pl; ar-en ar; fi-en fi; el-en el; ms-en ms; tl-en tl; sw-en sw; nl-en nl; sv-en sv; no-en no; da-en da; lo-en lo; km-en km; my-en my (each when built in)", .hint = "vi|en|auto|zh|ko|hi|ja|es|id|pt|th|fr|de|it|tr|ru|pl|ar|fi|el|ms|tl|sw|nl|sv|no|da|lo|km|my", .func = cmd_lang},
     {.command = "vol", .help = "speaker volume", .hint = "0-100", .func = cmd_vol},
     {.command = "gain", .help = "digital gain in dB before a soft limiter", .hint = "0-24", .func = cmd_gain},
     {.command = "speed", .help = "speaking rate (length scale, higher is slower)", .hint = "0.7-1.6", .func = cmd_speed},

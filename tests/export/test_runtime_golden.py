@@ -568,7 +568,7 @@ def _langs_test_without(tmp_path, *langs: str) -> subprocess.CompletedProcess:
 def test_c_tagalog_disabled(tmp_path):
     """With VTTS_ENABLE_TL=0 the tl-en token set has no text mode and the mode is refused (langs_test)."""
     r = _langs_test_without(tmp_path, "TL")
-    assert r.returncode == 0 and " of 23 " in r.stdout and "22 of" in r.stdout, r.stdout + r.stderr
+    assert r.returncode == 0 and " of 27 " in r.stdout and "26 of" in r.stdout, r.stdout + r.stderr
 
 
 def test_c_tagalog_tables_current():
@@ -960,7 +960,7 @@ def test_c_swahili_tables_current():
 def test_c_swahili_disabled(tmp_path):
     """Built with VTTS_ENABLE_SW=0: the sw-en token set has no text mode and the mode is refused."""
     r = _langs_test_without(tmp_path, "SW")
-    assert r.returncode == 0 and " of 23 " in r.stdout and "22 of" in r.stdout, r.stdout + r.stderr
+    assert r.returncode == 0 and " of 27 " in r.stdout and "26 of" in r.stdout, r.stdout + r.stderr
 
 
 def test_c_text_to_audio_sw_en(tmp_path):
@@ -1333,6 +1333,323 @@ def test_c_text_to_audio_pair(tmp_path, lang):
     assert lines[0].startswith(f"token_set {tset} header mode {lang} lex 1"), lines[0]
     c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
     assert c_ids == text_to_ids(text, lang)
+    assert max(max(c) for c in c_ids) > 106
+    with wave.open(str(wav)) as w:
+        assert w.getframerate() == 22050 and w.getnframes() > 0
+
+
+def test_c_lao_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex in VTTS_LANG_LO mode (token set lo-en, word list and rules compiled in, VLEX
+    for English words) gives exactly text_to_ids(text, "lo") on the fixture (the Lao eval sets and
+    unit-test strings included), survives the Lao fuzz run, and a build with VTTS_ENABLE_LO=0 refuses
+    the mode but still loads lo-en models."""
+    import json
+    import random
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    fixture = RUNTIME / "test" / "text_parity_lo.tsv"
+    lines = fixture.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 10000
+    texts = {line.split("\t")[1] for line in lines}
+    root = Path(__file__).parents[2]
+    for name in ("ood_lo.jsonl", "mixed_lo.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                assert json.loads(x)["text"] in texts, f"{name} is not in the fixture"
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            "run: uv run python scripts/frontend/export_text_parity.py --lo --sentences data/lo/sentences.jsonl "
+            "--limit 2000 --out runtime/test/text_parity_lo.tsv")
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    r = subprocess.run([exe, "--lex", str(lex), str(fixture)], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz-lo", "--lex", str(lex)], check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "fuzz lo: ok" in f.stdout, f.stdout + f.stderr[-2000:]
+    n = _langs_test_without(tmp_path, "LO")  # VTTS_ENABLE_LO=0: the mode is refused, the set still loads
+    assert n.returncode == 0 and "26 of 27" in n.stdout, n.stdout + n.stderr
+
+
+def test_c_lao_tables_current():
+    """runtime/src/vtts_text_lo_tables.h holds the current Lao tables (words.txt, overrides.tsv)."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_text_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_text_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert "\n".join(mod.lao_tables()) == (RUNTIME / "src" / "vtts_text_lo_tables.h").read_text(encoding="utf-8"), (
+        "run: uv run python runtime/tools/gen_text_tables.py")
+
+
+def test_c_text_to_audio_lo_en(tmp_path):
+    """Full device path on the host for a lo-en model (tiny, random weights): the header's token set
+    picks the lo front-end (no extra blob), ids above 106 reach the embedding, audio comes out."""
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-lo-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "lo.vtts"
+    write_model_int8(m, model, token_set="lo-en")
+    assert token_set_of(read_model(model)[0]) == "lo-en"
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "ເປີດWi-Fiໃຫ້ແດ່ ຕອນນີ້ 14:30 ອຸນຫະພູມ 26°C ລາຄາ ₭5,000"
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), text],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set lo-en header mode lo lex 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "lo")
+    assert wav.stat().st_size > 1000
+
+
+def test_c_danish_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex in VTTS_LANG_DA mode (token set da-en, NST readings, word lists and rules
+    compiled in, VLEX for English words) gives exactly text_to_ids(text, "da") on the fixture (the
+    Danish eval sets and unit-test strings included), survives the Danish fuzz run, and a build with
+    VTTS_ENABLE_DA=0 refuses the mode but still loads da-en models."""
+    import json
+    import random
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    fixture = RUNTIME / "test" / "text_parity_da.tsv"
+    lines = fixture.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 10000
+    texts = {line.split("\t")[1] for line in lines}
+    root = Path(__file__).parents[2]
+    for name in ("ood_da.jsonl", "mixed_da.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                assert json.loads(x)["text"] in texts, f"{name} is not in the fixture"
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            "run: uv run python scripts/frontend/export_text_parity.py --da --sentences data/da/sentences.jsonl "
+            "data/da/mixed.jsonl --limit 2500 --out runtime/test/text_parity_da.tsv")
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    r = subprocess.run([exe, "--lex", str(lex), str(fixture)], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz-da", "--lex", str(lex)], check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "fuzz da: ok" in f.stdout, f.stdout + f.stderr[-2000:]
+    n = _langs_test_without(tmp_path, "DA")  # VTTS_ENABLE_DA=0: the mode is refused, the set still loads
+    assert n.returncode == 0 and "26 of 27" in n.stdout, n.stdout + n.stderr
+
+
+def test_c_danish_tables_current():
+    """runtime/src/vtts_text_da_tables.h holds the current Danish tables (lexicon.tsv, words.txt, native.txt)."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_text_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_text_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert "\n".join(mod.danish_tables()) == (RUNTIME / "src" / "vtts_text_da_tables.h").read_text(encoding="utf-8"), (
+        "run: uv run python runtime/tools/gen_text_tables.py")
+
+
+def test_c_text_to_audio_da_en(tmp_path):
+    """Full device path on the host for a da-en model (tiny, random weights): the header's token set
+    picks the da front-end (no extra blob), ids above 106 reach the embedding, audio comes out."""
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-da-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "da.vtts"
+    write_model_int8(m, model, token_set="da-en")
+    assert token_set_of(read_model(model)[0]) == "da-en"
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "Tænd for Wi-Fi. Mødet er kl. 14.30 den 5. marts, og det koster 12,50 kr."
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), text],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set da-en header mode da lex 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "da")
+    assert wav.stat().st_size > 1000
+
+
+def test_c_khmer_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex in VTTS_LANG_KM mode (token set km-en, word list, override, onset and rhyme
+    tables compiled in, VLEX for English words) gives exactly text_to_ids(text, "km") on the fixture (the
+    Khmer eval sets and unit-test strings included), and survives the Khmer fuzz run."""
+    import json
+    import random
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    fixture = RUNTIME / "test" / "text_parity_km.tsv"
+    lines = fixture.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 10000
+    texts = {line.split("\t")[1] for line in lines}
+    root = Path(__file__).parents[2]
+    for name in ("ood_km.jsonl", "mixed_km.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                assert json.loads(x)["text"] in texts, f"{name} is not in the fixture"
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            "run: uv run python scripts/frontend/export_text_parity.py --km --sentences data/km/sentences.jsonl "
+            "--limit 2500 --out runtime/test/text_parity_km.tsv")
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    r = subprocess.run([exe, "--lex", str(lex), str(fixture)], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz-km", "--lex", str(lex)], check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "fuzz km: ok" in f.stdout, f.stdout + f.stderr[-2000:]
+
+
+def test_c_khmer_tables_current():
+    """runtime/src/vtts_text_km_tables.h holds the current Khmer tables."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_nsp_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_nsp_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert "\n".join(mod.khmer_tables()) == (RUNTIME / "src" / "vtts_text_km_tables.h").read_text(encoding="utf-8"), (
+        "run: uv run python runtime/tools/gen_text_tables.py")
+
+
+def test_c_text_to_audio_km_en(tmp_path):
+    """Full device path on the host for a km-en model (tiny, random weights): the header's token set
+    picks the km front-end (no extra blob), ids above 106 reach the embedding, audio comes out."""
+    import wave
+
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-km-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "km.vtts"
+    write_model_int8(m, model, token_set="km-en")
+    assert token_set_of(read_model(model)[0]) == "km-en"
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "សូមបើកWi-Fiឱ្យខ្ញុំ។ ម៉ោង 14:30 តម្លៃ 5000៛"
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), text],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set km-en header mode km lex 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "km")
+    assert max(max(c) for c in c_ids) > 106
+    with wave.open(str(wav)) as w:
+        assert w.getframerate() == 22050 and w.getnframes() > 0
+
+
+def test_c_burmese_frontend_parity(tmp_path):
+    """vtts_text_to_ids_ex in VTTS_LANG_MY mode (token set my-en: Zawgyi conversion, canonical order,
+    syllable rules compiled in, VLEX for English words) gives exactly text_to_ids(text, "my") on the
+    fixture (the Burmese eval sets and unit-test strings included), and survives the Burmese fuzz run."""
+    import json
+    import random
+
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    fixture = RUNTIME / "test" / "text_parity_my.tsv"
+    lines = fixture.read_text(encoding="utf-8").splitlines()
+    assert len(lines) > 10000
+    texts = {line.split("\t")[1] for line in lines}
+    root = Path(__file__).parents[2]
+    for name in ("ood_my.jsonl", "mixed_my.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                assert json.loads(x)["text"] in texts, f"{name} is not in the fixture"
+    for line in random.Random(0).sample(lines, 300):  # the fixture is not stale
+        mode, text, ids = line.split("\t")
+        assert ";".join(" ".join(map(str, c)) for c in text_to_ids(text, mode)) == ids, (
+            "run: uv run python scripts/frontend/export_text_parity.py --my --sentences data/my/sentences.jsonl "
+            "--limit 2500 --out runtime/test/text_parity_my.tsv")
+    subprocess.run(["make", "-s", "build/text_test"], cwd=RUNTIME, check=True)
+    exe = str(RUNTIME / "build" / "text_test")
+    r = subprocess.run([exe, "--lex", str(lex), str(fixture)], check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout[-3000:] + r.stderr[-2000:]
+    f = subprocess.run([exe, "--fuzz-my", "--lex", str(lex)], check=False, capture_output=True, text=True)
+    assert f.returncode == 0 and "fuzz my: ok" in f.stdout, f.stdout + f.stderr[-2000:]
+
+
+def test_c_burmese_tables_current():
+    """runtime/src/vtts_text_my_tables.h holds the current Burmese tables."""
+    import importlib.util
+
+    script = RUNTIME / "tools" / "gen_nsp_tables.py"
+    spec = importlib.util.spec_from_file_location("gen_nsp_tables", script)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert "\n".join(mod.burmese_tables()) == (RUNTIME / "src" / "vtts_text_my_tables.h").read_text(encoding="utf-8"), (
+        "run: uv run python runtime/tools/gen_text_tables.py")
+
+
+def test_c_text_to_audio_my_en(tmp_path):
+    """Full device path on the host for a my-en model (tiny, random weights), Zawgyi input included."""
+    import wave
+
+    from vtts.export.format import read_model, token_set_of
+    from vtts.export.quant import write_model_int8
+    from vtts.frontend.en.vlex import build_vlex
+    from vtts.frontend.text import text_to_ids
+
+    torch.manual_seed(0)
+    m = Student(PRESETS["S-vocos-p-my-en"]).eval()
+    with torch.no_grad():
+        m.duration.out.bias.fill_(math.log(4.0))
+    model = tmp_path / "my.vtts"
+    write_model_int8(m, model, token_set="my-en")
+    assert token_set_of(read_model(model)[0]) == "my-en"
+    lex = tmp_path / "lex_en.bin"
+    lex.write_bytes(build_vlex())
+    subprocess.run(["make", "-s", "build/vtts_say"], cwd=RUNTIME, check=True)
+    text = "Wi-Fi ကို ဖွင့်ပေးပါ။ ေျပာပါတယ္ 14:30 5000 Ks"
+    wav = tmp_path / "out.wav"
+    r = subprocess.run([str(RUNTIME / "build" / "vtts_say"), str(model), str(wav), "--lex", str(lex), text],
+                       check=False, capture_output=True, text=True)
+    assert r.returncode == 0, r.stdout + r.stderr
+    lines = r.stdout.splitlines()
+    assert lines[0].startswith("token_set my-en header mode my lex 1"), lines[0]
+    c_ids = [[int(x) for x in ln.split()[1:]] for ln in lines if ln.startswith("ids ")]
+    assert c_ids == text_to_ids(text, "my")
     assert max(max(c) for c in c_ids) > 106
     with wave.open(str(wav)) as w:
         assert w.getframerate() == 22050 and w.getnframes() > 0

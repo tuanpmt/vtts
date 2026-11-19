@@ -8,7 +8,7 @@ from vtts.student.distill_data import pack_inputs
 def test_pair_presets_cover_their_token_sets():
     assert {"zh-en", "ko-en", "ja-en", "es-en", "id-en", "pt-en", "th-en", "hi-en", "fr-en", "de-en", "it-en",
             "tr-en", "ru-en", "pl-en", "ar-en", "fi-en", "el-en", "ms-en",
-            "tl-en", "sw-en", "nl-en", "sv-en", "no-en"} <= set(PAIR_MODES.values())
+            "tl-en", "sw-en", "nl-en", "sv-en", "no-en", "da-en", "lo-en", "km-en", "my-en"} <= set(PAIR_MODES.values())
     for pair in PAIR_MODES.values():
         size = len(TOKEN_SETS[pair])
         for base in ("M-vocos-p", "S-vocos-p"):
@@ -31,7 +31,10 @@ def test_pack_inputs_uses_the_pair_token_set(tmp_path):
             {"text": "الطقس جميل اليوم.", "lang": "ar"},
             {"text": "Tänään on kaunis ilma.", "lang": "fi"}, {"text": "Σήμερα ο καιρός είναι ωραίος.", "lang": "el"},
             {"text": "Hari ini cuaca cerah.", "lang": "ms"}, {"text": "Maganda ang panahon ngayon.", "lang": "tl"},
-            {"text": "Hali ya hewa ni nzuri leo.", "lang": "sw"}]
+            {"text": "Hali ya hewa ni nzuri leo.", "lang": "sw"}, {"text": "I dag er vejret godt.", "lang": "da"},
+            {"text": "ມື້ນີ້ອາກາດດີຫຼາຍ", "lang": "lo"},
+            {"text": "ថ្ងៃនេះអាកាសធាតុល្អណាស់។", "lang": "km"},
+            {"text": "ဒီနေ့ ရာသီဥတု သာယာတယ်။", "lang": "my"}]
     p = tmp_path / "s.jsonl"
     p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
     packs = pack_inputs(p, None)

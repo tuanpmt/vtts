@@ -64,6 +64,10 @@ int main(int argc, char **argv) {
         {VTTS_TOKSET_NL_EN, VTTS_LANG_NL, "nl", VTTS_ENABLE_NL, "Hallo, het is o.a. 6:30 uur."},
         {VTTS_TOKSET_SV_EN, VTTS_LANG_SV, "sv", VTTS_ENABLE_SV, "Hej, klockan är 6.30, t.ex. nu."},
         {VTTS_TOKSET_NO_EN, VTTS_LANG_NO, "no", VTTS_ENABLE_NO, "Hei, 17. mai klokka 6.30."},
+        {VTTS_TOKSET_DA_EN, VTTS_LANG_DA, "da", VTTS_ENABLE_DA, "Hej, den 5. marts kl. 6.30."},
+        {VTTS_TOKSET_LO_EN, VTTS_LANG_LO, "lo", VTTS_ENABLE_LO, "ສະບາຍດີ 25 ອົງສາ"},
+        {VTTS_TOKSET_KM_EN, VTTS_LANG_KM, "km", VTTS_ENABLE_KM, "សួស្តី 25 អង្សាសេ។"},
+        {VTTS_TOKSET_MY_EN, VTTS_LANG_MY, "my", VTTS_ENABLE_MY, "မင်္ဂလာပါ 25 ဒီဂရီ။"},
     };
     int enabled = 0;
     for (size_t k = 0; k < sizeof L / sizeof *L; k++) {

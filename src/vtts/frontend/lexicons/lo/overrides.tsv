@@ -1,0 +1,2 @@
+# Lao words read unlike their spelling: word<TAB>respelling, one "-" separated piece per syllable.
+# Matching: the whole word (after the segmentation). See docs/frontend/pronunciation-rules.md.

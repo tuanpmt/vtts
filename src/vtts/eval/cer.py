@@ -16,6 +16,9 @@ Latin word one word (a mixed error rate); for ko the space-separated words (어�
 also counts spacing differences. Japanese CER is orthographic: Whisper writing a word in kanji
 where the reference has kana (or the other way round) counts as an error. Thai CER counts Thai
 characters (spaces removed); Thai WER counts the words of the front-end's word segmentation.
+Khmer ("km") is scored like Thai (Khmer characters without spaces; words of the Khmer
+segmentation). Burmese ("my", converted from Zawgyi when needed) is scored like Chinese: CER over
+Burmese characters without spaces, WER over syllables (each Burmese syllable one word).
 
 Latin-script pair languages (LATIN_PAIR_LANGS: es id pt de it tr pl fi ms tl sw nl sv no) go through their pair front-end the same
 way (numbers read in the main language, English words through the English normalizer, accents
@@ -46,11 +49,11 @@ def _plain_words(text: str) -> list[str]:
     return out
 
 
-LATIN_PAIR_LANGS = ("es", "id", "pt", "de", "it", "tr", "pl", "fi", "ms", "tl", "sw", "nl", "sv", "no")
+LATIN_PAIR_LANGS = ("es", "id", "pt", "de", "it", "tr", "pl", "fi", "ms", "tl", "sw", "nl", "sv", "no", "da")
 SPACED_PAIR_LANGS = (*LATIN_PAIR_LANGS, "hi", "ru", "ar", "el")  # words separated by spaces: CER keeps them
-PAIR_LANGS = ("zh", "ko", "ja", "th", *SPACED_PAIR_LANGS)
+PAIR_LANGS = ("zh", "ko", "ja", "th", "lo", *SPACED_PAIR_LANGS)
 WHISPER_LANGUAGE = {"vi": "vi", "en": "en", "mixed": "vi", "zh": "zh", "ko": "ko", "ja": "ja",
-                    "th": "th",
+                    "th": "th", "lo": "lo",
                     **{code: code for code in SPACED_PAIR_LANGS}}
 # French (fr-en): a Latin-script pair (liaison consonants written by the normalizer, z'amis, count
 # on both sides alike).
@@ -58,6 +61,9 @@ LATIN_PAIR_LANGS = (*LATIN_PAIR_LANGS, "fr")
 SPACED_PAIR_LANGS = (*SPACED_PAIR_LANGS, "fr")
 PAIR_LANGS = (*PAIR_LANGS, "fr")
 WHISPER_LANGUAGE["fr"] = "fr"
+PAIR_LANGS = (*PAIR_LANGS, "km", "my")
+WHISPER_LANGUAGE["km"] = "km"
+WHISPER_LANGUAGE["my"] = "my"
 
 
 def _is_cjk(ch: str) -> bool:
@@ -93,6 +99,24 @@ def _pair_words(text: str, lang: str) -> list[str]:
         from vtts.frontend.th.normalize_th import is_thai_word
 
         return [p for w in words for p in (segment(w.replace("ๆ", "")) if is_thai_word(w) else [w])]
+    if lang == "lo":  # Lao runs cut into words like Thai
+        from vtts.frontend.lo.g2p_lo import prepare
+        from vtts.frontend.lo.g2p_lo import segment as lo_segment
+        from vtts.frontend.lo.normalize_lo import is_lao_word
+
+        return [p for w in words for p in (lo_segment(prepare(w).replace("ໆ", "")) if is_lao_word(w) else [w])]
+    if lang == "km":  # Khmer runs cut into words by the front-end's word segmentation
+        from vtts.frontend.km.g2p_km import segment as km_segment
+        from vtts.frontend.km.g2p_km import spell
+        from vtts.frontend.km.normalize_km import is_khmer_word
+
+        return [p for w in words for p in (km_segment(spell(w).replace("ៗ", "")) if is_khmer_word(w)
+                                           else [w])]
+    if lang == "my":  # Burmese runs cut into syllables
+        from vtts.frontend.my.g2p_my import syllables
+        from vtts.frontend.my.normalize_my import is_burmese_word
+
+        return [p for w in words for p in ([s.text for s in syllables(w)] if is_burmese_word(w) else [w])]
     out: list[str] = []
     for w in words:  # zh, ja: one unit per character of a CJK word, Latin words whole
         out += list(w) if any(_is_cjk(ch) for ch in w) else [w]

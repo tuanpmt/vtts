@@ -82,10 +82,24 @@
 #ifndef VTTS_ENABLE_NO
 #define VTTS_ENABLE_NO 1 /* Norwegian Bokmål, no-en (vtts_text_nx.c, vtts_text_nx_sc.c) */
 #endif
+#ifndef VTTS_ENABLE_DA
+#define VTTS_ENABLE_DA 1 /* Danish, da-en (vtts_text_da.c) */
+#endif
+#ifndef VTTS_ENABLE_LO
+#define VTTS_ENABLE_LO 1 /* Lao, lo-en (vtts_text_lo.c) */
+#endif
+#ifndef VTTS_ENABLE_KM
+#define VTTS_ENABLE_KM 1 /* Khmer, km-en (vtts_text_km.c, vtts_text_nsp.c) */
+#endif
+#ifndef VTTS_ENABLE_MY
+#define VTTS_ENABLE_MY 1 /* Burmese, my-en (vtts_text_my.c, vtts_text_nsp.c) */
+#endif
 
 /* es, id, pt and ms share one module (vtts_text_lt.c) */
 #define VTTS_ENABLE_LT (VTTS_ENABLE_ES || VTTS_ENABLE_ID || VTTS_ENABLE_PT || VTTS_ENABLE_MS)
 /* nl, sv and no share the scanner normalizer (vtts_text_nx.c) */
 #define VTTS_ENABLE_NX (VTTS_ENABLE_NL || VTTS_ENABLE_SV || VTTS_ENABLE_NO)
+/* km and my share the no-space normalizer engine (vtts_text_nsp.c) */
+#define VTTS_ENABLE_NSP (VTTS_ENABLE_KM || VTTS_ENABLE_MY)
 
 #endif

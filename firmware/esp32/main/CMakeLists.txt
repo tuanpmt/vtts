@@ -40,6 +40,8 @@ idf_component_register(
          "${RT}/src/vtts_text_ar.c" "${RT}/src/vtts_text_fi.c" "${RT}/src/vtts_text_el.c"
          "${RT}/src/vtts_text_tl.c" "${RT}/src/vtts_text_sw.c"
          "${RT}/src/vtts_text_nx.c" "${RT}/src/vtts_text_nx_nl.c" "${RT}/src/vtts_text_nx_sc.c"
+         "${RT}/src/vtts_text_da.c" "${RT}/src/vtts_text_lo.c"
+         "${RT}/src/vtts_text_nsp.c" "${RT}/src/vtts_text_km.c" "${RT}/src/vtts_text_my.c"
          "${RT}/src/vtts_lex.c"
     INCLUDE_DIRS "." "${RT}/include" "${RT}/src"
     PRIV_REQUIRES ${REQS}

@@ -96,6 +96,11 @@ def test_latin_pair_cer_reads_numbers_and_keeps_spaces():
     assert WHISPER_LANGUAGE["pt"] == "pt"
     assert cer("มี 21 คน", "มียี่สิบเอ็ดคน", "th") == 0.0  # Thai: spaces and numbers do not count
     assert WHISPER_LANGUAGE["th"] == "th"
+    assert cer("មាន 21 នាក់", "មានម្ភៃមួយ នាក់", "km") == 0.0  # Khmer: spaces and numbers do not count
+    assert WHISPER_LANGUAGE["km"] == "km"
+    assert cer("အသက် 21 နှစ်", "အသက်နှစ်ဆယ့်တစ် နှစ်", "my") == 0.0  # Burmese: numbers, spaces
+    assert cer("ေျပာပါတယ္", "ပြောပါတယ်", "my") == 0.0  # Zawgyi is converted
+    assert WHISPER_LANGUAGE["my"] == "my"
     assert cer("Ada 21 orang.", "ada dua puluh satu orang", "id") == 0.0
     assert WHISPER_LANGUAGE["id"] == "id"
     assert cer("J'ai 21 ans.", "j'ai vingt et un ans", "fr") == 0.0  # liaison on both sides
@@ -200,3 +205,19 @@ def test_ja_reading_cer_ignores_spelling():
     assert ja_reading_cer([("洗濯機", "選択肢")]) > 0.0  # a different reading is an error
     assert ja_reading_cer([("このWi-Fiはpasswordが必要ですか？", "このWi-Fiはパスワードが必要ですか")],
                           main_only=True) == 0.0
+
+
+def test_danish_cer_reads_numbers():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+
+    assert cer("Jeg er 21 år.", "jeg er enogtyve år", "da") == 0.0
+    assert prep_for_cer("Mødet er den 5. maj kl. 9.", "da") == "mødet er den femte maj klokken ni"
+    assert WHISPER_LANGUAGE["da"] == "da"
+
+
+def test_lao_cer_reads_numbers_without_spaces():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer
+
+    assert cer("ມີ 21 ຄົນ", "ມີຊາວເອັດຄົນ", "lo") == 0.0
+    assert cer("ມີ ໒໑ ຄົນ", "ມີຊາວເອັດຄົນ", "lo") == 0.0
+    assert WHISPER_LANGUAGE["lo"] == "lo"

@@ -57,6 +57,7 @@ HYPHEN_ENGLISH = frozenset(("tl",))
 LATIN_PAIRS["sw"] = ""  # Swahili has no letters of its own (ng' uses the apostrophe)
 # Pairs where an apostrophe is part of a letter (Swahili ng'ombe): words are not split there.
 APOSTROPHE_LETTER = frozenset(("sw",))
+LATIN_PAIRS["da"] = "æøåéÆØÅÉ"  # Danish letters (é in loanwords: idé, café)
 
 
 @cache

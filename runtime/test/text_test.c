@@ -15,6 +15,10 @@
  *        text_test --fuzz-it-tr [--lex LEX]                 (it and tr modes, those compiled in)
  *        text_test --fuzz-ru [--lex LEX] [--ru RLEX]        (ru mode; --ru also loads the stress tables for a fixture)
  *        text_test --fuzz-pl [--lex LEX]                    (pl mode)
+ *        text_test --fuzz-lo [--lex LEX]                    (lo mode)
+ *        text_test --fuzz-da [--lex LEX]                    (da mode)
+ *        text_test --fuzz-km [--lex LEX]                    (km mode)
+ *        text_test --fuzz-my [--lex LEX]                    (my mode)
  *        text_test --ja JLEX --nfkc ja_nfkc.tsv             (NFKC of the JLEX data against unicodedata)
  *        text_test --ja JLEX --bench [words.tsv]           (reading lookups and ja-mode throughput) */
 #include <stdio.h>
@@ -629,6 +633,114 @@ static int fuzz_ar(void) {
     return 0;
 }
 
+/* Khmer words (clusters, subscripts, shifters, bantoc, robat, ៍, independent vowels, ៗ, abbreviations),
+ * Khmer digits, numbers, dates, times, riel, units, Latin words, punctuation, zero-width spaces and
+ * random bytes, runs without spaces longer than VTTS_KM_MAX_RUN; chunks must stay inside the km-en set
+ * (176 ids, no Vietnamese ids) */
+static int check_km(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= 176 || (ids[i] >= 10 && ids[i] <= 64)) *bad = 1;
+    return 0;
+}
+
+static int fuzz_km(void) {
+    static vtts_text_ws ws;
+    static char buf[20000];
+    static const char *const parts[] = {
+        "ខ្ញុំ", "ប្រទេស", "កម្ពុជា", "សង្គម", "ចិត្ត", "របស់", "នគរ", "ទីក្រុង", "ពុទ្ធ", "ផ្ទះ", "ធម៌", "ភូមិ",
+        "ទាំង", "ស្រ្តី", "ក្ដី", "ឲ្យ", "ស៊ី", "ប៉ុន្តែ", "ព្រះ", "ៗ", "ផ្ទះៗ", "ព.ស.", "គ.ស.", "គ.ម.", "ល.រ.",
+        "ឥ", "ឯក", "ឱ្យ", "ឫ", "្", "៉", "៊", "់", "៌", "៍", "៎", "៏", "័", "៑", "ំ", "ះ", "ៈ", "ា", "ិ", "ី", "ុ",
+        "ូ", "េ", "ែ", "ោ", "ៅ", "ក", "ង", "រ", "ស", "អ", "ញ", "ប", "៛", "០", "៥", "៩", "។", "៕", "៖", "\xe2\x80\x8b",
+        "，", "。", "“", "”", "（", "）", "…", "—", "–", "·", "％", "１", "Ａ", "a", "Z", "e", "S", "P", "x", "'", "-",
+        "/", ".", ",", ":", "%", "$", "€", "£", "¥", "฿", "+", "=", "&", "@", "×", "0", "1", "2", "3", "5", "9", " ",
+        " ", "\t", "ESP32", "Wi-Fi", "iPhone", "19/11/2026", "2026-11-19", "14:30", "14:30:05", "012-345-678",
+        "+855 12 345 678", "0123456789", "1,234", "3.14", "-5", "99%", "5000៛", "៛500", "$5", "5km", "16GB",
+        "30°C", "10-20", "12345678", "ថ្ងៃទី", "ម៉ោង", "\xe1\x9e", "\xff", "\x80", "é", "中", "ไทย", "ạ"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    unsigned seed = 4245;
+    int bad = 0;
+    for (int it = 0; it < 3000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        int no_space = it % 5 == 0;
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; }
+            const char *p = parts[r % (unsigned)np];
+            if (no_space && (p[0] == ' ' || p[0] == '\t')) continue;
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int rc = run(buf, VTTS_LANG_KM, &ws, check_km, &bad);
+        if (rc < 0 || bad) { printf("fuzz km: rc %d, bad chunk %d (iteration %d)\n", rc, bad, it); return 1; }
+    }
+    if (run("", VTTS_LANG_KM, &ws, NULL, NULL) != 0 || run("។។៖", VTTS_LANG_KM, &ws, NULL, NULL) != 0) {
+        puts("fuzz km: empty input must give 0 chunks");
+        return 1;
+    }
+    puts("fuzz km: ok");
+    return 0;
+}
+
+/* Burmese syllables (medials, stacks, kinzi, asat, tone marks, independent vowels, ၌ ၍ ၏ ၎), Zawgyi
+ * text and code points, Burmese digits and the letter wa for zero, numbers, dates, times, kyat, units,
+ * Latin words, punctuation and random bytes; chunks must stay inside the my-en set (160 ids) */
+static int check_my(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= 160 || (ids[i] >= 10 && ids[i] <= 64)) *bad = 1;
+    return 0;
+}
+
+static int fuzz_my(void) {
+    static vtts_text_ws ws;
+    static char buf[20000];
+    static const char *const parts[] = {
+        "မြန်မာ", "ကျွန်တော်", "မင်္ဂလာပါ", "ကမ္ဘာ", "ကလေး", "သူက", "ကိုယ်", "ကြောင်း", "တိုက်", "ရှိ", "နှင့်", "ပြည်",
+        "လည်း", "ဝန်", "ကျွန်ုပ်", "ယောက်ျား", "၌", "၍", "၏", "၎င်း", "၎", "ဿ", "ဣ", "ဥ", "ဦး", "ဩ", "ဪ", "ါ", "ာ",
+        "ိ", "ီ", "ု", "ူ", "ေ", "ဲ", "ံ", "့", "း", "်", "္", "ျ", "ြ", "ွ", "ှ", "က", "င", "ည", "ဝ", "သ",
+        "ေျပာပါတယ္", "ႏိုင္ငံ", "ၾကည့္", "ၿမိဳ႕", "၀န္", "ၤ", "ၠ", "ႀ", "ၚ", "႔", "ဳ", "\xe2\x80\x8b",
+        "၀", "၅", "၉", "၁၉၅၄ဝဝဝ", "၊", "။", "，", "。", "“", "”", "（", "）", "…", "—", "–", "·", "％", "１", "Ａ",
+        "a", "Z", "e", "S", "P", "x", "'", "-", "/", ".", ",", ":", "%", "$", "€", "£", "¥", "฿", "+", "=", "&",
+        "@", "×", "0", "1", "2", "3", "5", "9", " ", " ", "\t", "ESP32", "Wi-Fi", "iPhone", "19/11/2026",
+        "2026-11-19", "14:30", "14:30:05", "09 4512 3456", "+95 9 123 4567", "0123456789", "1,234", "3.14",
+        "-5", "99%", "5000 Ks", "$5", "5km", "16GB", "30°C", "10-20", "12345678", "\xe1\x80", "\xff", "\x80", "é",
+        "中", "ไทย", "ខ្មែរ", "ạ"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    unsigned seed = 4246;
+    int bad = 0;
+    for (int it = 0; it < 3000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        int no_space = it % 5 == 0;
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; }
+            const char *p = parts[r % (unsigned)np];
+            if (no_space && (p[0] == ' ' || p[0] == '\t')) continue;
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int rc = run(buf, VTTS_LANG_MY, &ws, check_my, &bad);
+        if (rc < 0 || bad) { printf("fuzz my: rc %d, bad chunk %d (iteration %d)\n", rc, bad, it); return 1; }
+    }
+    if (run("", VTTS_LANG_MY, &ws, NULL, NULL) != 0 || run("။။၊", VTTS_LANG_MY, &ws, NULL, NULL) != 0) {
+        puts("fuzz my: empty input must give 0 chunks");
+        return 1;
+    }
+    puts("fuzz my: ok");
+    return 0;
+}
+
 static int fuzz(void) {
     static vtts_text_ws ws;
     static char buf[20000];
@@ -666,6 +778,10 @@ static int fuzz(void) {
             rc = run(buf, VTTS_LANG_TL, &ws, NULL, NULL);
             if (rc < 0) { printf("fuzz tl: error %d\n", rc); return 1; }
 #endif
+            rc = run(buf, VTTS_LANG_KM, &ws, NULL, NULL);
+            if (rc < 0) { printf("fuzz km: error %d\n", rc); return 1; }
+            rc = run(buf, VTTS_LANG_MY, &ws, NULL, NULL);
+            if (rc < 0) { printf("fuzz my: error %d\n", rc); return 1; }
         }
     }
     if (vtts_text_to_ids("", &ws, NULL, NULL) != 0 || vtts_text_to_ids("...", &ws, NULL, NULL) != 0) {
@@ -1254,6 +1370,115 @@ static int fuzz_nx(void) {
     return 0;
 }
 
+/* Lao words (clusters, preposed vowels, tone marks, ໌, ໆ, ຯ, ໜ ໝ ຫຼ, ໍາ written apart,
+ * abbreviations), Lao and other digits, ASCII, numbers, dates, times, units, money, Latin words,
+ * punctuation and random bytes, runs without spaces longer than VTTS_LO_MAX_RUN; chunks must stay
+ * inside the lo-en set (163 ids, no Vietnamese ids) */
+static int check_lo(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= 163 || (ids[i] >= 10 && ids[i] <= 64)) *bad = 1;
+    return 0;
+}
+
+static int fuzz_lo(void) {
+    static vtts_text_ws ws;
+    static char buf[20000];
+    static const char *const parts[] = {
+        "ພາສາລາວ", "ສະບາຍດີ", "ຂອບໃຈ", "ຄວາມ", "ກວ່າ", "ສວນ", "ໜຶ່ງ", "ໝາ", "ຫຼາຍ", "ເຂົ້າ", "ພໍ່", "ນ້ຳ", "ນ້ໍາ", "ນໍ້າ",
+        "ຄົນ", "ເມືອງ", "ຂຽນ", "ໄປ", "ໃຫຍ່", "ໂປຣແກຣມ", "ກອລ໌ຟ", "ຄ.ສ.", "ພ.ສ.", "ກມ.", "ສ.ປ.ປ.", "ຯລຯ", "ຯ", "ໆ",
+        "ໄວໆ", "ທຸກໆ", "ພຣະ", "ແລະ", "໌", "ັ", "ິ", "ຸ", "່", "້", "໊", "໋", "ະ", "າ", "ຳ", "ໍ", "ົ", "ຼ", "ຽ", "ເ",
+        "ແ", "ໂ", "ໃ", "ໄ", "ກ", "ຫ", "ວ", "ຣ", "຺", "໎", "໐", "໕", "໙", "ໞ", "ໟ", "₭", "฿", "，", "。", "！",
+        "？", "“", "”", "（", "）", "…", "—", "–", "·", "％", "１", "Ａ", "a", "Z", "e", "S", "P", "x", "'", "-", "/",
+        ".", ",", ":", "%", "$", "€", "£", "¥", "+", "=", "&", "@", "×", "0", "1", "2", "3", "5", "9", " ", " ", "\t",
+        "ESP32", "Wi-Fi", "iPhone", "19/11/2026", "2026-11-19", "14:30", "8:05:09", "020 5512 3456", "+856 20 5512 3456",
+        "0812345678", "1,234", "3.14", "-5", "99%", "₭5,000", "$5", "5km", "16GB", "30°C", "10-20", "12345678",
+        "\xe0\xba", "\xff", "\x80", "é", "中", "한", "ไทย", "١٢", "ạ"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    unsigned seed = 4245;
+    int bad = 0;
+    for (int it = 0; it < 3000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        int no_space = it % 5 == 0; /* long Lao runs: segmentation and the run limit */
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; } /* random byte */
+            const char *p = parts[r % (unsigned)np];
+            if (no_space && (p[0] == ' ' || p[0] == '\t')) continue;
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int rc = run(buf, VTTS_LANG_LO, &ws, check_lo, &bad);
+        if (rc < 0 || bad) { printf("fuzz lo: rc %d, bad chunk %d (iteration %d)\n", rc, bad, it); return 1; }
+    }
+    if (run("", VTTS_LANG_LO, &ws, NULL, NULL) != 0 || run("。。，", VTTS_LANG_LO, &ws, NULL, NULL) != 0) {
+        puts("fuzz lo: empty input must give 0 chunks");
+        return 1;
+    }
+    puts("fuzz lo: ok");
+    return 0;
+}
+
+/* Danish words (lexicon, compounds, rules: sj sch ch tion, ng nk, doubled letters, x q c z w, é),
+ * other Latin letters, numbers, dates, times, kroner and øre, units, phone numbers, abbreviations,
+ * acronyms, English words, punctuation and random bytes, long words; chunks must stay inside the
+ * da-en set (158 ids, no Vietnamese ids) */
+static int check_da(const int32_t *ids, int n, void *user) {
+    int *bad = user;
+    if (n < 3 || n > VTTS_TEXT_MAX_IDS || ids[0] != 1 || ids[n - 1] != 2) *bad = 1;
+    for (int i = 0; i < n; i++) if (ids[i] < 0 || ids[i] >= 158 || (ids[i] >= 10 && ids[i] <= 64)) *bad = 1;
+    return 0;
+}
+
+static int fuzz_da(void) {
+    static vtts_text_ws ws;
+    static char buf[20000];
+    static const char *const parts[] = {
+        "hus", "huset", "fodboldspiller", "arbejdsplads", "København", "Århus", "Ærø", "øl", "ål", "idé", "café",
+        "Müller", "straße", "İstanbul", "naïve", "sjov", "schæfer", "nation", "chokolade", "ingen", "tænke", "quiz",
+        "xylofon", "zoo", "whisky", "hvad", "hjem", "ikke", "lytte", "bedre", "studere", "politisk", "musik",
+        "hm", "pst", "og", "i", "at", "den", "kl.", "ca.", "nr.", "f.eks.", "bl.a.", "osv.", "e.Kr.", "A/S",
+        "maj", "Marts", "december", "kr.", "kr", "DKK", "øre", ",-", "€", "$", "£", "°C", "km/t", "m²", "%", "§",
+        "+45", "12 34 56 78", "14.30", "14:30", "5.", "5. maj", "2026", "1984", "5/3/2026", "5.3.2026", "2026-03-05",
+        "1.250,50", "3,5", "-4", "10-20", "Klokken", "klokken", "USB", "NATO", "ESP32", "iPhone", "Wi-Fi", "weekend",
+        "update", "the", "time", "to", "¿", "¡", "，", "。", "！", "“", "”", "（", "）", "…", "—", "–", "·", "％", "１",
+        "Ａ", "a", "Z", "e", "S", "P", "x", "'", "-", "/", ".", ",", ":", "&", "@", "#", "×", "=", "+", "0", "1", "2",
+        "5", "9", " ", " ", "\t", "\xc3", "\xff", "\x80", "中", "ไทย", "١٢", "ạ", "ﬁ", "²", "Ⅻ", "\xe2\x84\xaa"};
+    const int np = (int)(sizeof parts / sizeof *parts);
+    unsigned seed = 4246;
+    int bad = 0;
+    for (int it = 0; it < 3000; it++) {
+        seed = seed * 1103515245u + 12345u;
+        int target = (int)((seed >> 16) % (it % 10 == 0 ? 15000 : 400)), n = 0;
+        int no_space = it % 7 == 0; /* long words: compounds and the word limit */
+        while (n < target) {
+            seed = seed * 1103515245u + 12345u;
+            unsigned r = seed >> 16;
+            if (r % 9 == 0) { buf[n++] = (char)(1 + (r >> 4) % 255); continue; } /* random byte */
+            const char *p = parts[r % (unsigned)np];
+            if (no_space && (p[0] == ' ' || p[0] == '\t')) continue;
+            size_t l = strlen(p);
+            if (n + (int)l >= (int)sizeof buf - 1) break;
+            memcpy(buf + n, p, l);
+            n += (int)l;
+        }
+        buf[n] = 0;
+        int rc = run(buf, VTTS_LANG_DA, &ws, check_da, &bad);
+        if (rc < 0 || bad) { printf("fuzz da: rc %d, bad chunk %d (iteration %d)\n", rc, bad, it); return 1; }
+    }
+    if (run("", VTTS_LANG_DA, &ws, NULL, NULL) != 0 || run("¿¡...,", VTTS_LANG_DA, &ws, NULL, NULL) != 0) {
+        puts("fuzz da: empty input must give 0 chunks");
+        return 1;
+    }
+    puts("fuzz da: ok");
+    return 0;
+}
+
 static int mode_of(const char *m) {
     if (strcmp(m, "tl") == 0) return VTTS_LANG_TL;
     if (strcmp(m, "sw") == 0) return VTTS_LANG_SW;
@@ -1280,6 +1505,10 @@ static int mode_of(const char *m) {
     if (strcmp(m, "fi") == 0) return VTTS_LANG_FI;
     if (strcmp(m, "el") == 0) return VTTS_LANG_EL;
     if (strcmp(m, "ms") == 0) return VTTS_LANG_MS;
+    if (strcmp(m, "lo") == 0) return VTTS_LANG_LO;
+    if (strcmp(m, "da") == 0) return VTTS_LANG_DA;
+    if (strcmp(m, "km") == 0) return VTTS_LANG_KM;
+    if (strcmp(m, "my") == 0) return VTTS_LANG_MY;
     return VTTS_LANG_VI;
 }
 
@@ -1305,6 +1534,10 @@ int main(int argc, char **argv) {
         else if (strcmp(argv[i], "--ru") == 0 && i + 1 < argc) {
             if (load_ru(argv[++i])) { puts("bad ru blob"); return 2; }
         }
+        else if (strcmp(argv[i], "--fuzz-lo") == 0) do_fuzz = 14;
+        else if (strcmp(argv[i], "--fuzz-da") == 0) do_fuzz = 15;
+        else if (strcmp(argv[i], "--fuzz-km") == 0) do_fuzz = 16;
+        else if (strcmp(argv[i], "--fuzz-my") == 0) do_fuzz = 17;
         else if (strcmp(argv[i], "--lex") == 0 && i + 1 < argc) {
             if (load_lex(argv[++i])) { puts("bad lexicon"); return 2; }
         } else if (strcmp(argv[i], "--zh") == 0 && i + 1 < argc) {
@@ -1331,6 +1564,10 @@ int main(int argc, char **argv) {
     if (do_fuzz == 11) return fuzz_tl();
     if (do_fuzz == 12) return fuzz_sw();
 #endif
+    if (do_fuzz == 14) return fuzz_lo();
+    if (do_fuzz == 15) return fuzz_da();
+    if (do_fuzz == 16) return fuzz_km();
+    if (do_fuzz == 17) return fuzz_my();
     if (do_fuzz) return fuzz();
     if (do_fuzz_lt == 2) return fuzz_ms();
     if (do_fuzz_lt) return fuzz_lt();

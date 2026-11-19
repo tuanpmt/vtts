@@ -1,7 +1,7 @@
 """Assemble a student from stage checkpoints and export it (fp32 or int8).
 
 Usage: uv run python scripts/student/export_student.py --front F.pt --dec D.pt [--joint J.pt] \
-   --out model.vtts [--int8] [--token-set vi-en|zh-en|ko-en|ja-en|es-en|id-en|pt-en|th-en|hi-en|fr-en|de-en|it-en|tr-en|ru-en|pl-en|ar-en|fi-en|el-en|ms-en|tl-en|sw-en|nl-en|sv-en|no-en|v1]
+   --out model.vtts [--int8] [--token-set vi-en|zh-en|ko-en|ja-en|es-en|id-en|pt-en|th-en|hi-en|fr-en|de-en|it-en|tr-en|ru-en|pl-en|ar-en|fi-en|el-en|ms-en|tl-en|sw-en|nl-en|sv-en|no-en|da-en|lo-en|km-en|my-en|v1]
 The decoder comes from --joint when given (it also refines the acoustic model), else --dec.
 The token set is recorded in the file header (dim token_set, docs/model-format.md): --token-set,
 else a "token_set" entry of the front checkpoint, else the set the vocab names (65 -> v1,

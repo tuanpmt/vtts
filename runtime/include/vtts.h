@@ -53,13 +53,17 @@ typedef enum {
     VTTS_TOKSET_RU_EN = 16,  /* "ru-en", 154 ids */
     VTTS_TOKSET_PL_EN = 17,  /* "pl-en", 151 ids (18: unused) */
     VTTS_TOKSET_AR_EN = 19,  /* "ar-en", 149 ids (20: unused) */
-    VTTS_TOKSET_NL_EN = 21,  /* "nl-en", 159 ids (22 reserved) */
+    VTTS_TOKSET_NL_EN = 21,  /* "nl-en", 159 ids */
+    VTTS_TOKSET_DA_EN = 22,  /* "da-en", 158 ids */
     VTTS_TOKSET_SV_EN = 23,  /* "sv-en", 155 ids */
     VTTS_TOKSET_NO_EN = 24,  /* "no-en", 156 ids */
     VTTS_TOKSET_FI_EN = 25,  /* "fi-en", 142 ids */
     VTTS_TOKSET_EL_EN = 26,  /* "el-en", 139 ids (27 reserved) */
     VTTS_TOKSET_MS_EN = 28,  /* "ms-en", 145 ids */
-    VTTS_TOKSET_TL_EN = 29,  /* "tl-en", 139 ids (30-32 reserved) */
+    VTTS_TOKSET_TL_EN = 29,  /* "tl-en", 139 ids */
+    VTTS_TOKSET_MY_EN = 30,  /* "my-en", 160 ids */
+    VTTS_TOKSET_KM_EN = 31,  /* "km-en", 176 ids */
+    VTTS_TOKSET_LO_EN = 32,  /* "lo-en", 163 ids */
     VTTS_TOKSET_SW_EN = 33   /* "sw-en", 147 ids */
 } vtts_token_set_t;
 

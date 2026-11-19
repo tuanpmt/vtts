@@ -1579,6 +1579,308 @@ Agreement with eSpeak NG (voice nb; a measuring stick only; `scripts/frontend/ev
 
 `vtts_text_to_ids_ex` with `VTTS_LANG_NO` gives exactly `text_to_ids(text, "no")` (see the shared parts above): the fixture `runtime/test/text_parity_no.tsv` (11,912 cases: edge cases, both eval sets, template × term sentences, the unit-test strings, corpus sentences, every table entry, random words, number/date/time/money/unit cases and random strings dense in the scanner's triggers) is exact, and so is a larger uncommitted run of 59,186 cases; `text_test --fuzz-nx` stays inside the no-en token set under ASan/UBSan.
 
+## Danish (token set `da-en`)
+
+Python (`src/vtts/frontend/da/`). `text_to_ids(text, "da")` returns ids of the token set `da-en` (model header code 22): ids 0–106 are the v2 set unchanged, followed by 51 Danish tokens from id 107 (vocabulary 158). Symbols follow the SAMPA notation of the NST lexicon:
+
+| Group | Tokens |
+|---|---|
+| Short vowels (15) | `DA:i e E a A y 2 9 u o O Q @ V 6` (`E` ɛ, `A` ɑ, `2` ø, `9` œ, `O` ɔ, `Q` ɒ, `@` schwa, `V` the open o of *op*, *kom*, `6` the r-schwa of *-er*) |
+| Long vowels (12) | `DA:i: e: E: a: A: y: 2: 9: u: o: O: Q:` |
+| Glides (3) | `DA:j~ w 6~` (vocalized j, v/g and r after a vowel: *vej*, *hav*, *bog*, *bord*) |
+| Consonants (18) | `DA:p t k` (aspirated) `b d g` (unaspirated: also *sp st sk* and a stop after a vowel) `f v s s' h m n N l R j D` (`s'` sj, `N` ng, `R` the onset r, `D` the soft d) |
+| Prosody (3) | `DA:?` stød, after the long vowel or the voiced consonant that carries it; `DA:"` primary and `DA:%` secondary stress, after the stressed vowel |
+
+A word is read in this order:
+
+```mermaid
+flowchart LR
+    W["word (folded: ä→æ, ö→ø, ü→y)"] --> L{"lexicon.tsv?"}
+    L -->|yes| T["NST reading"]
+    L -->|no| K{"known word?"}
+    K -->|no| C{"2-3 known parts<br/>(+ s/e linking)?"}
+    C -->|yes| P["parts read as words<br/>later stresses secondary"]
+    K -->|yes| R["spelling rules"]
+    C -->|no| R
+```
+
+**Lexicon** (`lexicons/da/lexicon.tsv`, 16,183 entries, and `words.txt`, 3,817 words): the 20,000 most frequent words of Danish Wikipedia that the NST pronunciation lexicon for Danish transcribes (Nordic Language Technology, distributed by Språkbanken under CC0 1.0), built by `scripts/frontend/build_da_lexicon.py`. A word the rules read exactly like NST is only listed in `words.txt` (it is still a known word for compounds); every other word keeps its NST reading converted to da-en tokens. For a homograph the reading of the most frequent part of speech wins (prepositions, conjunctions, determiners, pronouns, adverbs, verbs, numerals, adjectives, nouns, then names). Function words (`UNSTRESSED`: og, i, at, det, er, på, til ...) lose their stress mark.
+
+**Compounds:** a word that is not known is split into 2-3 known words of at least three letters, a linking s or e allowed after a part (*fodbold+spiller*, *arbejds+plads*, *fotoudstillingen* = foto + udstillingen): fewest parts, then fewest linking letters, then the longest first part. The first part keeps the primary stress, the others' primary stresses become secondary, and stød is kept only in the last part.
+
+**Rules** (`da/g2p_da.rules`), for the rest (names, rare words):
+
+- Letters to units: sj sch ch and -tion/-sion = `s'`, ng = `N`, nk = `N k`, ph th qu x z w c (s before e i y æ ø, else k), word-initial hv hj = v j, doubled consonants are one sound and shorten the vowel before them.
+- Stress: a written é; stressed foreign endings with their inflections (-ere -ering -eri -tion -sion -isme -ist -tet -ør -ur -ent -ant -ance -logi -grafi -sofi -tek -øs -ese -age -ade, -at -al -ik -on with an ending, bare -ik); the vowel before -isk; the prefixes be- ge- (not before a final e syllable) and for-; else the first syllable.
+- Vowel length: a stressed vowel is long before one consonant + vowel or at the end of a word, and before one final s l r g b v f (*hus*, *bil*); short before two consonants or a doubled one. Quality: a before r, ng, m and after r is `A`; å before r is `Q`; ø before r is `9`; i before ng, k, nd is `e`; y before ng, nd is `2`; u before m, n is `O`; short o is `V`.
+- Unstressed e is schwa, merged with an r before or after it into the r-schwa `6` (*bager*, *høre*, *under*); final unstressed -et ends in `D`.
+- Consonants: p t k are aspirated at the start of a word and of the stressed syllable (not after s), otherwise `b d g`; d after a vowel is `D`, silent after n l r (*mand*, *guld*, *bord*) and before t, s (*godt*, *plads*); g after a vowel is silent after a i u y (long vowel: *dag*, *kage*), `w` after o å, `j~` after e æ ø (*bog*, *leg*); v after a vowel is `w`, after l silent (*selv*); r after a vowel is `6~` (a + r and å + r become `A:` and `Q:`); h only before a vowel.
+- Stød: on the stressed syllable when it is the last one, when only an ending -en -et -er -ene -erne -s ... follows (*huset*, *dagen*, *hunden*), or with a stressed foreign ending: after a long vowel, or after the first voiced consonant (m n N l D and the glides) of a short vowel.
+- A word without a vowel (*pst*) is spelled with the letter names.
+
+**Normalization** (`da/normalize_da.py`):
+
+| Text | Reading |
+|---|---|
+| 21, 50, 75, 99, 101 | enogtyve, halvtreds, femoghalvfjerds, nioghalvfems, hundrede og en |
+| 2026, 1984, 1.000.000 | to tusind og seksogtyve, nitten hundrede og fireogfirs (years 1100-1999), en million |
+| 3,5, -4, 0,05 | tre komma fem, minus fire, nul komma nul fem |
+| 5. marts 2026, 5/3/2026, 2026-03-05, den 3. plads | femte marts to tusind og seksogtyve, ..., den tredje plads (ordinals 1.-31. before a lower-case word or a month) |
+| 14:30, kl. 14.30, kl. 9 | fjorten tredive, klokken fjorten tredive, klokken ni |
+| 12,50 kr., 1 kr., DKK 500, 50 øre, 5 €, 3 $ | tolv kroner og halvtreds øre, en krone, fem hundrede kroner, halvtreds øre, fem euro, tre dollar |
+| 3,5 %, 25 km/t, -4 °C, 2-1 | tre komma fem procent, femogtyve kilometer i timen, minus fire grader, to til en |
+| +45 12 34 56 78 | plus femogfyrre tolv fireogtredive seksoghalvtreds otteoghalvfjerds (pairs as numbers, a pair with a leading 0 digit by digit) |
+| f.eks., bl.a., osv., ca., nr., mio., kl., pga., m.m. | for eksempel, blandt andet, og så videre, cirka, nummer, millioner, klokken, på grund af, med mere |
+| USB, NATO, ESP32 | u es be, nato, e es pe tre to |
+
+In mode `da` a dot followed by white space and a lower-case letter or a digit does not end a sentence (`lang.DOT_CONTINUES`: *den 5. marts*, *kl. 14.30*, *ca. 3,5 %*). Plain Latin words are tagged by `latin.py`: æ ø å é are Danish letters, `lexicons/da/native.txt` holds Danish words that are also in the English list (*for*, *time*, *to*, *store*, *start*), and `valid_spelling` accepts known Danish words and compounds, and otherwise rejects w q x z, c outside ck/ch and English letter groups (th ph sh ea oa ee oo ou ay ey oy aw ow gh wh tch dge).
+
+**Agreement** (`scripts/frontend/eval_da_g2p.py`, measuring sticks only): on 1,000 Danish Wikipedia sentences (14,176 word tokens), 64.5% of the tokens are read from `lexicon.tsv`, 21.9% are known words read by the rules, 5.1% compounds and 8.4% rules alone. With eSpeak NG (`-v da`, both mapped to a coarse IPA without stress, stød and length) 67.2% of the word tokens read the same, phoneme error rate 10.2%. On 20,000 words outside the tables that NST transcribes (rules and compounds only), 24.3% are exactly NST, 39.0% without stress and stød, phoneme error rate 17.2%.
+
+Known gaps: stød and vowel quality of words outside the tables (the rules miss many short e/E, o/O/V and u/O contrasts and secondary stresses of derivational suffixes such as -lig and -ning); compounds whose parts are not among the 20,000 frequent words; homographs take one reading (*for* `fQ`, *man*); schwa assimilation is written in full (*-en*, *-el*); ordinals above 31 are read as cardinals; a dot decimal (3.14) is read as a time.
+
+### Device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_DA` gives exactly `text_to_ids(text, "da")` (module `runtime/src/vtts_text_da.c`, entry `da` in `LANGS`; mode `da` of token set `da-en`, code 22). The module is compiled only with `VTTS_ENABLE_DA` (1 by default on the host; the firmware sets it only when a model is da-en, `main/vtts_langs.cmake`): without it the mode is unknown and `vtts_text_to_ids_ex` returns −1, while da-en models still load. `runtime/tools/gen_text_tables.py` writes every Danish table into `vtts_text_da_tables.h` (only the Danish module includes it); English words need the VLEX lexicon, and the shared English word list of `latin.py` is read through `vtts_lt_english_word`.
+
+| Part | How it is ported | Size |
+|---|---|---|
+| Known words and readings | `lexicon.tsv` and `words.txt` (20,000 words) as folded byte strings (a–z, and `{ | } ~` for å æ é ø, in code point order), sorted and front coded in blocks of 16 words; a lexicon word is followed by `0x40` and its NST reading as token indices | 244,602 + 5,000 bytes |
+| Rules | token indices, the vowel tables (`SHORT_OF`, `LONG_OF`, `UNSTRESSED_OF`, `PAIR_OF`), stressed and stød endings, prefixes, onsets, `UNSTRESSED`, letter names, `FOLD` | 3 KB |
+| Tagging | `native.txt`, the normalizer's units and abbreviations (`latin._table_keys`), the Danish letters | 1 KB |
+| Normalizer strings | numbers, ordinals, months, letter names, acronym words, abbreviations (in `apply_abbreviations` order), units, currencies (both alternation orders), symbols | 3 KB |
+
+On the ESP32-P4 (riscv32, `-Os`) the module is 20.4 KB of code and 258 KB of tables (279 KB in all, nearly all the 20,000 words with their readings).
+
+- **Words** follow `word_tokens_names` step by step: `fold` (lower case with Python's tables, the letters of `FOLD`), the spelled letter names of a word without a vowel, the lexicon lookup (binary search over the block heads, then a scan of one block), `split_compound` (the same recursive search over 2–4 known parts with linking s/e, the same key and tie-breaking), `compound_tokens`, and `rules` with the same units, nuclei, stressed syllable, onset/coda split, vowel and consonant choices, stress and stød, and the `UNSTRESSED` words.
+- **Normalization** follows `normalize_da` pass by pass (abbreviations, dropped characters, ISO, numeric and named dates, `klokken` times and times, phone numbers, money before and after the number with the full stop kept after a final `kr.`, øre, percent, units, ordinals, ranges, pauses, product codes, years, numbers, symbols, acronyms, lower case, words), with Python's Unicode classes for `\d`, `\w` and `\s` and the candidate ends tried in the order of the regex engine.
+- **Tagging and sentences:** a plain Latin word is tagged like `latin.latin_word_lang` (own letters, `native.txt`, table keys, the English list, CamelCase, single letters and acronyms, then `valid_spelling` with the known words and compounds); ¿ and ¡ separate chunks; a dot followed by white space and a lower-case letter or a digit does not end a sentence in mode da; sentences also end after `。！？；`.
+- **Memory:** no new workspace: the passes run in `en_a` / `en_b`, a word is read with `en_a` as scratch (about 7 KB: units, roles and sounds of up to 192 letters).
+- **Tests:** `runtime/test/text_parity_da.tsv` (11,414 cases: edge cases, both Danish eval sets, the strings of the Danish unit tests, 2,000 mixed template sentences, 2,500 corpus sentences, words of the lexicon and word lists and random Danish words and compounds in groups of 20, numbers, dates, times, money and units, regex-dense random strings) must match exactly (also 70,509 cases of a larger run with every corpus and mixed row and 40,000 random strings, and 60,000 character-level random strings), the fuzz run `text_test --fuzz-da` (ASan/UBSan) must stay inside its buffers and the da-en ids, and `token_set_test_no_da` checks a build without the switch: `make -C runtime da_test`. A test checks that `vtts_text_da_tables.h` is current; after a change run `uv run python runtime/tools/gen_text_tables.py` and `uv run python scripts/frontend/export_text_parity.py --da --sentences data/da/sentences.jsonl data/da/mixed.jsonl --limit 2500 --out runtime/test/text_parity_da.tsv`.
+- **Known gaps (pathological input only):** a word is read up to 192 letters and its tokens are cut at 318; a hyphen- or apostrophe-separated part longer than 192 letters is tagged English; a sentence is cut at 4,096 code points or 2,048 items.
+
+## Lao (token set `lo-en`)
+
+Python (`src/vtts/frontend/lo/`). `text_to_ids(text, "lo")` returns ids of the token set `lo-en` (model header code 32): ids 0–106 are the v2 set unchanged, followed by 56 Lao tokens from id 107 (vocabulary 163). The layout is that of `th-en`; a syllable is `LO:I:initial [LO:I:second consonant] LO:V:vowel [LO:F:final] LO:Ttone`:
+
+| Group | Tokens |
+|---|---|
+| Initials (21) | `LO:I:k kh ng c s ny d t th n b p ph f m j r l w h ?` (`c` ຈ, `ny` ຍ, `j` ຢ, `?` the glottal stop of ອ; a cluster is two initials: ຄວ → `kh w`, ປຣ → `p r`) |
+| Vowels (21) | `LO:V:a aa i ii ue uue u uu e ee ae aae o oo or oor oe ooe ia uea ua` (`ue` ɯ, `ae` ɛ, `or` ɔ, `oe` ɤ; doubled = long) |
+| Finals (8) | `LO:F:k p t m n ng w j` |
+| Tones (6) | Vientiane Lao: `LO:T1` low rising, `T2` high rising, `T3` mid, `T4` low falling, `T5` high falling, `T6` mid rising |
+
+Lao is read like Thai: its syllables follow each other without `SPACE`, each counts as one word for chunk packing, a space between two Lao runs is a pause `,`, a space is put between Lao and Latin letters (ເປີດWi-Fiໃຫ້), Latin words are English, and in mode `lo` a dot after a Lao letter does not end a sentence (ຄ.ສ. 2024; `lang.DOT_AFTER_LETTER`).
+
+**Words** (`lo/g2p_lo.segment`): as for Thai, the split with the fewest characters outside `lexicons/lo/words.txt` (a lone consonant counts 3), then the fewest pieces. The list (12,528 words) is built by `scripts/frontend/build_lo_lexicon.py` from Google's Lao spell-check list (`lo_spellcheck_dict.txt`, language-resources, Apache-2.0) and the head words of the Lao-English dictionary of the Lao E-Government Center (MIT), keeping the words used at least twice when Lao Wikipedia is segmented with all of them. ໆ repeats the word before it. `lexicons/lo/overrides.tsv` (respellings, one piece per syllable) is empty: modern Lao spelling writes every vowel.
+
+**Syllables** (`lo/g2p_lo.parse_word`): `prepare()` first writes ໜ ໝ as ຫນ ຫມ and ໍ + າ as ຳ (also with a tone mark between them), and drops a consonant under the cancellation mark ໌ (ກອລ໌ຟ). Then dynamic programming over the patterns of `VOWELS` (preposed ເ ແ ໂ ໃ ໄ; ະ ັ າ ຳ ິ ີ ຶ ື ຸ ູ; ົ for a closed short o; ໍ and -ອ- for ɔː, ັອ for ɔ; ົວ, ົວະ and -ວ- for ua; -ຽ- and ເ-ຍ for ia; ເ-ືອ for uea; ເ-ົາ = `a w`; ຳ = `a m`; ໃ ໄ = `a j`) with the initial (one consonant; ຫ before ງ ຍ ນ ມ ຣ ລ ວ and ຫຼ: the sonorant with the high class; a consonant + ວ or + ຼ cluster; a stop or f + ຣ/ລ in loanwords) and the final. Cost 10 per syllable, +4 for an unwritten o, +7 for an unwritten a (+10 more at the end of a word; both are rare and serve old spellings), +1 for a ວ cluster, −1 for a ຣ/ລ cluster. A consonant before a vowel sign is always an initial, so ວ before a vowel is a cluster (ກວ່າ = `k w aa`) and before a final the vowel ua (ສວນ = `s ua n`).
+
+**Tones:** the class of the initial (high ຂ ສ ຖ ຜ ຝ ຫ, and ຫ before a low sonorant; middle ກ ຈ ດ ຕ ບ ປ ຢ ອ; low the rest), the tone mark and the syllable type (live: long vowel or a final m n ng w j; dead: short open vowel or a final k p t), after the Vientiane distribution in Wikipedia's "Lao phonology":
+
+| Class | live, no mark | dead short | dead long | ່ | ້ | ໊ | ໋ |
+|---|---|---|---|---|---|---|---|
+| high | low rising | mid rising | low falling | mid | low falling | high rising | low rising |
+| middle | low rising | mid rising | high falling | mid | high falling | high rising | low rising |
+| low | high rising | mid | high falling | mid | high falling | high rising | low rising |
+
+**Normalization** (`lo/normalize_lo.py`, the passes of the Thai normalizer):
+
+| Text | Reading |
+|---|---|
+| 11, 20, 21, 101 | ສິບເອັດ, ຊາວ, ຊາວເອັດ, ໜຶ່ງຮ້ອຍເອັດ |
+| 25000, 150000, 2000000, ໓໒ | ສອງໝື່ນຫ້າພັນ, ໜຶ່ງແສນຫ້າໝື່ນ, ສອງລ້ານ, ສາມສິບສອງ |
+| 3.14, -5, 125,000 | ສາມຈຸດໜຶ່ງສີ່, ລົບຫ້າ, ໜຶ່ງແສນສອງໝື່ນຫ້າພັນ |
+| 5/3/2026, 2026-03-05 | ຫ້າມີນາສອງພັນຊາວຫົກ |
+| 14:30 | ສິບສີ່ໂມງສາມສິບນາທີ |
+| ₭5,000, $5, 12.5%, 120 ກມ., 25°C, 10-20 | ຫ້າພັນກີບ, ຫ້າໂດລາ, ສິບສອງຈຸດຫ້າເປີເຊັນ, ໜຶ່ງຮ້ອຍຊາວກິໂລແມັດ, ຊາວຫ້າອົງສາເຊ, ສິບຫາຊາວ |
+| 020 5512 3456 | digit by digit |
+| ຄ.ສ., ພ.ສ., ຯລຯ, other ຯ | ຄິດສະຕະສັກກະລາດ, ພຸດທະສັກກະລາດ, ແລະອື່ນໆ, dropped |
+| ESP32 | letters in English, digits in Lao |
+
+**Checks** (`scripts/frontend/eval_lo_g2p.py`; eSpeak NG has no Lao voice and there is no open Lao lexicon with phonemic transcriptions): on 1,000 corpus utterances (22,358 syllables) 99.27% of the syllables have a written vowel, 99.99% of the letters are read and 95.8% of the letters lie in listed words. Against the romanization column of the E-Government Center's dictionary (MIT; inconsistent romanization, vowels and tones not compared), the syllable count agrees for 96.1% of 46,350 entries, and on those the initial consonant for 96.3% and the final consonant for 98.9% of 110,750 syllables. A hand check of 40 random corpus words found the readings and tones right except old spellings.
+
+Known gaps: the six-tone values follow one description of Vientiane Lao (other descriptions and dialects differ, e.g. Luang Prabang); old orthography (ພຣະ, implicit vowels, ຽ as a final) is read by the general rules; the r of loanword clusters is kept although many speakers drop it; segmentation ambiguities between list words and names; vowel length of ໄ ໃ ເົາ ຳ is not marked.
+
+### Device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_LO` gives exactly `text_to_ids(text, "lo")` (module `runtime/src/vtts_text_lo.c`, entry `lo` in `LANGS`; mode `lo` of token set `lo-en`, code 32). The module is compiled only with `VTTS_ENABLE_LO` (1 by default on the host; the firmware sets it only when a model is lo-en, `main/vtts_langs.cmake`): without it the mode is unknown and `vtts_text_to_ids_ex` returns −1, while lo-en models still load. It is the Thai module with Lao tables: `runtime/tools/gen_text_tables.py` writes `vtts_text_lo_tables.h` (only the Lao module includes it), and only the English words need the VLEX lexicon.
+
+| Part | How it is ported | Size |
+|---|---|---|
+| Letters | Lao letters coded as code point − U+0E80 (one byte, 0x01–0x5F); one row per code: class, low sonorant, preposed, tone mark, above/below vowel, dependent sign, first letter of a ຣ/ລ cluster, Python `\w`, plus the initial and final sound | 0.5 KB |
+| Spelling patterns | `VOWELS`, the costs and the token ids | 0.5 KB |
+| Word list | `words.txt` plus the keys of `overrides.tsv` (12,528 words), sorted and front coded like Thai, blocks of 16 words found by binary search | 50,027 + 3,132 bytes |
+| Normalizer strings | digits, places, months, abbreviations, units, currencies, symbols, dropped characters | 1.3 KB |
+
+On the ESP32-P4 (riscv32, `-Os`) the module is 14.5 KB of code and 56 KB of tables (about 70 KB in all).
+
+- **Words, syllables, tones** follow `prepare`, `segment`, `parse_word` and `run_syllables` step by step with the same tie-breaking (candidates in the order Python generates them, the first with the lowest cost wins); `prepare` runs on the run and again on each word, as in Python. The ligatures ໜ ໝ are written ຫນ ຫມ while the word is decoded.
+- **Normalization** follows `normalize_lo` pass by pass (the Thai passes; times without น.); `\d`, `\w` and `\s` are Python's Unicode classes (`vtts_u_digit`, `vtts_u_word`, `vtts_u_space`), so digits of other scripts are read like Python.
+- **Tagging and chunks:** a chunk is split between Lao and Latin letters, a word with a Lao letter is Lao, a plain Latin word is English, anything else Lao; each syllable of a Lao run is one item joined to the previous one without `SPACE`; in lo mode a dot after a Lao letter does not end a sentence, and a sentence also ends after `。！？；`.
+- **Memory:** no new workspace: the passes run in `en_a` / `en_b`, the reader uses `en_a` for its tables (about 20 KB) and `en_b` for the syllables of the current word.
+- **Tests:** `runtime/test/text_parity_lo.tsv` (13,029 cases: edge cases, both Lao eval sets, the strings of the Lao unit tests, 2,000 mixed template sentences, the whole word list in groups of eight with and without spaces, 2,000 corpus and 2,000 generated sentences, numbers, dates and times, regex-dense random strings) must match exactly (also 80,749 cases of a larger run with every corpus and mixed row and 40,000 random strings, and 60,000 character-level random strings), the fuzz run `text_test --fuzz-lo` (ASan/UBSan) must stay inside its buffers and the lo-en ids, and `token_set_test_no_lo` checks a build without the switch: `make -C runtime lo_test`. A test checks that `vtts_text_lo_tables.h` is current; after a change run `uv run python runtime/tools/gen_text_tables.py` and `uv run python scripts/frontend/export_text_parity.py --lo --sentences data/lo/sentences.jsonl --limit 2000 --out runtime/test/text_parity_lo.tsv`.
+- **Known gaps (pathological input only):** a Lao run without spaces longer than about 1,023 letters is read in pieces, cut before a preposed vowel or a consonant that a vowel sign makes an initial; a sentence is cut at 4,096 code points or 2,048 items.
+
+## Khmer (token set `km-en`)
+
+Python (`src/vtts/frontend/km/`, normalization on the shared engine `frontend/nospace_norm.py`) and C (`runtime/src/vtts_text_km.c`, see [Device (C)](#device-c-4)). `text_to_ids(text, "km")` returns ids of the token set `km-en` (model header code 31): ids 0–106 are the v2 set unchanged, followed by 69 Khmer tokens from id 107 (vocabulary 176). A syllable is `KM:consonant [KM:consonant [KM:consonant]] KM:vowel [KM:F:final]`:
+
+| Group | Tokens |
+|---|---|
+| Consonants (24) | `KM:? k kh c ch d t th b p ph m n ny ng j r l w s h f g z` (`?` glottal stop, `b d` the implosives ɓ ɗ, `f g z` of loanwords: ហ្វ ហ្គ ហ្ស) |
+| Vowels (30) | `KM:i ii y yy u uu e ee @ @@ o oo E EE a aa A AA O OO ae a@ ao ie i@ ea oa u@ y@ E@` (y ɨ, @ ə, E ɛ, A ɑ, O ɔ; doubled = long) |
+| Finals (15) | `KM:F:? k c t p m n ny ng j w l h` and `f s` of loanwords (final ร is silent) |
+
+The phonemes are those of the Google Khmer lexicon (language-resources `km/data/lexicon.tsv`, CC BY 4.0). The two series of the script (a-series and o-series consonants) are not tokens: they decide which vowel the signs stand for, and the vowel token is the sound. Khmer has no tone, and stress (on the last syllable) is left to the voice.
+
+Khmer is written without spaces between words, so a Khmer run is read like a Thai one: its syllables follow each other without `SPACE` and each counts as one word for chunk packing. A space between two Khmer runs (Khmer puts spaces between phrases) is read as a pause `,`; spaces around numbers are not. The full stops ។ ៕ end a sentence (in every mode) and are read `.`, ៖ is `:`; a dot after a Khmer letter ends an abbreviation (ព.ស.). Latin words are English; a space is put between Khmer and Latin letters (បើកWi-Fi).
+
+```mermaid
+flowchart LR
+    R["Khmer run<br/>(spelling folded)"] --> W["Words<br/>(words.txt, longest cover)"]
+    W --> O{"in overrides.tsv?"}
+    O -->|yes| P["lexicon phonemes"]
+    O -->|no| C["clusters → syllables<br/>(finals, subscript splits)"]
+    C --> S["series of the onset"]
+    S --> T["rhymes.tsv: series + vowel signs<br/>+ final + position"]
+```
+
+**Spelling** (`km/g2p_km.spell`): subscript ដ is read as subscript ត (the two are written alike and used interchangeably), ឲ as ឱ, coeng ro is moved after the other subscripts (ស្រ្តី → ស្ត្រី), zero-width spaces are dropped.
+
+**Words** (`km/g2p_km.segment`): the split with the fewest characters outside `lexicons/km/words.txt` and the keys of `overrides.tsv` (20,600 words: the Khmer words of the Google lexicon that occur at least 3 times in Khmer Wikipedia), then the fewest pieces; words start only at a cluster. Text outside the list is read in one piece. ៗ repeats the word before it.
+
+**Clusters and syllables** (`km/g2p_km.syllables`): a word is cut into clusters (a consonant or independent vowel, its subscripts, the register shifters ៉ ៊ or ុ under an upper vowel, the vowel signs and ំ ះ ៈ ័ ៏, bantoc ់; a consonant under ៍ or ៑ is not read; ៌ makes it silent). A cluster with a vowel sign is a syllable. Read left to right, a bare cluster (no vowel sign) closes the open syllable before it (one that does not end in ំ ះ ៈ; ំ before ង makes `aŋ`, `eaŋ`), unless the next cluster needs it: the next consonant has bantoc or is the last of the word (របស់, នគរ), or the next cluster starts with a subscript pair that splits (សមត្ថ); a minor syllable with a cluster onset stays open (ប្រកប). A bare subscript cluster at the end of a word closes the syllable before it with its subscript silent (ចិត្ត, សត្វ), and a final ិ ុ after a written vowel is silent (ជាតិ, ភូមិ). A subscript pair C1្C2 after an open syllable splits (C1 closes that syllable, C2 starts the next) after the inherent vowel (សង្គម, កម្ពុជា) and, after a written vowel, when C2 is C1 or of the same row of the consonant table, or one of ក្ស ង្ហ ង្ស ហ្ម ហ្ល ល្ល យ្យ ស្ស (ពុទ្ធ, ពិភាក្សា); otherwise it is an initial cluster (ទីក្រុង).
+
+**Readings:** the onset of a cluster comes from `lexicons/km/onsets.tsv` (239 clusters), else from the letters: ប is `p` in a cluster, as a subscript or with ៉, an aspirated consonant before another loses its aspiration (ខ្ញុំ = `k ɲ`). The series is that of the base consonant, or of a subscript that is not a sonorant (ផ្ទះ is o-series), set by ៉ ៊ or flipped by ុ under an upper vowel. The rhyme comes from `lexicons/km/rhymes.tsv` (969 keys: series + vowel signs (+ ់) | final sound | position `e` last syllable, `c` open with an onset cluster, `m` other), backed off to the other positions, then to the inherent vowel and the final. Both tables are learned from the lexicon by `scripts/frontend/build_km_lexicon.py`: the rules cut each lexicon word into syllables and, where the count matches, each key takes its most frequent reading (weighted by the word's Wikipedia count).
+
+**Overrides** (`lexicons/km/overrides.tsv`, 4,163 entries, generated): the words with a Khmer Wikipedia count ≥ 10 that the rules read differently from the lexicon, with the lexicon's phonemes (Pali/Sanskrit linking vowels, irregular words such as នោះ, អ្នក, ក៏).
+
+**Normalization** (`km/normalize_km.py`):
+
+| Text | Reading |
+|---|---|
+| 21, 2026, 15000, 3500000 | ម្ភៃមួយ, ពីរពាន់ម្ភៃប្រាំមួយ, មួយម៉ឺនប្រាំពាន់, បីលានប្រាំសែន |
+| ២១, 2.50, -3, 1,250 | Khmer digits as ASCII; ពីរចុចប្រាំសូន្យ, ដកបី, មួយពាន់ពីររយហាសិប |
+| 19/11/2026, 2026-11-19 | ថ្ងៃទីដប់ប្រាំបួនខែវិច្ឆិកាឆ្នាំពីរពាន់ម្ភៃប្រាំមួយ (a ថ្ងៃទី written before it is not repeated) |
+| 14:30, 14:05:09 | ម៉ោងដប់បួនសាមសិបនាទី, …ប្រាំនាទីប្រាំបួនវិនាទី |
+| 5000៛, $5, 50%, 25°C, 5 km, 10-20 | ប្រាំពាន់រៀល, ប្រាំដុល្លារ, ហាសិបភាគរយ, ម្ភៃប្រាំអង្សាសេ, ប្រាំគីឡូម៉ែត្រ, ដប់ដល់ម្ភៃ |
+| 012-345-678, 0123456789 | digit by digit |
+| ព.ស., គ.ស., គ.ម., ល.រ. | ពុទ្ធសករាជ, គ្រិស្តសករាជ, គីឡូម៉ែត្រ, លេខរៀង |
+| ESP32 | letters in English, digits in Khmer |
+
+**Agreement** with the Google lexicon (`scripts/frontend/eval_km_g2p.py`): the rules alone on 6,096 held-out lexicon words (tables learned without them) read 80.7% of the word tokens of Khmer Wikipedia exactly (68.5% of the word types), 87.3% of the syllables, phoneme error rate 8.0%. With the shipped tables and overrides, 99.9% of the 394,120 lexicon word tokens of `data/km/sentences.jsonl` are read as in the lexicon; 1.9% of the pieces are outside the lexicon and read by the rules alone. eSpeak NG has no Khmer voice, so the lexicon is the only reference; it is itself a broad transcription (it does not mark the vowel reduction of minor syllables consistently).
+
+Known gaps: the inherent vowel of open non-final syllables (minor syllables `ɑ/ɔ` vs the Pali/Sanskrit `a ʔ`/`ea ʔ`) and the length of the inherent vowel in closed syllables are guessed by the table; Pali/Sanskrit linking consonants (ឯកសារ = ʔaek.ka.saa) outside the overrides; segmentation of names and compounds outside the word list; subscript ដ and ត are not distinguished (ក្ដី is read from the override, other words with ្ដ by the ត rules).
+
+### Device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_KM` gives exactly `text_to_ids(text, "km")` (module `runtime/src/vtts_text_km.c`, entry `km` in `LANGS`; mode `km` of token set `km-en`, code 31). It is compiled only with `VTTS_ENABLE_KM` (`runtime/include/vtts_langs.h`: 1 for host builds and tests; the firmware sets it from the token sets of the models it embeds, see the firmware README). There is no blob: `runtime/tools/gen_text_tables.py` (through `gen_nsp_tables.py`) writes every Khmer table into `vtts_text_km_tables.h`, and only the English words need the VLEX lexicon. The normalizer runs on `vtts_text_nsp.c`, the C engine of `nospace_norm.py` shared with Burmese.
+
+```mermaid
+flowchart LR
+    PY["g2p_km.py + lexicons/km/<br/>+ normalize_km.py strings"] --> GEN["gen_nsp_tables.py"]
+    GEN --> H["vtts_text_km_tables.h<br/>(VTTS_KM_*)"]
+    H --> N["vtts_km_normalize<br/>(nsp engine passes)"]
+    H --> R["vtts_km_read<br/>(spell → words → clusters → syllables)"]
+    N --> R
+    R --> ID["km-en ids, one item per syllable"]
+```
+
+| Part | How it is ported | Size (64-bit host, `-Os`) |
+|---|---|---|
+| Letters | Khmer code points coded as code point − U+1780 + 1 (one byte); one row per letter: flags (consonant, independent vowel, o-series, sonorant, vowel sign, sign, upper vowel, shifters, bantoc, silencers, robat, ignored, Python `\w`, normalizer class), onset token, final sound, consonant-table row | 0.6 KB |
+| Word list | `words.txt` plus the override keys (20,600 words), sorted and front coded in blocks of 16 (as for Thai), binary search over the block heads | 80,248 + 5,152 bytes |
+| Overrides | 4,163 sorted (word, token ids per syllable) byte strings, binary search | about 80 KB of strings and the pointer table |
+| Rhymes, onsets | 969 sorted rhyme keys (series, vowel signs, final sound, position) and 239 onset clusters, token ids precomputed | about 15 KB |
+| Normalizer strings | digits, tens, places, months, units, currencies, abbreviations, symbols | 1 KB |
+
+`vtts_text_km.o` is 180 KB of text and 88 KB of pointer tables on a 64-bit host (`-Os`), `vtts_text_nsp.o` 18 KB; on the 32-bit ESP32 targets the pointer tables halve, so the Khmer front-end adds about 230 KB of flash (mostly the word list and the override readings) when it is enabled, and nothing when it is not.
+
+- **Spelling, words, clusters, syllables, readings** follow `spell`, `segment`, `clusters`, `syllables`, `onset_phones`, `rhyme`, `word_phones` and `run_phones` step by step, with the same tie-breaking in the segmentation (the first candidate with the fewest characters outside the list, then the fewest pieces, listed words longest first). The syllables of a word keep their onset letters and vowel signs in two pools as long as the word, so no word is cut short.
+- **Normalization** follows `Normalizer.__call__` pass by pass (language pass, digits and full-width forms, punctuation, pauses, dropped quotes and brackets, dotted abbreviations, ៗ, product codes, dates, times, money before and after the number, percent, units, phone numbers, ranges, negative numbers, digit strings, numbers, symbols, Latin words to the English normalizer, glued number words, the repeated ថ្ងៃទី and ម៉ោង, spaces between Khmer runs as `,`), with the regex backtracking order of the Thai port. Numbers of any length are read like Python (groups of six digits joined by លាន).
+- **Tagging and chunks:** a chunk is split between Khmer and Latin letters, a word with a Khmer letter is Khmer, a plain Latin word is English, anything else is Khmer. Each syllable of a Khmer run is one item joined to the previous one without `SPACE`. ។ and ៕ end a sentence in the pair modes, and a dot after a Khmer letter does not end a sentence (in every mode, as `SENTENCE_END`).
+- **Memory:** no new workspace: the normalizer passes run in `en_a` / `en_b` (6,144 code points each), and the reader uses `en_a` and `en_b` together (they are adjacent, checked at compile time) for its 47 KB of scratch (the DP, the cluster and syllable pools of a 1,024-letter piece).
+- **Tests:** `runtime/test/text_parity_km.tsv` (14,256 cases: edge cases, both Khmer eval sets, the strings of the Khmer unit tests, 1,500 mixed template sentences, every override word, the whole word list in groups of eight with and without spaces, 2,500 Wikipedia sentences, 1,500 generated sentences, numbers, dates and times, 3,000 regex-dense random strings) must match exactly, and a fuzz run in km mode (`text_test --fuzz-km`, ASan and UBSan) must stay inside its buffers and inside the km-en ids: `make -C runtime test` or `uv run pytest tests/export`. A larger run (all 19,741 corpus sentences, the 7,723 mixed sentences and 30,000 random strings, 66,220 cases) matched exactly too. A test also checks that `vtts_text_km_tables.h` is current. After changing a Khmer rule or table, run `uv run python runtime/tools/gen_text_tables.py` and `uv run python scripts/frontend/export_text_parity.py --km --sentences data/km/sentences.jsonl --limit 2500 --out runtime/test/text_parity_km.tsv`.
+- **Known gaps (pathological input only):** a Khmer run (a clause without spaces) longer than 1,024 code points is read in pieces of 1,024, so a word can be cut there; only ASCII and Khmer digits count as digits; a syllable keeps at most 160 token ids.
+
+## Burmese (token set `my-en`)
+
+Python (`src/vtts/frontend/my/`, normalization on the shared engine `frontend/nospace_norm.py`) and C (`runtime/src/vtts_text_my.c`, see [Device (C)](#device-c-5)). `text_to_ids(text, "my")` returns ids of the token set `my-en` (model header code 30): ids 0–106 are the v2 set unchanged, followed by 53 Burmese tokens from id 107 (vocabulary 160). A syllable is `MY:I:initial [MY:M:y] [MY:M:w] MY:V:vowel [MY:F:N | MY:F:?] [MY:Ttone]`:
+
+| Group | Tokens |
+|---|---|
+| Initials (31) | `MY:I:k kh g ng hng s sh z ny hny t th d n hn p ph b m hm y r S l hl w hw T D h ?` (`h…` the voiceless nasals, lateral and w of ှ; `sh` sʰ, `S` ʃ, `T` θ, `?` the glottal stop of အ; `r` ɹ of loanwords and `D` ð, the voiced θ of compounds, are reserved: the rules do not produce them) |
+| Glides (2) | `MY:M:y` (ျ ြ; ကျ ကြ = `k y`, said [tɕ]), `MY:M:w` (ွ) |
+| Vowels (14) | `MY:V:i u e o E O a @` (ɛ ɔ, `@` the reduced ə) and `I U ei ou ai au` (ɪ ʊ eɪ oʊ aɪ aʊ, before a final) |
+| Finals (2) | `MY:F:N` (nasalized rhyme), `MY:F:?` (glottal stop) |
+| Tones (4) | `MY:T1` low, `T2` high (း), `T3` creaky (့), `T4` checked (a syllable ending in `?`); the reduced ə has no tone |
+
+The analysis follows Google's Burmese pronunciation grammar (language-resources `my/burmese.grm`, Apache-2.0). Burmese is written without spaces between words, but the spelling delimits syllables, so no word list is needed: each syllable of a Burmese run is one unit joined without `SPACE`. Spaces between Burmese runs are word boundaries (`SPACE`), not pauses: writers put them between words and phrases alike. ။ ends a sentence (in every mode) and is read `.`, ၊ is `,`. Latin words are English; a space is put between Burmese and Latin letters.
+
+```mermaid
+flowchart LR
+    R["Burmese run"] --> Z{"Zawgyi?"}
+    Z -->|yes| C["zawgyi_to_unicode"]
+    Z -->|no| K["canonical order"]
+    C & K --> P["respellings, stacks, kinzi"]
+    P --> S["syllables: consonant + medials<br/>+ vowel signs + final + tone marks"]
+    S --> T["onset, rhyme, tone"]
+```
+
+**Zawgyi** (`my/zawgyi.py`): text typed with the Zawgyi font encoding is detected per run by signals only Zawgyi has (U+1033 U+1034 and U+105A–U+1097, ေ or the Zawgyi medial ra before its consonant, the Zawgyi asat U+1039 before no consonant) against signals of Unicode (U+103E, U+103F, Unicode kinzi, ၎င်း); it is Zawgyi when its signals win. Conversion: a table maps every Zawgyi code point to its Unicode sequence (stacked forms, medial variants, kinzi with vowels, ၎), ေ and the medial ra move after their consonant, kinzi before its consonant, ၀ between non-digits is ဝ, a space before ့ is dropped, and each cluster is put in canonical order. All 83 pairs of Google's `my/zawgyi_unicode_test.tsv` convert exactly; 76 of their Zawgyi strings are detected (the other 7 are valid in both encodings) and none of their Unicode strings. Unicode text is put in canonical order too (UTN #11: stacked consonant, medials ျ ြ ွ ှ, ေ, upper and lower vowels, ာ, ံ, ့, ်, း; marks after ် stay after it, as in ကျွန်ုပ်, ယောက်ျား; a repeated mark is dropped; ဥ + ် is ဉ, စ + ျ is ဈ).
+
+**Syllables** (`my/g2p_my.syllables`): respellings (ယောက်ျား, ကျွန်ုပ်), independent vowels as အ + vowel sign, ါ as ာ, ဿ as သ်သ, kinzi and the virama of a stack as ် (the upper consonant closes the syllable before: ကမ္ဘာ = ကမ်ဘာ, မင်္ဂလာ). A syllable is a consonant without ် with its medials, vowel signs, tone marks and a final consonant with ်; ၌ ၍ ၏ ၎င်း are words of their own.
+
+**Readings** (`my/g2p_my.rhyme`, `onset`), after the nucleus rules of the grammar:
+
+| Spelling | Rhyme | Spelling | Rhyme |
+|---|---|---|---|
+| က် | ɛʔ | ိ + က် စ် တ် ပ် … | eɪʔ |
+| င် ဉ် | ɪɴ | ိ + င် န် မ်, ိံ | eɪɴ |
+| စ် | ɪʔ | ု + က် စ် တ် ပ် … | oʊʔ |
+| တ် ပ် and other stops | aʔ | ု + ဉ် န် မ်, ုံ | oʊɴ |
+| န် မ် ဏ်, ံ | aɴ | ို + က် တ် | aɪʔ |
+| ယ် | ɛ (low) | ို + င် | aɪɴ |
+| ည် | i (low; ɛ or e after some onsets, `SYLLABLES`) | ော + က် / င် | aʊʔ / aʊɴ |
+| ွ + တ် / န်, ွံ; initial ဝ + တ် န် ံ | ʊʔ / ʊɴ | ော, ော် | ɔ (high, low) |
+| ာ, ီ, ူ, ေ, ို | a, i, u, e, o (low) | ိ, ု, ဲ | i, u (creaky), ɛ (high) |
+
+The onset: ှ makes nasals, laterals and ဝ voiceless (ယှ ရှ လျှ = ʃ), ငြ is ɲ; ျ ြ add the glide y, ွ the glide w. Tones: ့ creaky, း high, else the vowel's tone; stop finals are checked (T4). A syllable without a vowel sign or final is the reduced ə inside a run and a̰ at its end (ပထမ = pə.tʰə.ma̰); the particles က and မှ after a full syllable are a̰ (သူက).
+
+**Normalization** (`my/normalize_my.py`):
+
+| Text | Reading |
+|---|---|
+| 21, 110, 2026, 15000, 25000000 | နှစ်ဆယ့်တစ်, တစ်ရာ့တစ်ဆယ်, နှစ်ထောင့်နှစ်ဆယ့်ခြောက်, တစ်သောင်းငါးထောင်, နှစ်ဆယ့်ငါးသန်း (ဆယ် ရာ ထောင် creaky before more digits) |
+| ၂၅, ၁၉၅၄ဝဝဝ, 3.14, -5 | Burmese digits (and the Shan digits ႐-႙ left after the Zawgyi step) as ASCII, ဝ after a digit is zero (not in ဝန်); သုံးဒသမ တစ်လေး; အနုတ်ငါး |
+| 19/11/2026, 2026-11-19 | နှစ်ထောင့်နှစ်ဆယ့်ခြောက်ခုနှစ် နိုဝင်ဘာလ တစ်ဆယ့်ကိုးရက် |
+| 14:30 | တစ်ဆယ့်လေးနာရီသုံးဆယ်မိနစ် |
+| $5, 5000 Ks, 50%, 25°C, 5 km, 10-20 | ငါးဒေါ်လာ, ငါးထောင်ကျပ်, ငါးဆယ်ရာခိုင်နှုန်း, …ဒီဂရီစင်တီဂရိတ်, ငါးကီလိုမီတာ, တစ်ဆယ်မှနှစ်ဆယ် |
+| 09 4512 3456 | digit by digit |
+| ESP32 | letters in English, digits in Burmese |
+
+**Agreement:** eSpeak NG's Burmese voice is not a usable reference (it reads most syllables as letter strings: မင်္ဂလာပါ → "mŋ ɡltspˈe"). The measuring stick is the IPA of English Wiktionary (kaikki.org dump, CC BY-SA, read at evaluation time only; `scripts/frontend/eval_my_g2p.py`): on 8,387 words, 62.5% are read exactly (unit error rate 9.3% over onsets, glides, vowels, tones and finals), 75.5% with voicing neutralized (UER 6.3%), 75.8% also without tones. Most remaining differences are not in the spelling: voicing in compounds (ကမ်းခြေ = kàɴ.gjè), the reduction of full syllables to ə (ဘုရား = pʰə.já, တံတား = də.dá), ည် read ɛ or e (နည်း), and loanword r (ɹ). These numbers carry uncertainty: Wiktionary entries skew to dictionary words, and running text has particles and numbers the measure does not cover.
+
+Known gaps: voicing sandhi and the reduction of full syllables in compounds (lexical; no Burmese lexicon with a permissive licence was found); bare syllables inside a run are read ə, so a word-final a̰ inside an unspaced run is wrong except for က and မှ; ည် has one default vowel; loanword finals (ရ် လ် of English words) are silent; Mon, Shan and Karen letters of the Myanmar block are not read; Zawgyi detection needs at least one distinguishing sign (a run valid in both encodings is read as Unicode).
+
+### Device (C)
+
+`vtts_text_to_ids_ex` with mode `VTTS_LANG_MY` gives exactly `text_to_ids(text, "my")` (module `runtime/src/vtts_text_my.c`, entry `my` in `LANGS`; mode `my` of token set `my-en`, code 30), compiled only with `VTTS_ENABLE_MY` (`runtime/include/vtts_langs.h`; the firmware sets it from the token sets of its models). There is no word list and no blob: `gen_nsp_tables.py` writes the letter table (flags, mark ranks, onset and ha-hto onset tokens), the Zawgyi map, the special words and syllable exceptions, the respellings and the normalizer strings into `vtts_text_my_tables.h`. The normalizer runs on the shared engine `vtts_text_nsp.c`.
+
+| Part | How it is ported |
+|---|---|
+| Zawgyi | `is_zawgyi`, `zawgyi_to_unicode` and `canonical_order` step by step: the same signals, the same code point table (one sorted array), clusters built as in Python and sorted by (segment, rank, position) with an insertion sort |
+| Normalization | the language pass (zero-width spaces, Zawgyi or canonical order, Shan digits, the letter ဝ for zero) and the number readings (ဆယ့် ရာ့ ထောင့် before more digits, သန်း groups) |
+| Syllables, readings | `prepare`, `syllables`, `rhyme`, `onset`, `syllable_phones` and `run_phones`: syllables are streamed with one syllable of delay (a final may still close the last one; the last syllable of a run reads a̰), the spelling of each syllable is kept for the exception tables |
+
+`vtts_text_my.o` is 13.5 KB of code and 2.8 KB of data on a 64-bit host (`-Os`), about 16 KB on the ESP32, plus the 18 KB normalizer engine when Khmer is not enabled too.
+
+- **Tagging and chunks:** a chunk is split between Burmese (U+1000–U+103F, U+104C–U+109F) and Latin letters, a word with a Burmese letter or sign (Zawgyi included) is Burmese, a plain Latin word is English, anything else is Burmese; each syllable of a run is one item joined without `SPACE`. ။ ends a sentence in the pair modes.
+- **Memory:** no new workspace: the normalizer passes run in `en_a` / `en_b` and the reader uses them (adjacent) for a word of up to 1,536 code points and its prepared spelling (37 KB).
+- **Tests:** `runtime/test/text_parity_my.tsv` (12,079 cases: edge cases with Zawgyi strings, both Burmese eval sets, the strings of the Burmese unit tests, 1,500 mixed template sentences, 2,500 Wikipedia sentences, 3,000 generated sentences with random Myanmar and Zawgyi code points, numbers, dates and times, 3,000 regex-dense random strings) must match exactly, and `text_test --fuzz-my` (ASan, UBSan) must stay inside the my-en ids; a larger run (all 22,420 corpus sentences, the 7,344 mixed sentences and 30,000 random strings, 66,343 cases) matched exactly too. A test checks that `vtts_text_my_tables.h` is current. Regenerate with `uv run python runtime/tools/gen_text_tables.py` and `uv run python scripts/frontend/export_text_parity.py --my --sentences data/my/sentences.jsonl --limit 2500 --out runtime/test/text_parity_my.tsv`.
+- **Known gaps (pathological input only):** a Burmese word (a run without spaces) longer than 1,536 code points is read in pieces; a cluster keeps at most 128 marks; digits of other scripts than ASCII, Burmese and Shan are not digits.
+
 ## Changing a rule or an entry
 
 1. Edit the TSV file (or the rule in the normalizer).
@@ -1648,6 +1950,14 @@ Applications will be able to add their own entries without rebuilding the firmwa
 | 2026-11-19 | Swahili front-end in Python: token set `sw-en`, spelling rules with prenasalized stops and syllabic nasals, penultimate stress, `lexicons/sw/`, Swahili number, money, unit and time reading (no conversion to Swahili time), mode `sw`. |
 | 2026-11-19 | Tagalog front-end in Python: token set `tl-en`, spelling, glottal-stop and stress rules, `lexicons/tl/stress.tsv` with the Filipino accent marks (also for affixed forms), native and Spanish-derived number reading, mode `tl`. |
 | 2026-11-19 | Malay front-end in Python: token set `ms-en`, the Indonesian rules shared with Malay letters, `lexicons/ms/` (overrides over the Indonesian table, native words), Malay number, money and time reading, mode `ms`. |
+| 2026-11-19 | Danish front-end in C: mode `VTTS_LANG_DA` (built with `VTTS_ENABLE_DA`), known words with the NST readings, rule, tagging and normalizer tables compiled into `vtts_text_da_tables.h` (no blob), exact parity with Python; month names in dates match lower case or capitalized only (no `re.IGNORECASE`). |
+| 2026-11-19 | Lao front-end in C: mode `VTTS_LANG_LO` (built with `VTTS_ENABLE_LO`), word list, spelling patterns and normalizer strings compiled into `vtts_text_lo_tables.h` (no blob), exact parity with Python. |
+| 2026-11-19 | Lao front-end in Python: token set `lo-en`, word list from Google's spell-check list and the E-Government dictionary, syllable patterns, consonant classes and the six Vientiane tones, Lao number reading, mode `lo`. |
+| 2026-11-19 | Danish front-end in Python: token set `da-en`, NST lexicon (CC0) for the frequent words, compounds, spelling rules with stress, vowel length and stød, Danish number reading, mode `da`. |
+| 2026-11-19 | Burmese front-end in C: mode `VTTS_LANG_MY` (compiled with `VTTS_ENABLE_MY`), Zawgyi conversion, canonical order, syllable rules and tables in `vtts_text_my_tables.h` (no blob), exact parity with Python; Python reads the Shan digits U+1090–U+1099 of a run as digits. |
+| 2026-11-19 | Khmer front-end in C: mode `VTTS_LANG_KM` (compiled with `VTTS_ENABLE_KM`), word list, overrides, rhyme and onset tables compiled into `vtts_text_km_tables.h` (no blob), normalizer engine `vtts_text_nsp.c`, exact parity with Python. |
+| 2026-11-19 | Burmese front-end in Python: token set `my-en`, Zawgyi detection and conversion, canonical mark order, syllables and rhymes after Google's Burmese grammar, tones, Burmese number reading, mode `my`; the language pass of `nospace_norm.py` runs before the digits. |
+| 2026-11-19 | Khmer front-end in Python: token set `km-en`, spelling folds, cluster and syllable rules, series, `lexicons/km/` (word list, rhyme and onset tables and overrides from the Google Khmer lexicon), Khmer number reading on the shared engine `nospace_norm.py`, mode `km`. |
 | 2026-11-19 | Hindi front-end in C: mode `VTTS_LANG_HI`, letter tables, `overrides.tsv` and `numbers.tsv` compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-19 | Spanish, Indonesian and Portuguese front-ends in C: modes `VTTS_LANG_ES`, `VTTS_LANG_ID`, `VTTS_LANG_PT`, all tables (and Python's Unicode classes) compiled into `vtts_text_tables.h` (no blob), exact parity with Python. |
 | 2026-11-19 | Japanese front-end in C: mode `VTTS_LANG_JA`, `JLEX` blob (`scripts/frontend/build_ja_blob.py`, reading tables and NFKC data, 721 KB), exact parity with Python. |

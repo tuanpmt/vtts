@@ -3,7 +3,7 @@
 Usage: uv run python scripts/eval/eval_dir.py --system NAME --set eval/sets/ood.jsonl \
        --audio DIR --out reports/NAME-ood.json [--no-mos]
 English or mixed sets: --lang en|mixed --asr openai/whisper-large-v3 --asr-language en|vi
-Pair sets (eval/sets/{ood,mixed}_<lang>.jsonl, lang in vtts.eval.cer.PAIR_LANGS: zh ko ja th es id pt hi fr de it tr ru pl ar fi el ms tl sw nl sv no):
+Pair sets (eval/sets/{ood,mixed}_<lang>.jsonl, lang in vtts.eval.cer.PAIR_LANGS: zh ko ja th es id pt hi fr de it tr ru pl ar fi el ms tl sw nl sv no da lo km my):
 --lang <lang> --asr openai/whisper-large-v3; the Whisper language follows --lang unless
 --asr-language is given. CER is character-level for these languages (see vtts.eval.cer).
 """

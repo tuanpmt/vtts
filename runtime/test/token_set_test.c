@@ -9,6 +9,8 @@
 #include "vtts_text.h"
 #include "vtts_text_fr.h" /* VTTS_ENABLE_FR */
 #include "vtts_text_tl.h" /* VTTS_ENABLE_TL */
+#include "vtts_text_lo.h" /* VTTS_ENABLE_LO */
+#include "vtts_text_da.h" /* VTTS_ENABLE_DA */
 
 static int fails;
 #define CHECK(c)                                                         \
@@ -61,7 +63,7 @@ int main(int argc, char **argv) {
     static const int vocab_map[][2] = {{65, VTTS_TOKSET_V1},    {107, VTTS_TOKSET_VI_EN}, {171, VTTS_TOKSET_ZH_EN},
                                        {153, VTTS_TOKSET_KO_EN}, {144, VTTS_TOKSET_JA_EN}, {157, VTTS_TOKSET_HI_EN},
                                        {138, VTTS_TOKSET_ES_EN}, {141, VTTS_TOKSET_ID_EN}, {150, VTTS_TOKSET_PT_EN},
-                                       {100, VTTS_TOKSET_VI_EN},
+                                       {176, VTTS_TOKSET_VI_EN}, {160, VTTS_TOKSET_VI_EN}, {100, VTTS_TOKSET_VI_EN},
                                        {256, VTTS_TOKSET_VI_EN}, {40, VTTS_TOKSET_V1}};
     for (size_t i = 0; i < sizeof vocab_map / sizeof *vocab_map; i++) {
         CHECK(load(vocab_map[i][0], NO_DIM, &m) == VTTS_OK);
@@ -100,6 +102,24 @@ int main(int argc, char **argv) {
     CHECK(vtts_text_lang_for(VTTS_TOKSET_TH_EN, "th", &l0) == 0 && l0 == VTTS_LANG_TH);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_TH_EN, "en", &l0) < 0 && vtts_text_lang_for(VTTS_TOKSET_KO_EN, "th", &l0) < 0);
     CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_TH_EN), "th") == 0 && strcmp(vtts_text_lang_name(VTTS_LANG_TH), "th") == 0);
+    /* km-en (31), my-en (30): by the dim only (176 / 160 without it are vi-en) */
+    CHECK(load(176, VTTS_TOKSET_KM_EN, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_KM_EN && m.token_set_in_file);
+    CHECK(load(175, VTTS_TOKSET_KM_EN, &m) == VTTS_ERR_FORMAT);
+    CHECK(load(160, VTTS_TOKSET_MY_EN, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_MY_EN && m.token_set_in_file);
+    CHECK(load(159, VTTS_TOKSET_MY_EN, &m) == VTTS_ERR_FORMAT);
+    CHECK(vtts_token_set_size(VTTS_TOKSET_KM_EN) == 176 && strcmp(vtts_token_set_name(VTTS_TOKSET_KM_EN), "km-en") == 0);
+    CHECK(vtts_token_set_size(VTTS_TOKSET_MY_EN) == 160 && strcmp(vtts_token_set_name(VTTS_TOKSET_MY_EN), "my-en") == 0);
+    CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_KM), "km") == 0 && strcmp(vtts_text_lang_name(VTTS_LANG_MY), "my") == 0);
+#if VTTS_ENABLE_KM
+    CHECK(vtts_text_default_lang(VTTS_TOKSET_KM_EN, &l0) == 0 && l0 == VTTS_LANG_KM);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_KM_EN, "km", &l0) == 0 && l0 == VTTS_LANG_KM);
+    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_KM_EN), "km") == 0);
+#endif
+#if VTTS_ENABLE_MY
+    CHECK(vtts_text_default_lang(VTTS_TOKSET_MY_EN, &l0) == 0 && l0 == VTTS_LANG_MY);
+    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_MY_EN), "my") == 0);
+#endif
+    CHECK(vtts_token_set_size(20) == 0 && strcmp(vtts_token_set_name(20), "unknown") == 0);
 
     /* fr-en (11): by the dim only (sets after hi-en are never inferred from the vocab: a file
      * without the dim is vi-en); mode fr when built with VTTS_ENABLE_FR */
@@ -182,7 +202,7 @@ int main(int argc, char **argv) {
     CHECK(vtts_text_default_lang(VTTS_TOKSET_MS_EN, &l0) < 0 && strcmp(vtts_text_modes(VTTS_TOKSET_MS_EN), "") == 0);
 #endif
 
-    /* nl-en (21), sv-en (23), no-en (24): by the dim only (159 / 155 / 156 without it are vi-en); 22 is reserved */
+    /* nl-en (21), sv-en (23), no-en (24): by the dim only (159 / 155 / 156 without it are vi-en); 22 is da-en */
     {
         static const struct { int code, vocab; const char *name, *mode; vtts_lang lang; } NX[] = {
             {VTTS_TOKSET_NL_EN, 159, "nl-en", "nl", VTTS_LANG_NL}, {VTTS_TOKSET_SV_EN, 155, "sv-en", "sv", VTTS_LANG_SV},
@@ -200,8 +220,50 @@ int main(int argc, char **argv) {
             CHECK(strcmp(vtts_text_modes(NX[k].code), NX[k].mode) == 0);
 #endif
         }
-        CHECK(load(200, 22, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+        CHECK(load(200, 27, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
     }
+
+    /* lo-en (32): known to the loader in every build; its mode only with VTTS_ENABLE_LO */
+    CHECK(load(163, VTTS_TOKSET_LO_EN, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_LO_EN && m.token_set_in_file);
+    CHECK(load(162, VTTS_TOKSET_LO_EN, &m) == VTTS_ERR_FORMAT);
+    CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_LO_EN), "lo-en") == 0 && vtts_token_set_size(VTTS_TOKSET_LO_EN) == 163);
+    CHECK(load(200, 34, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+    CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_LO), "lo") == 0);
+#if VTTS_ENABLE_LO
+    CHECK(vtts_text_default_lang(VTTS_TOKSET_LO_EN, &l0) == 0 && l0 == VTTS_LANG_LO);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_LO_EN, "lo", &l0) == 0 && l0 == VTTS_LANG_LO);
+    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_LO_EN), "lo") == 0);
+#else
+    {
+        static vtts_text_ws ws;
+        vtts_text_opts o = {VTTS_LANG_LO, NULL, NULL, NULL};
+        CHECK(vtts_text_default_lang(VTTS_TOKSET_LO_EN, &l0) < 0 && vtts_text_lang_for(VTTS_TOKSET_LO_EN, "lo", &l0) < 0);
+        CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_LO_EN), "") == 0);
+        CHECK(vtts_text_to_ids_ex("ສະບາຍດີ", &ws, &o, NULL, NULL) < 0);
+    }
+#endif
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_TH_EN, "lo", &l0) < 0);
+
+    /* da-en (22): known to the loader in every build; its mode only with VTTS_ENABLE_DA */
+    CHECK(load(158, VTTS_TOKSET_DA_EN, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_DA_EN && m.token_set_in_file);
+    CHECK(load(157, VTTS_TOKSET_DA_EN, &m) == VTTS_ERR_FORMAT);
+    CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_DA_EN), "da-en") == 0 && vtts_token_set_size(VTTS_TOKSET_DA_EN) == 158);
+    CHECK(load(200, 20, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+    CHECK(strcmp(vtts_text_lang_name(VTTS_LANG_DA), "da") == 0);
+#if VTTS_ENABLE_DA
+    CHECK(vtts_text_default_lang(VTTS_TOKSET_DA_EN, &l0) == 0 && l0 == VTTS_LANG_DA);
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_DA_EN, "da", &l0) == 0 && l0 == VTTS_LANG_DA);
+    CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_DA_EN), "da") == 0);
+#else
+    {
+        static vtts_text_ws ws;
+        vtts_text_opts o = {VTTS_LANG_DA, NULL, NULL, NULL};
+        CHECK(vtts_text_default_lang(VTTS_TOKSET_DA_EN, &l0) < 0 && vtts_text_lang_for(VTTS_TOKSET_DA_EN, "da", &l0) < 0);
+        CHECK(strcmp(vtts_text_modes(VTTS_TOKSET_DA_EN), "") == 0);
+        CHECK(vtts_text_to_ids_ex("Hej med dig", &ws, &o, NULL, NULL) < 0);
+    }
+#endif
+    CHECK(vtts_text_lang_for(VTTS_TOKSET_ES_EN, "da", &l0) < 0);
 
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_V1), "v1") == 0);
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_VI_EN), "vi-en") == 0);
@@ -325,7 +387,7 @@ int main(int argc, char **argv) {
     CHECK(load(138, VTTS_TOKSET_TL_EN, &m) == VTTS_ERR_FORMAT);
     CHECK(load(200, 27, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN && vtts_token_set_size(27) == 0);
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_TL_EN), "tl-en") == 0 && vtts_token_set_size(VTTS_TOKSET_TL_EN) == 139);
-    CHECK(strcmp(vtts_token_set_name(20), "unknown") == 0 && strcmp(vtts_token_set_name(30), "unknown") == 0);
+    CHECK(strcmp(vtts_token_set_name(20), "unknown") == 0 && strcmp(vtts_token_set_name(34), "unknown") == 0);
     CHECK(vtts_text_lang_for(VTTS_TOKSET_ES_EN, "tl", &l) < 0 && vtts_text_lang_for(VTTS_TOKSET_TL_EN, "en", &l) < 0);
 #if VTTS_ENABLE_TL
     CHECK(vtts_text_default_lang(VTTS_TOKSET_TL_EN, &l) == 0 && l == VTTS_LANG_TL);
@@ -345,8 +407,8 @@ int main(int argc, char **argv) {
     CHECK(load(147, VTTS_TOKSET_SW_EN, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_SW_EN && m.token_set_in_file);
     CHECK(load(147, NO_DIM, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_VI_EN && !m.token_set_in_file);
     CHECK(load(146, VTTS_TOKSET_SW_EN, &m) == VTTS_ERR_FORMAT);
-    CHECK(load(200, 30, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
-    CHECK(load(200, 32, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+    CHECK(load(200, 14, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
+    CHECK(load(200, 18, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
     CHECK(load(200, 34, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_UNKNOWN);
     CHECK(strcmp(vtts_token_set_name(VTTS_TOKSET_SW_EN), "sw-en") == 0 && vtts_token_set_size(VTTS_TOKSET_SW_EN) == 147);
     CHECK(strcmp(vtts_token_set_name(20), "unknown") == 0 && vtts_token_set_size(20) == 0);

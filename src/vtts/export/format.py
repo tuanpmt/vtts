@@ -53,6 +53,12 @@ TOKEN_SET_CODES["tl-en"] = 29
 TOKEN_SET_SIZES["tl-en"] = 139
 TOKEN_SET_CODES["sw-en"] = 33
 TOKEN_SET_SIZES["sw-en"] = 147
+TOKEN_SET_CODES["da-en"] = 22
+TOKEN_SET_SIZES["da-en"] = 158
+TOKEN_SET_CODES["lo-en"] = 32
+TOKEN_SET_SIZES["lo-en"] = 163
+TOKEN_SET_CODES["km-en"], TOKEN_SET_SIZES["km-en"] = 31, 176
+TOKEN_SET_CODES["my-en"], TOKEN_SET_SIZES["my-en"] = 30, 160
 
 
 def token_set_for_vocab(vocab: int) -> str | None:

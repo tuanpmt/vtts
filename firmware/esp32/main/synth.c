@@ -127,6 +127,18 @@ static const char *const BENCH_NO[] = {
     "Vekkerklokka for i morgen kl. 6.30 er stilt inn.",
     "I dag er det lørdag 14. november 2026.",
 };
+static const char *const BENCH_DA[] = {
+    "Hej, jeg er din stemmeassistent.",
+    "Temperaturen i stuen er 26 grader, og luftfugtigheden er 65 %.",
+    "Vækkeuret i morgen er sat til kl. 6.30.",
+    "I dag er det lørdag den 14. november 2026.",
+};
+static const char *const BENCH_LO[] = {
+    "ສະບາຍດີ ຂ້ອຍເປັນຜູ້ຊ່ວຍສຽງຂອງເຈົ້າ",
+    "ອຸນຫະພູມໃນຫ້ອງຕອນນີ້ 26 ອົງສາ ຄວາມຊຸ່ມ 65%",
+    "ຕັ້ງໂມງປຸກເວລາ 6:30 ມື້ອື່ນເຊົ້າແລ້ວ",
+    "ມື້ນີ້ແມ່ນວັນເສົາທີ 14/11/2026",
+};
 static const char *const BENCH_TH[] = {
     "สวัสดีครับ ผมเป็นผู้ช่วยเสียงของคุณ",
     "อุณหภูมิในห้องตอนนี้ 26 องศา ความชื้น 65%",
@@ -152,6 +164,20 @@ static const char *const BENCH_SW[] = {
     "Joto la chumba sasa ni nyuzi 26, unyevu asilimia 65.",
     "Kengele ya kesho saa 6:30 asubuhi imewekwa.",
     "Leo ni Jumamosi, tarehe 14/11/2026.",
+};
+
+static const char *const BENCH_KM[] = {
+    "សួស្តី ខ្ញុំជាជំនួយការសំឡេងរបស់អ្នក។",
+    "សីតុណ្ហភាពក្នុងបន្ទប់ឥឡូវនេះ 26 អង្សាសេ សំណើម 65%។",
+    "នាឡិការោទិ៍ត្រូវបានកំណត់នៅម៉ោង 6:30 ព្រឹកស្អែក។",
+    "ថ្ងៃនេះជាថ្ងៃសៅរ៍ ទី 14/11/2026។",
+};
+
+static const char *const BENCH_MY[] = {
+    "မင်္ဂလာပါ၊ ကျွန်တော်က သင့်ရဲ့ အသံလက်ထောက်ပါ။",
+    "အခန်းထဲက အပူချိန်က အခု 26 ဒီဂရီ၊ စိုထိုင်းဆ 65% ရှိပါတယ်။",
+    "မနက်ဖြန် မနက် 6:30 မှာ နှိုးစက်ပေးထားပြီးပါပြီ။",
+    "ဒီနေ့ စနေနေ့၊ 14/11/2026 ဖြစ်ပါတယ်။",
 };
 
 const char *synth_lang_name(int k) { return g.lang[k] < 0 ? "none" : vtts_text_lang_name((vtts_lang)g.lang[k]); }
@@ -242,7 +268,7 @@ int synth_text(const char *text, int64_t *total_us) {
               * HI (hi-en), JA (ja-en), ES (es-en), ID (id-en), PT (pt-en), TH (th-en), FR (fr-en), DE (de-en), IT (it-en),
               * TR (tr-en), RU (ru-en), PL (pl-en), AR (ar-en), FI (fi-en),
               * EL (el-en), MS (ms-en), TL (tl-en), SW (sw-en),
-              * NL (nl-en), SV (sv-en), NO (no-en) */
+              * NL (nl-en), SV (sv-en), NO (no-en), KM (km-en), MY (my-en) */
         vtts_text_opts o = {.lang = (vtts_lang)g.lang[g.cur], .lex = g.has_lex ? &g.lex : NULL,
                             .zh = g.has_zh ? &g.zh : NULL, .ja = g.has_ja ? &g.ja : NULL,
                             .ru = g.has_ru ? &g.ru : NULL};
@@ -277,6 +303,8 @@ void synth_bench(void) {
                              : l == VTTS_LANG_AR ? BENCH_AR : l == VTTS_LANG_FI ? BENCH_FI : l == VTTS_LANG_EL ? BENCH_EL
                              : l == VTTS_LANG_MS ? BENCH_MS : l == VTTS_LANG_TL ? BENCH_TL : l == VTTS_LANG_SW ? BENCH_SW
                              : l == VTTS_LANG_NL ? BENCH_NL : l == VTTS_LANG_SV ? BENCH_SV : l == VTTS_LANG_NO ? BENCH_NO
+                             : l == VTTS_LANG_DA ? BENCH_DA : l == VTTS_LANG_LO ? BENCH_LO
+                             : l == VTTS_LANG_KM ? BENCH_KM : l == VTTS_LANG_MY ? BENCH_MY
                              : BENCH;
     for (int k = 0; k < 4; k++) {
         int64_t us;

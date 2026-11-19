@@ -3,6 +3,7 @@
 #include "vtts_text.h"
 #include "vtts.h" /* vtts_token_set_t */
 
+#include <stddef.h>
 #include <string.h>
 
 #include "vtts_text_tables.h"
@@ -866,6 +867,14 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 #include "vtts_text_tl.h"
 #include "vtts_text_sw.h"
 #include "vtts_text_nx.h"
+#include "vtts_text_lo.h" /* VTTS_ENABLE_LO */
+#include "vtts_text_da.h" /* VTTS_ENABLE_DA */
+#if VTTS_ENABLE_KM
+#include "vtts_text_km.h"
+#endif
+#if VTTS_ENABLE_MY
+#include "vtts_text_my.h"
+#endif
 
 #define V2_MAX_WORDS 40
 #define V2_MAX_TOKENS 318
@@ -919,7 +928,8 @@ enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1, TAG_ZH = 2, TAG_KO = 3, TAG_HI 
        TAG_DE = 11, TAG_IT = 12, TAG_TR = 13,
        TAG_RU = 14, TAG_PL = 15, TAG_AR = 16, TAG_FI = 17,
        TAG_EL = 18, TAG_MS = 19, TAG_TL = 20, TAG_SW = 21,
-       TAG_NX = 22, /* TAG_NX + VTTS_NX_* (nl sv no) */ TAG_LAST = TAG_NX + 3 }; /* indices into LANGS; TAG_ES + VTTS_LT_* */
+       TAG_NX = 22, /* TAG_NX + VTTS_NX_* (nl sv no) */ TAG_DA = TAG_NX + 3, TAG_LO = TAG_DA + 1,
+       TAG_KM = TAG_LO + 1, TAG_MY = TAG_KM + 1, TAG_LAST = TAG_MY + 1 }; /* indices into LANGS; TAG_ES + VTTS_LT_* */
 
 static int key_eq(const uint32_t *w, int n, const char *k, int lower) {
     int i = 0;
@@ -1045,7 +1055,7 @@ VTTS_MAYBE_UNUSED static void push_cps(ctx_t *c, const uint32_t *cp, int n) {
 
 /* the reading callback of zh and ja, its state also th's (one unit per syllable / reading unit,
  * joined to the first) */
-#if VTTS_ENABLE_ZH || VTTS_ENABLE_JA || VTTS_ENABLE_TH
+#if VTTS_ENABLE_ZH || VTTS_ENABLE_JA || VTTS_ENABLE_TH || VTTS_ENABLE_LO || VTTS_ENABLE_KM || VTTS_ENABLE_MY
 typedef struct { vtts_text_ws *ws; int n; } zh_units_t;
 #endif
 
@@ -1269,15 +1279,23 @@ static void th_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o
         i = j + 1;
     }
 }
+#endif
 
+/* shared by th, lo, km and my: a Latin word of a Thai-like run is read in English; one syllable unit */
+#if VTTS_ENABLE_TH || VTTS_ENABLE_KM || VTTS_ENABLE_MY
 static int th_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
     return vtts_en_g2p(o->lex, w, out, cap); /* a Latin word of a Thai run is read in English */
 }
+#endif
 
+#if VTTS_ENABLE_TH || VTTS_ENABLE_LO || VTTS_ENABLE_KM || VTTS_ENABLE_MY
 static void th_unit(void *user, const uint8_t *ids, int n) {
     zh_units_t *u = user;
     add_item(u->ws, ids, n, 0, u->n++ > 0);
 }
+#endif
+
+#if VTTS_ENABLE_TH
 
 /* _th_units: a Thai run is read syllable by syllable (en_a and en_b are its scratch: the run's
  * words were copied to ws->words); any other word is one English unit */
@@ -1665,7 +1683,152 @@ static int nx_of(int mode) {
 #endif
 }
 
+#if VTTS_ENABLE_LO
+/* normalize_lo, scratch as for Thai */
+static void lo_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_lo_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static int lo_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
+    return vtts_en_g2p(o->lex, w, out, cap); /* a Latin word of a Lao run is read in English */
+}
+
+/* _lo_units: a Lao run is read syllable by syllable (en_a and en_b are its scratch); any other word
+ * is one English unit */
+static void lo_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint32_t c0 = 0;
+    if (utf8_decode(w, &c0, 1) == 1 && vtts_lo_is_lao(c0)) {
+        zh_units_t u = {ws, 0};
+        vtts_lo_read(w, ws->en_a, sizeof ws->en_a, ws->en_b, sizeof ws->en_b, th_unit, &u);
+        return;
+    }
+    uint8_t ids[256];
+    int n = lo_word_ids(w, o, ids, (int)sizeof ids);
+    if (n > 0) add_item(ws, ids, n, 0, 0);
+}
+
+/* lang.LAO_LATIN: a boundary between Lao and Latin letters splits a chunk (ເປີດWi-Fiໃຫ້) */
+static int lo_latin_edge(uint32_t a, uint32_t b) {
+    return (vtts_lo_is_lao(a) && ascii_alpha(b)) || (ascii_alpha(a) && vtts_lo_is_lao(b));
+}
+#endif
+
+#if VTTS_ENABLE_DA
+/* Danish: normalize_da and one item per word (vtts_text_da.c); en_a / en_b are free here as for es */
+static void da_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_da_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static void da_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_da_word_ids(ws->run, n, ws->en_a, sizeof ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
 /* indexed by TAG_*; a language that is not compiled in (vtts_langs.h) has an empty row */
+#if VTTS_ENABLE_KM
+/* normalize_km, in en_a / en_b like Thai */
+static void km_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_km_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+/* _km_units: a Khmer run is read syllable by syllable (en_a and en_b, adjacent, are its scratch);
+ * any other word is one English unit */
+static void km_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint32_t c0 = 0;
+    if (utf8_decode(w, &c0, 1) == 1 && vtts_km_is_khmer(c0)) {
+        zh_units_t u = {ws, 0};
+        vtts_km_read(w, ws->en_a, sizeof ws->en_a + sizeof ws->en_b, th_unit, &u);
+        return;
+    }
+    uint8_t ids[256];
+    int n = th_word_ids(w, o, ids, (int)sizeof ids);
+    if (n > 0) add_item(ws, ids, n, 0, 0);
+}
+typedef char km_scratch_fits[(sizeof(((vtts_text_ws *)0)->en_a) + sizeof(((vtts_text_ws *)0)->en_b) >=
+                              VTTS_KM_SCRATCH && offsetof(vtts_text_ws, en_b) == offsetof(vtts_text_ws, en_a) +
+                              sizeof(((vtts_text_ws *)0)->en_a)) ? 1 : -1];
+
+/* lang.KHMER_LATIN: a boundary between Khmer and Latin letters splits a chunk (បើកWi-Fi) */
+static int km_latin_edge(uint32_t a, uint32_t b) {
+    return (vtts_km_is_khmer(a) && ascii_alpha(b)) || (ascii_alpha(a) && vtts_km_is_khmer(b));
+}
+#endif
+
+#if VTTS_ENABLE_MY
+/* normalize_my, in en_a / en_b */
+static void my_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_my_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+/* _my_units: a Burmese run is read syllable by syllable (en_a and en_b are its scratch) */
+static void my_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint32_t c0 = 0;
+    if (utf8_decode(w, &c0, 1) == 1 && vtts_my_is_burmese(c0)) {
+        zh_units_t u = {ws, 0};
+        vtts_my_read(w, ws->en_a, sizeof ws->en_a + sizeof ws->en_b, th_unit, &u);
+        return;
+    }
+    uint8_t ids[256];
+    int n = th_word_ids(w, o, ids, (int)sizeof ids);
+    if (n > 0) add_item(ws, ids, n, 0, 0);
+}
+typedef char my_scratch_fits[(sizeof(((vtts_text_ws *)0)->en_a) + sizeof(((vtts_text_ws *)0)->en_b) >=
+                              VTTS_MY_SCRATCH && offsetof(vtts_text_ws, en_b) == offsetof(vtts_text_ws, en_a) +
+                              sizeof(((vtts_text_ws *)0)->en_a)) ? 1 : -1];
+
+/* lang.BURMESE_LATIN: a boundary between Burmese (U+1000..U+103F, U+104C..U+109F) and Latin letters */
+static int my_edge_cp(uint32_t c) { return (c >= 0x1000 && c <= 0x103F) || (c >= 0x104C && c <= 0x109F); }
+static int my_latin_edge(uint32_t a, uint32_t b) {
+    return (my_edge_cp(a) && ascii_alpha(b)) || (ascii_alpha(a) && my_edge_cp(b));
+}
+#endif
+
 static const lang_mod_t LANGS[] = {
     [TAG_VI] = {"vi", vi_normalize, vi_word_ids, NULL},
     [TAG_EN] = {"en", en_normalize, en_word_ids, NULL},
@@ -1737,6 +1900,18 @@ static const lang_mod_t LANGS[] = {
 #endif
 #if VTTS_ENABLE_NO
     [TAG_NX + VTTS_NX_NO] = {"no", no_normalize, NULL, no_add_word},
+#endif
+#if VTTS_ENABLE_DA
+    [TAG_DA] = {"da", da_normalize, NULL, da_add_word},
+#endif
+#if VTTS_ENABLE_LO
+    [TAG_LO] = {"lo", lo_normalize, lo_word_ids, lo_add_word},
+#endif
+#if VTTS_ENABLE_KM
+    [TAG_KM] = {"km", km_normalize, th_word_ids, km_add_word},
+#endif
+#if VTTS_ENABLE_MY
+    [TAG_MY] = {"my", my_normalize, th_word_ids, my_add_word},
 #endif
     [TAG_LAST] = {NULL, NULL, NULL, NULL},
 };
@@ -1862,6 +2037,10 @@ static int lang_enabled(vtts_lang l) {
     case VTTS_LANG_NL: return VTTS_ENABLE_NL;
     case VTTS_LANG_SV: return VTTS_ENABLE_SV;
     case VTTS_LANG_NO: return VTTS_ENABLE_NO;
+    case VTTS_LANG_DA: return VTTS_ENABLE_DA;
+    case VTTS_LANG_LO: return VTTS_ENABLE_LO;
+    case VTTS_LANG_KM: return VTTS_ENABLE_KM;
+    case VTTS_LANG_MY: return VTTS_ENABLE_MY;
     default: return 1;
     }
 }
@@ -1877,6 +2056,15 @@ static int script_edge(int mode, const uint32_t *w, int n, uint32_t c) {
 #endif
 #if VTTS_ENABLE_TH
     if (mode == VTTS_LANG_TH) return n > 0 && th_latin_edge(w[n - 1], c);
+#endif
+#if VTTS_ENABLE_LO
+    if (mode == VTTS_LANG_LO) return n > 0 && lo_latin_edge(w[n - 1], c);
+#endif
+#if VTTS_ENABLE_KM
+    if (mode == VTTS_LANG_KM) return n > 0 && km_latin_edge(w[n - 1], c);
+#endif
+#if VTTS_ENABLE_MY
+    if (mode == VTTS_LANG_MY) return n > 0 && my_latin_edge(w[n - 1], c);
 #endif
     return 0;
 }
@@ -1899,7 +2087,9 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     const int fi = VTTS_ENABLE_FI && mode == VTTS_LANG_FI, el = VTTS_ENABLE_EL && mode == VTTS_LANG_EL;
     const int tl = VTTS_ENABLE_TL && mode == VTTS_LANG_TL, sw = VTTS_ENABLE_SW && mode == VTTS_LANG_SW;
     const int nx = nx_of(mode);
-    (void)tl; (void)sw;
+    const int da = VTTS_ENABLE_DA && mode == VTTS_LANG_DA, lo = VTTS_ENABLE_LO && mode == VTTS_LANG_LO;
+    const int km = VTTS_ENABLE_KM && mode == VTTS_LANG_KM, my = VTTS_ENABLE_MY && mode == VTTS_LANG_MY;
+    (void)tl; (void)sw; (void)da; (void)lo; (void)km; (void)my;
     (void)zh; (void)ko; (void)hi; (void)ja; (void)th; (void)fr; (void)de; (void)ru; (void)pl; (void)ar; (void)fi;
     if (el) /* lang.tag_words: ";" and U+037E are the Greek question mark */
         for (int q = s; q < e; q++) if (ws->cp[q] == ';' || ws->cp[q] == 0x37E) ws->cp[q] = '?';
@@ -1907,7 +2097,7 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     static int cs[MAXCH], ce[MAXCH], tag[MAXCH];
     int nc = 0;
     /* sentence.split(); zh, ja: split_scripts(sentence).split(); es, id, pt: ¿ and ¡ are spaces */
-#define SEP(c) (is_space_cp(c) || ((lt >= 0 || fr || de || lt2 >= 0 || pl || fi || tl || sw || nx >= 0) && ((c) == 0xBF || (c) == 0xA1)))
+#define SEP(c) (is_space_cp(c) || ((lt >= 0 || fr || de || lt2 >= 0 || pl || fi || tl || sw || nx >= 0 || da) && ((c) == 0xBF || (c) == 0xA1)))
     if (lt2 >= 0) /* ’ is read as ' */
         for (int i = s; i < e; i++) if (ws->cp[i] == 0x2019) ws->cp[i] = '\'';
     for (int i = s; i < e && nc < MAXCH;) {
@@ -1994,6 +2184,30 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
         }
 #endif
 #if VTTS_ENABLE_KO
+#if VTTS_ENABLE_DA
+        if (da) { /* da: æ ø å é, word lists, CamelCase, acronyms, known words, compounds, spelling */
+            tag[k] = vtts_da_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_DA;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_LO
+        if (lo) { /* "lo" mode: Lao letters -> lo, plain Latin -> en, neutral -> lo */
+            tag[k] = vtts_lo_has_lao(cp + a, b - a) ? TAG_LO : plain_latin(cp + a, b - a) ? TAG_EN : TAG_LO;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_MY
+        if (my) { /* "my" mode: Burmese letters (Unicode or Zawgyi) -> my, plain Latin -> en, neutral -> my */
+            tag[k] = vtts_my_has_burmese(cp + a, b - a) ? TAG_MY : plain_latin(cp + a, b - a) ? TAG_EN : TAG_MY;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_KM
+        if (km) { /* "km" mode: Khmer letters -> km, plain Latin -> en, neutral -> km */
+            tag[k] = vtts_km_has_khmer(cp + a, b - a) ? TAG_KM : plain_latin(cp + a, b - a) ? TAG_EN : TAG_KM;
+            continue;
+        }
+#endif
         if (ko) { /* "ko" mode: Hangul (syllables or jamo) -> ko, plain Latin -> en, neutral -> ko */
             tag[k] = vtts_ko_has_hangul(cp + a, b - a) ? TAG_KO : plain_latin(cp + a, b - a) ? TAG_EN : TAG_KO;
             continue;
@@ -2112,6 +2326,7 @@ static int dot_continues_cp(int lang, uint32_t c) {
     if (lang == VTTS_LANG_FI)
         return (c >= 'a' && c <= 'z') || c == 0xE5 || c == 0xE4 || c == 0xF6 || c == 0x161 || c == 0x17E;
     if (lang == VTTS_LANG_EL) return (c >= 0x3AC && c <= 0x3CE) || c == 0x390; /* α-ω ς, accented, ΐ ΰ */
+    if (lang == VTTS_LANG_DA) return (c >= 'a' && c <= 'z') || c == 0xE6 || c == 0xF8 || c == 0xE5 || c == 0xE9;
     return 0;
 }
 
@@ -2123,15 +2338,20 @@ static int tr_lower_letter(uint32_t c) {
 
 /* A dot at cp[i - 1] followed by whitespace at cp[i] (the text is cp[a..z)) that does not end a
  * sentence (lang.py SENTENCE_END and the per-mode rules):
- * - every mode: a dot after a Thai letter ends an abbreviation (พ.ศ. 2567);
+ * - every mode: a dot after a Thai or Khmer letter ends an abbreviation (พ.ศ. 2567, ព.ស.);
  * - every mode: a dot before whitespace and a lower-case Cyrillic letter ends an abbreviation (т. е.,
  *   ул. ленина);
  * - tr (SENTENCE_END_TR): a dot after a digit before exactly one space and a lower-case word is an
  *   ordinal (5. sınıf; two spaces still split, as the regex);
- * - fi, el (lang.DOT_CONTINUES): a dot before whitespace and a lower-case letter of the language or a
- *   digit (n. 50, 3. toukokuuta, χλμ. σε). */
+ * - fi, el, da (lang.DOT_CONTINUES): a dot before whitespace and a lower-case letter of the language
+ *   or a digit (n. 50, 3. toukokuuta, χλμ. σε, den 5. marts);
+ * - lo (lang.DOT_AFTER_LETTER): a dot after a Lao letter ends an abbreviation too (ຄ.ສ. 2024). */
 static int dot_continues(int lang, const uint32_t *cp, int a, int z, int i) {
     if (i - 2 >= a && is_thai_cp(cp[i - 2])) return 1;
+    if (i - 2 >= a && cp[i - 2] >= 0x1780 && cp[i - 2] <= 0x17DD) return 1; /* Khmer */
+#if VTTS_ENABLE_LO
+    if (lang == VTTS_LANG_LO && i - 2 >= a && vtts_lo_is_lao(cp[i - 2])) return 1;
+#endif
     if (is_space_cp(cp[i])) {
         int j = i;
         while (j < z && is_space_cp(cp[j])) j++;
@@ -2140,7 +2360,7 @@ static int dot_continues(int lang, const uint32_t *cp, int a, int z, int i) {
     if (lang == VTTS_LANG_TR && i - 2 >= a && vtts_u_digit(cp[i - 2]) >= 0 && is_space_cp(cp[i]) && i + 1 < z &&
         tr_lower_letter(cp[i + 1]))
         return 1;
-    if ((lang == VTTS_LANG_FI || lang == VTTS_LANG_EL) && is_space_cp(cp[i])) {
+    if ((lang == VTTS_LANG_FI || lang == VTTS_LANG_EL || lang == VTTS_LANG_DA) && is_space_cp(cp[i])) {
         int q = i;
         while (q < z && is_space_cp(cp[q])) q++;
         if (q < z && dot_continues_cp(lang, cp[q])) return 1;
@@ -2149,7 +2369,8 @@ static int dot_continues(int lang, const uint32_t *cp, int a, int z, int i) {
 }
 
 static int cjk_end(uint32_t c) {
-    return c == 0x3002 || c == 0xFF01 || c == 0xFF1F || c == 0xFF1B || c == 0x0964 || c == 0x0965;
+    return c == 0x3002 || c == 0xFF01 || c == 0xFF1F || c == 0xFF1B || c == 0x0964 || c == 0x0965 ||
+           c == 0x17D4 || c == 0x17D5 || c == 0x104B; /* Khmer ។ ៕, Burmese ။ */
 }
 
 int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts *o, vtts_ids_cb cb, void *user) {
@@ -2162,7 +2383,8 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
                     o->lang == VTTS_LANG_IT || o->lang == VTTS_LANG_TR || o->lang == VTTS_LANG_RU ||
                     o->lang == VTTS_LANG_PL || o->lang == VTTS_LANG_AR || o->lang == VTTS_LANG_FI ||
                     o->lang == VTTS_LANG_EL || o->lang == VTTS_LANG_MS || o->lang == VTTS_LANG_TL ||
-                    o->lang == VTTS_LANG_SW;
+                    o->lang == VTTS_LANG_SW || o->lang == VTTS_LANG_DA || o->lang == VTTS_LANG_LO ||
+                    o->lang == VTTS_LANG_KM || o->lang == VTTS_LANG_MY;
     int n = ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
 #if VTTS_ENABLE_NX
     if (o->lang == VTTS_LANG_NL || o->lang == VTTS_LANG_SV || o->lang == VTTS_LANG_NO) {
@@ -2278,6 +2500,18 @@ static const struct { int token_set; const char *name; vtts_lang lang; } MODES[]
 #if VTTS_ENABLE_NO
     {VTTS_TOKSET_NO_EN, "no", VTTS_LANG_NO},
 #endif
+#if VTTS_ENABLE_LO
+    {VTTS_TOKSET_LO_EN, "lo", VTTS_LANG_LO},
+#endif
+#if VTTS_ENABLE_DA
+    {VTTS_TOKSET_DA_EN, "da", VTTS_LANG_DA},
+#endif
+#if VTTS_ENABLE_KM
+    {VTTS_TOKSET_KM_EN, "km", VTTS_LANG_KM},
+#endif
+#if VTTS_ENABLE_MY
+    {VTTS_TOKSET_MY_EN, "my", VTTS_LANG_MY},
+#endif
 };
 #define N_MODES ((int)(sizeof(MODES) / sizeof(MODES[0])))
 
@@ -2333,6 +2567,10 @@ const char *vtts_text_lang_name(vtts_lang lang) {
     case VTTS_LANG_NL: return "nl";
     case VTTS_LANG_SV: return "sv";
     case VTTS_LANG_NO: return "no";
+    case VTTS_LANG_LO: return "lo";
+    case VTTS_LANG_DA: return "da";
+    case VTTS_LANG_KM: return "km";
+    case VTTS_LANG_MY: return "my";
     default: return "vi";
     }
 }

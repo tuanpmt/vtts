@@ -289,3 +289,22 @@ def test_accept_swahili_ng_apostrophe():
         "Ng'ombe wa Juma ni mkubwa sana kuliko wote."]
     assert not accept("Kumi na mbili n'go wa Juma ni mkubwa sana.", "sw")
     assert not accept("Alizaliwa mwaka 1990 katika mji wa Nairobi.", "sw")
+
+
+def test_accept_danish():
+    assert accept("Hunden løb over vejen, og katten fulgte efter den.", "da")
+    assert accept("København er hovedstaden i Danmark og landets største by.", "da")
+    assert not accept("Byen blev grundlagt i 1167 af biskop Absalon.", "da")
+    assert not accept("Der bor ca. en million mennesker i byen.", "da")
+    assert not accept("Hun arbejdede for DR i mange år som journalist.", "da")
+    assert seconds("Hunden løb over vejen.", "da") == 7 / RATE["da"]
+
+
+def test_lao_utterances_and_accept():
+    text = "ປະເທດລາວເປັນປະເທດທີ່ບໍ່ມີທາງອອກສູ່ທະເລ ຕັ້ງຢູ່ໃນພາກພື້ນອາຊີຕາເວັນອອກສ່ຽງໃຕ້"
+    assert split_sentences(text, "lo") == [text]
+    assert split_sentences("ນະຄອນຫຼວງວຽງຈັນມີປະຊາກອນ 948,477 ຄົນ ໃນປີ 2020 ແລະເປັນເມືອງໃຫຍ່ທີ່ສຸດ", "lo") == []
+    assert accept("ປະເທດລາວເປັນປະເທດທີ່ບໍ່ມີທາງອອກສູ່ທະເລ", "lo")
+    assert not accept("ປະເທດລາວ ໑໒໓", "lo")
+    assert unit_count("ເຂົ້າໜຽວ", "lo") == 6 and RATE["lo"] == 12.0
+    assert split_sentences("ເດັກນ້ອຍ ໆ ຫຼິ້ນກັນຢູ່ເດີ່ນບ້ານທຸກໆມື້ຕອນແລງ", "lo") == ["ເດັກນ້ອຍໆ ຫຼິ້ນກັນຢູ່ເດີ່ນບ້ານທຸກໆມື້ຕອນແລງ"]

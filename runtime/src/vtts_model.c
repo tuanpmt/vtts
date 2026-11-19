@@ -63,6 +63,8 @@ static const struct { const char *name; int size; } TOKEN_SETS[] = {
     [VTTS_TOKSET_AR_EN] = {"ar-en", 149}, [VTTS_TOKSET_NL_EN] = {"nl-en", 159}, [VTTS_TOKSET_SV_EN] = {"sv-en", 155},
     [VTTS_TOKSET_NO_EN] = {"no-en", 156}, [VTTS_TOKSET_FI_EN] = {"fi-en", 142}, [VTTS_TOKSET_EL_EN] = {"el-en", 139},
     [VTTS_TOKSET_MS_EN] = {"ms-en", 145}, [VTTS_TOKSET_TL_EN] = {"tl-en", 139}, [VTTS_TOKSET_SW_EN] = {"sw-en", 147},
+    [VTTS_TOKSET_DA_EN] = {"da-en", 158}, [VTTS_TOKSET_LO_EN] = {"lo-en", 163}, [VTTS_TOKSET_MY_EN] = {"my-en", 160},
+    [VTTS_TOKSET_KM_EN] = {"km-en", 176},
 };
 #define N_TOKEN_SETS ((int)(sizeof(TOKEN_SETS) / sizeof(TOKEN_SETS[0])))
 /* files written before the dim existed hold one of the sets up to hi-en: only those are inferred from

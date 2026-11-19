@@ -62,7 +62,9 @@ def test_synthesize_pair_languages_use_pair_token_sets(tmp_path, monkeypatch):
                        ("ar", "افتح GitHub من فضلك."),
                        ("fi", "Avaa GitHub, kiitos."), ("el", "Άνοιξε το GitHub;"),
                        ("ms", "Tolong buka GitHub, ya."), ("tl", "Pakibuksan ang GitHub."), ("sw", "Tafadhali fungua GitHub."),
-                       ("nl", "Open GitHub, alsjeblieft."), ("sv", "Öppna GitHub, tack."), ("no", "Åpne GitHub, takk.")]:
+                       ("nl", "Open GitHub, alsjeblieft."), ("sv", "Öppna GitHub, tack."), ("no", "Åpne GitHub, takk."),
+                       ("da", "Åbn GitHub, tak."), ("lo", "ຊ່ວຍເປີດ GitHub ໃຫ້ແດ່"),
+                       ("km", "សូមបើក GitHub ឱ្យខ្ញុំ"), ("my", "GitHub ကို ဖွင့်ပေးပါ")]:
         seen.clear()
         t.synthesize(text, lang=lang)
         assert seen == text_to_ids(text, lang) == [encode_text(text, lang)]  # as in training

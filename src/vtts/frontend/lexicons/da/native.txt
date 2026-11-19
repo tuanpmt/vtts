@@ -1,0 +1,35 @@
+# Danish words that are also in lexicons/latin/english.txt: in the da-en pair they are read in
+# Danish (latin.py rule 1). One lower-case word per line.
+alarm
+at
+badminton
+bank
+camping
+fan
+fans
+for
+garage
+give
+have
+her
+love
+man
+marathon
+mode
+model
+orange
+safari
+set
+start
+stop
+store
+tennis
+timer
+type
+version
+yoga
+fine
+is
+note
+time
+to

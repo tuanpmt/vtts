@@ -22,7 +22,8 @@
  *                         vi-en vi|en|auto (vi reads English words too); zh-en zh; ko-en ko; hi-en hi;
  *                         ja-en ja; es-en es; id-en id; pt-en pt; th-en th; fr-en fr; de-en de; it-en it; tr-en tr;
  *                         ru-en ru; pl-en pl; ar-en ar; fi-en fi; el-en el;
- *                         ms-en ms; tl-en tl; sw-en sw; nl-en nl; sv-en sv; no-en no (each
+ *                         ms-en ms; tl-en tl; sw-en sw; nl-en nl; sv-en sv; no-en no; da-en da;
+ *                         lo-en lo; km-en km; my-en my (each
  *                         language only when built in: the models need it, main/vtts_langs.cmake).
  *                         The front-end follows the model's token set (header)
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments

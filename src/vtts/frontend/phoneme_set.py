@@ -646,6 +646,119 @@ VOCAB_SIZE_NOEN = len(TOKENS_NOEN)
 TOKEN_SETS[TOKEN_SET_NOEN] = TOKENS_NOEN
 
 
+# ---------------- token set "da-en": Danish + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes in the NST SAMPA notation (src/vtts/frontend/da/, lexicon from the NST pronunciation
+# lexicon for Danish): 15 short vowels (i e E a A y 2 9 u o O Q, @ = schwa, V = the open o of
+# "op" and "kom", 6 = the r-schwa of "-er"), 12 long vowels, the glides j~ w 6~ (vocalized j,
+# v/g and r after a vowel: vej, hav, bord), 18 consonants (p t k aspirated, b d g unaspirated
+# (also after s and after a vowel), D = soft d, R = the onset r, N = ng, s' = sj), the stød "?"
+# (after the long vowel or the voiced consonant that carries it), and the stress marks '"'
+# (primary) and "%" (secondary) after the stressed vowel.
+
+TOKEN_SET_DAEN = "da-en"
+
+DA_SHORT = ("i", "e", "E", "a", "A", "y", "2", "9", "u", "o", "O", "Q", "@", "V", "6")
+DA_LONG = ("i:", "e:", "E:", "a:", "A:", "y:", "2:", "9:", "u:", "o:", "O:", "Q:")
+DA_GLIDES = ("j~", "w", "6~")
+DA_CONSONANTS = ("p", "t", "k", "b", "d", "g", "f", "v", "s", "s'", "h", "m", "n", "N", "l", "R",
+                 "j", "D")
+DA_PROSODY = ("?", '"', "%")
+
+TOKENS_DAEN: tuple[str, ...] = (
+    TOKENS_V2 + tuple(f"DA:{p}" for p in DA_SHORT + DA_LONG + DA_GLIDES + DA_CONSONANTS + DA_PROSODY)
+)
+VOCAB_SIZE_DAEN = len(TOKENS_DAEN)
+
+TOKEN_SETS[TOKEN_SET_DAEN] = TOKENS_DAEN
+
+
+# ---------------- token set "lo-en": Lao + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes from the spelling rules of src/vtts/frontend/lo/ (the layout of th-en): a syllable is
+# LO:I:initial [LO:I:second consonant: w of ກວ, l of ຼ] LO:V:vowel [LO:F:final] LO:Ttone. Initials
+# are the 21 initial sounds (c = ຈ, ny = ຍ, j = ຢ, ? = the glottal stop of ອ); vowels the nine
+# monophthongs short and long (ue = ɯ, ae = ɛ, or = ɔ, oe = ɤ; doubled = long) and the diphthongs
+# ia, uea, ua; finals the six final sounds k p t m n ng and the glides w j. Tones T1..T6 of
+# Vientiane Lao: low rising, high rising, mid, low falling, high falling, mid rising.
+
+TOKEN_SET_LOEN = "lo-en"
+
+LO_INITIALS = ("k", "kh", "ng", "c", "s", "ny", "d", "t", "th", "n", "b", "p", "ph", "f", "m", "j",
+               "r", "l", "w", "h", "?")
+LO_VOWELS = ("a", "aa", "i", "ii", "ue", "uue", "u", "uu", "e", "ee", "ae", "aae", "o", "oo",
+             "or", "oor", "oe", "ooe", "ia", "uea", "ua")
+LO_FINALS = ("k", "p", "t", "m", "n", "ng", "w", "j")
+LO_TONE_COUNT = 6
+
+TOKENS_LOEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"LO:I:{c}" for c in LO_INITIALS)
+    + tuple(f"LO:V:{v}" for v in LO_VOWELS)
+    + tuple(f"LO:F:{c}" for c in LO_FINALS)
+    + tuple(f"LO:T{i}" for i in range(1, LO_TONE_COUNT + 1))
+)
+VOCAB_SIZE_LOEN = len(TOKENS_LOEN)
+
+TOKEN_SETS[TOKEN_SET_LOEN] = TOKENS_LOEN
+
+
+# ---------------- token set "km-en": Khmer + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes of the Khmer rules and lexicon of src/vtts/frontend/km/ (the phonemes of the Google Khmer
+# lexicon): a syllable is KM:consonant [KM:consonant [KM:consonant]] KM:vowel [KM:F:final].
+# Consonants: ? = glottal stop, b d = the implosives ɓ ɗ, ny ng = ɲ ŋ, aspirated kh ch th ph, and f g
+# z of loanwords. Vowels: short and long (doubled) i y(ɨ) u e @(ə) o E(ɛ) a A(ɑ) O(ɔ), and ae a@ ao
+# ie i@ ea oa u@ y@ E@ (the two series of the script give different vowels, the token is the
+# sound). Finals: ? k c t p m n ny ng j w l h and f s of loanwords. Khmer has no tone; no stress.
+
+TOKEN_SET_KMEN = "km-en"
+
+KM_CONSONANTS = ("?", "k", "kh", "c", "ch", "d", "t", "th", "b", "p", "ph", "m", "n", "ny", "ng",
+                 "j", "r", "l", "w", "s", "h", "f", "g", "z")
+KM_VOWELS = ("i", "ii", "y", "yy", "u", "uu", "e", "ee", "@", "@@", "o", "oo", "E", "EE", "a", "aa",
+             "A", "AA", "O", "OO", "ae", "a@", "ao", "ie", "i@", "ea", "oa", "u@", "y@", "E@")
+KM_FINALS = ("?", "k", "c", "t", "p", "m", "n", "ny", "ng", "j", "w", "l", "h", "f", "s")
+
+TOKENS_KMEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"KM:{c}" for c in KM_CONSONANTS)
+    + tuple(f"KM:{v}" for v in KM_VOWELS)
+    + tuple(f"KM:F:{c}" for c in KM_FINALS)
+)
+VOCAB_SIZE_KMEN = len(TOKENS_KMEN)
+
+TOKEN_SETS[TOKEN_SET_KMEN] = TOKENS_KMEN
+
+
+# ---------------- token set "my-en": Burmese + English (ids 0..106 = v2 unchanged) ----------------
+# Phonemes of the Burmese rules of src/vtts/frontend/my/ (after Google's Burmese grammar): a syllable
+# is MY:I:initial [MY:M:y] [MY:M:w] MY:V:vowel [MY:F:N | MY:F:?] [MY:Ttone]. Initials: hng hny hn hm
+# hl hw the voiceless nasals, laterals and w (ှ), S = ʃ, T = θ, ? = glottal stop, sh = sʰ; the
+# glides y (ျ ြ; ကျ = k + y is [tɕ]) and w (ွ). r (ɹ of loanwords) and D (ð, the voiced θ of
+# compounds) are reserved: the spelling rules do not produce them (a lexicon could). Vowels: i u e o E(ɛ) O(ɔ) a @(ə, reduced, no tone)
+# and I(ɪ) U(ʊ) ei ou ai au before the finals N (nasalized) and ? (glottal stop). Tones: T1 low,
+# T2 high (း), T3 creaky (့), T4 checked (a syllable ending in ?).
+
+TOKEN_SET_MYEN = "my-en"
+
+MY_INITIALS = ("k", "kh", "g", "ng", "hng", "s", "sh", "z", "ny", "hny", "t", "th", "d", "n", "hn",
+               "p", "ph", "b", "m", "hm", "y", "r", "S", "l", "hl", "w", "hw", "T", "D", "h", "?")
+MY_GLIDES = ("y", "w")
+MY_VOWELS = ("i", "u", "e", "o", "E", "O", "a", "@", "I", "U", "ei", "ou", "ai", "au")
+MY_FINALS = ("N", "?")
+MY_TONE_COUNT = 4
+
+TOKENS_MYEN: tuple[str, ...] = (
+    TOKENS_V2
+    + tuple(f"MY:I:{c}" for c in MY_INITIALS)
+    + tuple(f"MY:M:{g}" for g in MY_GLIDES)
+    + tuple(f"MY:V:{v}" for v in MY_VOWELS)
+    + tuple(f"MY:F:{f}" for f in MY_FINALS)
+    + tuple(f"MY:T{i}" for i in range(1, MY_TONE_COUNT + 1))
+)
+VOCAB_SIZE_MYEN = len(TOKENS_MYEN)
+
+TOKEN_SETS[TOKEN_SET_MYEN] = TOKENS_MYEN
+
+
 # ---------------- text modes of the pair token sets ----------------
 # text_to_ids(text, mode) with a pair mode returns ids of that mode's token set; the modes vi, en
 # and auto use vi-en. A new pair adds its token set above, one entry here, its language module
@@ -669,6 +782,10 @@ PAIR_MODES["el"] = TOKEN_SET_ELEN
 PAIR_MODES["ms"] = TOKEN_SET_MSEN
 PAIR_MODES["tl"] = TOKEN_SET_TLEN
 PAIR_MODES["sw"] = TOKEN_SET_SWEN
+PAIR_MODES["da"] = TOKEN_SET_DAEN
+PAIR_MODES["lo"] = TOKEN_SET_LOEN
+PAIR_MODES["km"] = TOKEN_SET_KMEN
+PAIR_MODES["my"] = TOKEN_SET_MYEN
 
 _TOKEN_INDEX: dict[str, dict[str, int]] = {}
 

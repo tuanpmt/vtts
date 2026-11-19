@@ -1,6 +1,6 @@
 """Sentence selection for speech synthesis from Wikipedia: Spanish, Indonesian, Brazilian
 Portuguese, Thai, Hindi, French, German, Italian, Turkish, Russian,
-Polish, Arabic, Dutch, Swedish and Norwegian (Bokmål).
+Polish, Arabic, Dutch, Swedish, Norwegian (Bokmål), Danish and Lao.
 
 Only plain text that needs no normalization before synthesis is kept (no digits, brackets,
 symbols, acronyms or foreign scripts); nothing else is filtered.
@@ -45,6 +45,13 @@ symbols, acronyms or foreign scripts); nothing else is filtered.
   the Greek question mark is ";" (U+037E is folded to ";" by NFC). Sentences end with . ; ! and
   are split there; the ano teleia · and Greek numerals with the keraia ʹ are rejected (not
   letters); abbreviations (κλπ., δηλ., αι., σελ. ...) end no accepted sentence.
+- km: Khmer letters and signs (no Khmer digits, no ៖ ៘ ៙ ៚ ៛), spaces and ៗ; zero-width spaces
+  are dropped first. Paragraphs are split after the full stops ។ ៕; a sentence of 25-200
+  characters ending with ។ or ៕ is kept (Khmer puts spaces between phrases, not words).
+- my: Burmese letters and signs (no Burmese digits, no U+1050-U+109F), ၌ ၍ ၎ ၏, the comma ၊ and
+  spaces; zero-width spaces are dropped first. Paragraphs are split after the full stop ။; a
+  sentence of 20-200 characters ending with ။, in Unicode (not Zawgyi, my.zawgyi.is_zawgyi) and
+  in canonical order (my.zawgyi.canonical_order) is kept.
 - All languages: a double space (content removed by the dump) rejects the sentence.
 
 Duration estimates (read speech):
@@ -66,6 +73,14 @@ Duration estimates (read speech):
 - fi 5.5 syllables/s, el 6.0 syllables/s (vowel groups; Greek vowel digraphs count as one).
 - th 13 spacing characters/s (Thai characters without the combining vowel and tone marks,
   about 2.5 per syllable at about 5.2 syllables/s).
+- da 5.0 syllables/s (vowel groups, æ ø å é count as vowels).
+- lo 12 spacing characters/s (Lao characters without the combining vowel and tone marks, about
+  2.3 per syllable at about 5.2 syllables/s).
+- lo is written like Thai (no spaces between words, spaces between clauses): Lao letters and signs
+  without the Lao digits and ຯ, utterances joined the Thai way (ໆ joined to the word before it).
+- km 8.0 orthographic clusters/s (consonants and independent vowels not under coeng: about 1.42
+  per syllable in the Google Khmer lexicon, at about 5.5 syllables/s).
+- my 5.0 syllables/s (consonants and independent vowels not closed by ် or ္, and ၌ ၍ ၏).
 """
 
 from __future__ import annotations
@@ -108,6 +123,13 @@ VOWELS = {
 RATE = {"es": 6.0, "pt": 5.5, "id": 5.5, "hi": 6.0, "th": 13.0, "fr": 6.2, "de": 5.0, "it": 6.0, "tr": 6.0, "ru": 5.5,
         "pl": 6.0, "ar": 9.5, "fi": 5.5, "el": 6.0, "nl": 5.5, "sv": 5.0,
         "no": 5.0}
+LANGS = (*LANGS, "km")
+# Sentence id prefix when the language code is taken by another prefix ("km" is the Korean mixed
+# prefix of vtts.data.mixed): Khmer rows are khm000000...
+ID_PREFIX = {"km": "khm"}
+LANGS = (*LANGS, "my")
+RATE["my"] = 5.0
+RATE["km"] = 8.0
 ABBREV = {
     "es": {"etc", "sr", "sra", "srta", "dr", "dra", "ud", "uds", "pág", "aprox", "núm", "art", "av", "vol",
            "cap", "ed", "fig", "gral", "lic", "ing", "prof", "st", "sto", "sta", "vs"},
@@ -185,6 +207,16 @@ SV_BOT = re.compile(
     r"|\bmedeltemperatur|\bnederbörd|\bjordbruksmark\b|\bår är det\b|\binvånare per kvadratkilometer\b"
     r"|\bmeter över havet\b|\bkvadratkilometer\b|\bär en (?:tätort|småort|ort|by|sjö|ö|udde|halvö|bergstopp"
     r"|kulle|ås|dal|slätt|flygplats|vattendrag|glaciär|ögrupp|fjärd|klippa|sund) i\b", re.IGNORECASE)
+# Danish: letters with æ ø å (é in loanwords such as idé, café).
+LANGS = (*LANGS, "da")
+LATIN_LETTERS["da"] = "a-zA-ZæøåéÆØÅÉ"
+VOWELS["da"] = "aeiouyæøåéAEIOUYÆØÅÉ"
+RATE["da"] = 5.0
+ABBREV["da"] = {"ca", "nr", "kr", "jf", "evt", "osv", "mv", "dvs", "pga", "mht", "st", "dr", "hr", "fr", "km",
+                "kg", "cm", "vs", "etc", "ff", "bl", "ifm", "inkl", "ekskl", "tlf", "max", "min", "prof"}
+# Lao: written like Thai.
+LANGS = (*LANGS, "lo")
+RATE["lo"] = 12.0
 MIN_WORDS, MAX_WORDS = 6, 30
 HI_MIN_WORDS = 5
 TH_MIN_CHARS, TH_MAX_CHARS = 25, 150
@@ -211,6 +243,24 @@ TH_BAD_START = re.compile(r"^[ัิ-ฺๅ-๎]")
 TH_JOIN_MAIYAMOK = re.compile(r"\s+ๆ")
 TH_TARGET = 60
 FR_SPACE_BEFORE_MARK = re.compile(r"[ \u00a0\u202f]+(?=[?!])")
+# Lao letters and signs without ຯ (0EAF) and digits (0ED0-0ED9); ໆ (0EC6) stays.
+LO_ALLOWED = re.compile(r"^[\u0e81-\u0eae\u0eb0-\u0ebd\u0ec0-\u0ec4\u0ec6\u0ec8-\u0ecd\u0edc-\u0edf]+$")
+LO_COMBINING = re.compile(r"[\u0eb1\u0eb4-\u0ebc\u0ec8-\u0ecd]")
+LO_BAD_START = re.compile(r"^[\u0eb1\u0eb4-\u0ebc\u0ec6\u0ec8-\u0ecd]")
+LO_JOIN_REPEAT = re.compile(r"\s+ໆ")
+# Khmer letters and signs without digits (17E0-17E9), ។ ៕ ៖ (17D4-17D6) and ៘-៛ (17D8-17DB).
+KM_ALLOWED = re.compile(r"^[\u1780-\u17d3\u17d7\u17dd ]+[\u17d4\u17d5]$")
+KM_BAD_START = re.compile(r"^[\u17b4-\u17d3]")
+KM_CLUSTER = re.compile(r"(?<!\u17d2)[\u1780-\u17b3]")
+KM_SPLIT = re.compile(r"(?<=[\u17d4\u17d5])\s*")
+KM_ZW = {0x200B: None, 0x200C: None, 0x200D: None, 0x2060: None, 0xFEFF: None}
+KM_MIN_CHARS, KM_MAX_CHARS = 25, 200
+# Burmese letters and signs (1000-103F), ၊ (104A), ၌ ၍ ၎ ၏ (104C-104F); ends with ။ (104B).
+MY_ALLOWED = re.compile(r"^[\u1000-\u103f\u104a\u104c-\u104f ]+\u104b$")
+MY_BAD_START = re.compile(r"^[\u102b-\u103e]")
+MY_SYLLABLE = re.compile(r"[\u1000-\u102a\u103f](?!\u1037?[\u103a\u1039])|[\u104c\u104d\u104f]")
+MY_SPLIT = re.compile(r"(?<=\u104b)\s*")
+MY_MIN_CHARS, MY_MAX_CHARS = 20, 200
 
 # European Portuguese markers (pt is used as Brazilian Portuguese).
 _EU_AUX = (r"est(?:ar|ou|ás|á|amos|ão|ava|avas|ávamos|avam|ive|eve|ivemos|iveram|ivesse|ivessem"
@@ -274,6 +324,10 @@ def prepare(paragraph: str, lang: str) -> str:
         return paragraph.replace("\u037e", ";")
     if lang in APOSTROPHE_RE:  # dalawampu’t
         return paragraph.replace("’", "'")
+    if lang == "lo":
+        return LO_JOIN_REPEAT.sub("ໆ", paragraph)
+    if lang in ("km", "my"):
+        return paragraph.translate(KM_ZW)
     return paragraph
 
 
@@ -281,6 +335,12 @@ def split_sentences(paragraph: str, lang: str) -> list[str]:
     paragraph = prepare(paragraph, lang).strip()
     if lang == "th":
         return _thai_utterances(paragraph)
+    if lang == "lo":
+        return _thai_utterances(paragraph, LO_ALLOWED)
+    if lang == "km":
+        return [s.strip() for s in KM_SPLIT.split(paragraph) if s.strip()]
+    if lang == "my":
+        return [s.strip() for s in MY_SPLIT.split(paragraph) if s.strip()]
     split = EL_SPLIT if lang == "el" else SPLIT
     return [s.strip() for s in split.split(paragraph) if s.strip()]
 
@@ -307,10 +367,10 @@ def _pack(run: list[str]) -> list[str]:
     return out[::-1]
 
 
-def _thai_utterances(paragraph: str) -> list[str]:
+def _thai_utterances(paragraph: str, allowed: re.Pattern = TH_ALLOWED) -> list[str]:
     chunks = paragraph.split(" ")
-    kind = ["plain" if TH_ALLOWED.match(c) and len(c) <= TH_MAX_CHARS
-            else "long" if TH_ALLOWED.match(c) else "bad" for c in chunks]
+    kind = ["plain" if allowed.match(c) and len(c) <= TH_MAX_CHARS
+            else "long" if allowed.match(c) else "bad" for c in chunks]
     keep = [k == "plain" and (i == 0 or kind[i - 1] != "bad") and (i + 1 == len(chunks) or kind[i + 1] != "bad")
             for i, k in enumerate(kind)]
     out, run = [], []
@@ -337,12 +397,18 @@ def unit_count(text: str, lang: str) -> int:
         return sum(1 for c in text if "\u0e01" <= c <= "\u0e5b" and not TH_COMBINING.match(c))
     if lang == "ar":
         return len(re.findall(f"[{AR_LETTERS}]", text))
+    if lang == "km":
+        return len(KM_CLUSTER.findall(text))
+    if lang == "my":
+        return len(MY_SYLLABLE.findall(text))
     if lang == "hi":
         return len(HI_VOWEL.findall(text)) + len(HI_CONS.findall(text))
     if lang == "ru":  # every vowel letter is a syllable (Россия: 3)
         return sum(ch in VOWELS["ru"] for ch in text)
     if lang == "pl":
         text = PL_SOFT_I.sub("", text)
+    if lang == "lo":
+        return sum(1 for c in text if "\u0e81" <= c <= "\u0edf" and not LO_COMBINING.match(c))
     return len(_LATIN[lang].vowel_group.findall(text))
 
 
@@ -410,12 +476,35 @@ def _accept_th(s: str) -> bool:
             and TH_MIN_CHARS <= len(s) <= TH_MAX_CHARS)
 
 
+def _accept_lo(s: str) -> bool:
+    return (all(LO_ALLOWED.match(c) for c in s.split(" ")) and not LO_BAD_START.match(s)
+            and TH_MIN_CHARS <= len(s) <= TH_MAX_CHARS)
+
+
+def _accept_km(s: str) -> bool:
+    return (bool(KM_ALLOWED.match(s)) and not KM_BAD_START.match(s)
+            and KM_MIN_CHARS <= len(s) <= KM_MAX_CHARS)
+
+
+def _accept_my(s: str) -> bool:
+    from vtts.frontend.my.zawgyi import canonical_order, is_zawgyi
+
+    return (bool(MY_ALLOWED.match(s)) and not MY_BAD_START.match(s)
+            and MY_MIN_CHARS <= len(s) <= MY_MAX_CHARS and not is_zawgyi(s) and canonical_order(s) == s)
+
+
 def accept_plain(sentence: str, lang: str) -> bool:
     """The readability rule only (no European-Portuguese check)."""
     if not sentence or "  " in sentence:
         return False
     if lang == "th":
         return _accept_th(sentence)
+    if lang == "lo":
+        return _accept_lo(sentence)
+    if lang == "km":
+        return _accept_km(sentence)
+    if lang == "my":
+        return _accept_my(sentence)
     if lang == "hi":
         return _accept_hi(sentence)
     if lang == "ar":

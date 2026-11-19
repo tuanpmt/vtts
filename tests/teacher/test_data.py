@@ -122,7 +122,7 @@ def test_encode_text_ja_uses_jaen_ids_and_english_rows_match():
     assert encode_text(en, "en") == text_to_ids(en, "ja")[0] == text_to_ids(en, "en")[0]
 
 
-WORD_PAIR_ROWS = [("nl", "nl-en", "Open GitHub en zet muziek aan, alsjeblieft."), ("no", "no-en", "Åpne GitHub og sett på musikk, takk."), ("sv", "sv-en", "Öppna GitHub och sätt på musik, tack."), ("sw", "sw-en", "Tafadhali fungua GitHub."), ("tl", "tl-en", "Pakibuksan ang GitHub, salamat."), ("ms", "ms-en", "Tolong buka GitHub, ya."), ("el", "el-en", "Άνοιξε το GitHub, παρακαλώ."), ("fi", "fi-en", "Avaa GitHub, kiitos."), ("ar", "ar-en", "افتح GitHub من فضلك."), ("pl", "pl-en", "Otwórz GitHub, proszę."), ("ru", "ru-en", "Открой GitHub, пожалуйста."), ("tr", "tr-en", "GitHub'ı aç, lütfen."), ("it", "it-en", "Apri GitHub, per favore."), ("hi", "hi-en", "कृपया GitHub खोलो।"), ("th", "th-en", "ช่วยเปิด GitHub ให้หน่อยนะ"), ("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor."), ("de", "de-en", "Öffne bitte GitHub.")]
+WORD_PAIR_ROWS = [("my", "my-en", "GitHub ကို ဖွင့်ပေးပါ။"), ("km", "km-en", "សូមបើក GitHub ឱ្យខ្ញុំផង។"), ("lo", "lo-en", "ຊ່ວຍເປີດ GitHub ໃຫ້ແດ່"), ("nl", "nl-en", "Open GitHub en zet muziek aan, alsjeblieft."), ("no", "no-en", "Åpne GitHub og sett på musikk, takk."), ("sv", "sv-en", "Öppna GitHub och sätt på musik, tack."), ("sw", "sw-en", "Tafadhali fungua GitHub."), ("tl", "tl-en", "Pakibuksan ang GitHub, salamat."), ("ms", "ms-en", "Tolong buka GitHub, ya."), ("el", "el-en", "Άνοιξε το GitHub, παρακαλώ."), ("fi", "fi-en", "Avaa GitHub, kiitos."), ("ar", "ar-en", "افتح GitHub من فضلك."), ("pl", "pl-en", "Otwórz GitHub, proszę."), ("ru", "ru-en", "Открой GitHub, пожалуйста."), ("tr", "tr-en", "GitHub'ı aç, lütfen."), ("it", "it-en", "Apri GitHub, per favore."), ("hi", "hi-en", "कृपया GitHub खोलो।"), ("th", "th-en", "ช่วยเปิด GitHub ให้หน่อยนะ"), ("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor."), ("de", "de-en", "Öffne bitte GitHub.")]
 
 
 @pytest.mark.parametrize("lang, token_set, text", WORD_PAIR_ROWS)
@@ -175,3 +175,13 @@ def test_audio_path_column_relative_absolute_and_old_rows(tmp_path):
     zh, en, old = ds[0], ds[1], ds[2]
     assert abs(zh["wav"].shape[1] - 22050) <= 256 and abs(en["wav"].shape[1] - 11025) <= 256
     assert abs(old["wav"].shape[1] - 22050) <= 256
+
+
+def test_encode_text_danish_uses_da_en():
+    from vtts.frontend.phoneme_set import TOKEN_SETS, VOCAB_SIZE_V2
+    from vtts.frontend.text import text_to_ids
+    from vtts.teacher.data import encode_text
+
+    ids = encode_text("Åbn GitHub, tak.", "da")
+    assert VOCAB_SIZE_V2 <= max(ids) < len(TOKEN_SETS["da-en"])
+    assert ids == text_to_ids("Åbn GitHub, tak.", "da")[0]

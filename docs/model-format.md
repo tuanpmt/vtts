@@ -68,7 +68,7 @@ The token set decides which text front-end produces the ids, so the firmware and
 | 19 | `ar-en` | 149 | `ar` (device: when built with `VTTS_ENABLE_AR`) |
 | 20 | unused | | |
 | 21 | `nl-en` | 159 | `nl` (device: when built with `VTTS_ENABLE_NL`) |
-| 22 | reserved | | |
+| 22 | `da-en` | 158 | `da` (device: when built with `VTTS_ENABLE_DA`) |
 | 23 | `sv-en` | 155 | `sv` (device: when built with `VTTS_ENABLE_SV`) |
 | 24 | `no-en` | 156 | `no` (device: when built with `VTTS_ENABLE_NO`) |
 | 25 | `fi-en` | 142 | `fi` (device: when built with `VTTS_ENABLE_FI`) |
@@ -76,7 +76,9 @@ The token set decides which text front-end produces the ids, so the firmware and
 | 27 | reserved | | |
 | 28 | `ms-en` | 145 | `ms` (device: when built with `VTTS_ENABLE_MS`) |
 | 29 | `tl-en` | 139 | `tl` (device: when built with `VTTS_ENABLE_TL`) |
-| 30-32 | reserved | | |
+| 30 | `my-en` | 160 | `my` (device: when built with `VTTS_ENABLE_MY`) |
+| 31 | `km-en` | 176 | `km` (device: when built with `VTTS_ENABLE_KM`) |
+| 32 | `lo-en` | 163 | `lo` (device: when built with `VTTS_ENABLE_LO`) |
 | 33 | `sw-en` | 147 | `sw` (device: when built with `VTTS_ENABLE_SW`) |
 
 The names and sizes are those of `TOKEN_SETS` in `src/vtts/frontend/phoneme_set.py`. Reading rules (`vtts_init`, `vtts.export.format.token_set_of`):

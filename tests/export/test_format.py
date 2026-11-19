@@ -39,7 +39,9 @@ def test_offsets_aligned(tmp_path):
                                         (143, "fr-en"), (167, "de-en"),
                                         (146, "tr-en"), (154, "ru-en"), (151, "pl-en"),
                                         (149, "ar-en"), (145, "ms-en"), (147, "sw-en"),
-                                        (159, "nl-en"), (155, "sv-en"), (156, "no-en")])
+                                        (159, "nl-en"), (155, "sv-en"), (156, "no-en"),
+                                        (158, "da-en"), (163, "lo-en"),
+                                        (176, "km-en"), (160, "my-en")])
 def test_token_set_derived_from_vocab(tmp_path, vocab, name):
     from vtts.export.format import TOKEN_SET_CODES, token_set_of
 

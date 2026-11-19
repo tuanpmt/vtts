@@ -50,6 +50,10 @@ UNREADABLE["sw"] = ("vtts.frontend.sw.g2p_sw", "unreadable_sw")
 UNREADABLE["nl"] = ("vtts.frontend.nl.g2p_nl", "unreadable_nl")
 UNREADABLE["sv"] = ("vtts.frontend.sv.g2p_sv", "unreadable_sv")
 UNREADABLE["no"] = ("vtts.frontend.no.g2p_no", "unreadable_no")
+UNREADABLE["da"] = ("vtts.frontend.da.g2p_da", "unreadable_da")
+UNREADABLE["lo"] = ("vtts.frontend.lo.g2p_lo", "unreadable_lo")
+UNREADABLE["km"] = ("vtts.frontend.km.g2p_km", "unreadable_km")
+UNREADABLE["my"] = ("vtts.frontend.my.g2p_my", "unreadable_my")
 
 
 def unreadable(text: str, lang: str) -> bool:

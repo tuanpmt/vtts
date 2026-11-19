@@ -1,6 +1,0 @@
-@@ -1,4 +1,4 @@
--"""Build the sentence list for speech synthesis from Wikipedia (CC BY-SA) for es, id, pt, th, hi.
-+"""Build the sentence list for speech synthesis from Wikipedia (CC BY-SA) for es, id, pt, th, hi, nl, sv, no.
- 
- Articles are split into sentences (Thai: space-separated chunks) and filtered by
- vtts.data.wiki_corpus.accept (plain text that needs no normalization; nothing else is filtered).

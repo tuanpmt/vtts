@@ -59,6 +59,8 @@ def test_unreadable_per_pair_language():
     assert unreadable("Hola Москва.", "es") and not unreadable("¿Qué tal, François?", "es")
     assert unreadable("Halo Москва.", "id") and not unreadable("Apa kabar, Kafé?", "id")
     assert unreadable("สวัสดี Москва", "th") and not unreadable("สวัสดี Café 5 บาท", "th")
+    assert unreadable("မင်္ဂလာပါ Москва", "my") and not unreadable("မင်္ဂလာပါ Café ၅", "my")
+    assert unreadable("សួស្តី Москва", "km") and not unreadable("សួស្តី Café ៥ រៀល", "km")
     assert unreadable("Olá Москва.", "pt") and not unreadable("Olá, tudo bem? François", "pt")
     assert unreadable("Ciao Москва.", "it") and not unreadable("Perché, François? È così.", "it")
     assert unreadable("Merhaba Москва.", "tr") and not unreadable("Çok güzel, François! İyi.", "tr")
@@ -135,3 +137,15 @@ def test_source_from_an_existing_train_csv(tmp_path):
                                               "en1|Good night.|2.000|en|bi/synth/audio/en1.flac"]
     with pytest.raises(ValueError):
         parse_source(f"csv={csv},sentences=a.jsonl,synth={syn}")
+
+
+def test_unreadable_danish():
+    from vtts.data.train_list import unreadable
+
+    assert unreadable("Hej Москва.", "da") and not unreadable("Hej, Ærø og Müller? Café.", "da")
+
+
+def test_unreadable_lao():
+    from vtts.data.train_list import unreadable
+
+    assert unreadable("ສະບາຍດີ Москва", "lo") and not unreadable("ສະບາຍດີ Café 5 ກີບ", "lo")

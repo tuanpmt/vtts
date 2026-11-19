@@ -22,11 +22,19 @@ token set.
   written without spaces between words; a space is put between Thai and Latin letters
   ("เปิดWi-Fiให้" -> เปิด / Wi-Fi / ให้). Spaces between Thai runs are pauses (th/normalize_th).
 - In the Latin-script pair modes ("es", "id", "pt", "it", "tr", "pl", "fi", "ms", "tl",
-  "sw") a word with the language's own
+  "sw", "da") a word with the language's own
   letters (á, ñ ...) is that language and a plain Latin word is decided by latin.latin_word_lang
   (word lists, CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are
   dropped. In "it" and "tr" ’ is read as ' and latin.split_elision splits an elided Italian word
   before an English one (sull'iPhone) and a Turkish suffix after an English word (iPhone'da).
+- In "lo" mode a word with Lao letters is Lao and every plain Latin word is English; as in "th" a
+  space is put between Lao and Latin letters, and a dot after a Lao letter does not end a sentence.
+- In "km" mode a word with Khmer letters is Khmer and every plain Latin word is English; as in
+  "th", a space is put between Khmer and Latin letters and spaces between Khmer runs are pauses.
+  The Khmer full stops ។ ៕ end a sentence (in every mode).
+- In "my" mode a word with Burmese letters (Unicode or Zawgyi) is Burmese and every plain Latin
+  word is English; a space is put between Burmese and Latin letters. Spaces between Burmese runs
+  are word boundaries (not pauses). The Burmese full stop ။ ends a sentence (in every mode).
 - In "hi" mode a word with Devanagari is Hindi and a plain Latin word is English, except the
   multi-letter units and currency words of the Hindi normalizer (km, GB, Rs), which are read with
   their number in Hindi. The danda । and double danda ॥ end a sentence (in every mode).
@@ -63,8 +71,10 @@ from .syllable import parse_syllable
 EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—،؛؟"
 # A dot after a Thai letter ends an abbreviation (พ.ศ. 2567, 14.30 น.), not a sentence.
 # A full stop before a lower-case Cyrillic letter ends an abbreviation (т. е., ул. ленина).
-SENTENCE_END = re.compile(r"(?<=[!?;؟؛۔])\s+|(?<=\.)(?<![\u0e01-\u0e4e]\.)\s+(?![\sа-яё])"
-                          r"|(?<=[。！？；।॥])\s*")
+# The Khmer full stops ។ ៕ end a sentence; a dot after a Khmer letter ends an abbreviation (ព.ស.).
+# The Burmese full stop ။ ends a sentence.
+SENTENCE_END = re.compile(r"(?<=[!?;؟؛۔])\s+|(?<=\.)(?<![\u0e01-\u0e4e]\.)(?<![\u1780-\u17dd]\.)\s+(?![\sа-яё])"
+                          r"|(?<=[。！？；।॥\u17d4\u17d5\u104b])\s*")
 VI_RATIO = 0.2
 
 
@@ -95,6 +105,30 @@ def _has_thai(word: str) -> bool:
 
 
 THAI_LATIN = re.compile(r"(?<=[\u0e01-\u0e4e])(?=[A-Za-z])|(?<=[A-Za-z])(?=[\u0e01-\u0e4e])")
+_LAO = "\u0e81-\u0ecd\u0edc-\u0edf"
+LAO_LATIN = re.compile(rf"(?<=[{_LAO}])(?=[A-Za-z])|(?<=[A-Za-z])(?=[{_LAO}])")
+
+
+def _has_lao(word: str) -> bool:
+    return any("\u0e81" <= ch <= "\u0ecd" or "\u0edc" <= ch <= "\u0edf" for ch in word)
+
+
+def _has_khmer(word: str) -> bool:
+    """Khmer letters or signs (not only digits or punctuation)."""
+    from .km.g2p_km import is_khmer
+
+    return any(is_khmer(ch) for ch in word)
+
+
+def _has_burmese(word: str) -> bool:
+    """Burmese letters or signs (U+1000..U+109F without the digits and ၊ ။: Zawgyi text too)."""
+    return any("\u1000" <= ch <= "\u109f" and not "\u1040" <= ch <= "\u104b" for ch in word)
+
+
+BURMESE_LATIN = re.compile(r"(?<=[\u1000-\u103f\u104c-\u109f])(?=[A-Za-z])"
+                           r"|(?<=[A-Za-z])(?=[\u1000-\u103f\u104c-\u109f])")
+KHMER_LATIN = re.compile(r"(?<=[\u1780-\u17d3\u17d7\u17dd])(?=[A-Za-z])"
+                         r"|(?<=[A-Za-z])(?=[\u1780-\u17d3\u17d7\u17dd])")
 
 
 def _has_japanese(word: str) -> bool:
@@ -196,6 +230,9 @@ SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [
     *((code, has_letters_of(code)) for code in LATIN_PAIRS),
     ("vi", _has_vietnamese_letters),
 ]
+SCRIPT_RULES.insert(len(SCRIPT_RULES) - 1, ("lo", _has_lao))  # before the catch-all "vi" rule
+SCRIPT_RULES.insert(-1, ("km", _has_khmer))
+SCRIPT_RULES.insert(-1, ("my", _has_burmese))
 
 
 def word_lang(core: str, mode: str) -> str:
@@ -246,6 +283,12 @@ def tag_words(sentence: str, mode: str) -> list[tuple[str, str]]:
         sentence = split_scripts(sentence, _script_class_ja)
     elif mode == "th":  # เปิดWi-Fiให้ -> เปิด / Wi-Fi / ให้ (Thai words have no spaces)
         sentence = THAI_LATIN.sub(" ", sentence)
+    elif mode == "lo":  # ເປີດWi-Fiໃຫ້ -> ເປີດ / Wi-Fi / ໃຫ້
+        sentence = LAO_LATIN.sub(" ", sentence)
+    elif mode == "km":  # បើកWi-Fi -> បើក / Wi-Fi (Khmer words have no spaces)
+        sentence = KHMER_LATIN.sub(" ", sentence)
+    elif mode == "my":  # ဖွင့်Wi-Fi -> ဖွင့် / Wi-Fi
+        sentence = BURMESE_LATIN.sub(" ", sentence)
     elif mode in LATIN_PAIRS:  # ¿Abriste Netflix? -> Abriste / Netflix
         sentence = sentence.replace("¿", " ").replace("¡", " ")
     elif mode == "el":  # the Greek question mark ; (U+037E) -> ? (also for an English word before it)
@@ -333,22 +376,28 @@ def runs(sentence: str, mode: str) -> list[tuple[str, str]]:
 
 
 # tr: a dot after a number followed by a lower-case word is an ordinal (5. sınıf), not a sentence end.
-SENTENCE_END_TR = re.compile(r"(?<=[!?;؟؛۔])\s+|(?<=\.)(?<![\u0e01-\u0e4e]\.)(?<!\d\.)\s+(?![\sа-яё])"
-                             r"|(?<=\d\.)\s+(?![a-zçğıöşüâîû])(?!\s*[а-яё])|(?<=[。！？；।॥])\s*")
+SENTENCE_END_TR = re.compile(r"(?<=[!?;؟؛۔])\s+|(?<=\.)(?<![\u0e01-\u0e4e]\.)(?<![\u1780-\u17dd]\.)(?<!\d\.)\s+"
+                             r"(?![\sа-яё])|(?<=\d\.)\s+(?![a-zçğıöşüâîû])(?!\s*[а-яё])"
+                             r"|(?<=[。！？；।॥\u17d4\u17d5\u104b])\s*")
 
 
 # Modes whose sentences start with a capital letter: a dot followed by a lower-case letter of the
 # language or a digit 0-9 ends an abbreviation or an ordinal (fi: n. 50, esim. kissa,
-# 3. toukokuuta; el: χλμ. σε), not a sentence.
+# 3. toukokuuta; el: χλμ. σε; da: den 5. marts, kl. 14.30, ca. 3,5 %), not a sentence.
 DOT_CONTINUES = {
     "fi": "0123456789abcdefghijklmnopqrstuvwxyzåäöšž",
     "el": "0123456789αβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώϊϋΐΰ",
+    "da": "0123456789abcdefghijklmnopqrstuvwxyzæøåé",
 }
+# Modes where a dot after a letter of the language ends an abbreviation, not a sentence (Lao ຄ.ສ.,
+# as SENTENCE_END does for Thai in every mode).
+DOT_AFTER_LETTER = {"lo": _has_lao}
 
 
 def split_sentences_raw(text: str, mode: str | None = None) -> list[str]:
     """Sentences of a text; mode "tr" keeps an ordinal dot (5. sınıf) inside the sentence, "de" uses
-    its own splitter as do "nl", "sv", "no" (scan_norm), "fi" and "el" join a part that starts after a dot with a DOT_CONTINUES character."""
+    its own splitter as do "nl", "sv", "no" (scan_norm), "fi", "el" and "da" join a part that starts after a dot
+    with a DOT_CONTINUES character, "lo" a part after a dot that follows a Lao letter (DOT_AFTER_LETTER)."""
     if mode == "de":  # ordinals and abbreviations end with a dot (am 3. Mai, z. B.)
         from .de.normalize_de import split_sentences_de
 
@@ -362,11 +411,14 @@ def split_sentences_raw(text: str, mode: str | None = None) -> list[str]:
         return split_sentences(text, norm.spec())
     pattern = SENTENCE_END_TR if mode == "tr" else SENTENCE_END
     parts = [s for s in pattern.split(text.strip()) if s.strip()]
-    if mode not in DOT_CONTINUES:
+    if mode not in DOT_CONTINUES and mode not in DOT_AFTER_LETTER:
         return parts
     out: list[str] = []
     for p in parts:
-        if out and out[-1].endswith(".") and p[0] in DOT_CONTINUES[mode]:
+        if out and out[-1].endswith(".") and (
+            (mode in DOT_CONTINUES and p[0] in DOT_CONTINUES[mode])
+            or (mode in DOT_AFTER_LETTER and len(out[-1]) >= 2 and DOT_AFTER_LETTER[mode](out[-1][-2]))
+        ):
             out[-1] += " " + p
         else:
             out.append(p)

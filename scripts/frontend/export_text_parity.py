@@ -1142,6 +1142,247 @@ FR_EDGE = [
 ]
 
 
+KM_EDGE = [
+    "ខ្ញុំស្រលាញ់ប្រទេសកម្ពុជា", "សួស្តី អ្នកសុខសប្បាយទេ", "ផ្ទះៗ", "ផ្ទះ ៗ", "ៗៗ", "ៗ", "ក ៗ ខ", "ព.ស. ២៥៦៩ ជាឆ្នាំថ្មី។",
+    "គ.ស. 2026 គ.ម. 5 ល.រ. 3", "ខ្ញុំទៅផ្សារ។ គាត់នៅផ្ទះ។", "ខ្ញុំទៅផ្សារ។គាត់នៅផ្ទះ៕", "ដូច្នេះ៖ មួយ", "ថ្ងៃទី 19/11/2026",
+    "2026-11-19", "19/13/2026", "32/1/2024", "1/2/26", "14:30", "ម៉ោង 14:30", "ម៉ោង ១៤:០៥:០៩", "8:00:15", "24:00 និង 25:00",
+    "5000៛", "៛500", "៛ 1,000.50", "$5", "€3.5", "£7", "¥100", "฿20", "50%", "-3.5 %", "5km", "3 kg", "30°C", "25℃", "45°",
+    "16GB", "500ml", "2 l", "10 km/h", "-5m", "x-5km", "012-345-678", "+855 12 345 678", "0123456789", "0123",
+    "12345678", "1234567", "10-20 នាក់", "10 – 20", "-5 ដឺក្រេ", "3.14", "1,234,567", "1,23", "1.2.3", "1000000",
+    "1000000000000", "100000000000000000000", "12.", ".5", "0", "00", "007", "ESP32-P4", "A1B2", "USB3.0", "2 + 3 = 5",
+    "R&D", "me@example.com", "3×4", "បើកWi-Fiឱ្យខ្ញុំ", "ប្រើ iPhone 15 Pro", "OK បាទ", "Hello. សួស្តី! How are you?",
+    "“ពាក្យ” (វង់ក្រចក) [ក] {ខ} <គ>", "« អ » 「ក」『ខ』 · •", "ចាំបន្តិច… រួច—ទៅ", "ចាំ...សិន", "ខ្មែរ១២៣", "២៥៦៩",
+    "ｈｅｌｌｏ　ｗｏｒｌｄ", "１２：３０", "ប្រទេស\u200bកម្ពុជា‌ជា‍ប្រទេស⁠មួយ﻿",
+    "សង្គម ចិត្ត របស់ នគរ ទីក្រុង ពុទ្ធ ផ្ទះ ធម៌ ភូមិ ទាំង ស៊ី ប៉ុន្តែ", "ស្រ្តី ក្ដី ឲ្យ ឱ្យ ឯក ឥត ឫ ឮ", "ហ្វ ហ្គ ហ្ស ប្រ ប្ល ខ្ញ",
+    "្", "៉", "់", "៍", "ៗៗៗ", "៛", "a", "ក", "កា", "ក្", "ក្ក", "្ក", "ាក", "កំង", "ការណ៍", "ចន្ទ្រ", "ឧត្តម", "ព្រហ្ម",
+    "ឯកសារ", "...", "", "。", "ខ្មែរ。ចិន！", "សួស្តី.បាទ", "ក. ខ.",
+    "ខ្មែរ" * 200, "ក" * 300, "ផ្ទះ" * 400 + "បាទ", "ពាក្យ " * 120 + "ចប់", "ក្ក្ក្ក្ក្ក្ក្ក្ក្ក្ក្ក",
+    "ាាាាាាាាាាាាាាាាាាាាាាាាាាាាា", "Very long English " + "words " * 80 + "end.", "លេខ " + "1234567890" * 8,
+]
+
+
+def _km_test_strings() -> list[str]:
+    """String constants with Khmer letters or digits from the Khmer unit tests."""
+    import ast
+
+    root = Path(__file__).parents[2] / "tests" / "frontend"
+    out: list[str] = []
+    for name in ("test_km_g2p.py", "test_text_km.py", "test_normalize_km.py"):
+        tree = ast.parse((root / name).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                s = node.value
+                if any("ក" <= c <= "៹" for c in s) and "\n" not in s and len(s) < 2000:
+                    out.append(s)
+    return list(dict.fromkeys(out))
+
+
+def _km_regex_fuzz(n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the Khmer normalizer passes react to."""
+    atoms = (list("0123456789") * 4 + list(":/.,-–%'+=&@× ") * 2
+             + ["ក", "ខ្មែរ", "ព.ស.", "គ.ម.", "ល.", "ៗ", "រៀល", "៛", "$", "€", "£", "¥", "฿", "km", "km/h", "kg", "m", "g",
+                "l", "ml", "GB", "MB", "°C", "°", "℃", "…", "—", "...", "“", "”", "（", "）", "　", "１", "៥", "Ａ",
+                "ESP", "A", "B", "Z", "x", "ab", "Ok", "Wi", "é", " ", "  ", "+855", "012", "។", "៖", "ថ្ងៃទី", "ម៉ោង",
+                "\u200b"])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 16))) for _ in range(n)]
+
+
+def _km_generated(n: int, rnd) -> list[str]:
+    from vtts.frontend.km.g2p_km import override_table, word_set
+
+    words, ovr = sorted(word_set()), sorted(override_table())
+    letters = [chr(c) for c in range(0x1780, 0x17D4)] + ["ៗ"]
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "A1", "smart"]
+    numbers = ["3", "15", "100", "2026", "3.5", "1,000", "50%", "9:30", "5000៛", "-7", "19/11/2026", "10-20",
+               "012-345-678", "25°C", "5km", "១២"]
+    marks = [" ", " ", " ", ",", ".", "!", "?", ";", ":", "…", "“", "”", "(", ")", "ៗ", "។", " ៗ ", "\u200b"]
+    out = []
+    for _ in range(n):
+        parts = []
+        for _ in range(rnd.randint(2, 14)):
+            r = rnd.random()
+            if r < 0.55:
+                parts.append(rnd.choice(words))
+            elif r < 0.62:
+                parts.append(rnd.choice(ovr))
+            elif r < 0.72:
+                parts.append("".join(rnd.choice(letters) for _ in range(rnd.randint(1, 6))))
+            elif r < 0.82:
+                parts.append(rnd.choice(numbers))
+            elif r < 0.88:
+                parts.append(rnd.choice(latin))
+            else:
+                parts.append(rnd.choice(marks))
+        out.append("".join(parts) + rnd.choice(["", "", "។", "!", "?", " បាទ", " ចាស"]))
+    return out
+
+
+def km_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
+    """mode "km" cases: edge cases, the Khmer eval sets, the Khmer unit-test strings, the mixed-style
+    sentences (templates_km x terms_en), every override word, the word list in groups of 8 (with and
+    without spaces), Khmer sentences (data/km/sentences.jsonl when given and present) and generated
+    ones, number/date/time cases and regex-dense random strings."""
+    import json
+    import random
+
+    from vtts.frontend.km.g2p_km import override_table, word_set
+
+    rnd = random.Random(0)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_km.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(KM_EDGE)
+    for name in ("ood_km.jsonl", "mixed_km.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += _km_test_strings()
+    texts += rnd.sample(mixed, min(len(mixed), 1500))
+    texts += [" ".join(sorted(override_table())[i:i + 4]) for i in range(0, len(override_table()), 4)]
+    words = sorted(word_set())
+    rnd.shuffle(words)
+    for i in range(0, len(words), 8):
+        group = words[i:i + 8]
+        texts.append(" ".join(group) if (i // 8) % 2 else "".join(group))
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows + _km_generated(1500, rnd)
+    nums = []
+    for _ in range(1500):
+        k = rnd.randint(0, 11)
+        v = rnd.choice([rnd.randint(0, 99), rnd.randint(0, 99999), rnd.randint(0, 10**9), rnd.randint(0, 10**22)])
+        nums.append(["{} នាក់", "តម្លៃ {:,} រៀល", "{}.5%", "${}", "ទី {} នៃ", "-{} ដឺក្រេ", "{}/{}/{}", "{}-{} នាក់",
+                     "ម៉ោង {}:{}", "{}៛", "0{}", "{} km"][k].format(v, rnd.randint(0, 60), rnd.randint(0, 40)))
+    for _ in range(300):
+        nums.append(f"{rnd.randint(1900, 2600)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)} និង "
+                    f"{rnd.randint(0, 33)}/{rnd.randint(0, 13)}/{rnd.randint(1900, 2600)} "
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    texts += nums + _km_regex_fuzz(fuzz, rnd)
+    out = []
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        out.append(f"km\t{text}\t" + ";".join(" ".join(map(str, c)) for c in text_to_ids(text, "km")))
+    return out
+
+
+MY_EDGE = [
+    "မင်္ဂလာပါ။ ကျွန်တော် မြန်မာစကား ပြောတတ်ပါတယ်။", "ဟုတ်ကဲ့။ရပါတယ်။", "ဟုတ်ကဲ့၊ ရပါတယ်", "ဖွင့်Wi-Fiပေးပါ",
+    "ေျပာပါတယ္", "ျမန္မာႏုိင္ငံေစ်းကြက္အတြင္းသုိ႔", "အဂၤါေန႔က", "ႏိုင္ငံျခားေရး၀န္ႀကီး", "၎တို႔၏", "၄င္းတို႔မွာ",
+    "ကမာၻလွည့္ခရီးသည္", "အဖြဲ ့အစည္းရဲ႕", "မဇၥ်ိမ", "သၿဂႋဳဟ္", "စႀကႍ", "တာ၀တႎသာ", "ကုုမၺဏီေတြကေနတဆင့္",
+    "ကျွန်ုပ်", "ကျွန်ုပ်", "ယောက်ျား", "ဖွ့ံ", "ခဲဲ့", "စျေး", "ဥ်", "ဦ", "ဿ", "၌ ၍ ၏ ၎င်း ၎", "ကမ္ဘာ ဓမ္မ မန္တလေး",
+    "သင်္ဘော အင်္ဂလိပ် တနင်္ဂနွေ", "ဝန် ဝတ် ဝံ ဝက်ဝံ", "ပည့် ဖြည့် လည်း မည်", "ကွမ်း ဆွမ်း", "ဣ ဤ ဥ ဦ ဧ ဩ ဪ",
+    "၁၉၅၄ဝဝဝ ယောက်", "၅ဝန်ကြီး", "၂၀၂၆ ခုနှစ်", "19/11/2026", "2026-11-19", "19/13/2026", "14:30", "14:30:05",
+    "25:00", "$5 နဲ့ 5000 Ks", "5000 MMK", "€3.5", "50%", "-3.5 %", "3.14", "-5", "10-20", "09 4512 3456",
+    "+95 9 123 4567", "0123456789", "12345678", "1,234,567", "1000000", "25000000", "1000000000000", "0", "007",
+    "5km", "3 kg", "30°C", "25℃", "45°", "16GB", "500ml", "10 km/h", "ESP32-P4", "2 + 3 = 5", "R&D", "3×4",
+    "“ကိုး” (ကွင်း) [က]", "ခဏ… ပြီးမှ—သွား", "ခဏ...", "၁၂၃", "ｈｅｌｌｏ", "\u200bမြန်‌မာ‍",
+    "့", "်", "္", "ာ", "၀", "။", "၊", "", "a", "က", "ကက်", "ကင််", "ကင််််", "ရ်", "ိက", "ကာာ",
+    "မြန်မာ" * 300, "က" * 400, "ကျောင်း " * 150 + "ပြီ", "Very long English " + "words " * 80 + "end.",
+    "နံပါတ် " + "1234567890" * 8,
+]
+
+
+def _my_test_strings() -> list[str]:
+    """String constants with Burmese letters or digits from the Burmese unit tests."""
+    import ast
+
+    root = Path(__file__).parents[2] / "tests" / "frontend"
+    out: list[str] = []
+    tree = ast.parse((root / "test_my_frontend.py").read_text(encoding="utf-8"))
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            s = node.value
+            if any("က" <= c <= "႟" for c in s) and "\n" not in s and len(s) < 2000:
+                out.append(s)
+    return list(dict.fromkeys(out))
+
+
+def _my_generated(n: int, rnd, vocab: list[str]) -> list[str]:
+    letters = [chr(c) for c in range(0x1000, 0x1050)] + [chr(c) for c in range(0x105A, 0x1098)]
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "A1", "smart"]
+    numbers = ["3", "15", "100", "2026", "3.5", "1,000", "50%", "9:30", "5000 Ks", "-7", "19/11/2026", "10-20",
+               "09 4512 3456", "25°C", "5km", "၁၂", "၁ဝဝ"]
+    marks = [" ", " ", " ", ",", ".", "!", "?", ";", ":", "…", "“", "”", "(", ")", "။", "၊", "\u200b"]
+    out = []
+    for _ in range(n):
+        parts = []
+        for _ in range(rnd.randint(2, 14)):
+            r = rnd.random()
+            if r < 0.6:
+                parts.append(rnd.choice(vocab))
+            elif r < 0.72:
+                parts.append("".join(rnd.choice(letters) for _ in range(rnd.randint(1, 6))))
+            elif r < 0.82:
+                parts.append(rnd.choice(numbers))
+            elif r < 0.88:
+                parts.append(rnd.choice(latin))
+            else:
+                parts.append(rnd.choice(marks))
+        out.append("".join(parts) + rnd.choice(["", "", "။", "!", "?", " ပါ", " နော်"]))
+    return out
+
+
+def _my_regex_fuzz(n: int, rnd) -> list[str]:
+    atoms = (list("0123456789") * 4 + list(":/.,-–%'+=&@× ") * 2
+             + ["က", "မြန်မာ", "ဝ", "၀", "၅", "Ks", "MMK", "$", "€", "£", "¥", "฿", "km", "km/h", "kg", "m", "g",
+                "l", "ml", "GB", "MB", "°C", "°", "℃", "…", "—", "...", "“", "”", "（", "）", "　", "１", "Ａ", "ESP",
+                "A", "B", "Z", "x", "ab", "Ok", "Wi", "é", " ", "  ", "+95", "09", "။", "၊", "ေ", "ျ", "္", "\u200b"])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 16))) for _ in range(n)]
+
+
+def my_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
+    """mode "my" cases: edge cases (Zawgyi included), the Burmese eval sets, the Burmese unit-test
+    strings, the mixed-style sentences (templates_my x terms_en), Burmese sentences (data/my/
+    sentences.jsonl when given and present) and generated ones, number/date/time cases and regex-dense
+    random strings."""
+    import json
+    import random
+
+    rnd = random.Random(0)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_my.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(MY_EDGE)
+    for name in ("ood_my.jsonl", "mixed_my.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += _my_test_strings()
+    texts += rnd.sample(mixed, min(len(mixed), 1500))
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    vocab = sorted({w for r in rows + temps for w in r.replace("{T}", " ").split() if w})
+    texts += rows + _my_generated(3000, rnd, vocab or ["မြန်မာ"])
+    nums = []
+    for _ in range(1500):
+        k = rnd.randint(0, 11)
+        v = rnd.choice([rnd.randint(0, 99), rnd.randint(0, 99999), rnd.randint(0, 10**9), rnd.randint(0, 10**22)])
+        nums.append(["{} ယောက်", "{:,} ကျပ်", "{}.5%", "${}", "အမှတ် {}", "-{} ဒီဂရီ", "{}/{}/{}", "{}-{} ယောက်",
+                     "{}:{}", "{} Ks", "0{}", "{} km"][k].format(v, rnd.randint(0, 60), rnd.randint(0, 40)))
+    for _ in range(300):
+        nums.append(f"{rnd.randint(1900, 2600)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)} နဲ့ "
+                    f"{rnd.randint(0, 33)}/{rnd.randint(0, 13)}/{rnd.randint(1900, 2600)} "
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    texts += nums + _my_regex_fuzz(fuzz, rnd)
+    out = []
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        if any(c in text for c in "\r\v\f\x1c\x1d\x1e\x85  "):
+            continue
+        out.append(f"my\t{text}\t" + ";".join(" ".join(map(str, c)) for c in text_to_ids(text, "my")))
+    return out
+
+
 def _fr_pseudo(rnd, n: int) -> list[str]:
     """Random words of French letters and letter groups (every branch of the spelling rules)."""
     vowels = ["a", "e", "i", "o", "u", "y", "é", "è", "ê", "à", "â", "î", "ô", "û", "ù", "ë", "ï", "ü", "œ", "æ",
@@ -2054,6 +2295,283 @@ def sw_lines(paths: list[Path], limit: int | None, fuzz: int) -> list[str]:
     return out
 
 
+LO_EDGE = [
+    "ສະບາຍດີ", "ພາສາລາວບໍ່ມີຍະຫວ່າງລະຫວ່າງຄຳ", "ໄປໃສມາ ກິນເຂົ້າແລ້ວບໍ່", "ເດັກນ້ອຍໆ ໄປໂຮງຮຽນ", "ໄວ ໆ ນີ້",
+    "ຄ.ສ. 2024 ແລະ ພ.ສ. 2567", "ສ.ປ.ປ. ລາວ", "ທ. ສົມພອນ ນ. ບົວພັນ", "ດຣ. ກມ. ຊມ. ມມ. ກກ.", "ຯລຯ ແລະ ຯ",
+    "ວັນທີ 19/11/2026", "2026-11-19", "19/13/2026", "32/1/2024", "1/2/26", "14:30", "8:05:09", "24:00 ແລະ 25:00",
+    "ລາຄາ 125,000 ກີບ", "₭5,000", "₭ 1,000.50", "$5", "€3.5", "£7", "¥100", "฿20", "50%", "-3.5 %", "5km", "3 kg",
+    "30°C", "25℃", "45°", "16GB", "500ml", "2 l", "10 km/h", "-5m", "x-5km", "020 5512 3456", "+856 20 5512 3456",
+    "021-212-345", "0812345678", "0123", "12345678", "1234567", "10-20 ຄົນ", "10 – 20", "-5 ອົງສາ", "3.14",
+    "1,234,567", "1,23", "1.2.3", "1000000", "2000000", "1000001", "21", "101", "11", "20", "120", "1000000000000",
+    "100000000000000000000", "12.", ".5", "0", "00", "007", "ESP32-P4", "A1B2", "USB3.0", "2 + 3 = 5", "R&D",
+    "me@example.com", "3×4", "ເປີດWi-Fiໃຫ້ແດ່", "ໃຊ້ iPhone 15 Pro", "ເຊື່ອມຕໍ່ Bluetooth ແລ້ວ", "OK ເດີ",
+    "Hello. ສະບາຍດີ! How are you? ສະບາຍດີ; ຂອບໃຈ.", "“ຄຳເວົ້າ” (ວົງເລັບ) [ກ] {ຂ} <ຄ>", "« ອ » 「ກ」『ຂ』 · •",
+    "ລໍຖ້າ… ແລ້ວ—ໄປ", "ລໍ...ກ່ອນ", "ພາສາລາວ໑໒໓", "໒໕໖໗", "ｈｅｌｌｏ　ｗｏｒｌｄ", "１２：３０",
+    "ໜ້າ ໝາ ຫຼາຍ ຫງາຍ ຫຍ້າ ຫວານ ຫລາຍ", "ນ້ຳ ນ້ໍາ ນໍ້າ ທຳ ທໍາ ຄຳ", "ກອລ໌ຟ ເບີ໌ ໂທລະສັບ ກາຕູນ", "ໂປຣແກຣມ ກຣາມ ພລເມືອງ ຟລູ ປລາ",
+    "ຄວາມ ກວ່າ ຂວາງ ສວນ ກວນ ຕົວ ກົວະ ເມຍ ເຮັຍ ເຮືອ ເຮຶອ", "ເຂົ້າ ເຈົ້າ ໃຈ ໄຟ ຄຳ ກັບ ເກັບ ແຂງ ແຂະ ໂຕະ ເກາະ ເກີ ເກິ",
+    "ພຣະ ສຣີ ບຸນ ທັມມະ", "໊ ໋ ່ ້", "ກ໊ ກ໋ ຂ໊", "໌", "ັ", "ໆ", "ຯ", "ກໆໆ", "ກ ໆ", "₭", "຺", "...", "", "a", "ກ", "。",
+    "ລາວ。ຈີນ！ຍີ່ປຸ່ນ？", "ສະບາຍດີ.ເດີ", "ກ. ຂ.", "ທ. 5", "ພາສາລາວ" * 200, "ກ" * 300, "ເດັກ" * 400 + "ເດີ",
+    "ຄຳ " * 120 + "ຈົບ", "Very long English " + "words " * 80 + "end.", "ຕົວເລກ " + "1234567890" * 20,
+]
+
+
+def _lo_test_strings() -> list[str]:
+    """String constants with Lao letters or digits from the Lao unit tests."""
+    import ast
+
+    root = Path(__file__).parents[2] / "tests" / "frontend"
+    out: list[str] = []
+    for name in ("test_lo_g2p.py", "test_text_lo.py", "test_normalize_lo.py"):
+        tree = ast.parse((root / name).read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Constant) and isinstance(node.value, str):
+                s = node.value
+                if any("ກ" <= c <= "ໟ" for c in s) and "\n" not in s and len(s) < 2000:
+                    out.append(s)
+    return list(dict.fromkeys(out))
+
+
+def _lo_generated(n: int, rnd) -> list[str]:
+    """Sentences from the word list, random letter strings, numbers, Latin words and punctuation."""
+    from vtts.frontend.lo.g2p_lo import word_set
+
+    words = sorted(word_set())
+    letters = [chr(c) for c in range(0x0E81, 0x0ECE)] + ["ໜ", "ໝ"]
+    latin = ["Wi-Fi", "USB", "iPhone", "email", "OK", "AI", "app", "Bluetooth", "ESP32", "5G", "GPU", "A1", "smart"]
+    numbers = ["3", "15", "100", "2026", "3.5", "1,000", "50%", "9:30", "₭20", "-7", "19/11/2026", "10-20",
+               "020 5512 3456", "25°C", "5km", "໑໒"]
+    marks = [" ", " ", " ", ",", ".", "!", "?", ";", ":", "…", "“", "”", "(", ")", "ໆ", "ຯ", " ໆ "]
+    out = []
+    for _ in range(n):
+        parts = []
+        for _ in range(rnd.randint(2, 14)):
+            r = rnd.random()
+            if r < 0.6:
+                parts.append(rnd.choice(words))
+            elif r < 0.72:
+                parts.append("".join(rnd.choice(letters) for _ in range(rnd.randint(1, 5))))
+            elif r < 0.82:
+                parts.append(rnd.choice(numbers))
+            elif r < 0.88:
+                parts.append(rnd.choice(latin))
+            else:
+                parts.append(rnd.choice(marks))
+        out.append("".join(parts) + rnd.choice(["", "", ".", "!", "?", " ເດີ", " ແດ່"]))
+    return out
+
+
+def _lo_regex_fuzz(n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the normalize_lo regex passes react to."""
+    atoms = (list("0123456789") * 4 + list(":/.,-–%'+=&@× ") * 2
+             + ["ກ", "ຄ.ສ.", "ກມ.", "ທ.", "ຯ", "ຯລຯ", "ໆ", "ກີບ", "₭", "฿", "$", "€", "£", "¥", "km", "km/h", "kg", "m",
+                "g", "l", "ml", "GB", "MB", "°C", "°", "℃", "…", "—", "...", "“", "”", "（", "）", "　", "１", "໕", "๕",
+                "٣", "Ａ", "ESP", "A", "B", "Z", "x", "ab", "Ok", "Wi", "é", " ", "  ", "+856", "020", "02"])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 16))) for _ in range(n)]
+
+
+def lo_lines(paths: list[Path], limit: int | None, fuzz: int, seed: int = 0) -> list[str]:
+    """mode "lo" cases: edge cases, the Lao eval sets, the Lao unit-test strings, the mixed-style
+    sentences (templates_lo x terms_en), the word list in groups of 8 (with and without spaces), Lao
+    sentences (data/lo/sentences.jsonl when given and present) and generated ones, number/date/time
+    cases and regex-dense random strings."""
+    import json
+    import random
+
+    from vtts.frontend.lo.g2p_lo import word_set
+
+    rnd = random.Random(seed)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_lo.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(LO_EDGE)
+    for name in ("ood_lo.jsonl", "mixed_lo.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += _lo_test_strings()
+    texts += rnd.sample(mixed, min(len(mixed), 2000))
+    words = sorted(word_set())
+    rnd.shuffle(words)
+    for i in range(0, len(words), 8):
+        group = words[i:i + 8]
+        texts.append(" ".join(group) if (i // 8) % 2 else "".join(group))
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows + _lo_generated(limit or 3000, rnd)
+    nums = []
+    for _ in range(2000):
+        k = rnd.randint(0, 11)
+        v = rnd.choice([rnd.randint(0, 99), rnd.randint(0, 99999), rnd.randint(0, 10**9), rnd.randint(0, 10**22)])
+        nums.append(["{} ຄົນ", "ລາຄາ {:,} ກີບ", "{}.5%", "₭{}", "ທີ {} ຂອງ", "-{} ອົງສາ", "{}/{}/{}", "{}-{} ຄົນ",
+                     "{}:{:02d}", "{}:{}:{}", "0{}", "{} ກມ."][k].format(v, rnd.randint(0, 60), rnd.randint(0, 40)))
+    for _ in range(400):
+        nums.append(f"{rnd.randint(1900, 2600)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)} ແລະ "
+                    f"{rnd.randint(0, 33)}/{rnd.randint(0, 13)}/{rnd.randint(1900, 2600)} "
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d}:{rnd.randint(0, 61):02d}")
+    texts += nums + _lo_regex_fuzz(fuzz, rnd)
+    out, seen = [], set()
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        if text in seen or any(c in text for c in "\r\v\f\x1c\x1d\x1e\x85  "):  # line breaks of splitlines()
+            continue
+        seen.add(text)
+        out.append(f"lo\t{text}\t" + ";".join(" ".join(map(str, c)) for c in text_to_ids(text, "lo")))
+    return out
+
+
+DA_EDGE = [
+    "Mødet er kl. 14.30 den 5. marts 2026.", "Det koster 12,50 kr.", "Det koster 1 kr. og 50 øre.", "12,50 kr. i alt",
+    "Prisen er 1.299,95 kr. inkl. moms.", "DKK 500", "DKK500,-", "500,- kr.", "5 € og 3 $", "EUR 10", "USD 3,5",
+    "£7", "Ring på +45 12 34 56 78.", "+4512345678", "+45 12345678", "12 34 56 78", "02 03 04 05", "1 2 3 4",
+    "I 1984 og 2026 og 1.000.000.", "1100 1999 1099 2000 1800-tallet", "Den 3. plads.", "den 31. maj", "den 32. maj",
+    "den 0. maj", "Han er født 1. maj 1990.", "1. Maj 1990", "1.maj", "1. MAJ", "5. marts 20266", "5. martsen",
+    "25 km/t og 3,5 % og -4 °C.", "f.eks. USB og NATO, ESP32.", "Dato: 2026-03-05 og 5/3/2026.", "5.3.2026",
+    "5/3.2026", "05.03.2026.", "5.3.2026.5", "32.13.2026", "Kampen sluttede 2-1.", "Klokken 8:05.", "klokken  9.30",
+    "Klokken 123", "klokken 9.305", "kl. 9", "kl. 14.30.", "14:30", "14.30", "3.14", "8:5", "24:00", "25:00",
+    "Det kostede 5 € og 3 $.", "Der bor 5.950.000 mennesker.", "50 øre", "50øre", "1 øre", "3,5%", "-3 %", "1 km",
+    "21 km", "1,5 kg", "25 °C", "100 km/h", "16 GB", "2 t", "30 min", "10 sek", "5 m²", "3 km²", "10-20", "10 – 20",
+    "bl.a. ca. nr. mio. mia. evt. m.m. mht. pga. jf. inkl. ekskl. tlf. hr. Hr. dr. Dr. St. kl. ift. vha. etc.",
+    "o.l. m.fl. iflg. pct. årh. bl. s. f. d. e.Kr. f.Kr. A/S ApS", "osv. Så går vi.", "Hun kom kl. 9. Han kom kl. 10.",
+    "den 5. marts. Så", "Æble, øl og ål.", "ÆØÅ", "Århus Ærø Øresund", "idé café", "Müller Göteborg Straße",
+    "naïve façade Œuvre Ångström", "fodboldspiller arbejdsplads kommunalbestyrelsen jernbanestation",
+    "fotoudstillingen sommerhuset husdyr", "hm pst brr shh tsk", "og i at det er på til", "den 5. Marts 2026",
+    "København, Aarhus, Odense og Aalborg.", "Åbn Netflix og sæt Bluetooth til.", "iPhone Wi-Fi e-mail smart home",
+    "weekend update online router Spotify macOS", "time to store for start stop", "x-ray don't it's", "C++ R&D Q&A",
+    "2 + 3 = 5", "a@b.dk", "#1 § 3", "3 × 4", "1/2", "…", "—", "–", "a — b", "a - b", "eh...", "“citat” «citat»",
+    "(parentes) [kant]", "{tuborg} <mindre>", "*fed*", "~tilde~", "a|b", "¿Qué? ¡Hola!", "İstanbul", "ﬁn",
+    "ｈｅｊ", "Ⅻ", "x²", "½", "٣ ٤", "١٢:٣٠", "中文", "ελληνικά", "русский", "ß", "x\x1cy", "a।b", "a。b", "a; b",
+    "999.999.999.999.999", "1000000000000000000000000", "0000000000000001", "0,000", "0.00", "00,5", "1.234.5678",
+    "12.345.678,9", "1,234.56", "1.234,56", "3,14", "0,05", ".5", "5.", "007", "-3", "a-3", "3-a", "3.", "3,",
+    "ESP32-P4 RTX3060 A1B2", "USB GPS NASA FN EU USA DSB DR", "ABCDEF AB ABCDE", "", ".", "a", "A", "x", "é", "'",
+    "Very long Danish " + "ord " * 80 + "slut.", "tal " + "1234567890" * 20, "a" * 60, "fodbold" * 12,
+]
+
+
+def _da_words(rnd) -> list[str]:
+    """Words of the eval sets, the templates, the word lists and a sample of the lexicon (with case
+    variants)."""
+    import json
+
+    from vtts.frontend.da.g2p_da import known_words, lexicon
+    from vtts.frontend.lexicons import load_words
+
+    root = Path(__file__).parents[2]
+    words: set[str] = set()
+    for name in ("ood_da.jsonl", "mixed_da.jsonl"):
+        for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines():
+            if x.strip():
+                words.update(json.loads(x)["text"].split())
+    for t in (root / "scripts" / "data" / "bilingual" / "templates_da.txt").read_text(encoding="utf-8").splitlines():
+        words.update(t.replace("{T}", " ").split())
+    words.update(load_words("da", "native"))
+    sample = rnd.sample(sorted(known_words()), 3000) + rnd.sample(sorted(lexicon()), 1000)
+    words.update(sample + [w.capitalize() for w in sample[:500]] + [w.upper() for w in sample[:100]])
+    return sorted(words)
+
+
+def _da_pseudo(rnd, n: int) -> list[str]:
+    """Random words of Danish letters (every branch of the spelling rules) and compounds of known words."""
+    from vtts.frontend.da.g2p_da import known_words
+
+    known = sorted(known_words())
+    vowels = "aeiouyæøåé"
+    cons = ["b", "c", "ch", "sch", "sj", "d", "dd", "dt", "ds", "f", "g", "gg", "h", "hv", "hj", "j", "k", "ck", "kk",
+            "l", "ll", "m", "mm", "n", "nn", "nd", "ng", "nk", "p", "ph", "q", "qu", "r", "rr", "rd", "s", "ss", "sp",
+            "st", "sk", "t", "th", "tt", "v", "w", "x", "z", "bl", "br", "dr", "fl", "fr", "gl", "gr", "kl", "kr",
+            "pl", "pr", "tr", "skr", "spr", "str", "tion", "sion"]
+    out = []
+    for _ in range(n):
+        if rnd.random() < 0.3:
+            w = "".join(rnd.choice(known) + rnd.choice(["", "", "s", "e"]) for _ in range(rnd.randint(2, 3)))
+            w = w.rstrip("se") or w
+        else:
+            w = "".join(rnd.choice(cons) * (rnd.random() < 0.8) + rnd.choice(vowels) + rnd.choice(vowels) * (rnd.random() < 0.2)
+                        for _ in range(rnd.randint(1, 4)))
+            w += rnd.choice(["", "", "", "n", "s", "r", "l", "d", "g", "v", "j", "t", "en", "et", "er", "erne", "ere",
+                             "ering", "eri", "isk", "iske", "ist", "tet", "ør", "ur", "ent", "ance", "lig", "ig", "ige"])
+            for p in ("be", "ge", "for"):
+                if rnd.random() < 0.05:
+                    w = p + w
+        out.append(w.capitalize() if rnd.random() < 0.2 else w.upper() if rnd.random() < 0.03 else w)
+    return out
+
+
+def _da_regex_fuzz(n: int, rnd) -> list[str]:
+    """Random strings dense in the characters the normalize_da passes react to."""
+    from vtts.frontend.da import normalize_da as nd
+
+    atoms = (list("0123456789") * 4 + list(":/.,-–—~%'+&@#×=()§ ") * 2 + list(nd.UNITS) + list(nd.CURRENCY)
+             + list(nd.ABBREVIATIONS) + list(nd.MONTHS[1:]) + [m.capitalize() for m in nd.MONTHS[1:]]
+             + ["øre", "kr.", ",-", "klokken ", "Klokken ", "kl. ", "+45 ", "…", "...", "¿", "¡", "A", "B", "Z", "ESP",
+                "x", "ab", "Ok", "Wi", "é", "æ", "ø", "å", " ", "  ", "\t", "“", "”", "«", "»", "a", "b", "١", "٣"])
+    return ["".join(rnd.choice(atoms) for _ in range(rnd.randint(1, 18))) for _ in range(n)]
+
+
+def da_lines(paths: list[Path], limit: int | None, fuzz: int, seed: int = 0) -> list[str]:
+    """mode da cases: edge cases, the eval sets, the mixed-style sentences (templates_da x terms_en),
+    the Danish tests' strings, corpus sentences (when given and present) and generated ones, words of
+    the lexicon and random words in groups, number/date/time/money/unit cases and regex-dense random
+    strings. Texts for which the Python front-end raises are left out."""
+    import json
+    import random
+
+    rnd = random.Random(seed)
+    root = Path(__file__).parents[2]
+    here = root / "scripts" / "data" / "bilingual"
+    terms = [t for t in (here / "terms_en.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    temps = [t for t in (here / "templates_da.txt").read_text(encoding="utf-8").splitlines() if t.strip()]
+    mixed = [tp.replace("{T}", tm) for tp in temps for tm in terms]
+    texts = list(DA_EDGE)
+    for name in ("ood_da.jsonl", "mixed_da.jsonl"):
+        texts += [json.loads(x)["text"] for x in (root / "eval" / "sets" / name).read_text(encoding="utf-8").splitlines()
+                  if x.strip()]
+    texts += rnd.sample(mixed, min(len(mixed), 2000))
+    texts += _lt_tests("da")
+    rows = []
+    for p in paths:
+        if p.exists():
+            rows += [json.loads(x)["text"] for x in p.read_text(encoding="utf-8").splitlines() if x.strip()]
+    if limit and len(rows) > limit:
+        rows = rnd.sample(rows, limit)
+    texts += rows
+    words = _da_words(rnd)
+    texts += [" ".join(words[i:i + 20]) + "." for i in range(0, len(words), 20)]
+    pseudo = _da_pseudo(rnd, 8000)
+    texts += [" ".join(pseudo[i:i + 20]) + "." for i in range(0, len(pseudo), 20)]
+    nums = []
+    for _ in range(2500):
+        k = rnd.randint(0, 17)
+        v = rnd.choice([rnd.randint(0, 31), rnd.randint(0, 999), rnd.randint(0, 99999), rnd.randint(0, 10**9),
+                        rnd.randint(0, 10**15), rnd.randint(0, 10**25)])
+        a, b = rnd.randint(0, 60), rnd.randint(0, 40)
+        nums.append(["{} huse", "{:,} bøger", "{}.5%", "kr. {}", "{}. maj", "-{} km", "{}/{}/2026", "{}-{} kg",
+                     "kl. {}.{:02d}", "{}:{:02d}", "{},{:02d} kr.", "{} øre", "DKK {}", "{} €", "den {}. plads",
+                     "{}.{}.{}", "{},{}", "+45 {} {} {} {}"][k].format(v, a, b, a, b))
+    for _ in range(500):
+        nums.append(f"{rnd.randint(1000, 2100)}-{rnd.randint(0, 13)}-{rnd.randint(0, 33)} og "
+                    f"{rnd.randint(0, 33)}.{rnd.randint(0, 13)}.{rnd.randint(1000, 2100)} "
+                    f"{rnd.randint(0, 25)}:{rnd.randint(0, 61):02d} {rnd.randint(1, 35)}. "
+                    f"{rnd.choice(['januar', 'Februar', 'marts', 'MAJ', 'december'])} {rnd.randint(1000, 2100)}")
+    texts += nums + _da_regex_fuzz(fuzz, rnd)
+    out, seen = [], set()
+    for text in texts:
+        text = text.replace("\t", " ").replace("\n", " ")
+        if text in seen or any(c in text for c in "\r\v\f\x1c\x1d\x1e\x85  "):  # line breaks of splitlines()
+            continue
+        seen.add(text)
+        try:
+            ids = text_to_ids(text, "da")
+        except (ValueError, KeyError, IndexError):  # Python raises (e.g. int('.') in 1.234.5678): not a case
+            continue
+        out.append(f"da\t{text}\t" + ";".join(" ".join(map(str, c)) for c in ids))
+    return out
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--lt", choices=("es", "id", "pt", "it", "tr", "ms"),
@@ -2069,6 +2587,11 @@ def main() -> None:
     ap.add_argument("--nx", choices=("nl", "sv", "no"), help="mode nl|sv|no cases (export_text_parity_nx.py)")
     ap.add_argument("--de", action="store_true", help="mode de (token set de-en) cases")
     ap.add_argument("--ar", action="store_true", help="mode ar (token set ar-en) cases")
+    ap.add_argument("--lo", action="store_true", help="mode lo (token set lo-en) cases")
+    ap.add_argument("--da", action="store_true", help="mode da (token set da-en) cases")
+    ap.add_argument("--km", action="store_true", help="mode km (token set km-en) cases")
+    ap.add_argument("--my", action="store_true", help="mode my (token set my-en) cases")
+    ap.add_argument("--seed", type=int, default=0, help="--lo, --da: random seed (other seeds: larger uncommitted runs)")
     ap.add_argument("--ja", action="store_true", help="mode ja (token set ja-en) cases")
     ap.add_argument("--fr", action="store_true", help="mode fr (token set fr-en) cases")
     ap.add_argument("--nfkc-out", type=Path, default=None, help="--ja: also write the NFKC fixture")
@@ -2137,6 +2660,16 @@ def main() -> None:
             nl = nfkc_lines(random.Random(1))
             a.nfkc_out.write_text("\n".join(nl) + "\n", encoding="utf-8")
             print(f"wrote {len(nl)} NFKC cases to {a.nfkc_out}")
+        return
+    if a.km or a.my:
+        lines = (km_lines if a.km else my_lines)(a.sentences, a.limit, a.fuzz)
+        a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"wrote {len(lines)} cases to {a.out}")
+        return
+    if a.lo or a.da:
+        lines = (lo_lines if a.lo else da_lines)(a.sentences, a.limit, a.fuzz, a.seed)
+        a.out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        print(f"wrote {len(lines)} cases to {a.out}")
         return
     if a.zh or a.ko or a.hi or a.th or a.ar:
         lines = (zh_lines if a.zh else ko_lines if a.ko else hi_lines if a.hi else th_lines if a.th

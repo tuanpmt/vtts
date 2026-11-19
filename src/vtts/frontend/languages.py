@@ -10,7 +10,8 @@ splitting, chunk packing and the device protocol are shared. Each module provide
 - word_units(word) -> list[list[str]] (optional): the same tokens split into syllables, for
   languages written without spaces (zh): a "word" is then a whole Han run, its syllables are
   joined without the SPACE token and each counts as one word for chunk packing. Thai (th) does
-  the same with the syllables of a Thai run (a space between Thai runs is a pause). Japanese (ja)
+  the same with the syllables of a Thai run (a space between Thai runs is a pause), and Lao (lo)
+  with the syllables of a Lao run. Japanese (ja)
   does the same with table words, single kanji and short kana runs as units. Korean (ko)
   returns one unit per word and splits only a word too long for one chunk.
 
@@ -381,6 +382,40 @@ def _no_word(word: str) -> list[str]:
     return word_tokens_no(word)
 
 
+def _da_normalize(text: str) -> str:
+    from .da.normalize_da import normalize_da
+
+    return normalize_da(text)
+
+
+def _da_word(word: str) -> list[str]:
+    from .da.g2p_da import word_tokens_da
+
+    return word_tokens_da(word)
+
+
+def _lo_normalize(text: str) -> str:
+    from .lo.normalize_lo import normalize_lo
+
+    return normalize_lo(text)
+
+
+def _lo_units(word: str) -> list[list[str]]:
+    """Syllables of a Lao run (words found by the word list, see lo/g2p_lo.py); a Latin word is
+    read by the English module."""
+    from .lo.g2p_lo import lao_syllable_tokens
+    from .lo.normalize_lo import is_lao_word
+
+    if is_lao_word(word):
+        return lao_syllable_tokens(word)
+    toks = _en_word(word)
+    return [toks] if toks else []
+
+
+def _lo_word(word: str) -> list[str]:
+    return [t for unit in _lo_units(word) for t in unit]
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
@@ -408,3 +443,54 @@ LANGUAGES["el"] = LanguageModule("el", _el_normalize, _el_word)
 LANGUAGES["ms"] = LanguageModule("ms", _ms_normalize, _ms_word)
 LANGUAGES["tl"] = LanguageModule("tl", _tl_normalize, _tl_word)
 LANGUAGES["sw"] = LanguageModule("sw", _sw_normalize, _sw_word)
+LANGUAGES["da"] = LanguageModule("da", _da_normalize, _da_word)
+LANGUAGES["lo"] = LanguageModule("lo", _lo_normalize, _lo_word, _lo_units)
+
+
+def _km_normalize(text: str) -> str:
+    from .km.normalize_km import normalize_km
+
+    return normalize_km(text)
+
+
+def _km_units(word: str) -> list[list[str]]:
+    """Syllables of a Khmer run (words found by the word list, see km/g2p_km.py); a Latin word is
+    read by the English module."""
+    from .km.g2p_km import khmer_syllable_tokens
+    from .km.normalize_km import is_khmer_word
+
+    if is_khmer_word(word):
+        return khmer_syllable_tokens(word)
+    toks = _en_word(word)
+    return [toks] if toks else []
+
+
+def _km_word(word: str) -> list[str]:
+    return [t for unit in _km_units(word) for t in unit]
+
+
+LANGUAGES["km"] = LanguageModule("km", _km_normalize, _km_word, _km_units)
+
+
+def _my_normalize(text: str) -> str:
+    from .my.normalize_my import normalize_my
+
+    return normalize_my(text)
+
+
+def _my_units(word: str) -> list[list[str]]:
+    """Syllables of a Burmese run (my/g2p_my.py); a Latin word is read by the English module."""
+    from .my.g2p_my import burmese_syllable_tokens
+    from .my.normalize_my import is_burmese_word
+
+    if is_burmese_word(word):
+        return burmese_syllable_tokens(word)
+    toks = _en_word(word)
+    return [toks] if toks else []
+
+
+def _my_word(word: str) -> list[str]:
+    return [t for unit in _my_units(word) for t in unit]
+
+
+LANGUAGES["my"] = LanguageModule("my", _my_normalize, _my_word, _my_units)

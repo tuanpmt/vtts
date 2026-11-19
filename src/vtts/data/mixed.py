@@ -31,6 +31,10 @@ ID_PREFIX["el"] = "elm"
 ID_PREFIX["ms"] = "msm"
 ID_PREFIX["tl"] = "tlm"
 ID_PREFIX["sw"] = "swm"
+ID_PREFIX["da"] = "dam"
+ID_PREFIX["lo"] = "lom"
+ID_PREFIX["my"] = "mym"
+ID_PREFIX["km"] = "kmm"  # "km" is the Korean prefix (Khmer sentences are khm..., wiki_corpus)
 EN_RATE = 2.6  # English words per second
 
 

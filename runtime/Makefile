@@ -40,6 +40,12 @@ TEXT_HDR += src/vtts_text_fr.h src/vtts_text_fr_tables.h src/vtts_text_de.h src/
             src/vtts_text_fi.h src/vtts_text_fi_tables.h src/vtts_text_el.h src/vtts_text_el_tables.h \
             src/vtts_text_ms_tables.h src/vtts_text_tl.h src/vtts_text_tl_tables.h src/vtts_text_sw.h src/vtts_text_sw_tables.h \
             src/vtts_text_nx.h src/vtts_text_nx_int.h src/vtts_text_nx_tables.h
+TEXT_SRC += src/vtts_text_lo.c
+TEXT_HDR += src/vtts_text_lo.h src/vtts_text_lo_tables.h
+TEXT_SRC += src/vtts_text_da.c
+TEXT_HDR += src/vtts_text_da.h src/vtts_text_da_tables.h
+TEXT_SRC += src/vtts_text_nsp.c src/vtts_text_km.c src/vtts_text_my.c
+TEXT_HDR += src/vtts_text_nsp.h src/vtts_text_km.h src/vtts_text_km_tables.h src/vtts_text_my.h src/vtts_text_my_tables.h
 build/text_test: $(TEXT_SRC) test/text_test.c $(TEXT_HDR)
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) -Isrc $(TEXT_SRC) test/text_test.c -o $@
@@ -153,6 +159,10 @@ test: build/token_set_test build/text_test build/lex_test build/en_norm_test bui
 	$(MAKE) tl_test
 	$(MAKE) sw_test
 	$(MAKE) nx_test
+	$(MAKE) da_test
+	$(MAKE) lo_test
+	$(MAKE) km_test
+	$(MAKE) my_test
 	$(MAKE) langs_test
 .PHONY: zh_test ko_test hi_test ja_test ja_bench lt_test th_test it_tr_test ru_test pl_test ar_test fi_test el_test test
 
@@ -177,7 +187,7 @@ de_test: build/text_test build/lex_en.bin
 
 # Per-language build switches (include/vtts_langs.h): the front-end built with every optional language
 # off, then with each one alone; langs_test checks the modes offered and that the others are refused.
-OPT_LANGS = ZH KO JA HI TH ES ID PT FR DE IT TR RU PL AR FI EL MS TL SW NL SV NO
+OPT_LANGS = ZH KO JA HI TH ES ID PT FR DE IT TR RU PL AR FI EL MS TL SW NL SV NO DA LO KM MY
 NO_LANGS = $(foreach L,$(OPT_LANGS),-DVTTS_ENABLE_$(L)=0)
 langs_test: $(SRC) $(TEXT_SRC) test/langs_test.c include/vtts.h $(TEXT_HDR) build/lex_en.bin
 	mkdir -p build
@@ -248,3 +258,29 @@ nx_test: build/text_test build/lex_en.bin
 	./build/text_test --lex build/lex_en.bin test/text_parity_no.tsv
 	./build/text_test --fuzz-nx --lex build/lex_en.bin
 .PHONY: nx_test
+
+# Lao (VTTS_LANG_LO, VTTS_ENABLE_LO) parity with text_to_ids(text, "lo") and
+# the fuzz run; tables are compiled in (no blob).
+lo_test: build/text_test build/lex_en.bin
+	./build/text_test --lex build/lex_en.bin test/text_parity_lo.tsv
+	./build/text_test --fuzz-lo --lex build/lex_en.bin
+.PHONY: lo_test
+
+# Danish (VTTS_LANG_DA, VTTS_ENABLE_DA) parity with text_to_ids(text, "da") and
+# the fuzz run; tables (with the NST readings) are compiled in (no blob).
+da_test: build/text_test build/lex_en.bin
+	./build/text_test --lex build/lex_en.bin test/text_parity_da.tsv
+	./build/text_test --fuzz-da --lex build/lex_en.bin
+.PHONY: da_test
+
+# Khmer (VTTS_LANG_KM, VTTS_ENABLE_KM) parity with text_to_ids(text, "km"); tables are compiled in (no blob).
+km_test: build/text_test build/lex_en.bin
+	./build/text_test --lex build/lex_en.bin test/text_parity_km.tsv
+	./build/text_test --fuzz-km --lex build/lex_en.bin
+.PHONY: km_test
+
+# Burmese (VTTS_LANG_MY, VTTS_ENABLE_MY) parity with text_to_ids(text, "my"); tables are compiled in (no blob).
+my_test: build/text_test build/lex_en.bin
+	./build/text_test --lex build/lex_en.bin test/text_parity_my.tsv
+	./build/text_test --fuzz-my --lex build/lex_en.bin
+.PHONY: my_test

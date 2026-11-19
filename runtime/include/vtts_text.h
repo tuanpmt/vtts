@@ -53,6 +53,16 @@
  * genitives, times, euros, units, abbreviations, Greek acronyms), the Greek letter, digraph,
  * synizesis and stress rules, Latin words in English; ";" is the question mark. Compiled when
  * VTTS_ENABLE_EL is not 0 (default 1).
+ * VTTS_LANG_KM: Khmer + English, token set km-en (ids 0..106 = v2, Khmer from 107), like
+ * text_to_ids(text, "km"): Khmer normalization (Khmer digits, numbers, dates, times, riel, percent, units,
+ * phone numbers, abbreviations, ៗ; spaces between Khmer runs are pauses), word segmentation over the word
+ * list, cluster and syllable rules, onset, rhyme and override tables (compiled in when VTTS_ENABLE_KM,
+ * no blob), English words with the VLEX lexicon.
+ * VTTS_LANG_MY: Burmese + English, token set my-en (ids 0..106 = v2, Burmese from 107), like
+ * text_to_ids(text, "my"): Zawgyi detection and conversion, canonical mark order, Burmese normalization
+ * (Burmese digits, numbers, dates, times, kyat, percent, units, phone numbers; ။ ends a sentence),
+ * syllables, onsets, rhymes and tones (compiled in when VTTS_ENABLE_MY, no blob), English words with the
+ * VLEX lexicon.
  * VTTS_LANG_TH: Thai + English, token set th-en (ids 0..106 = v2, Thai from 107), like
  * text_to_ids(text, "th"): Thai normalization (numbers, dates, times, money, percent, units, phone
  * numbers, abbreviations), word segmentation over the word list, the spelling rules and tones
@@ -115,6 +125,19 @@
  * acronyms), the Dutch rules of g2p_nl.py or the Swedish / Norwegian rules of scand_g2p.py with word
  * tones (tables compiled in, no blob; each only when VTTS_ENABLE_NL / _SV / _NO), English words with the
  * VLEX lexicon.
+ * VTTS_LANG_LO: Lao + English, token set lo-en (ids 0..106 = v2, Lao from 107), like text_to_ids(text,
+ * "lo"): Lao normalization (the Thai passes with Lao tables: numbers, dates, times, kip and other money,
+ * percent, units, phone numbers, abbreviations), word segmentation over the word list, the spelling
+ * patterns and the six Vientiane tones (tables compiled in, no blob), English words with the VLEX
+ * lexicon. Compiled only with VTTS_ENABLE_LO (default 1); without it the mode is unknown
+ * (vtts_text_lang_for fails, vtts_text_to_ids_ex returns -1).
+ * VTTS_LANG_DA: Danish + English, token set da-en (ids 0..106 = v2, Danish from 107), like
+ * text_to_ids(text, "da"): plain Latin words tagged by latin.py (æ ø å é, word lists, CamelCase,
+ * acronyms, known words and compounds, spelling), normalize_da (Danish numbers, ordinals, dates, times,
+ * kroner and øre, units, phone numbers, abbreviations; a dot before a lower-case word or a digit does
+ * not end a sentence), the NST readings of the frequent words, compounds and the spelling rules with
+ * stress and stød (tables compiled in, no blob), English words with the VLEX lexicon. Compiled only
+ * with VTTS_ENABLE_DA (default 1); without it the mode is unknown.
  *
  * No malloc: the caller provides a workspace (about 145 KB with the v2, zh and ko scratch; PSRAM is fine).
  * Not re-entrant per workspace.
@@ -167,7 +190,8 @@ typedef enum {
     VTTS_LANG_HI, VTTS_LANG_JA, VTTS_LANG_ES, VTTS_LANG_ID, VTTS_LANG_PT, VTTS_LANG_TH,
     VTTS_LANG_FR, VTTS_LANG_DE, VTTS_LANG_IT, VTTS_LANG_TR, VTTS_LANG_RU, VTTS_LANG_PL,
     VTTS_LANG_AR, VTTS_LANG_FI, VTTS_LANG_EL, VTTS_LANG_MS, VTTS_LANG_TL, VTTS_LANG_SW,
-    VTTS_LANG_NL, VTTS_LANG_SV, VTTS_LANG_NO
+    VTTS_LANG_NL, VTTS_LANG_SV, VTTS_LANG_NO, VTTS_LANG_DA, VTTS_LANG_LO,
+    VTTS_LANG_KM, VTTS_LANG_MY
 } vtts_lang;
 
 /* lang: VTTS_LANG_V1 is vtts_text_to_ids; VI, EN and AUTO select the mode of text_to_ids(text,
@@ -223,6 +247,8 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
  *   el-en "el" (Greek -> Greek, Latin -> English, numbers in Greek)       default el (VTTS_ENABLE_EL)
  *   ms-en "ms", tl-en "tl", sw-en "sw" (Latin words by latin.py rules -> the language or English)
  *   nl-en "nl", sv-en "sv", no-en "no" (Latin words by latin.py rules; their own sentence split)
+ *   lo-en "lo" (Lao -> Lao, Latin -> English, numbers in Lao; VTTS_ENABLE_LO) default lo
+ *   da-en "da" (Latin words by latin.py rules -> Danish or English; VTTS_ENABLE_DA) default da
  *   unknown: no device front-end (token ids from a host front-end only).
  * vtts_text_lang_for: 0 and *out set when `mode` is valid for the set, else < 0.
  * vtts_text_default_lang: 0 and *out set, or < 0 when the set has no device front-end. */
