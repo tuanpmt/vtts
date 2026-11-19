@@ -1,12 +1,15 @@
 # vtts documentation
 
-Start with the [project README](../README.md) for the voice catalog, hardware support and quick start. This page indexes everything else.
+Start with the [project README](../README.md) for the released voices and the quick start. This page indexes everything else.
 
 ## Using vtts
 
 | Document | Contents |
 |---|---|
-| [Firmware for ESP32-P4 and ESP32-S3](../firmware/esp32/README.md) | Supported boards, build and flash, self-test, adding a board |
+| [Voices](voices.md) | Voice catalog (released and planned pairs), model files, quality per pair, speed per chip, audio samples generated on the chip |
+| [Architecture](architecture.md) | Pipeline from text to PCM, distillation, training data, adding a language, training a voice, repository layout |
+| [Roadmap](roadmap.md) | Released and planned language pairs |
+| [Firmware for ESP32-P4 and ESP32-S3](../firmware/esp32/README.md) | Supported boards, build and flash, serial console commands, text modes, self-test, adding a board |
 | [C runtime](../runtime/README.md) | API, memory model, host build and tests, device text front-end, porting |
 | [Model file format](model-format.md) | Binary layout of `.vtts` files, required dims, load-time checks |
 | [Pronunciation rules and dictionaries](frontend/pronunciation-rules.md) | How text is read (product codes, loanwords, abbreviations), the per-language data files, and how to change them |
@@ -21,6 +24,7 @@ Start with the [project README](../README.md) for the voice catalog, hardware su
 | [Bilingual student evaluation](reports/bilingual-student-eval.md) | CER/WER and UTMOS of the released Vietnamese + English models (v0.4.0), quality and lite, against their teachers |
 | [Korean + English student evaluation](reports/ko-student-eval.md) | CER/WER and UTMOS of the released Korean + English models (v0.5.0), a fair CER for mixed Korean sentences (Hangul only) and the VoxCPM2 reference voice |
 | [Chinese + English student evaluation](reports/zh-student-eval.md) | CER/WER and UTMOS of the released Chinese + English models (`nu-zh`, v0.5.0), with the errors per group and ASR effects on mixed sentences |
+| [Japanese + English student evaluation](reports/ja-student-eval.md) | CER and UTMOS of the released Japanese + English models (`nu-ja`, v0.6.0), a reading-based CER for Japanese, the kana-only CER for mixed sentences and the VoxCPM2 reference voice |
 | [Bilingual teacher evaluation](reports/bilingual-teacher-eval.md) | CER/WER and UTMOS of the bilingual teachers on Vietnamese, English and mixed sentences, per checkpoint |
 | [Runtime optimization research](reports/runtime-optimization-research.md) | Compute budget, bottlenecks and a prioritized optimization plan for both chips (in progress) |
 | [Baselines](reports/baseline.md) | sanoTTS and Piper Vietnamese voices on the out-of-domain set; the derived teacher gate |

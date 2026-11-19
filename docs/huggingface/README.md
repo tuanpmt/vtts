@@ -4,6 +4,7 @@ language:
   - vi
   - ko
   - zh
+  - ja
   - en
 pipeline_tag: text-to-speech
 tags:
@@ -13,6 +14,7 @@ tags:
   - korean
   - chinese
   - mandarin
+  - japanese
   - english
   - bilingual
   - code-switching
@@ -32,7 +34,7 @@ tags:
 
 Tiny int8 voices for [vtts](https://github.com/tuanpmt/vtts), a text-to-speech engine that runs entirely on ESP32 chips: text normalization, grapheme-to-phoneme, the acoustic model and the iSTFT vocoder all run on the microcontroller, with no network. Listen to samples generated on the chip on the [website](https://tuanpmt.github.io/vtts/).
 
-Every vtts model is **bilingual: one main language + English**. One voice reads the main language, English, and sentences that mix both ("Đã kết nối Bluetooth với AirPods", "스마트폰을 Wi-Fi에 연결했어요", "已经通过Bluetooth连接到AirPods"); the on-device front-end picks the language per word. Released pairs: Vietnamese + English (v0.4.0), Korean + English and Chinese (Mandarin) + English (v0.5.0).
+Every vtts model is **bilingual: one main language + English**. One voice reads the main language, English, and sentences that mix both ("Đã kết nối Bluetooth với AirPods", "스마트폰을 Wi-Fi에 연결했어요", "已经通过Bluetooth连接到AirPods", "このWi-Fiはpasswordが必要ですか？"); the on-device front-end picks the language per word. Released pairs: Vietnamese + English (v0.4.0), Korean + English and Chinese (Mandarin) + English (v0.5.0), Japanese + English (v0.6.0).
 
 > These files are not PyTorch or Transformers checkpoints. They are `.vtts` files for the vtts C runtime ([format](https://github.com/tuanpmt/vtts/blob/main/docs/model-format.md)), meant to be flashed with the [ESP32 firmware](https://github.com/tuanpmt/vtts/tree/main/firmware/esp32) or run with the host tools.
 
@@ -46,8 +48,9 @@ One folder per voice. Each voice comes in two sizes, and both run on the ESP32-P
 | `vi-en-nu-10/` | `nu-10` (female) | Vietnamese + English, code-switching | `vtts-vien-nu10-m-v0.4.q8.vtts`, `vtts-vien-nu10-s-v0.4.q8.vtts` | v0.4.0 |
 | `ko-en-nu-ko/` | `nu-ko` (female, about 40, Seoul) | Korean + English, code-switching | `vtts-koen-nuko-m-v0.5.q8.vtts`, `vtts-koen-nuko-s-v0.5.q8.vtts` | v0.5.0 |
 | `zh-en-nu-zh/` | `nu-zh` (female, about 40, Beijing Mandarin) | Chinese (Mandarin) + English, code-switching | `vtts-zhen-nuzh-m-v0.5.q8.vtts`, `vtts-zhen-nuzh-s-v0.5.q8.vtts` | v0.5.0 |
+| `ja-en-nu-ja/` | `nu-ja` (female, about 40, Tokyo) | Japanese + English, code-switching | `vtts-jaen-nuja-m-v0.6.q8.vtts`, `vtts-jaen-nuja-s-v0.6.q8.vtts` | v0.6.0 |
 
-Each folder has a `SHA256SUMS` file. More pairs (Japanese, Spanish, Portuguese, Indonesian, Hindi, Thai, each + English) will follow in their own folders.
+Each folder has a `SHA256SUMS` file. More pairs (Spanish, Portuguese, Indonesian, Hindi, Thai, each + English) will follow in their own folders.
 
 ## Models
 
@@ -61,10 +64,12 @@ Each folder has a `SHA256SUMS` file. More pairs (Japanese, Spanish, Portuguese, 
 | `vtts-koen-nuko-s-v0.5.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.17 | 0.29 |
 | `vtts-zhen-nuzh-m-v0.5.q8.vtts` | Quality (M) | 1.84M | 2.6 MB | 0.26 | 0.51 |
 | `vtts-zhen-nuzh-s-v0.5.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.18 | 0.30 |
+| `vtts-jaen-nuja-m-v0.6.q8.vtts` | Quality (M) | 1.84M | 2.6 MB | 0.26 | 0.50 |
+| `vtts-jaen-nuja-s-v0.6.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.17 | 0.29 |
 
-Token set `vi-en` (107 tokens: Vietnamese spelling-based phonemes with 6 tones, English ARPAbet with stress), `ko-en` (153 tokens: the same 107 plus 46 Korean onset, vowel and coda tokens) or `zh-en` (171 tokens: the vi-en set plus Mandarin initials, finals and tones), 22.05 kHz output. RTF (`bench`) below 1 is faster than real time; with streaming, speech starts after 0.06–0.15 s (S) / 0.16–0.34 s (M) on the ESP32-P4 and 0.17–0.32 s (S) / 0.27–0.61 s (M) on the ESP32-S3, for all three pairs. Measured on a Waveshare ESP32-P4-86-Panel-ETH-2RO and an ESP32-S3-Touch-LCD-2.8 (8 MB PSRAM required on the S3). Details: [performance report](https://github.com/tuanpmt/vtts/blob/main/docs/reports/performance.md).
+Token set `vi-en` (107 tokens: Vietnamese spelling-based phonemes with 6 tones, English ARPAbet with stress), `ko-en` (153 tokens: the same 107 plus 46 Korean onset, vowel and coda tokens) `zh-en` (171 tokens: the vi-en set plus Mandarin initials, finals and tones) or `ja-en` (144 tokens: the v2 set plus 37 Japanese phonemes), 22.05 kHz output. RTF (`bench`) below 1 is faster than real time; with streaming, speech starts after 0.06–0.15 s (S) / 0.16–0.34 s (M) on the ESP32-P4 and 0.17–0.32 s (S) / 0.27–0.61 s (M) on the ESP32-S3, for all pairs. Measured on a Waveshare ESP32-P4-86-Panel-ETH-2RO and an ESP32-S3-Touch-LCD-2.8 (8 MB PSRAM required on the S3). Details: [performance report](https://github.com/tuanpmt/vtts/blob/main/docs/reports/performance.md).
 
-Quality on three out-of-domain sets of 50 sentences per pair (not in the training text), audio from the int8 C runtime. CER is the character error rate of an ASR transcript (PhoWhisper-large for Vietnamese, tones included; Whisper large-v3 for English, Korean, Mandarin and mixed sentences); UTMOS predicts naturalness.
+Quality on three out-of-domain sets of 50 sentences per pair (not in the training text), audio from the int8 C runtime. CER is the character error rate of an ASR transcript (PhoWhisper-large for Vietnamese, tones included; Whisper large-v3 for English, Korean, Mandarin, Japanese and mixed sentences); UTMOS predicts naturalness.
 
 Vietnamese + English:
 
@@ -92,7 +97,15 @@ Chinese + English (`nu-zh`), Whisper large-v3 for all three sets (CER per Han ch
 
 Whisper sometimes writes an English word of a mixed sentence in Chinese characters (Samsung → 三星), so the mixed CER is an upper bound.
 
-Reports: [bilingual-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/reports/bilingual-student-eval.md) (vi-en), [ko-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/reports/ko-student-eval.md) (ko-en), [zh-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/reports/zh-student-eval.md) (zh-en).
+Japanese + English (`nu-ja`). Japanese CER on readings: reference and transcript are converted to kana by the ja front-end, because the references write some numbers in kanji (十五分) where Whisper writes digits; the mixed CER counts only the kana and kanji, because Whisper writes most English words in katakana (password → パスワード):
+
+| Model | Japanese CER (reading) | English CER | Mixed CER (kana and kanji only) | UTMOS (ja / en / mixed) |
+|---|---:|---:|---:|---|
+| `nu-ja` M | 0.050 | 0.023 | 0.054 | 2.57 / 3.22 / 2.61 |
+| `nu-ja` S | 0.053 | 0.019 | 0.049 | 2.30 / 2.76 / 2.28 |
+| VoxCPM2 `nu-ja` (reference voice) | 0.023 | — | 0.049 | 3.45 / — / 3.43 |
+
+Reports: [bilingual-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/reports/bilingual-student-eval.md) (vi-en), [ko-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/reports/ko-student-eval.md) (ko-en), [zh-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/reports/zh-student-eval.md) (zh-en), [ja-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/reports/ja-student-eval.md) (ja-en).
 
 ## Usage
 
@@ -106,16 +119,16 @@ BOARD=esp32-p4-nano ./build.sh ../../../models/vi-en-nu-10/vtts-vien-nu10-s-v0.4
   ../../../models/vi-en-nu-10/vtts-vien-nu10-m-v0.4.q8.vtts -p PORT flash monitor
 ```
 
-For the Korean + English voice download `ko-en-nu-ko/*` and pass `vtts-koen-nuko-s-v0.5.q8.vtts` and `vtts-koen-nuko-m-v0.5.q8.vtts` instead; for Chinese + English download `zh-en-nu-zh/*` and pass `vtts-zhen-nuzh-s-v0.5.q8.vtts` and `vtts-zhen-nuzh-m-v0.5.q8.vtts` (`build.sh` embeds the 116 KB Mandarin reading table they need).
+For the Korean + English voice download `ko-en-nu-ko/*` and pass `vtts-koen-nuko-s-v0.5.q8.vtts` and `vtts-koen-nuko-m-v0.5.q8.vtts` instead; for Chinese + English download `zh-en-nu-zh/*` and pass `vtts-zhen-nuzh-s-v0.5.q8.vtts` and `vtts-zhen-nuzh-m-v0.5.q8.vtts` (`build.sh` embeds the 116 KB Mandarin reading table they need); for Japanese + English download `ja-en-nu-ja/*` and pass `vtts-jaen-nuja-s-v0.6.q8.vtts` and `vtts-jaen-nuja-m-v0.6.q8.vtts` (`build.sh` embeds the 721 KB Japanese reading table they need).
 
-Type a sentence on the serial console (main language, English or mixed) and the board speaks it; `model s` / `model m` switch between the two sizes and `lang vi|en|auto` sets the text mode of vi-en models (ko-en models have one mode, `ko`, and zh-en models one, `zh`; both also read English). The same files are attached to the GitHub releases [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) (vi-en) and [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) (ko-en and zh-en).
+Type a sentence on the serial console (main language, English or mixed) and the board speaks it; `model s` / `model m` switch between the two sizes and `lang vi|en|auto` sets the text mode of vi-en models (ko-en, zh-en and ja-en models have one mode each, `ko`, `zh` and `ja`, which also read English). The same files are attached to the GitHub releases [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) (vi-en) [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) (ko-en and zh-en) and [v0.6.0](https://github.com/tuanpmt/vtts/releases/tag/v0.6.0) (ja-en).
 
 ## How the models are made
 
-- **Training data:** speech synthesized with [VoxCPM2](https://github.com/OpenBMB/VoxCPM) (Apache-2.0) from designed voices (not cloned from real people): about 98 h per Vietnamese + English voice, with sentences chosen to cover rare Vietnamese syllables, numbers, English and code-switched text; about 43,600 sentences (Korean, Korean with English words, English) for `nu-ko`; 54,636 sentences (Mandarin, Mandarin with English terms, English) for `nu-zh`. No recorded corpus is used.
+- **Training data:** speech synthesized with [VoxCPM2](https://github.com/OpenBMB/VoxCPM) (Apache-2.0) from designed voices (not cloned from real people): about 98 h per Vietnamese + English voice, with sentences chosen to cover rare Vietnamese syllables, numbers, English and code-switched text; about 43,600 sentences (Korean, Korean with English words, English) for `nu-ko`; 54,636 sentences (Mandarin, Mandarin with English terms, English) for `nu-zh`; 49,591 sentences (Japanese, Japanese with English words, English) for `nu-ja`. No recorded corpus is used.
 - **Teacher:** a VITS model (~24M parameters) per voice, trained from random initialization on that synthetic audio only.
 - **Distillation:** the teacher produces durations, latents and audio; a small student (duration + acoustic model with a pitch/energy predictor + Vocos-style ConvNeXt/iSTFT decoder) learns from it in three stages and is quantized to int8.
-- **Front-end:** rule-based, in Python (training) and C (device) with identical output: a spelling-based Vietnamese G2P, a Korean G2P (Hangul decomposition, the standard pronunciation rules, Sino-Korean and native numbers), a Mandarin front-end (pinyin readings with a polyphone phrase table, tones, Chinese number reading), an English front-end (CMU Pronouncing Dictionary, learned letter-to-sound rules, normalizer) and per-word language tagging. The English lexicon (1.9 MB) is embedded in the firmware, and for zh-en also the Mandarin reading table (116 KB).
+- **Front-end:** rule-based, in Python (training) and C (device) with identical output: a spelling-based Vietnamese G2P, a Korean G2P (Hangul decomposition, the standard pronunciation rules, Sino-Korean and native numbers), a Mandarin front-end (pinyin readings with a polyphone phrase table, tones, Chinese number reading), a Japanese front-end (kana and kanji readings by longest match over a word table, numbers with counters), an English front-end (CMU Pronouncing Dictionary, learned letter-to-sound rules, normalizer) and per-word language tagging. The English lexicon (1.9 MB) is embedded in the firmware, for zh-en also the Mandarin reading table (116 KB), for ja-en the Japanese reading table (721 KB).
 
 ## License and limitations
 
@@ -123,6 +136,7 @@ Type a sentence on the serial console (main language, English or mixed) and the 
 - Naturalness is below the teacher (about one UTMOS point), the usual gap for models this small. Brand names inside Vietnamese sentences and unusual names are the hardest cases.
 - Korean + English: "Bluetooth" and "Google Meet" are read poorly (write 블루투스); numbers are always read in Korean, also inside English sentences; on the ESP32-S3 with two cores the output of both ko-en models is not deterministic (`cores 1` avoids it).
 - Chinese + English: digits inside English sentences are read in Mandarin (write those numbers as words); on the ESP32-S3 with two cores both zh-en models are not deterministic (`cores 1` avoids it).
+- Japanese + English: word-initial *r* is weak (リビング can sound like イビング); digits inside English sentences are read in Japanese and kanji numerals before 分 are read ぶん (write digits: 30分); "Bluetooth" is read poorly (write ブルートゥース); on the ESP32-S3 with two cores the quality model is not deterministic (`cores 1` avoids it).
 - Label audio produced with these models as AI-generated, and do not use them to impersonate real people.
 
 ## Links

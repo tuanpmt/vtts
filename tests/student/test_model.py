@@ -5,7 +5,8 @@ from vtts.student.config import PRESETS, StudentConfig
 from vtts.student.macs import count_macs
 from vtts.student.model import Student
 
-BUDGET = {"S": 120.0, "M": 300.0}
+BUDGET = {"S": 120.0, "M": 300.0, "L": 400.0}
+PARAMS = {"S": (0.3e6, 0.9e6), "M": (1.0e6, 2.0e6), "L": (3.0e6, 4.0e6)}
 
 
 @pytest.mark.parametrize("name", sorted(PRESETS))
@@ -14,7 +15,7 @@ def test_preset_within_budget_and_size(name):
     macs = count_macs(cfg)
     assert macs["per_second"] / 1e6 <= BUDGET[cfg.size], (name, macs["per_second"] / 1e6)
     n = sum(p.numel() for p in Student(cfg).parameters())
-    lo, hi = (0.3e6, 0.9e6) if cfg.size == "S" else (1.0e6, 2.0e6)
+    lo, hi = PARAMS[cfg.size]
     assert lo <= n <= hi, (name, n)
 
 

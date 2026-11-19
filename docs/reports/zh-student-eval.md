@@ -58,7 +58,7 @@ Real errors of the models in the same set are mostly English names and codes: "E
 
 ## On the chip
 
-Every clip on the website and in the README is the ESP32-P4's own PCM (firmware `dump` command, `lang zh`), compressed to 64 kbps MP3. All 16 published MP3s (8 sentences × 2 models) were decoded again and transcribed with Whisper large-v3: CER 0.003 on the Mandarin and mixed clips and 0.009 on the English ones; the worst clip is 0.036 (S reading 零下 heard as 雲下), and none is broken. The English sample sentences contain no digits (see above).
+Every clip on the website and in [voices.md](../voices.md#listen-generated-on-an-esp32-p4) is the ESP32-P4's own PCM (firmware `dump` command, `lang zh`), compressed to 64 kbps MP3. All 16 published MP3s (8 sentences × 2 models) were decoded again and transcribed with Whisper large-v3: CER 0.003 on the Mandarin and mixed clips and 0.009 on the English ones; the worst clip is 0.036 (S reading 零下 heard as 雲下), and none is broken. The English sample sentences contain no digits (see above).
 
 | Chip | S: RTF / speech starts | M: RTF / speech starts |
 |---|---|---|

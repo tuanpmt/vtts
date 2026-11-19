@@ -56,7 +56,7 @@ The Hangul-only CER does not judge the English words themselves. Listening and t
 
 ## On the chip
 
-Every clip on the website and in the README is the ESP32-P4's own PCM (firmware `dump` command, `lang ko`), compressed to 64 kbps MP3. All 16 published MP3s (8 sentences × 2 models: Korean, mixed and English) were decoded again and transcribed with Whisper large-v3: Hangul-only CER 0.006 on average over the 12 Korean and mixed clips (worst 0.029: 내일 heard as 매일), CER 0 on three of the four English clips; the fourth (M, "... turn on the porch light?") scores 0.09 because Whisper appends "for you"; the last 1.6 s transcribed alone end with "porch light(s)". None is broken. The ESP32-P4 output matches `vtts_say` on a PC (SNR 39–60 dB on the single-sentence clips).
+Every clip on the website and in [voices.md](../voices.md#listen-generated-on-an-esp32-p4) is the ESP32-P4's own PCM (firmware `dump` command, `lang ko`), compressed to 64 kbps MP3. All 16 published MP3s (8 sentences × 2 models: Korean, mixed and English) were decoded again and transcribed with Whisper large-v3: Hangul-only CER 0.006 on average over the 12 Korean and mixed clips (worst 0.029: 내일 heard as 매일), CER 0 on three of the four English clips; the fourth (M, "... turn on the porch light?") scores 0.09 because Whisper appends "for you"; the last 1.6 s transcribed alone end with "porch light(s)". None is broken. The ESP32-P4 output matches `vtts_say` on a PC (SNR 39–60 dB on the single-sentence clips).
 
 The sample sentences avoid "Bluetooth" and "Google Meet" (see above); they show Zoom, PowerPoint, Wi-Fi and Netflix inside Korean sentences.
 

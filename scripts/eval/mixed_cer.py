@@ -7,13 +7,15 @@ For each report: plain CER against the text, CER over the main-script characters
 with --ref-voice (the same set synthesized by the reference voice and scored the same way), the CER
 of the student's transcript against the reference voice's transcript, which cancels the ASR's
 spelling habits for English words (Google Drive -> 구글 드라이브) as long as both are read alike.
+--lang ja adds the CER on readings (vtts.eval.cer.ja_reading_cer: both sides converted to hiragana,
+so kanji/kana and digit spellings are not errors), over all characters and over the kana only.
 """
 
 import argparse
 import json
 from pathlib import Path
 
-from vtts.eval.cer import corpus_cer, main_script_cer
+from vtts.eval.cer import corpus_cer, ja_reading_cer, main_script_cer
 
 
 def main() -> None:
@@ -25,11 +27,16 @@ def main() -> None:
     ref_hyp = None
     if a.ref_voice:
         ref_hyp = {c["id"]: c["hyp"] for c in json.loads(a.ref_voice.read_text(encoding="utf-8"))["clips"]}
-    print("system | CER (text) | CER (main script) | CER vs reference voice transcript")
+    head = ["system", "CER (text)", "CER (main script)"]
+    if a.lang == "ja":
+        head += ["reading CER", "reading CER (kana only)"]
+    print(" | ".join(head + (["CER vs reference voice transcript"] if ref_hyp else [])))
     for p in ([a.ref_voice] if a.ref_voice else []) + a.reports:
         rep = json.loads(p.read_text(encoding="utf-8"))
         pairs = [(c["ref"], c["hyp"]) for c in rep["clips"]]
         row = [rep["system"], f"{corpus_cer(pairs, a.lang):.3f}", f"{main_script_cer(pairs, a.lang):.3f}"]
+        if a.lang == "ja":
+            row += [f"{ja_reading_cer(pairs):.3f}", f"{ja_reading_cer(pairs, main_only=True):.3f}"]
         if ref_hyp and p != a.ref_voice:
             row.append(f"{corpus_cer([(ref_hyp[c['id']], c['hyp']) for c in rep['clips']], a.lang):.3f}")
         print(" | ".join(row))

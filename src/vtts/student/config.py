@@ -7,7 +7,7 @@ from dataclasses import dataclass, replace
 
 @dataclass(frozen=True)
 class StudentConfig:
-    size: str = "S"  # budget class: "S" or "M"
+    size: str = "S"  # budget class: "S", "M" or "L" (ESP32-P4 only)
     vocab: int = 65
     sample_rate: int = 22050
     hop: int = 256
@@ -66,6 +66,9 @@ PRESETS["M-vocos-p"] = replace(PRESETS["M-vocos"], prosody=True)
 PRESETS["M-vocos-p-bi"] = replace(PRESETS["M-vocos-p"], vocab=107)
 PRESETS["S-vocos-p-bi"] = replace(PRESETS["S-vocos-p"], vocab=107)
 PRESETS["M-vocos-p-bi-s3"] = replace(PRESETS["M-vocos-p-bi"], v_mult=2)
+# L: ESP32-P4 only (3.5M parameters, about 0.40 RTF estimated from the M/S timings, see
+# vtts.student.macs.estimate_p4_rtf): the M front with a wider, deeper vocoder (224 x 8 vs 160 x 6)
+PRESETS["L-vocos-p-bi"] = replace(PRESETS["M-vocos-p-bi"], size="L", v_dim=224, v_blocks=8)
 
 # Other pairs (main language + English): the vocabulary covers the pair's token set (shared ids
 # 0..106 plus the language block); same model sizes as the vi-en presets.

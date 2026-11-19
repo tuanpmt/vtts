@@ -1,8 +1,9 @@
 """Regenerate the content shared by the READMEs and the website from docs/site.json.
 
 Generated blocks sit between `<!-- BEGIN:name -->` and `<!-- END:name -->` markers in README.md
-(English Markdown), README.vi.md (Vietnamese Markdown) and docs/index.html (English HTML).
-Text outside the markers is never touched, so prose stays hand-written.
+(released voices), docs/voices.md (catalog, speed, samples), docs/architecture.md (technology),
+firmware/esp32/README.md (board defaults) and docs/index.html (HTML). Text outside the markers is
+never touched, so prose stays hand-written.
 
 Usage: uv run python scripts/docs/sync_docs.py [--check]
 --check exits with status 1 if a file is out of date (tests/docs/test_docs_sync.py runs it).
@@ -24,29 +25,17 @@ LANG_NAME = {"vi": "Vietnamese", "en": "English", "zh": "Chinese"}
 RAW = "https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/"
 
 T = {
-    "en": {
-        "voices_head": ["Voice", "Languages", "Quality model (M)", "Lite model (S)", "Status"],
-        "cs": "code-switching",
-        "hw_head": ["Board", "Chip", "Lite model RTF", "Quality model RTF"],
-        "hw_note": "Both models run on both chips. RTF below 1 means faster than real time.",
-        "boards_head": ["`BOARD=`", "Board", "Speaker path", "Default volume"],
-        "default": " (default)",
-        "sentence": "Sentence",
-    },
-    "vi": {
-        "voices_head": ["Giọng", "Ngôn ngữ", "Model chất lượng (M)", "Model nhẹ (S)", "Trạng thái"],
-        "cs": "đọc câu trộn",
-        "hw_head": ["Board", "Chip", "RTF model nhẹ", "RTF model chất lượng"],
-        "hw_note": "Cả hai model đều chạy trên cả hai chip. RTF dưới 1 nghĩa là nhanh hơn thời gian thực.",
-        "boards_head": ["`BOARD=`", "Board", "Loa", "Âm lượng mặc định"],
-        "default": " (mặc định)",
-        "sentence": "Câu",
-    },
+    "voices_head": ["Voice", "Languages", "Quality model (M)", "Lite model (S)", "Status"],
+    "cs": "code-switching",
+    "hw_head": ["Board", "Chip", "Lite model RTF", "Quality model RTF"],
+    "hw_note": "Both models run on both chips. RTF below 1 means faster than real time.",
+    "boards_head": ["`BOARD=`", "Board", "Speaker path", "Default volume"],
+    "default": " (default)",
+    "sentence": "Sentence",
+    "released_head": ["Language pair", "Voice", "Size M / S", "RTF ESP32-P4 M / S", "RTF ESP32-S3 M / S", "Download"],
 }
-
-
-def pick(d: dict, key: str, lang: str) -> str:
-    return d.get(f"{key}_vi", d[key]) if lang == "vi" else d[key]
+RELEASES = "https://github.com/tuanpmt/vtts/releases/tag/"
+HF = "https://huggingface.co/tuanpm/vtts/tree/main/"
 
 
 # ---------- Markdown (READMEs) ----------
@@ -57,39 +46,54 @@ def md_table(head: list[str], rows: list[list[str]]) -> str:
     return "\n".join(lines)
 
 
-def md_langs(v: dict, lang: str) -> str:
+def md_langs(v: dict) -> str:
     s = " + ".join(f"{EMOJI[c]} {c}" for c in v["langs"])
-    return s + (f", {T[lang]['cs']}" if v.get("code_switching") else "")
+    return s + (f", {T['cs']}" if v.get("code_switching") else "")
 
 
-def md_voices(site: dict, samples: dict, lang: str) -> str:
+def md_voices(site: dict, samples: dict) -> str:
     rows = []
     for v in site["voices"]:
-        status = pick(v, "status_text", lang)
+        status = v["status_text"]
         if v["status"] != "planned":
             status = f"**{status}**"
-        rows.append([pick(v, "name", lang), md_langs(v, lang), pick(v, "quality", lang), pick(v, "lite", lang), status])
-    return md_table(T[lang]["voices_head"], rows)
+        rows.append([v["name"], md_langs(v), v["quality"], v["lite"], status])
+    return md_table(T["voices_head"], rows)
 
 
-def md_hardware(site: dict, samples: dict, lang: str) -> str:
+def md_released(site: dict, samples: dict) -> str:
+    """One row per released voice: size and RTF from its two models in `listen`, download links."""
+    models = {m["id"]: m for tab in site["listen"] for m in tab["models"]}
+    rows = []
+    for v in site["voices"]:
+        if v["status"] != "released":
+            continue
+        m, s = (models[i] for i in v["models"])
+        flags = " ".join(EMOJI[c] for c in v["langs"])
+        rows.append([f"{flags} {v['pair']}", v["name"], f"{m['size']} / {s['size']}",
+                     f"{m['rtf']['p4']} / {s['rtf']['p4']}", f"{m['rtf']['s3']} / {s['rtf']['s3']}",
+                     f"[{v['release']}]({RELEASES}{v['release']}) · [HF]({HF}{v['hf']})"])
+    return md_table(T["released_head"], rows)
+
+
+def md_hardware(site: dict, samples: dict) -> str:
     rows = [[h["boards"], h["chip"], h["rtf_lite"], h["rtf_quality"]] for h in site["hardware"]]
-    return md_table(T[lang]["hw_head"], rows) + "\n\n" + T[lang]["hw_note"]
+    return md_table(T["hw_head"], rows) + "\n\n" + T["hw_note"]
 
 
-def md_boards(site: dict, samples: dict, lang: str) -> str:
-    rows = [[f"`{b['id']}`" + (T[lang]["default"] if b.get("default") else ""), b["name"], b["speaker"], b["volume"]]
+def md_boards(site: dict, samples: dict) -> str:
+    rows = [[f"`{b['id']}`" + (T["default"] if b.get("default") else ""), b["name"], b["speaker"], b["volume"]]
             for b in site["boards"]]
-    return md_table(T[lang]["boards_head"], rows)
+    return md_table(T["boards_head"], rows)
 
 
-def md_tech(site: dict, samples: dict, lang: str) -> str:
+def md_tech(site: dict, samples: dict) -> str:
     pipe = " → ".join(site["pipeline"])
-    items = [f"- **{pick(t, 'title', lang)}:** {pick(t, 'text', lang)}" for t in site["tech"]]
+    items = [f"- **{t['title']}:** {t['text']}" for t in site["tech"]]
     return f"`{pipe}`\n\n" + "\n".join(items)
 
 
-def md_samples(site: dict, samples: dict, lang: str) -> str:
+def md_samples(site: dict, samples: dict) -> str:
     out = []
     for tab in site["listen"]:
         if not any(s.get("audio") for s in tab["samples"]):
@@ -98,13 +102,14 @@ def md_samples(site: dict, samples: dict, lang: str) -> str:
         for s in tab["samples"]:
             cells = [f"[▶ {m['name']}]({RAW}{s['audio'][m['id']]})" if s.get("audio", {}).get(m["id"]) else "—"
                      for m in tab["models"]]
-            rows.append([pick(s, "text", lang), *cells])
+            rows.append([s["text"], *cells])
         flags = " ".join(EMOJI[f] for f in tab["flags"])
-        out += [f"{flags} **{tab['label']}**", "", md_table([T[lang]["sentence"], *(m["name"] for m in tab["models"])], rows), ""]
+        out += [f"{flags} **{tab['label']}**", "", md_table([T["sentence"], *(m["name"] for m in tab["models"])], rows), ""]
     return "\n".join(out).rstrip()
 
 
-MD = {"voices": md_voices, "hardware": md_hardware, "boards": md_boards, "tech": md_tech, "samples": md_samples}
+MD = {"voices": md_voices, "released": md_released, "hardware": md_hardware, "boards": md_boards, "tech": md_tech,
+      "samples": md_samples}
 
 
 # ---------- HTML (docs/index.html, English) ----------
@@ -146,7 +151,7 @@ def h_voices(site: dict, samples: dict) -> str:
 def h_hardware(site: dict, samples: dict) -> str:
     head = [("Board", ""), ("Chip", ""), ("RTF lite", "num"), ("RTF quality", "num")]
     rows = [[(h_inline(h["boards"]), "wrap"), (h_inline(h["chip"]), "wrap"), (h["rtf_lite"], "num"), (h["rtf_quality"], "num")] for h in site["hardware"]]
-    return h_table(head, rows) + f'\n<p class="muted">{h_inline(T["en"]["hw_note"])}</p>'
+    return h_table(head, rows) + f'\n<p class="muted">{h_inline(T["hw_note"])}</p>'
 
 
 def h_boards(site: dict, samples: dict) -> str:
@@ -176,8 +181,10 @@ def replace_blocks(text: str, make) -> str:
 
 def targets(site: dict, samples: dict) -> list[tuple[str, callable]]:
     return [
-        ("README.md", lambda n: MD[n](site, samples, "en")),
-        ("README.vi.md", lambda n: MD[n](site, samples, "vi")),
+        ("README.md", lambda n: MD[n](site, samples)),
+        ("docs/voices.md", lambda n: MD[n](site, samples)),
+        ("docs/architecture.md", lambda n: MD[n](site, samples)),
+        ("firmware/esp32/README.md", lambda n: MD[n](site, samples)),
         ("docs/index.html", lambda n: HTML[n](site, samples)),
     ]
 

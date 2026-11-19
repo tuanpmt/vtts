@@ -2,13 +2,14 @@
 
 Usage: uv run python scripts/student/train_student.py --preset S-vocos --shards data/distill/shards \
    --out artifacts/student/S-vocos --stage front --max-steps 30000 [--init FILE]
+   [--disc mpd|mpd+mrd|mpd+mrd-hf] [--hf-weight W --hf-lo-hz 4000] [--keep-every N]
 """
 
 import argparse
 from pathlib import Path
 
 from vtts.student.config import PRESETS
-from vtts.student.train import train
+from vtts.student.train import DISCS, train
 
 
 def main() -> None:
@@ -22,10 +23,17 @@ def main() -> None:
     ap.add_argument("--lr", type=float, default=2e-4)
     ap.add_argument("--init", type=Path, default=None)
     ap.add_argument("--device", default="cuda")
-    ap.add_argument("--disc", choices=["mpd", "mpd+mrd"], default="mpd")
+    ap.add_argument("--disc", choices=DISCS, default="mpd")
+    ap.add_argument("--hf-weight", type=float, default=0.0,
+                    help="GAN stages: weight of the STFT loss above --hf-lo-hz (0 = off)")
+    ap.add_argument("--hf-lo-hz", type=float, default=4000.0)
+    ap.add_argument("--ckpt-every", type=int, default=2000)
+    ap.add_argument("--keep-every", type=int, default=0,
+                    help="keep checkpoints at multiples of this step (0: only the newest 3)")
     a = ap.parse_args()
     train(PRESETS[a.preset], a.shards, a.out, a.stage, a.max_steps, a.batch_size, a.lr,
-          device=a.device, init=a.init, disc=a.disc)
+          ckpt_every=a.ckpt_every, device=a.device, init=a.init, disc=a.disc,
+          hf_weight=a.hf_weight, hf_lo_hz=a.hf_lo_hz, keep_every=a.keep_every)
 
 
 if __name__ == "__main__":

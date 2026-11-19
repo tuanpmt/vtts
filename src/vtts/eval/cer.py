@@ -205,3 +205,39 @@ def main_script_cer(pairs: list[tuple[str, str]], lang: str) -> float:
         errs += e
         total += t
     return errs / max(total, 1)
+
+
+def _ja_kana(text: str) -> str:
+    """Japanese text as its reading in hiragana (the ja front-end's tables: kanji, kana, numbers
+    read in Japanese), Latin words kept; spaces removed."""
+    from vtts.frontend.ja.g2p_ja import ja_reading
+    from vtts.frontend.ja.kana import to_hiragana
+    from vtts.frontend.lang import runs, split_sentences_raw
+    from vtts.frontend.languages import LANGUAGES
+
+    out = []
+    for sentence in split_sentences_raw(unicodedata.normalize("NFC", text), "ja"):
+        for run, code in runs(sentence, "ja"):
+            for w in LANGUAGES[code].normalize(run).split():
+                if w in PUNCTUATION:
+                    continue
+                out.append(to_hiragana(ja_reading(w)) if any(_is_cjk(ch) for ch in w) else w)
+    return "".join(out)
+
+
+def ja_reading_cer(pairs: list[tuple[str, str]], main_only: bool = False) -> float:
+    """Japanese CER on readings: reference and transcript are both converted to hiragana by the
+    ja front-end, so spelling choices of the ASR (kanji or kana, 十五 or 15, 沸く or 湧く) are not
+    errors, only a different reading is. Counted in kana (about two per kanji), so it is not
+    comparable with the orthographic CER. main_only: count only the errors on the reference's kana
+    (English words and what the ASR writes for them skipped, as in main_script_cer)."""
+    errs = total = 0
+    for ref, hyp in pairs:
+        r, h = _ja_kana(ref), _ja_kana(hyp)
+        if main_only:
+            e, t = _script_edits(r, h, _is_cjk)
+        else:
+            e, t = _edits(r, h), len(r)
+        errs += e
+        total += t
+    return errs / max(total, 1)

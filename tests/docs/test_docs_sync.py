@@ -1,4 +1,5 @@
-"""README.md, README.vi.md and docs/index.html share generated blocks with docs/site.json."""
+"""README.md, docs/voices.md, docs/architecture.md, the firmware README and docs/index.html share generated
+blocks with docs/site.json."""
 
 import importlib.util
 import re
@@ -10,8 +11,10 @@ sync_docs = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(sync_docs)
 
 EXPECTED = {
-    "README.md": {"voices", "hardware", "boards", "tech", "samples"},
-    "README.vi.md": {"voices", "hardware", "boards", "tech", "samples"},
+    "README.md": {"released"},
+    "docs/voices.md": {"voices", "hardware", "samples"},
+    "docs/architecture.md": {"tech"},
+    "firmware/esp32/README.md": {"boards"},
     "docs/index.html": {"boards", "tech"},
 }
 
@@ -48,3 +51,14 @@ def test_listen_models_reference_known_audio():
             assert set(s.get("audio", {})) <= ids, (tab["id"], s["text"])
             for src in s.get("audio", {}).values():
                 assert (ROOT / "docs" / src).is_file(), src
+
+
+def test_released_voices_point_to_listen_models():
+    import json
+    site = json.loads((ROOT / "docs/site.json").read_text(encoding="utf-8"))
+    models = {m["id"] for tab in site["listen"] for m in tab["models"]}
+    for v in site["voices"]:
+        assert not any(k.endswith("_vi") for k in v), v["name"]
+        if v["status"] == "released":
+            assert set(v["models"]) <= models and v["release"].startswith("v") and v["pair"] and v["hf"], v["name"]
+    assert not (ROOT / "README.vi.md").exists()

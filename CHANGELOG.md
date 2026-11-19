@@ -8,6 +8,72 @@ All notable changes to this project are documented here. Model files for each re
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
 
+## v0.6.0 (2026-11-20) — Japanese + English voice
+
+A new bilingual pair with one designed female voice as a quality model (M) and a lite model (S), **Apache-2.0**:
+
+- **Japanese + English**, voice `nu-ja` (about 40, Tokyo standard speech). One voice reads Japanese, English and Japanese sentences with English words ("このWi-Fiはpasswordが必要ですか？"); kana and kanji go to the Japanese front-end and Latin words to the English one, on the chip. The teacher `ja_nuja` was trained from random initialization for 120k steps on speech synthesized with VoxCPM2 (Apache-2.0) from the designed voice `nu-ja` only: 49,591 sentences of Japanese, Japanese with English words, and English read by the same voice.
+
+No recorded corpus and no warm start. The Vietnamese + English (v0.4.0), Korean + English and Chinese + English (v0.5.0) voices are unchanged.
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-jaen-nuja-m-v0.6.q8.vtts` | `nu-ja` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-jaen-nuja-s-v0.6.q8.vtts` | `nu-ja` (female) | Lite (S) | 0.83M | 1.2 MB |
+
+Int8, 22.05 kHz, token set `ja-en` recorded in the file (vocabulary 144: the v2 tokens plus 37 Japanese phoneme tokens; presets `M-vocos-p-ja-en` and `S-vocos-p-ja-en`). The firmware needs the 721 KB `JLEX` blob (`main/lex_ja.bin`: Japanese reading tables and NFKC data), which `build.sh` builds and embeds.
+
+### Quality
+
+Three out-of-domain sets of 50 sentences, Whisper large-v3, audio from the int8 C runtime (`--lang ja`), and the same Japanese and mixed sentences synthesized by the VoxCPM2 voice `nu-ja` as a reference. Report: [docs/reports/ja-student-eval.md](docs/reports/ja-student-eval.md).
+
+| Model | Japanese CER (reading) | English CER | Mixed CER (kana and kanji only) | UTMOS (ja / en / mixed) |
+|---|---:|---:|---:|---|
+| `nu-ja` M | 0.050 | 0.023 | 0.054 | 2.57 / 3.22 / 2.61 |
+| `nu-ja` S | 0.053 | 0.019 | 0.049 | 2.30 / 2.76 / 2.28 |
+| VoxCPM2 `nu-ja` (reference voice) | 0.023 | — | 0.049 | 3.45 / — / 3.43 |
+
+The Japanese references write some numbers in kanji (十五分) where Whisper writes digits, and kanji/kana spellings differ (いろいろ / 色々), so the orthographic CER (0.097 M, 0.110 S, 0.064 for the reference voice) counts spelling; the reading CER converts both sides to kana with the ja front-end and counts in kana. On the mixed set Whisper writes most English words in katakana (password → パスワード): the plain CER is 0.20 (M), 0.24 (S) and 0.23 for the reference voice itself, and the kana-and-kanji-only CER puts both students at the reference voice's level.
+
+### Performance
+
+| Board | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 (86-Panel, NANO) | 0.17–0.18 / 0.07–0.10 s | 0.25–0.26 / 0.18–0.26 s |
+| ESP32-S3 (Touch-LCD-2.8, EchoEar 2.0) | 0.28–0.30 / 0.18–0.25 s | 0.50 / 0.31–0.45 s |
+
+RTF from `bench` (four Japanese sentences), speech start from playing the eight website sentences (Japanese, mixed and English): the same speed as the other pairs. Every website clip is the ESP32-P4's own output and was transcribed again with Whisper before publishing. Image size in the 8 MB app partition with the two ja-en models, the English lexicon and the JLEX blob: 6.90 MB on the ESP32-P4 (1.49 MB free), 6.78 MB on the ESP32-S3 (1.60 MB free). Details: [docs/reports/performance.md](docs/reports/performance.md#japanese--english-v060).
+
+### Flash a board
+
+```bash
+gh release download v0.6.0 -R tuanpmt/vtts -p '*.vtts' -D models
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-jaen-nuja-s-v0.6.q8.vtts ../../models/vtts-jaen-nuja-m-v0.6.q8.vtts -p PORT flash monitor
+```
+
+`BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. On the console type Japanese, English or mixed text; `model s|m` switches the model. ja-en models have one text mode, `ja` (the default), which also reads English words and English sentences with the English front-end.
+
+### Added
+- **Japanese + English voice `nu-ja`** (M and S), with 16 on-chip samples (ESP32-P4 dumps of 8 sentences × 2 models, each checked with Whisper) on the website and a Japanese tab.
+- `vtts.eval.cer.ja_reading_cer`: Japanese CER on readings (reference and transcript converted to kana by the ja front-end), optionally over the reference's kana only; `scripts/eval/mixed_cer.py --lang ja` prints it next to the orthographic and main-script CER.
+- Report [docs/reports/ja-student-eval.md](docs/reports/ja-student-eval.md), a Japanese section in [performance.md](docs/reports/performance.md), Hugging Face folder `ja-en-nu-ja/`.
+
+### Changed
+- **Shorter README:** what vtts is, a table of the released voices (pair, voice, size, RTF on both chips, download links, generated from `docs/site.json`), a four-step quick start, a short "how it works" and links to the documentation. The voice catalog, quality tables, speed table and samples moved to [docs/voices.md](docs/voices.md); the architecture, training steps and repository layout to [docs/architecture.md](docs/architecture.md); the roadmap to [docs/roadmap.md](docs/roadmap.md); the serial console commands and board defaults to the [firmware README](firmware/esp32/README.md#serial-console).
+- **Website language picker:** the label reads "Language 🇬🇧:" (English, the language every voice reads, once) and each entry shows only its main-language flag; English-only voices, when they come, are listed first with the English flag.
+- **Removed `README.vi.md`** (the Vietnamese translation of the README) and the `*_vi` fields of `docs/site.json`; `scripts/docs/sync_docs.py` no longer generates it.
+
+### Known issues
+- **Word-initial *r* is weak** in both ja-en models: リビング can sound like イビング, 冷蔵庫 like 映像この, 来月 like A月. Inside words *r* is fine. The reference voice does not have this; a student refresh is planned.
+- **Digits in English sentences are read in Japanese** ("28 degrees" → にじゅうはち), as in the ko-en and zh-en modes: the ja mode normalizes every number in Japanese. This is the English numbers-group error (CER 0.09 M, 0.11 S); write numbers in English sentences as words.
+- **Kanji numerals before 分** are read ぶん (三十分 → さんじゅうぶん, 十五分 → じゅうごぶん) instead of ぷん/ふん; digits are read correctly (30分 → さんじゅっぷん). Write minutes with digits.
+- **"Bluetooth"** is read poorly inside Japanese sentences (write ブルートゥース); "Zoom" is unclear with the lite model.
+- **ESP32-S3, two cores (the default): model M is not deterministic** for ja-en too: 6 of 9 test dumps differ from the ESP32-P4 output (SNR 3–40 dB, differences up to 0.48 full scale, once a changed duration). The lite model S was clean in all 9 dumps for ja-en. `cores 1` gives output identical to the ESP32-P4 at the cost of speed. The ESP32-P4 is not affected; the website samples come from the ESP32-P4.
+- A very short first sentence followed by a long one ("Hello! I am ...") can cause one playback underrun with M (a short gap).
+
 ## v0.5.0 (2026-11-19) — Korean + English and Chinese + English voices
 
 Two new bilingual pairs, each with one designed female voice as a quality model (M) and a lite model (S), all **Apache-2.0**:

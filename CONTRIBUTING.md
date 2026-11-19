@@ -21,7 +21,7 @@ The front-end layout, rule precedence and the steps for changing a reading are i
 1. **Token set.** Add the new tokens as a new token set version in `src/vtts/frontend/phoneme_set.py`. Never reorder or remove existing tokens: models store ids, and the model file header records the vocabulary size.
 2. **Front-end (Python).** Data tables in `src/vtts/frontend/lexicons/<lang>/*.tsv`, a normalizer (numbers, dates, currency, units, product codes) and a G2P under `src/vtts/frontend/<lang>/`, wired into the language tagger (`lang.py`) and `text.py`. Add tests under `tests/frontend/`.
 3. **Front-end (C).** Port the subset devices need to `runtime/src/vtts_text.c`; generate tables from Python (`runtime/tools/gen_text_tables.py`) rather than copying them by hand, and extend the parity fixture (`scripts/frontend/export_text_parity.py`) so Python and C must produce identical ids.
-4. **Data and training.** Any recorded or synthesized speech with transcripts works; see "Training a voice" in the README. Document data sources and their licenses in `NOTICE` and in the model card. Use only data whose terms allow training, and only voices that are designed or whose speakers consented.
+4. **Data and training.** Any recorded or synthesized speech with transcripts works; see "Training a voice" in [docs/architecture.md](docs/architecture.md#training-a-voice). Document data sources and their licenses in `NOTICE` and in the model card. Use only data whose terms allow training, and only voices that are designed or whose speakers consented.
 5. **Evaluation.** Add an out-of-domain sentence set under `eval/sets/` and report CER, UTMOS and on-chip RTF for both model tiers.
 
 ## Adding a board
@@ -36,7 +36,7 @@ A new chip family also needs SIMD kernels in `runtime/ports/` that pass `selftes
 
 - **Python:** 3.11, formatted and linted with `ruff` (line length 100), type hints on public functions. Each script starts with a docstring that says what it does and shows its usage.
 - **C:** C99, `-Wall -Wextra -Werror` clean, no `malloc` in the runtime (all memory comes from the caller's arena), no hard-coded model shapes. New kernels need a reference C version and a bit-exact or tolerance test.
-- **Language:** code, comments, file names, commit messages and documentation in English. `README.vi.md` is a maintained Vietnamese translation of `README.md`; update both when you change the README. Vietnamese text that is data (test sentences, templates, lexicons) stays Vietnamese.
+- **Language:** code, comments, file names, commit messages and documentation in English. Vietnamese text that is data (test sentences, templates, lexicons) stays Vietnamese.
 - **Commits:** small and focused, with a short imperative subject (`frontend: ...`, `runtime: ...`, `docs: ...`).
 
 ## Privacy and secrets
@@ -59,7 +59,7 @@ By contributing you agree that your contributions are licensed under the Apache 
 
 ## README and website
 
-The voice catalog, hardware table, board list and technology summary are shared by `README.md`, `README.vi.md` and the website (`docs/index.html`). Edit them in `docs/site.json` (the `listen` key holds the website's languages, models with their size and RTF, and audio samples), then run:
+The released-voices table of `README.md`, the voice catalog, speed table and samples of `docs/voices.md`, the technology summary of `docs/architecture.md`, the board defaults of `firmware/esp32/README.md` and parts of the website (`docs/index.html`) are generated from `docs/site.json` (the `listen` key holds the website's languages, models with their size and RTF, and audio samples; a released voice points to its two models there). Edit `docs/site.json`, then run:
 
 ```bash
 uv run python scripts/docs/sync_docs.py

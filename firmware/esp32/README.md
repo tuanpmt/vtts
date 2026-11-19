@@ -30,13 +30,43 @@ BOARD=esp32-p4-nano ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor  
 BOARD=esp32-s3-touch-lcd-2.8 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor    # S3-Touch-LCD-2.8
 ```
 
-The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts) (folder `vi/`). The serial console commands are listed in the [main README](../../README.md#serial-console).
+The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts) (one folder per voice; the released voices are listed in the [README](../../README.md#released-voices)). The serial console commands are [below](#serial-console).
 
 `build.sh` also builds the front-end blobs once, from the Python tables: `main/lex_en.bin` (VLEX, English lexicon, ~1.9 MB), `main/lex_zh.bin` (ZLEX, Mandarin readings, ~116 KB) and `main/lex_ja.bin` (JLEX, Japanese readings and NFKC data, ~721 KB). They are read in place from flash. `lex_en.bin` is always embedded; `lex_zh.bin`, `lex_ja.bin` and `lex_ru.bin` only when their language is compiled in (below). When a needed blob is missing at configure time the firmware builds without it and zh-en (ja-en) models skip Han characters (kana and kanji); the console prints a warning at start-up.
 
 **Languages compiled in.** Vietnamese and English are always built. Every other language (zh, ko, ja, hi, th, es, id, pt, fr, de, it, tr, ru, pl, ar, fi, el, ms, tl, sw, nl, sv, no) is compiled in only when one of the two models needs it: `main/vtts_langs.cmake` reads the `token_set` dim of `main/model_s.vtts` and `main/model_m.vtts` at configure time (files without the dim: by vocabulary size, only for the sets that existed before it) and sets `VTTS_ENABLE_<L>` (`runtime/include/vtts_langs.h`); the configure step prints the list. So a vi-en image carries no Japanese tables and no `lex_ja.bin`. `VTTS_LANGS=all ./build.sh ...` builds every language, `VTTS_LANGS=zh,ja ./build.sh ...` exactly those. On the ESP32-P4 (86-Panel, ESP-IDF 6.1, two int8 models of about 1.2 + 2.6 MB) the image is 5.82 MB (27% of the 8 MB app partition free) for vi-en, 6.58 MB (18% free) for ja-en with `lex_ja.bin`, 6.29 MB (21% free) for ru-en with `lex_ru.bin`, 5.98 MB (25% free) for ar-en, and 7.91 MB (1% free) with `VTTS_LANGS=all`.
 
 Each board has its own build directory and `sdkconfig`. Shared configuration lives in `sdkconfig.defaults`; chip-specific settings live in `sdkconfig.defaults.esp32p4` and `sdkconfig.defaults.esp32s3`.
+
+Default speaker settings per board (change them at run time with `vol` and `gain`):
+
+<!-- BEGIN:boards -->
+| `BOARD=` | Board | Speaker path | Default volume |
+|---|---|---|---|
+| `esp32-p4-86-panel-eth-2ro` (default) | ESP32-P4-86-Panel-ETH-2RO | ES8311 | `vol 70`, `gain 0` |
+| `esp32-p4-nano` | ESP32-P4-NANO | ES8311 | `vol 90`, `gain 12` |
+| `esp32-s3-touch-lcd-2.8` | ESP32-S3-Touch-LCD-2.8 | PCM5101 | `vol 80`, `gain 6` |
+| `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
+<!-- END:boards -->
+
+## Serial console
+
+Type a sentence and press Enter; the board speaks it. Other commands:
+
+| Command | Effect |
+|---|---|
+| `model s` / `model m` | Lite or quality model |
+| `lang <mode>` | Text mode; the modes follow the model's token set: `vi` / `en` / `auto` for vi-en (`vi` also reads English words in Vietnamese sentences), `zh` for zh-en, `ko` for ko-en, `ja` for ja-en, and one mode per other pair ([below](#languages-and-text-modes)) |
+| `vol 0-100`, `gain dB` | Volume; the digital gain has a soft limiter |
+| `speed 0.7-1.6` | Speaking rate (higher is slower) |
+| `expr 0.5-2.5` | Intonation range (models with a pitch predictor) |
+| `bench`, `prof` | RTF on four fixed sentences; time per stage |
+| `selftest` | SIMD kernels against plain C, including both cores at once |
+| `dump <text>` | Synthesize and send PCM to the PC: `scripts/device/say.py PORT "dump <text>" --dump-dir out/` |
+| `ids <ids;ids...>` | Speak token ids from the PC's front-end: `scripts/device/say.py --lang vi\|en\|mixed PORT "<text>"` |
+| `help` | List the commands; `chunk N`, `first N`, `cores 1\|2` and `fusetest` are for experiments |
+
+Any line that is not a command is spoken, and every command ends with a `DONE` line.
 
 ## Languages and text modes
 

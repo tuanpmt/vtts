@@ -26,6 +26,10 @@ from .model import Student
 SEG_FRAMES = 32
 KEEP_LAST = 3
 STFT_RES = ((512, 128, 512), (1024, 256, 1024), (2048, 512, 2048))
+# high-band STFT loss (hf_weight > 0): shorter windows resolve the frame-to-frame structure of
+# the 5-10 kHz noise layer better than the 2048-point one
+HF_STFT_RES = ((256, 64, 256), (512, 128, 512), (1024, 256, 1024))
+DISCS = ("mpd", "mpd+mrd", "mpd+mrd-hf")
 
 
 # ---------------- batches ----------------
@@ -84,6 +88,44 @@ def mr_stft_loss(y_hat: torch.Tensor, y: torch.Tensor) -> torch.Tensor:
     return loss / len(STFT_RES)
 
 
+def hf_stft_loss(y_hat: torch.Tensor, y: torch.Tensor, lo_hz: float = 4000.0,
+                 sr: int = 22050, resolutions=HF_STFT_RES) -> torch.Tensor:
+    """Spectral convergence + log-magnitude L1 restricted to bins at or above lo_hz.
+
+    The full-band losses are dominated by the loud low band, so an excess noise floor at
+    5-10 kHz (20-40 dB below the formants) costs almost nothing; this term weighs that band
+    on its own."""
+    loss = 0.0
+    for n_fft, hop, win in resolutions:
+        w = torch.hann_window(win, device=y.device)
+        lo = round(lo_hz * n_fft / sr)
+        s_hat = torch.stft(y_hat, n_fft, hop, win, w, return_complex=True).abs()[:, lo:].clamp_min(1e-5)
+        s = torch.stft(y, n_fft, hop, win, w, return_complex=True).abs()[:, lo:].clamp_min(1e-5)
+        sc = torch.norm(s - s_hat, p="fro") / torch.norm(s, p="fro").clamp_min(1e-5)
+        loss = loss + sc + F.l1_loss(torch.log(s_hat), torch.log(s))
+    return loss / len(resolutions)
+
+
+def build_disc(kind: str) -> torch.nn.Module:
+    """mpd (VITS multi-period + scale), mpd+mrd (+ 3 linear-magnitude spectrogram
+    discriminators), mpd+mrd-hf (+ 3 more on the log magnitude above 4 kHz)."""
+    from .discriminators import (
+        CombinedDiscriminator,
+        HighBandDiscriminator,
+        MultiResolutionDiscriminator,
+    )
+
+    if kind not in DISCS:
+        raise ValueError(f"unknown discriminator {kind!r}; choose from {DISCS}")
+    mpd = build_discriminator(TeacherConfig())
+    if kind == "mpd":
+        return mpd
+    parts = [mpd, MultiResolutionDiscriminator()]
+    if kind == "mpd+mrd-hf":
+        parts.append(HighBandDiscriminator())
+    return CombinedDiscriminator(*parts)
+
+
 def mel(y: torch.Tensor) -> torch.Tensor:
     return mel_spectrogram_torch(y, 1024, 80, 22050, 256, 1024, 0.0, None)
 
@@ -95,11 +137,16 @@ def latest(out: Path, stage: str) -> Path | None:
     return c[-1] if c else None
 
 
-def save(out: Path, stage: str, state: dict) -> None:
+def save(out: Path, stage: str, state: dict, keep_every: int = 0) -> None:
+    """Write a checkpoint and delete all but the newest KEEP_LAST, except steps that are a
+    multiple of keep_every (> 0), which are kept for later evaluation."""
     p = out / f"{stage}_{state['step']:07d}.pt"
     torch.save(state, p.with_suffix(".tmp"))
     p.with_suffix(".tmp").replace(p)
     for old in sorted(out.glob(f"{stage}_*.pt"))[:-KEEP_LAST]:
+        step = int(old.stem.split("_")[-1])
+        if keep_every > 0 and step % keep_every == 0:
+            continue
         old.unlink()
 
 
@@ -113,8 +160,13 @@ def log(out: Path, row: dict) -> None:
 def train(cfg: StudentConfig, shards: Path, out: Path, stage: str, max_steps: int,
           batch_size: int = 16, lr: float = 2e-4, ckpt_every: int = 2000, log_every: int = 50,
           device: str = "cuda", init: Path | None = None,
-          nan_steps: frozenset[int] = frozenset(), disc: str = "mpd") -> None:
-    """stage: "front" | "dec" | "joint". `init` loads student weights from another stage."""
+          nan_steps: frozenset[int] = frozenset(), disc: str = "mpd", hf_weight: float = 0.0,
+          hf_lo_hz: float = 4000.0, keep_every: int = 0) -> None:
+    """stage: "front" | "dec" | "joint". `init` loads student weights from another stage.
+
+    GAN stages: `disc` picks the discriminator set (see build_disc); `hf_weight` > 0 adds
+    hf_stft_loss above `hf_lo_hz` with that weight. `keep_every` > 0 keeps every checkpoint
+    whose step is a multiple of it (others: only the newest KEEP_LAST)."""
     assert stage in ("front", "dec", "joint")
     out = Path(out)
     out.mkdir(parents=True, exist_ok=True)
@@ -134,11 +186,7 @@ def train(cfg: StudentConfig, shards: Path, out: Path, stage: str, max_steps: in
     gan = stage in ("dec", "joint")
     disc_kind, disc = disc, None
     if gan:
-        from .discriminators import CombinedDiscriminator, MultiResolutionDiscriminator
-
-        mpd = build_discriminator(TeacherConfig())
-        disc = (CombinedDiscriminator(mpd, MultiResolutionDiscriminator()) if disc_kind == "mpd+mrd"
-                else mpd).to(dev)
+        disc = build_disc(disc_kind).to(dev)
     params = (list(student.duration.parameters()) + list(student.acoustic.parameters())
               if stage == "front" else
               list(student.decoder.parameters()) + (list(student.acoustic.parameters()) if stage == "joint" else []))
@@ -229,6 +277,10 @@ def train(cfg: StudentConfig, shards: Path, out: Path, stage: str, max_steps: in
             l_mel = F.l1_loss(mel(y_hat[:, 0]), mel(y[:, 0])) * 45.0
             l_stft = mr_stft_loss(y_hat[:, 0], y[:, 0]) * 2.0
             loss = l_adv + l_fm + l_mel + l_stft
+            if hf_weight > 0:
+                l_hf = hf_stft_loss(y_hat[:, 0], y[:, 0], hf_lo_hz, cfg.sample_rate) * hf_weight
+                loss = loss + l_hf
+                row["l_hf"] = l_hf.item()
             if step in nan_steps:
                 loss = loss * float("nan")
             ok = ok and bool(torch.isfinite(loss))
@@ -249,7 +301,9 @@ def train(cfg: StudentConfig, shards: Path, out: Path, stage: str, max_steps: in
         if step % ckpt_every == 0 or step == max_steps:
             st = {"student": student.state_dict(), "opt": opt.state_dict(),
                   "scaler": scaler.state_dict(), "step": step, "stage": stage,
-                  "config": cfg.__dict__, "disc": disc_kind}
+                  "config": cfg.__dict__, "disc": disc_kind,
+                  "train_opts": {"hf_weight": hf_weight, "hf_lo_hz": hf_lo_hz, "lr": lr,
+                                 "batch_size": batch_size}}
             if gan:
                 st.update(disc=disc.state_dict(), opt_d=opt_d.state_dict())
-            save(out, stage, st)
+            save(out, stage, st, keep_every)

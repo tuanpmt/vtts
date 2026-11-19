@@ -188,3 +188,15 @@ def test_main_script_cer_skips_english_words():
     # a dropped Hangul syllable and an insertion inside a Hangul word count
     assert main_script_cer([("거실 불을 켜 드릴까요?", "거실 불 켜 드릴까요")], "ko") == pytest.approx(1 / 9)
     assert main_script_cer([("거실 불을 켜 드릴까요?", "거실 불을을 켜 드릴까요")], "ko") == pytest.approx(1 / 9)
+
+
+def test_ja_reading_cer_ignores_spelling():
+    from vtts.eval.cer import corpus_cer, ja_reading_cer
+
+    ref, hyp = "エアコンを二十六度に設定しました。", "エアコンを26度に設定しました"
+    assert corpus_cer([(ref, hyp)], "ja") > 0.1  # 二十六 vs にじゅうろく: orthographic error
+    assert ja_reading_cer([(ref, hyp)]) == 0.0
+    assert ja_reading_cer([("今日は雨です。", "きょうは雨です")]) == 0.0
+    assert ja_reading_cer([("洗濯機", "選択肢")]) > 0.0  # a different reading is an error
+    assert ja_reading_cer([("このWi-Fiはpasswordが必要ですか？", "このWi-Fiはパスワードが必要ですか")],
+                          main_only=True) == 0.0

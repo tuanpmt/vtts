@@ -40,7 +40,7 @@ For comparison (same sets and scoring):
 
 ## On the chip
 
-Every clip on the website and in the README is the ESP32-P4's own PCM (firmware `dump` command, `lang auto`), compressed to 64 kbps MP3. All 32 published MP3s (8 sentences × 2 voices × 2 models) were decoded again and transcribed with the same ASR as above: CER 0.017 on the Vietnamese clips, 0.010 on the mixed and 0.005 on the English ones; the worst clip is 0.06 (`nam-1` reading the place name "Nhơn Trạch"), and none is broken. The dumps of the same sentences from the ESP32-S3 score the same.
+Every clip on the website and in [voices.md](../voices.md#listen-generated-on-an-esp32-p4) is the ESP32-P4's own PCM (firmware `dump` command, `lang auto`), compressed to 64 kbps MP3. All 32 published MP3s (8 sentences × 2 voices × 2 models) were decoded again and transcribed with the same ASR as above: CER 0.017 on the Vietnamese clips, 0.010 on the mixed and 0.005 on the English ones; the worst clip is 0.06 (`nam-1` reading the place name "Nhơn Trạch"), and none is broken. The dumps of the same sentences from the ESP32-S3 score the same.
 
 | Chip | S: RTF / speech starts | M: RTF / speech starts |
 |---|---|---|
