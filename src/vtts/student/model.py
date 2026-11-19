@@ -39,7 +39,29 @@ class DurationModel(nn.Module):
 
 
 def expand(x: torch.Tensor, durations: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
-    """x [B, C, N], durations [B, N] (int) -> frames [B, C, T] and position features [B, 2, T]."""
+    """x [B, C, N], durations [B, N] (int) -> frames [B, C, T] and position features [B, 2, T]
+    (in-token position (k + 0.5) / d and log d per frame; zero past each item's length).
+    Vectorised over the batch (one host sync); equals expand_loop."""
+    b, c, n = x.shape
+    d = durations.clamp(min=0)
+    cum = torch.cumsum(d, 1)
+    t = int(cum[:, -1].max()) if n else 0
+    frames = torch.arange(t, device=x.device)
+    # token of each frame: first token whose cumulative duration exceeds the frame index
+    # (zero-duration tokens get no frames)
+    tok = torch.searchsorted(cum, frames.expand(b, t).contiguous(), right=True).clamp(max=max(n - 1, 0))
+    valid = frames[None] < cum[:, -1:]
+    out = torch.where(valid[:, None], torch.gather(x, 2, tok[:, None].expand(b, c, t)), 0.0).to(x.dtype)
+    dd = torch.gather(d, 1, tok)
+    pos = frames[None] - (torch.gather(cum, 1, tok) - dd)
+    ddf = torch.where(valid, dd, torch.ones_like(dd)).float()
+    frac = torch.where(valid, (pos.float() + 0.5) / ddf, torch.zeros_like(ddf))
+    logd = torch.where(valid, torch.log(ddf), torch.zeros_like(ddf))
+    return out, torch.stack([frac, logd], 1)
+
+
+def expand_loop(x: torch.Tensor, durations: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    """Reference per-item expand (the original implementation; see expand)."""
     outs, feats = [], []
     for b in range(x.shape[0]):
         d = durations[b].clamp(min=0)

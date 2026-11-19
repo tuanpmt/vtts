@@ -16,6 +16,8 @@
  *   expr 0.5-2.5          intonation range (models with a pitch predictor)
  *   bench, prof           RTF on four fixed sentences; time per synthesis stage
  *   selftest, fusetest    SIMD kernels against plain C, including both cores at once
+ *   memtest               an int8 layer on both cores with weights and outputs in PSRAM
+ *   debuzz 0-12           optional post filter before the speaker: dB off above ~6 kHz (default 0)
  *   dump <sentence>       synthesize and send the PCM as base64 (scripts/device/say.py --dump-dir)
  *   ids <ids;ids...>      speak token ids from a host front-end (scripts/device/say.py --lang)
  *   lang <mode>           text mode, valid modes per token set of the current model: v1 vi;
@@ -39,9 +41,16 @@
 
 #ifndef FAST_SCRATCH_MAX
 /* bytes of internal SRAM for hot synthesis buffers; 0 keeps everything in PSRAM so internal RAM
- * stays free for DMA (about 2% faster with 96 KB on the P4) */
+ * stays free for DMA (about 2% faster with 96 KB on the P4). On the S3, 40 KB holds the int8
+ * activations of the int8 layers, so the two cores read less from PSRAM (see OUT_STAGE_BYTES). */
+#if CONFIG_IDF_TARGET_ESP32S3
+#define FAST_SCRATCH_MAX 40960
+#else
 #define FAST_SCRATCH_MAX 0
 #endif
+#endif
+
+#define OUT_STAGE_BYTES 32768 /* ESP32-S3: a block of int8 layer outputs, e.g. 17 frames x 480 */
 
 #if CONFIG_IDF_TARGET_ESP32S3
 #define RTF_INIT_S 0.30f
@@ -116,6 +125,15 @@ void app_main(void) {
         vtts_set_fast_scratch(fast, fast ? fast_n : 0);
         printf("fast scratch %u bytes in sram\n", fast ? (unsigned)fast_n : 0u);
     }
+#if CONFIG_IDF_TARGET_ESP32S3
+    if (g.arena_where[0] == 'p') { /* int8 layer outputs staged in internal RAM (vtts_set_out_stage):
+                                    * two cores storing to PSRAM while streaming weights from it
+                                    * now and then lost a value on the S3 (`memtest` shows it) */
+        void *stage = heap_caps_aligned_alloc(16, OUT_STAGE_BYTES, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+        vtts_set_out_stage(stage, stage ? OUT_STAGE_BYTES : 0);
+        printf("output stage %u bytes in sram\n", stage ? (unsigned)OUT_STAGE_BYTES : 0u);
+    }
+#endif
     g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);
     g.ws = heap_caps_malloc(sizeof *g.ws, MALLOC_CAP_SPIRAM);
     /* no PCM buffer while speaking: audio streams to the speaker; `dump` allocates one when needed */

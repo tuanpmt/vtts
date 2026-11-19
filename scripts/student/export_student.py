@@ -51,8 +51,16 @@ def main() -> None:
     ap.add_argument("--int8", action="store_true")
     ap.add_argument("--token-set", choices=sorted(TOKEN_SET_CODES), default=None,
                     help="token set to record (default: from the checkpoint or the vocab)")
+    ap.add_argument("--save-pt", type=Path, default=None,
+                    help="also save the assembled float student ({student, config, step, stage}), "
+                         "e.g. as INIT_FROM for the warm-decoder experiment E6")
     a = ap.parse_args()
     m = assemble(a.front, a.dec, a.joint)
+    if a.save_pt:
+        src = torch.load(a.joint or a.dec, map_location="cpu", weights_only=False)
+        torch.save({"student": m.state_dict(), "config": dict(m.cfg.__dict__), "step": src.get("step", 0),
+                    "stage": "final"}, a.save_pt)
+        print(f"wrote {a.save_pt}")
     ts = resolve_token_set(m.cfg.vocab, a.token_set or checkpoint_token_set(a.front))
     if ts is None:
         ap.error(f"vocab {m.cfg.vocab} names no token set; pass --token-set")

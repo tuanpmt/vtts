@@ -1,9 +1,11 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* selftest.c -- SIMD kernels against plain C: random dots, multi-row dots, weights read from the
  * embedded model, both cores at once (internal RAM and PSRAM), and throughput lines. On the
- * ESP32-S3, fusetest also checks the fused ld.ip kernel (memory x cores x interrupts). */
+ * ESP32-S3, fusetest also checks the fused ld.ip kernel (memory x cores x interrupts); memtest runs
+ * an int8 layer on both cores with weights and outputs in PSRAM. */
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "app.h"
 #include "esp_heap_caps.h"
@@ -152,4 +154,65 @@ int fusetest_run(void) {
     printf("fusetest: ESP32-S3 only\n");
     return 0;
 #endif
+}
+
+
+/* memtest: an int8 linear layer split over output channels on both cores, as in synthesis: SIMD
+ * dots with weights over ~1.8 MB of PSRAM (cache misses on both cores) and the results stored
+ * time-major (y[t][o]) by both cores at once, into PSRAM and then into internal RAM; every value
+ * is checked. On the ESP32-S3 the PSRAM case now and then loses a value (about one in 10^6), which
+ * is why synthesis stages these outputs in internal RAM there (vtts_set_out_stage); only the
+ * internal-RAM case counts as a failure. */
+#define MX_L 8
+#define MX_C 480
+#define MX_T 16
+#define MX_PASSES 60
+static struct { const int8_t *w, *x; float *y; } s_mx;
+static void memtest_rows(int lo, int hi, void *ctx) {
+    (void)ctx;
+    int32_t got[MX_T];
+    for (int o = lo; o < hi; o++) {
+        vtts_dots_s8s8(s_mx.w + (size_t)o * MX_C, s_mx.x, MX_C, MX_T, MX_C, got);
+        for (int t = 0; t < MX_T; t++) s_mx.y[(size_t)t * MX_C + o] = (float)got[t] * 0.5f;
+    }
+}
+
+int memtest_run(void) {
+    uint32_t r = esp_random();
+    int8_t *w = heap_caps_aligned_alloc(16, (size_t)MX_L * MX_C * MX_C, MALLOC_CAP_SPIRAM);
+    int8_t *x = heap_caps_aligned_alloc(16, MX_T * MX_C, MALLOC_CAP_SPIRAM);
+    int32_t *ref = heap_caps_malloc(sizeof(int32_t) * MX_L * MX_T * MX_C, MALLOC_CAP_SPIRAM);
+    float *yp = heap_caps_aligned_alloc(16, sizeof(float) * MX_T * MX_C, MALLOC_CAP_SPIRAM);
+    float *ys = heap_caps_aligned_alloc(16, sizeof(float) * MX_T * MX_C, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);
+    int total = 0;
+    if (!w || !x || !ref || !yp || !ys) { printf("memtest: out of memory\n"); total = 1; goto done; }
+    for (size_t i = 0; i < (size_t)MX_L * MX_C * MX_C; i++) w[i] = (int8_t)(((r = r * 1664525u + 1013904223u) >> 24) % 255 - 127);
+    for (int i = 0; i < MX_T * MX_C; i++) x[i] = (int8_t)(((r = r * 1664525u + 1013904223u) >> 24) % 255 - 127);
+    for (int l = 0; l < MX_L; l++)
+        for (int o = 0; o < MX_C; o++)
+            for (int t = 0; t < MX_T; t++) {
+                int32_t s = 0;
+                const int8_t *wr = w + ((size_t)l * MX_C + o) * MX_C;
+                for (int i = 0; i < MX_C; i++) s += wr[i] * x[t * MX_C + i];
+                ref[((size_t)l * MX_T + t) * MX_C + o] = s;
+            }
+    s_mx.x = x;
+    for (int mem = 0; mem < 2; mem++) {
+        int bad = 0;
+        s_mx.y = mem ? ys : yp;
+        int64_t t0 = esp_timer_get_time();
+        for (int pass = 0; pass < MX_PASSES; pass++)
+            for (int l = 0; l < MX_L; l++) {
+                s_mx.w = w + (size_t)l * MX_C * MX_C;
+                vtts_par_run(memtest_rows, MX_C, NULL);
+                for (int i = 0; i < MX_T * MX_C; i++)
+                    if (s_mx.y[i] != (float)ref[(size_t)l * MX_T * MX_C + i] * 0.5f) bad++;
+            }
+        printf("MEMTEST weights=psram y=%s cores=2 wrong=%d of %d (%.1f s)\n", mem ? "sram" : "psram", bad,
+               MX_PASSES * MX_L * MX_T * MX_C, (esp_timer_get_time() - t0) / 1e6);
+        if (mem) total += bad;
+    }
+done:
+    free(w); free(x); free(ref); free(yp); free(ys);
+    return total;
 }

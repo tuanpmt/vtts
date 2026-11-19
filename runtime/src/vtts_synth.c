@@ -75,6 +75,14 @@ static const float *W(const vtts_model *m, const char *fmt, ...) {
 
 #include "vtts_port.h"
 
+/* Parallel work other than the int8 layers: runs on one core while output staging is on (the
+ * ESP32-S3 setting below), since those passes too store their results to PSRAM from both cores. */
+static float *s_stage;
+static void par_light(vtts_par_fn fn, int n, void *ctx) {
+    if (s_stage) fn(0, n, ctx);
+    else vtts_par_run(fn, n, ctx);
+}
+
 /* y[co, t] = b[co] + sum_ci,k w[co, ci, k] * x[ci, t + k*dil - pad]  (same length) */
 typedef struct { const float *x, *w, *b; float *y; int ci, T, K, dil; } fconv_t;
 
@@ -125,7 +133,7 @@ static void conv1d_rows(int lo, int hi, void *arg) {
 static void conv1d(const float *x, int ci, int T, const float *w, const float *b, int co, int K,
                    int dil, float *y) {
     fconv_t j = {x, w, b, y, ci, T, K, dil};
-    vtts_par_run(conv1d_rows, co, &j);
+    par_light(conv1d_rows, co, &j);
 }
 
 /* depthwise: w[c, 1, K] */
@@ -148,7 +156,7 @@ static void dwconv_rows(int lo, int hi, void *arg) {
 
 static void dwconv1d(const float *x, int C, int T, const float *w, const float *b, int K, float *y) {
     fconv_t j = {x, w, b, y, C, T, K, 1};
-    vtts_par_run(dwconv_rows, C, &j);
+    par_light(dwconv_rows, C, &j);
 }
 
 /* ConvTranspose1d: w[ci, co, K], stride s, padding p; out length T*s when K = 2s, p = s/2 */
@@ -204,7 +212,7 @@ static void layernorm_cols(int lo, int hi, void *arg) {
 
 static void layernorm_cm(float *x, int C, int T, const float *g, const float *b) {
     ln_t j = {x, g, b, C, T};
-    vtts_par_run(layernorm_cols, T, &j);
+    par_light(layernorm_cols, T, &j);
 }
 
 static void lrelu(float *x, size_t n, float slope) {
@@ -277,7 +285,7 @@ static void quant_cols(int lo, int hi, void *arg) {
 
 static void quant_tm(const float *x, int ci, int T, qbuf_t *q) {
     qt_t j = {x, q, ci, T};
-    vtts_par_run(quant_cols, T, &j);
+    par_light(quant_cols, T, &j);
 }
 
 typedef struct {
@@ -333,13 +341,45 @@ static void lconv_rows(int lo, int hi, void *arg) {
     }
 }
 
+/* Optional output staging (vtts_set_out_stage): the int8 layers write their outputs into a small
+ * buffer in internal RAM while the cores run, a block of frames at a time, and the calling core
+ * copies each block to its destination afterwards. On the ESP32-S3 with the activations in PSRAM,
+ * outputs stored to PSRAM by both cores at once while they stream weights from PSRAM were now and
+ * then corrupted (single wrong values, about one in 10^6); results are unchanged by the staging. */
+static size_t s_stage_n; /* floats */
+
+void vtts_set_out_stage(void *p, size_t n) {
+    s_stage = p;
+    s_stage_n = p ? n / sizeof(float) : 0;
+}
+
+static void lconv_par(const qjob_t *j, int co) {
+    int nf = s_stage_n ? (int)(s_stage_n / (size_t)co) : 0; /* frames per staged block */
+    if (nf < 1 || (j->out_tm && j->ldy != co)) {
+        vtts_par_run(lconv_rows, co, (void *)j);
+    } else {
+        for (int f0 = 0; f0 < j->t_n; f0 += nf) {
+            int n = j->t_n - f0 < nf ? j->t_n - f0 : nf;
+            qjob_t k = *j;
+            k.t_lo = j->t_lo + f0;
+            k.t_n = n;
+            k.y = s_stage;
+            vtts_par_run(lconv_rows, co, &k);
+            if (j->out_tm) memcpy(j->y + (size_t)f0 * co, s_stage, sizeof(float) * (size_t)n * co);
+            else
+                for (int o = 0; o < co; o++)
+                    memcpy(j->y + (size_t)o * j->t_n + f0, s_stage + (size_t)o * n, sizeof(float) * (size_t)n);
+        }
+    }
+}
+
 /* same-length conv (K, dil) or linear (K = 1); int8 rows may run on several cores */
 static void lconv(const layer_t *l, const float *x, int ci, int T, int co, int K, int dil, float *y,
                   qbuf_t *q) {
     if (l->w) { conv1d(x, ci, T, l->w, l->b, co, K, dil, y); return; }
     quant_tm(x, ci, T, q);
     qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = K, .dil = dil, .t_lo = 0, .t_n = T};
-    vtts_par_run(lconv_rows, co, &j);
+    lconv_par(&j, co);
 }
 
 /* lconv for output frames [t_lo, t_lo + n) of an input window [ci, Win] (zero padded at the
@@ -353,7 +393,7 @@ static void lconv_range(const layer_t *l, const float *x, int ci, int Win, int c
     }
     quant_tm(x, ci, Win, q);
     qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = Win, .K = K, .dil = 1, .t_lo = t_lo, .t_n = n};
-    vtts_par_run(lconv_rows, co, &j);
+    lconv_par(&j, co);
 }
 
 /* int8 linear (K = 1) writing time-major output [T][co]; float layers are not supported */
@@ -361,7 +401,7 @@ static void lconv_tm(const layer_t *l, const float *x, int ci, int T, int co, fl
     quant_tm(x, ci, T, q);
     qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = 1, .dil = 1, .out_tm = 1, .ldy = co,
                 .t_lo = 0, .t_n = T};
-    vtts_par_run(lconv_rows, co, &j);
+    lconv_par(&j, co);
 }
 
 static void lconvT_rows(int lo, int hi, void *arg) {
@@ -389,7 +429,7 @@ static void lconvT(const layer_t *l, const float *x, int ci, int T, int co, int 
     if (l->w) { convT1d(x, ci, T, l->w, l->b, co, K, s, p, y, Tout); return; }
     quant_tm(x, ci, T, q);
     qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = K, .s = s, .p = p, .Tout = Tout};
-    vtts_par_run(lconvT_rows, co, &j);
+    par_light(lconvT_rows, co, &j);
 }
 
 /* int8 activations for up to n elements and per-frame scales */
@@ -684,7 +724,7 @@ static void gelu_range(int lo, int hi, void *arg) {
 
 static void gelu_par(float *h, long n) {
     gelu_job_t j = {h, n};
-    vtts_par_run(gelu_range, (int)((n + 63) / 64), &j);
+    par_light(gelu_range, (int)((n + 63) / 64), &j);
 }
 
 /* Fused ConvNeXt front for frames [off, off + n) of a channel-major window x [C][Win]:
@@ -762,7 +802,7 @@ static void gelu_q_frames(int lo, int hi, void *arg) {
 static void lin_q(const layer_t *l, const qbuf_t *q, int ci, int T, int co, float *y, int out_tm) {
     qjob_t j = {.l = l, .q = q, .y = y, .ci = ci, .T = T, .K = 1, .dil = 1, .out_tm = out_tm, .ldy = co,
                 .t_lo = 0, .t_n = T};
-    vtts_par_run(lconv_rows, co, &j);
+    lconv_par(&j, co);
 }
 
 /* head output [n_fft + 2, hb] -> real inverse FFT of each frame, via one complex FFT of half
@@ -891,7 +931,7 @@ static long vocos_region(const vtts_model *m, arena_t *a, const float *z, long W
         }
         PROF_ADD(5);
         ifr_t job = {head, fbuf, hb, n_fft, twiddles(n_fft)};
-        vtts_par_run(istft_frames, hb, &job);
+        par_light(istft_frames, hb, &job);
         const float inv_n = 1.0f / (float)n_fft;
         for (int j = 0; j < hb; j++) { /* window and overlap-add in frame order */
             const float *zr = fbuf + (size_t)j * n_fft, *zi = zr + n_fft / 2;
@@ -1226,7 +1266,7 @@ static int sl_compute(st_t *st, sl_t *ly, long a, long b, float *out) {
         if (p1.w || p2.w) return VTTS_ERR_ARGS; /* fused path: int8 pw layers only */
         dlq_t dj = {.x = st->win, .w = dw, .b = db, .g = ng, .be = nbb, .C = C, .Win = Win, .off = off, .K = 7,
                     .q = &st->q, .vbuf = st->aux}; /* aux holds cmax * nmax floats */
-        vtts_par_run(dw_ln_q_frames, (int)n, &dj);
+        par_light(dw_ln_q_frames, (int)n, &dj);
         PROF_ADD(3);
         for (long t0 = 0; t0 < n; t0 += VTTS_BLOCK) {
             int nb_ = (int)(n - t0 < VTTS_BLOCK ? n - t0 : VTTS_BLOCK);
@@ -1234,7 +1274,7 @@ static int sl_compute(st_t *st, sl_t *ly, long a, long b, float *out) {
             lin_q(&p1, &q1, C, nb_, M, st->h, 1);
             PROF_ADD(8);
             gq_t gj = {st->h, M, &st->q2};
-            vtts_par_run(gelu_q_frames, nb_, &gj);
+            par_light(gelu_q_frames, nb_, &gj);
             PROF_ADD(9);
             lin_q(&p2, &st->q2, M, nb_, C, st->o, 0);
             PROF_ADD(10);
@@ -1357,16 +1397,16 @@ static long head_region(const vtts_model *m, const float *xh, long ldx, long nf,
         }
         PROF_ADD(5);
         ifr_t job = {head, fbuf, hb, n_fft, twiddles(n_fft)};
-        vtts_par_run(istft_frames, hb, &job);
+        par_light(istft_frames, hb, &job);
         ola_t oj = {fbuf, win, ola + (hb0 - f_lo) * hop, hb, n_fft, hop, 1.0f / (float)n_fft};
-        vtts_par_run(ola_range, (n_fft / 2 + 63) / 64, &oj);
+        par_light(ola_range, (n_fft / 2 + 63) / 64, &oj);
     }
     PROF_ADD(6);
     /* window envelope: the squared windows of the frames covering each sample, summed in frame
      * order (as an accumulated buffer would be), computed per output sample */
     long n_out = (e - s) * hop;
     env_t ej = {ola, win, pcm, n_out, s * hop + n_fft / 2 - f_lo * hop, ola_len, nf, n_fft, hop};
-    vtts_par_run(env_range, (int)((n_out + 255) / 256), &ej);
+    par_light(env_range, (int)((n_out + 255) / 256), &ej);
     return n_out;
 }
 

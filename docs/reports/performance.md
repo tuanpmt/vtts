@@ -1,6 +1,6 @@
 # On-chip performance
 
-Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models and the v0.6.0 Japanese + English models (S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
+Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English and the v0.7.0 Portuguese (Brazil) + English models (S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
 
 Everything lives in PSRAM: the models, the working arena (about 1.9 MB) and the activations. Internal SRAM stays free for the application and for DMA.
 
@@ -19,6 +19,15 @@ Chip rev 1.3, 360 MHz, 32 MB PSRAM. Measured on a Waveshare ESP32-P4-86-Panel-ET
 
 Waveshare ESP32-S3-Touch-LCD-2.8 (ESP32-S3R8): 240 MHz, 8 MB octal PSRAM, 16 MB flash. The EchoEar 2.0 uses the same chip and firmware.
 
+Current firmware (with the [two-core fix](#esp32-s3-two-core-fix), `nu-10`, same method):
+
+| Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---:|---:|---:|---:|---:|---:|
+| S (lite) | 0.41–0.43 | 0.41–0.45 | 0.14–0.37 s | 0.25–0.48 s (median 0.38) | 39–41% / 9–10% | 1 in 8 sentences |
+| M (quality) | 0.68–0.72 | 0.68–0.76 | 0.28–0.75 s | 0.43–0.93 s (median 0.70) | 60–65% / 18–21% | 1 in 8 sentences |
+
+Before the fix (v0.4.0 firmware, the numbers the v0.4.0–v0.6.0 releases were published with):
+
 | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
 |---|---:|---:|---:|---:|---:|---:|
 | S (lite) | 0.29–0.31 | 0.29–0.31 | 0.10–0.23 s | 0.17–0.32 s (median 0.26) | 29–30% / 19–20% | 1 in 16 sentences |
@@ -33,6 +42,21 @@ Playback starts as soon as every later chunk is sure to be ready in time: the fi
 - Every underrun so far was on the same sentence, "Hello! I am a text-to-speech voice ...": a very short first sentence followed by a long one.
 - Pick the model by sound versus headroom: M sounds best; S starts speaking sooner and leaves more CPU for the application.
 
+## ESP32-S3 two-core fix
+
+Up to v0.6.0 the ESP32-S3 output with two cores (the default) was not deterministic: single values of the int8 layers came out wrong now and then (about one in 10^6), heard as short bursts that changed from run to run, mostly with M (the sections below describe it per pair). It is not a race in the runtime: it stays with interrupts masked, with the cores spinning instead of blocking on semaphores, with a larger worker stack, and with the weights copied before the SIMD loads; it rises with more PSRAM traffic (about 3x with 32-byte cache lines, 5x with PSRAM at 40 MHz) and never happens on one core or on the ESP32-P4. The firmware command `memtest` reproduces it without a model: both cores run an int8 layer with weights over 1.8 MB of PSRAM and store the outputs to PSRAM.
+
+The S3 build now keeps the two-core work away from PSRAM stores: the int8 layers write their outputs to 32 KB of internal RAM and one core copies them to the arena (`vtts_set_out_stage`), their int8 activations sit in 40 KB of internal RAM (fast scratch), and the lighter passes (LayerNorm, quantization, depthwise conv, iSTFT) run on one core. The audio is unchanged (bit for bit on the PC). Measured with `nu-10`: 22 of 23 two-core dumps were bit-identical to `cores 1` (before: nearly every M sentence had bursts), and all eight website sentences dumped with two cores match `vtts_say` (correlation ≥ 0.9998, S and M). The cost is speed, about 1.4x the v0.6.0 time:
+
+| Pair | M before → now | S before → now |
+|---|---:|---:|
+| vi-en (`nu-10`, `nam-1`) | 0.51 → 0.70 | 0.30 → 0.42 |
+| ko-en (`nu-ko`) | 0.49 → 0.70 | 0.29 → 0.41 |
+| zh-en (`nu-zh`) | 0.51 → 0.69 | 0.30 → 0.41 |
+| ja-en (`nu-ja`) | 0.50 → 0.69 | 0.29 → 0.41 |
+
+RTF from `bench` (mean of the four sentences). With `cores 1` the S3 gives M 0.84 and S 0.49. Internal RAM used on top of v0.6.0: 72 KB on the ESP32-S3, none on the ESP32-P4, whose output and speed are unchanged. Sections below describe the firmware at each release.
+
 ## Korean + English (v0.5.0)
 
 The same method with the `nu-ko` models, firmware from the v0.5.0 tree with `lang ko`, and eight Korean, English and mixed sentences (the website samples) for `dump` and playback; `bench` uses four Korean sentences.
@@ -46,11 +70,11 @@ The same method with the `nu-ko` models, firmware from the v0.5.0 tree with `lan
 
 - Both underruns were on "Hello! I am a text-to-speech voice ...", the same short-then-long sentence as with vi-en.
 - Image size with the two ko-en models and the English lexicon (no Chinese or Japanese blob): 6.40 MB on the ESP32-P4 (1.98 MB free in the 8 MB app partition) and 6.29 MB on the ESP32-S3 (2.10 MB free). ko-en needs no blob of its own; the Korean tables are compiled in.
-- ESP32-P4 PCM against `vtts_say` on a PC: SNR 39–60 dB (correlation ≥ 0.9999) for the single-sentence samples, S and M. In the two-sentence samples the firmware pauses about 150 ms longer between the sentences than `vtts_say`; aligned, the sentences match the same way.
+- ESP32-P4 PCM against `vtts_say` on a PC: SNR 39–60 dB (correlation ≥ 0.9999) for the single-sentence samples, S and M. In the two-sentence samples the firmware paused about 150 ms longer between the sentences than `vtts_say` did then; `vtts_say` now joins sentences with the same 150 ms pause as the firmware.
 
 ### Chip output against the PC runtime
 
-ESP32-P4 PCM (`dump`) against `vtts_say` on a PC for the single-sentence samples: SNR 33–72 dB (correlation ≥ 0.999), S and M alike. On the ESP32-S3 the S model matches the same way, but M with two cores (the default) is **not deterministic**: the same sentence dumped three times gives SNR 26–37 dB against the PC, and some sentences contain short bursts several frames long (up to 0.6–0.98 full scale where the PC output is near silence or much quieter). With `cores 1` the same sentences give 45–67 dB. This points to a race in the two-core path that M exercises on the S3; it is not fixed yet, and the website samples come from the ESP32-P4.
+ESP32-P4 PCM (`dump`) against `vtts_say` on a PC for the single-sentence samples: SNR 33–72 dB (correlation ≥ 0.999), S and M alike. On the ESP32-S3 the S model matches the same way, but M with two cores (the default) is **not deterministic**: the same sentence dumped three times gives SNR 26–37 dB against the PC, and some sentences contain short bursts several frames long (up to 0.6–0.98 full scale where the PC output is near silence or much quieter). With `cores 1` the same sentences give 45–67 dB. This points to a race in the two-core path that M exercises on the S3; fixed after v0.6.0, see [ESP32-S3 two-core fix](#esp32-s3-two-core-fix); the website samples come from the ESP32-P4.
 
 The v0.5.0 ko-en models reproduce it, and on them **S is affected too**. Three Korean and mixed sentences dumped three times with two cores, and once with `cores 1`, compared with `vtts_say`:
 
@@ -75,7 +99,7 @@ The zh-en models (v0.5.0) have the same architecture as the vi-en ones with a la
 - Every underrun was again "Hello! I am a text-to-speech voice ...", a very short first sentence followed by a long one.
 - Image with the two zh-en models, the English lexicon and the 116 KB ZLEX blob: 6.54 MB on the ESP32-P4 (1.85 MB free in the 8 MB app partition) and 6.42 MB on the ESP32-S3 (1.96 MB free).
 - **ESP32-P4:** the dumps of the single-sentence samples match `vtts_say` on a PC (SNR 28–66 dB, correlation ≥ 0.999) for S and M, and the P4 and the S3 with one core give identical PCM. The three samples with two sentences match `vtts_say` up to the first sentence break and are shifted after it, identically on both chips (same total length: the firmware and the PC tool place the pause between sentences differently); they transcribe as cleanly as the others. All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: CER 0.003 on the Mandarin and mixed clips, 0.009 on the English ones; the worst clip is 0.036 (S, 零下 heard as 雲下), none is broken.
-- **ESP32-S3 with two cores** (`cores 2`, the default), three dumps each of three sentences: M is not deterministic, as with vi-en (SNR −5 to 36 dB against the PC, bursts up to 0.99 full scale where the PC output is near silence, in 6 of 9 dumps). With zh-en **S is affected too**, more mildly: 4 of 9 dumps differ (SNR 11–18 dB, peaks up to 0.15 where the PC output is quiet), while the vi-en S was clean. With `cores 1` both models match the PC exactly (M 28–39 dB, S 37–66 dB, the same values as the P4). The race in the two-core path is not fixed yet; the website samples come from the ESP32-P4.
+- **ESP32-S3 with two cores** (`cores 2`, the default), three dumps each of three sentences: M is not deterministic, as with vi-en (SNR −5 to 36 dB against the PC, bursts up to 0.99 full scale where the PC output is near silence, in 6 of 9 dumps). With zh-en **S is affected too**, more mildly: 4 of 9 dumps differ (SNR 11–18 dB, peaks up to 0.15 where the PC output is quiet), while the vi-en S was clean. With `cores 1` both models match the PC exactly (M 28–39 dB, S 37–66 dB, the same values as the P4). Fixed after v0.6.0 ([ESP32-S3 two-core fix](#esp32-s3-two-core-fix)); the website samples come from the ESP32-P4.
 
 ## Japanese + English (v0.6.0)
 
@@ -91,7 +115,24 @@ The ja-en models (v0.6.0) have the same architecture with a token table of 144 (
 - Both underruns were "Hello! I am a text-to-speech voice ...", a very short first sentence followed by a long one.
 - Image with the two ja-en models, the English lexicon and the 721 KB JLEX blob: 6.90 MB on the ESP32-P4 (1.49 MB free in the 8 MB app partition) and 6.78 MB on the ESP32-S3 (1.60 MB free).
 - **ESP32-P4:** the dumps of the single-sentence samples match `vtts_say` on a PC (SNR 37–56 dB, correlation ≥ 0.9999) for S and M; the samples with two sentences differ only in the pause the firmware places between sentences, as with zh-en. All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: CER 0.001 on the kana and kanji of the Japanese and mixed clips (one clip: アラーム heard as カラーム); the Latin parts lose a little (S: "ESP32" heard as "EST3", "Zoom" as ジュン; M: "Hello" as "Holol"). None is broken.
-- **ESP32-S3 with two cores** (`cores 2`, the default), three dumps each of three sentences: M is not deterministic, as with the other pairs: 6 of 9 dumps differ from the ESP32-P4 (SNR 3–40 dB, differences up to 0.48 full scale; one dump is 0.08 s shorter, a token duration changed); the short question was identical all three times. S matched the ESP32-P4 bit for bit in all 9 dumps (unlike ko-en and zh-en S). With `cores 1` both models give the ESP32-P4 output exactly. The race in the two-core path is not fixed yet; the website samples come from the ESP32-P4.
+- **ESP32-S3 with two cores** (`cores 2`, the default), three dumps each of three sentences: M is not deterministic, as with the other pairs: 6 of 9 dumps differ from the ESP32-P4 (SNR 3–40 dB, differences up to 0.48 full scale; one dump is 0.08 s shorter, a token duration changed); the short question was identical all three times. S matched the ESP32-P4 bit for bit in all 9 dumps (unlike ko-en and zh-en S). With `cores 1` both models give the ESP32-P4 output exactly. Fixed after v0.6.0 ([ESP32-S3 two-core fix](#esp32-s3-two-core-fix)); the website samples come from the ESP32-P4.
+
+## Portuguese (Brazil) + English (v0.7.0)
+
+The pt-en models (v0.7.0) have the same architecture with a token table of 150 (S 0.83M, M 1.84M parameters). Measured with the current firmware (ESP32-S3 [two-core fix](#esp32-s3-two-core-fix) included) and `lang pt`: `bench` uses four Portuguese sentences, `dump` and playback the eight website sentences (Portuguese, Portuguese with English words, English).
+
+| Chip | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---|---:|---:|---:|---:|---:|---:|
+| ESP32-P4 | S (lite) | 0.18–0.21 (mean 0.19) | 0.18–0.20 | 0.06–0.11 s | 0.06–0.12 s (median 0.09) | 18–21% / 13–14% | 0 in 8 |
+| ESP32-P4 | M (quality) | 0.27–0.29 (mean 0.28) | 0.27–0.31 | 0.10–0.21 s | 0.13–0.29 s (median 0.24) | 26–30% / 20–22% | 2 in 8 |
+| ESP32-S3 | S (lite) | 0.41–0.45 (mean 0.42) | 0.42–0.45 | 0.12–0.28 s | 0.21–0.39 s (median 0.32) | 39–42% / 9–10% | 1 in 8 |
+| ESP32-S3 | M (quality) | 0.67–0.71 (mean 0.69) | 0.68–0.75 | 0.21–0.55 s | 0.28–0.73 s (median 0.58) | 57–64% / 17–19% | 2 in 8 |
+
+- The ESP32-P4 RTF is about 0.01–0.02 above the ja-en and ko-en models. The Portuguese `bench` sentences are short (2.0–4.6 s of audio, the shortest 0.21 for S and 0.29 for M), and the fixed cost per sentence weighs more; the longest bench sentence gives 0.177 (S) and 0.265 (M), the same as the other pairs.
+- Every underrun was on a text that starts with a one-word sentence followed by a longer one ("Olá! Eu sou ...", and with M "Hello! This text-to-speech voice ...", the English sample of the first run, later replaced by the sentence without "Hello!"), as with the other pairs.
+- Image with the two pt-en models and the English lexicon (no blob of its own; the Portuguese front-end is compiled in only for a pt-en model): 6.22 MB on the ESP32-P4 (2.17 MB free in the 8 MB app partition) and 6.10 MB on the ESP32-S3 (2.28 MB free).
+- **ESP32-P4:** the dumps match `vtts_say` on a PC (correlation ≥ 0.9993, SNR 28–57 dB) for all 16 clips. All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: CER 0.014 (M) and 0.009 (S) on average over the six Portuguese and mixed clips (the errors: "ESP32", read with Portuguese letter names, heard as "SP32"; "à Netflix" as "a Netflix"; "às 6:30" written "6h30"); the English clips score 0–0.09, the only error being "ESP32" again (spelled the Portuguese way, heard as "SPP-S2"). None is broken.
+- **ESP32-S3 with two cores:** all 16 dumps of the measurement run are identical to the ESP32-P4 dumps of the same text (SNR ≥ 95 dB, the int16 rounding), so the two-core fix holds for pt-en too.
 
 ## Where the time goes
 

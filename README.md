@@ -9,11 +9,12 @@
 <!-- BEGIN:released -->
 | Language pair | Voice | Size M / S | RTF ESP32-P4 M / S | RTF ESP32-S3 M / S | Download |
 |---|---|---|---|---|---|
-| 🇻🇳 🇺🇸 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.51 / 0.30 | [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
-| 🇻🇳 🇺🇸 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.51 / 0.30 | [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
-| 🇰🇷 🇺🇸 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.49 / 0.29 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
-| 🇨🇳 🇺🇸 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.51 / 0.30 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
-| 🇯🇵 🇺🇸 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.50 / 0.29 | [v0.6.0](https://github.com/tuanpmt/vtts/releases/tag/v0.6.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
+| 🇻🇳 🇺🇸 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.70 / 0.42 | [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
+| 🇻🇳 🇺🇸 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.70 / 0.42 | [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
+| 🇰🇷 🇺🇸 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.70 / 0.41 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
+| 🇨🇳 🇺🇸 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.69 / 0.41 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
+| 🇯🇵 🇺🇸 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.69 / 0.41 | [v0.6.0](https://github.com/tuanpmt/vtts/releases/tag/v0.6.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
+| 🇧🇷 🇺🇸 Portuguese (Brazil) + English | `nu-pt` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.69 / 0.42 | [v0.7.0](https://github.com/tuanpmt/vtts/releases/tag/v0.7.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt) |
 <!-- END:released -->
 
 Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
@@ -23,12 +24,12 @@ Each voice has a quality model (M) and a lite model (S, faster, less CPU and fla
 1. Install [ESP-IDF v6.1](https://docs.espressif.com/projects/esp-idf/) and clone this repository.
 2. Download the two model files of one voice from its release (or the Hugging Face folder in the table):
    ```bash
-   gh release download v0.6.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Japanese + English (nu-ja)
+   gh release download v0.7.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Portuguese (Brazil) + English (nu-pt)
    ```
 3. Build and flash, lite model first:
    ```bash
    cd firmware/esp32
-   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-jaen-nuja-s-v0.6.q8.vtts ../../models/vtts-jaen-nuja-m-v0.6.q8.vtts -p PORT flash monitor
+   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-pten-nupt-s-v0.7.q8.vtts ../../models/vtts-pten-nupt-m-v0.7.q8.vtts -p PORT flash monitor
    ```
    `BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. `build.sh` picks the text front-end from the models and embeds the lexicons they need.
 4. Type a sentence on the serial console and press Enter: the board speaks it. `model s` / `model m` switches the model; the other commands are in the [firmware README](firmware/esp32/README.md#serial-console).
@@ -51,7 +52,7 @@ Each word is read by the front-end of its language (main language or English), i
 |---|---|
 | Voices, quality per pair, audio samples, planned pairs | [docs/voices.md](docs/voices.md) |
 | On-chip speed, latency, memory | [docs/reports/performance.md](docs/reports/performance.md) |
-| Evaluation reports | [vi-en](docs/reports/bilingual-student-eval.md), [ko-en](docs/reports/ko-student-eval.md), [zh-en](docs/reports/zh-student-eval.md), [ja-en](docs/reports/ja-student-eval.md) |
+| Evaluation reports | [vi-en](docs/reports/bilingual-student-eval.md), [ko-en](docs/reports/ko-student-eval.md), [zh-en](docs/reports/zh-student-eval.md), [ja-en](docs/reports/ja-student-eval.md), [pt-en](docs/reports/pt-student-eval.md) |
 | Firmware, boards, serial console | [firmware/esp32/README.md](firmware/esp32/README.md) |
 | C runtime API | [runtime/README.md](runtime/README.md) |
 | Model file format | [docs/model-format.md](docs/model-format.md) |

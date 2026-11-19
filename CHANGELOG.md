@@ -8,6 +8,72 @@ All notable changes to this project are documented here. Model files for each re
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
 
+## v0.7.0 (2026-11-20) — Portuguese (Brazil) + English voice
+
+A new bilingual pair with one designed female voice as a quality model (M) and a lite model (S), **Apache-2.0**:
+
+- **Portuguese (Brazil) + English**, voice `nu-pt` (about 40, Brazilian Portuguese). One voice reads Portuguese, English and Portuguese sentences with English words ("O sinal do Wi-Fi está fraco, aproxime um pouco o router."); each Latin word is tagged Portuguese or English on the chip (Portuguese letters and word list, English word list, CamelCase, spelling). The teacher `pt_nupt` was trained from random initialization for 120k steps on speech synthesized with VoxCPM2 (Apache-2.0) from the designed voice `nu-pt` only: 45,191 sentences (19,583 Brazilian Portuguese, 6,367 Portuguese with English words, 19,241 English) read by the same voice. Students distilled with the standard chain (front 10k, decoder 30k, joint 20k steps, 20,000-sentence pack).
+
+No recorded corpus and no warm start. The earlier voices are unchanged. This release also ships the firmware fixes, four new front-ends and the faster distillation listed below.
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-pten-nupt-m-v0.7.q8.vtts` | `nu-pt` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-pten-nupt-s-v0.7.q8.vtts` | `nu-pt` (female) | Lite (S) | 0.83M | 1.2 MB |
+
+Int8, 22.05 kHz, token set `pt-en` recorded in the file (vocabulary 150: the v2 tokens plus 43 Brazilian Portuguese phoneme tokens; presets `M-vocos-p-pt-en` and `S-vocos-p-pt-en`). No blob beyond the English lexicon.
+
+### Quality
+
+Three out-of-domain sets of 50 sentences, Whisper large-v3, audio from the int8 C runtime (`--lang pt`), and the same Portuguese and mixed sentences synthesized by the VoxCPM2 voice `nu-pt` as a reference. Report: [docs/reports/pt-student-eval.md](docs/reports/pt-student-eval.md).
+
+| Model | Portuguese CER | English CER | Mixed CER | UTMOS (pt / en / mixed) |
+|---|---:|---:|---:|---|
+| `nu-pt` M | 0.008 | 0.089 | 0.026 | 2.36 / 2.71 / 2.54 |
+| `nu-pt` S | 0.019 | 0.080 | 0.022 | 2.63 / 2.69 / 2.69 |
+| VoxCPM2 `nu-pt` (reference voice) | 0.044 | — | 0.044 | 3.99 / — / 3.93 |
+
+The reference voice reads raw digits poorly ("R$ 1.250,00", "15h45"); without the numbers group it scores 0.001 (Portuguese) and 0.016 (mixed), against 0.005 / 0.027 for M and 0.013 / 0.023 for S. The English CER is about four times that of the other pairs: see the known issues.
+
+### Performance
+
+| Board | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 (86-Panel, NANO) | 0.18–0.21 / 0.06–0.12 s | 0.27–0.29 / 0.13–0.29 s |
+| ESP32-S3 (Touch-LCD-2.8, EchoEar 2.0) | 0.41–0.45 / 0.21–0.39 s | 0.67–0.71 / 0.28–0.73 s |
+
+RTF from `bench` (four short Portuguese sentences; mean P4 0.19 / 0.28, S3 0.42 / 0.69), speech start from playing the eight website sentences, with the current firmware (ESP32-S3 two-core fix included). Every website clip is the ESP32-P4's own output and was transcribed again with Whisper before publishing; the ESP32-S3 with two cores gave the same audio as the ESP32-P4 for all 16 dumps. Image size in the 8 MB app partition with the two pt-en models and the English lexicon: 6.22 MB on the ESP32-P4 (2.17 MB free), 6.10 MB on the ESP32-S3 (2.28 MB free). Details: [docs/reports/performance.md](docs/reports/performance.md#portuguese-brazil--english-v070).
+
+### Flash a board
+
+```bash
+gh release download v0.7.0 -R tuanpmt/vtts -p '*.vtts' -D models
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-pten-nupt-s-v0.7.q8.vtts ../../models/vtts-pten-nupt-m-v0.7.q8.vtts -p PORT flash monitor
+```
+
+`BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. On the console type Portuguese, English or mixed text; `model s|m` switches the model. pt-en models have one text mode, `pt` (the default), which also reads English words with the English front-end.
+
+### Firmware
+- **Multi-sentence text matches the host render.** `vtts_say` joined the chunks (sentences) of a text without any pause, while the firmware, the teacher and the Python renderers put 150 ms of silence between them, and the firmware also after the last chunk; compared with `vtts_say`, the device's second sentence looked shifted by 0.15 s (correlation 0.11–0.65), although the device audio itself was fine. Now everything joins chunks the same way (`VTTS_CHUNK_GAP_MS`, between chunks only) and `vtts_say` rounds to int16 like the firmware, so ESP32-P4 and ESP32-S3 dumps of single and multi-sentence vi-en text match `vtts_say` with correlation ≥ 0.9995; the only audible change on the device is that the 150 ms of trailing silence is gone. `make -C runtime say_parity MODEL=...` checks the firmware's streaming path against whole-text synthesis sample by sample (host builds use `-ffp-contract=off`, so the two are bit-identical).
+- **ESP32-S3: no more random bursts with two cores.** Two cores working on PSRAM data at once now and then gave a wrong int8 layer output (about one in 10^6), heard as short bursts that changed from run to run, mostly with M. The S3 build now stages the int8 layer outputs in 32 KB of internal RAM (`vtts_set_out_stage`), keeps their activations in 40 KB of internal RAM and runs the lighter passes on one core; 22 of 23 two-core test dumps were bit-identical to one core, and `cores 1` stays exact. Cost: RTF on the ESP32-S3 rises from 0.49–0.51 to 0.69–0.70 for M and from 0.29–0.30 to 0.41–0.42 for S (about 1.4x the time; speech starts 0.43–0.93 s instead of 0.31–0.61 s with M) (README and [docs/reports/performance.md](docs/reports/performance.md)); the ESP32-P4 is unchanged. The new `memtest` command reproduces the problem without a model.
+- **Optional `debuzz` post filter** (console `debuzz N`, off by default): a high-shelf cut of N dB above about 6 kHz before the speaker; 6 dB takes about 3.3 dB off 5–10 kHz and changes 0–4 kHz by less than 0.05 dB.
+
+### Added
+- **Portuguese (Brazil) + English voice `nu-pt`** (M and S), with 16 on-chip samples (ESP32-P4 dumps of 8 sentences × 2 models, each checked with Whisper) on the website and a Portuguese (Brazil) entry in the language picker.
+- Report [docs/reports/pt-student-eval.md](docs/reports/pt-student-eval.md), a Portuguese section in [performance.md](docs/reports/performance.md), Hugging Face folder `pt-en-nu-pt/`.
+- **Front-ends for Danish, Lao, Khmer and Burmese**, in Python and on the device (C, exact parity, each compiled into the firmware only when an embedded model needs it): token sets `da-en` (158), `lo-en` (163), `km-en` (176) and `my-en` (160), eval sets `ood_*` / `mixed_*`, corpus, teacher-row and preset support. Details in the v0.4.0 list of front-ends for the next pairs below; no models yet.
+- **Faster student distillation.** The distill pack is rendered in length-sorted batches with the same per-item noise as before (equal to the per-item path up to float summation order; fp32 by default, `--tf32` to allow TF32) and the frame prosody is computed in a process pool during the render. `train_student.py` always uses a vectorized expand and reads losses only on log steps; opt-in `--fast` (fused AdamW without a per-step host sync, cuDNN autotuning), `--prefetch N`, `--amp`, `--compile`, `--init-decoder`. `run_bilingual_chain.sh` passes `TRAIN_ARGS` to every stage and `DEC_TRAIN_ARGS` to the decoder stage, and saves the assembled float student.
+
+### Known issues
+- **Whole English sentences are partly read as Portuguese.** The pt mode tags each Latin word by its spelling, so short or common English words that fit Portuguese spelling (I, a, an, am, me, so, no, time, main, temperature, minutes) are read as Portuguese: 17% of the words of the English eval set. English CER 0.089 (M) and 0.080 (S), about four times the other pairs. Portuguese sentences with English words are not affected (mixed CER 0.022–0.026). An English text mode or a sentence-level language decision for the Latin-script pairs is the planned fix; the models need no retraining.
+- **Numbers are always read in Portuguese**, also inside English sentences ("28 degrees" → vinte e oito), and "$42.50" / "1,250" follow the Portuguese separators; write numbers in English sentences as words.
+- **Acronyms are spelled with Portuguese letter names** (ESP32 → é-esse-pê trinta e dois), also inside English sentences.
+- **Names and English words that fit Portuguese spelling** inside Portuguese sentences can be read the Portuguese way ("Elon" → "O aluno" with S, "router", "gym", "livestream").
+- A very short first sentence followed by a longer one ("Olá! Eu sou ...") can cause one playback underrun with M (a short gap), as with the other pairs.
+
 ## v0.6.0 (2026-11-20) — Japanese + English voice
 
 A new bilingual pair with one designed female voice as a quality model (M) and a lite model (S), **Apache-2.0**:

@@ -1,5 +1,7 @@
 CC ?= cc
-CFLAGS ?= -std=c99 -O2 -Wall -Wextra -Werror -Iinclude
+# -ffp-contract=off: no fused multiply-add, so the streaming and whole-utterance paths (which sum in
+# the same order but are written as different expressions) give bit-identical results
+CFLAGS ?= -std=c99 -O2 -ffp-contract=off -Wall -Wextra -Werror -Iinclude
 SAN = -fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer -g
 SRC = src/vtts_model.c src/vtts_synth.c src/vtts_kernels_ref.c
 
@@ -284,3 +286,13 @@ my_test: build/text_test build/lex_en.bin
 	./build/text_test --lex build/lex_en.bin test/text_parity_my.tsv
 	./build/text_test --fuzz-my --lex build/lex_en.bin
 .PHONY: my_test
+
+# Firmware path (streaming, chunk schedule, gaps) against the host render of whole texts, sample by
+# sample as int16. usage: make say_parity MODEL=path/to/model.vtts [PARITY_ARGS="--first 12 --chunk 128"]
+build/say_parity: $(SRC) $(TEXT_SRC) test/say_parity.c include/vtts.h $(TEXT_HDR)
+	mkdir -p build
+	$(CC) $(CFLAGS) -O3 -Isrc $(SRC) $(TEXT_SRC) test/say_parity.c -lm -o $@
+
+say_parity: build/say_parity build/lex_en.bin
+	./build/say_parity $(MODEL) build/lex_en.bin test/say_parity.txt $(PARITY_ARGS)
+.PHONY: say_parity

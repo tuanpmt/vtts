@@ -97,21 +97,28 @@
       ]
     },
     {
-      "name": "Spanish + English",
+      "name": "`nu-pt` (female)",
       "langs": [
-        "es",
+        "pt",
         "en"
       ],
       "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "planned",
-      "status_text": "Planned"
+      "quality": "M (1.84M params, 2.6 MB)",
+      "lite": "S (0.83M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.7.0 (Apache-2.0)",
+      "pair": "Portuguese (Brazil) + English",
+      "release": "v0.7.0",
+      "hf": "pt-en-nu-pt",
+      "models": [
+        "nupt-m",
+        "nupt-s"
+      ]
     },
     {
-      "name": "Portuguese (Brazil) + English",
+      "name": "Spanish + English",
       "langs": [
-        "pt",
+        "es",
         "en"
       ],
       "code_switching": true,
@@ -197,14 +204,14 @@
     {
       "boards": "Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO",
       "chip": "ESP32-P4, 360 MHz, PIE SIMD",
-      "rtf_lite": "0.17–0.18",
-      "rtf_quality": "0.26"
+      "rtf_lite": "0.17–0.19",
+      "rtf_quality": "0.26–0.28"
     },
     {
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
-      "rtf_lite": "0.29–0.30",
-      "rtf_quality": "0.49–0.51"
+      "rtf_lite": "0.41–0.42",
+      "rtf_quality": "0.69–0.70"
     }
   ],
   "boards": [
@@ -258,11 +265,11 @@
     },
     {
       "title": "Front-ends",
-      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. Japanese: kana and kanji readings by longest match over a word table, numbers with counters. English: CMUdict plus letter-to-sound rules learned from it."
+      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. Japanese: kana and kanji readings by longest match over a word table, numbers with counters. Brazilian Portuguese: spelling rules with stress, nasal vowels and the two r sounds, plus per-word Portuguese or English tagging. English: CMUdict plus letter-to-sound rules learned from it."
     },
     {
       "title": "Data",
-      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 for the Chinese + English voice, 49,591 for the Japanese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching."
+      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 for the Chinese + English voice, 49,591 for the Japanese + English voice, 45,191 for the Portuguese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching."
     },
     {
       "title": "Tooling",
@@ -288,7 +295,7 @@
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.26",
-            "s3": "0.51"
+            "s3": "0.70"
           }
         },
         {
@@ -299,7 +306,7 @@
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.18",
-            "s3": "0.30"
+            "s3": "0.42"
           }
         },
         {
@@ -310,7 +317,7 @@
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.26",
-            "s3": "0.51"
+            "s3": "0.70"
           }
         },
         {
@@ -321,7 +328,7 @@
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.18",
-            "s3": "0.30"
+            "s3": "0.42"
           }
         }
       ],
@@ -418,7 +425,7 @@
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.26",
-            "s3": "0.49"
+            "s3": "0.70"
           }
         },
         {
@@ -429,7 +436,7 @@
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.17",
-            "s3": "0.29"
+            "s3": "0.41"
           }
         }
       ],
@@ -510,7 +517,7 @@
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.26",
-            "s3": "0.51"
+            "s3": "0.69"
           }
         },
         {
@@ -521,7 +528,7 @@
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.18",
-            "s3": "0.30"
+            "s3": "0.41"
           }
         }
       ],
@@ -602,7 +609,7 @@
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.26",
-            "s3": "0.50"
+            "s3": "0.69"
           }
         },
         {
@@ -613,7 +620,7 @@
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.17",
-            "s3": "0.29"
+            "s3": "0.41"
           }
         }
       ],
@@ -672,6 +679,98 @@
           "audio": {
             "nuja-m": "audio/p4-nuja-m-question.mp3",
             "nuja-s": "audio/p4-nuja-s-question.mp3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "pt-en",
+      "label": "Português (Brasil)–English",
+      "flags": [
+        "pt",
+        "en"
+      ],
+      "status": "released",
+      "note": "Released in v0.7.0 (Apache-2.0): the bilingual voice nu-pt (female, about 40, Brazilian Portuguese) reads Portuguese, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nupt-m",
+          "name": "nu-pt Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.28",
+            "s3": "0.69"
+          }
+        },
+        {
+          "id": "nupt-s",
+          "name": "nu-pt Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.19",
+            "s3": "0.42"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "Olá! Eu sou uma voz que funciona inteiramente em um chip ESP32 e falo português e inglês.",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-intro.mp3",
+            "nupt-s": "audio/p4-nupt-s-intro.mp3"
+          }
+        },
+        {
+          "text": "A reunião no Zoom começa às 3 da tarde. Por favor, mande o arquivo do PowerPoint antes.",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-zoom.mp3",
+            "nupt-s": "audio/p4-nupt-s-zoom.mp3"
+          }
+        },
+        {
+          "text": "O celular já está conectado ao Wi-Fi. Agora dá para assistir à Netflix.",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-wifi.mp3",
+            "nupt-s": "audio/p4-nupt-s-wifi.mp3"
+          }
+        },
+        {
+          "text": "This text-to-speech voice runs entirely on the ESP32 microcontroller.",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-en-intro.mp3",
+            "nupt-s": "audio/p4-nupt-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package has arrived at the front door. Would you like me to turn on the porch light?",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-en-package.mp3",
+            "nupt-s": "audio/p4-nupt-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "Em São Paulo vai chover a partir da tarde, e amanhã cedo a temperatura deve cair para 12 graus.",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-news.mp3",
+            "nupt-s": "audio/p4-nupt-s-news.mp3"
+          }
+        },
+        {
+          "text": "A bateria está em 15% e a temperatura da sala é de 28 graus. O alarme está marcado para as 6:30 da manhã.",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-numbers.mp3",
+            "nupt-s": "audio/p4-nupt-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "Quer que eu acenda a luz do quarto?",
+          "audio": {
+            "nupt-m": "audio/p4-nupt-m-question.mp3",
+            "nupt-s": "audio/p4-nupt-s-question.mp3"
           }
         }
       ]

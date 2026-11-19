@@ -2,7 +2,10 @@
 /* vtts_say.c -- host tool: text -> token ids -> WAV, with the front-end chosen from the model's
  * token set the way the firmware does (vtts_token_set, vtts_text_default_lang / vtts_text_lang_for).
  * usage: vtts_say MODEL.vtts OUT.wav [--lex VLEX] [--zh ZLEX] [--ja JLEX] [--ru RLEX] [--lang MODE] [--speed X] TEXT
+ * Chunks are joined with VTTS_CHUNK_GAP_MS of silence, and samples are rounded to int16 like the
+ * firmware does, so a device `dump` of the same text can be compared sample by sample.
  * Prints "token_set <name> <header|vocab> mode <mode>" and one "ids ..." line per chunk on stdout. */
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,13 +44,15 @@ static int on_ids(const int32_t *ids, int n, void *user) {
     long max_frames = (long)n * o->m->max_duration;
     size_t ab = vtts_arena_bytes(o->m, n, max_frames);
     void *arena = malloc(ab);
-    long want = o->n + max_frames * o->m->hop;
+    long gap = o->n ? (long)VTTS_CHUNK_GAP_MS * o->m->sample_rate / 1000 : 0; /* between chunks, as on the device */
+    long want = o->n + gap + max_frames * o->m->hop;
     if (want > o->cap) {
         float *p = realloc(o->pcm, sizeof(float) * (size_t)want);
         if (!p) { free(arena); o->err = VTTS_ERR_ARENA; return 1; }
         o->pcm = p;
         o->cap = want;
     }
+    for (long i = 0; i < gap; i++) o->pcm[o->n++] = 0.0f;
     long s = arena ? vtts_synthesize(o->m, ids, n, o->speed, o->pcm + o->n, o->cap - o->n, arena, ab) : VTTS_ERR_ARENA;
     free(arena);
     if (s < 0) { o->err = (int)s; return 1; }
@@ -65,8 +70,8 @@ static void write_wav(const char *path, const float *pcm, long n, int sr) {
     fwrite(&br, 4, 1, f); fwrite(&align, 2, 1, f); fwrite(&bits, 2, 1, f);
     fwrite("data", 1, 4, f); fwrite(&data, 4, 1, f);
     for (long i = 0; i < n; i++) {
-        float v = pcm[i] * 32767.0f;
-        int16_t s = (int16_t)(v > 32767.0f ? 32767 : v < -32768.0f ? -32768 : v);
+        float v = pcm[i] > 1.0f ? 1.0f : pcm[i] < -1.0f ? -1.0f : pcm[i];
+        int16_t s = (int16_t)lrintf(v * 32767.0f); /* the firmware's int16 conversion */
         fwrite(&s, 2, 1, f);
     }
     fclose(f);

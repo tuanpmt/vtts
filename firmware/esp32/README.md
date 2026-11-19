@@ -18,7 +18,7 @@ Supported boards:
 | `main/synth.c` | Text or token ids to PCM, `SAID` / `DUMPED` / `REPORT` lines |
 | `main/speaker.c` | Playback: soft limiter, stream buffer, prebuffer and chunk size from the measured RTF |
 | `main/console.c` | Serial input and commands (`esp_console`; `help` lists them) |
-| `main/selftest.c` | SIMD kernel checks (`selftest`, `fusetest`) |
+| `main/selftest.c` | SIMD kernel checks (`selftest`, `fusetest`, `memtest`) |
 | `components/bsp/` | Board support: speaker drivers and one folder per board ([README](components/bsp/README.md)) |
 
 ## Build and flash
@@ -113,6 +113,10 @@ Each sentence prints a `REPORT` line: audio duration, synthesis time and RTF (be
 ## Self-test
 
 `selftest` checks the SIMD kernels against results computed in plain C: one row, many rows, weights read from the model, and both cores running the kernel at the same time. On the S3 the kernel does not use the fused multiply-accumulate-and-load instruction (`ee.vmulas.s8.accx.ld.ip`). An earlier kernel with that instruction gave wrong sums on two cores; a rewritten one is correct (`fusetest` checks it) but barely faster, so the default kernel loads first and then multiply-accumulates.
+
+`memtest` runs an int8 layer the way synthesis does: both cores, weights streamed from about 1.8 MB of PSRAM, outputs stored time-major, into PSRAM and into internal RAM. On the ESP32-S3 two cores working on PSRAM data at once now and then produced a wrong value (about one in 10^6 of the int8 layer outputs; more often with 32-byte cache lines or 40 MHz PSRAM, never with one core, unchanged with interrupts masked or with spinning instead of blocking between the cores); in speech this was heard as short bursts that changed from run to run. The S3 build therefore keeps the two-core work small and away from PSRAM stores: the int8 layers stage their outputs in 32 KB of internal RAM (`vtts_set_out_stage`) and one core copies them out, their activations sit in 40 KB of internal RAM (fast scratch), and the lighter passes run on one core. Measured on nu-10 (vi-en): 22 of 23 two-core dumps were bit-identical to one core (before: nearly every M utterance had bursts); RTF (`bench`) with two cores M 0.69–0.70 and S 0.41–0.42 for all released pairs (v0.6.0: 0.49–0.51 and 0.29–0.30; one core 0.84 and 0.49). `cores 1` gives exact output at the one-core speed.
+
+Text with several sentences is synthesized one chunk (sentence) at a time with 150 ms of silence between chunks (`VTTS_CHUNK_GAP_MS`, none after the last), exactly like `runtime/build/vtts_say` and the Python renderers, so a `dump` can be compared sample by sample with the host render (`make -C runtime say_parity MODEL=...` checks the streaming path against it). `debuzz N` (default 0, off) adds a gentle high-shelf cut of N dB above about 6 kHz before the speaker: 6 dB takes about 3.3 dB off 5-10 kHz and changes 0-4 kHz by less than 0.05 dB.
 
 ## Adding a board
 

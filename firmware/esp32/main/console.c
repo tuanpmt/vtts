@@ -28,6 +28,7 @@ static float arg_f(int argc, char **argv, float dflt) { return argc > 1 ? (float
 static int cmd_bench(int argc, char **argv) { (void)argc; (void)argv; synth_bench(); return 0; }
 static int cmd_selftest(int argc, char **argv) { (void)argc; (void)argv; return selftest_run() ? 1 : 0; }
 static int cmd_fusetest(int argc, char **argv) { (void)argc; (void)argv; return fusetest_run(); }
+static int cmd_memtest(int argc, char **argv) { (void)argc; (void)argv; return memtest_run() ? 1 : 0; }
 
 static int cmd_model(int argc, char **argv) {
     if (argc > 1) g.cur = (argv[1][0] == 'm' || argv[1][0] == 'M') ? 1 : 0;
@@ -48,6 +49,12 @@ static int cmd_gain(int argc, char **argv) { /* digital gain in dB, 0..24, befor
     db = db < 0 ? 0 : db > 24 ? 24 : db;
     g.gain = powf(10.0f, db / 20.0f);
     printf("gain %.1f dB\n", db);
+    return 0;
+}
+
+static int cmd_debuzz(int argc, char **argv) { /* high-shelf cut above ~6 kHz in dB before the speaker; 0 = off */
+    speaker_filter_set(argc > 1 ? atoi(argv[1]) : g.debuzz);
+    printf("debuzz %d dB%s\n", g.debuzz, g.debuzz ? "" : " (off)");
     return 0;
 }
 
@@ -121,12 +128,14 @@ static const esp_console_cmd_t CMDS[] = {
     {.command = "lang", .help = "text mode of the current model's token set: v1 vi; vi-en vi|en|auto (vi also reads English words); zh-en zh; ko-en ko; hi-en hi; ja-en ja; es-en es; id-en id; pt-en pt; th-en th; fr-en fr; de-en de; it-en it; tr-en tr; ru-en ru; pl-en pl; ar-en ar; fi-en fi; el-en el; ms-en ms; tl-en tl; sw-en sw; nl-en nl; sv-en sv; no-en no; da-en da; lo-en lo; km-en km; my-en my (each when built in)", .hint = "vi|en|auto|zh|ko|hi|ja|es|id|pt|th|fr|de|it|tr|ru|pl|ar|fi|el|ms|tl|sw|nl|sv|no|da|lo|km|my", .func = cmd_lang},
     {.command = "vol", .help = "speaker volume", .hint = "0-100", .func = cmd_vol},
     {.command = "gain", .help = "digital gain in dB before a soft limiter", .hint = "0-24", .func = cmd_gain},
+    {.command = "debuzz", .help = "gentle post filter before the speaker: dB taken off above ~6 kHz (0 = off, default)", .hint = "0-12", .func = cmd_debuzz},
     {.command = "speed", .help = "speaking rate (length scale, higher is slower)", .hint = "0.7-1.6", .func = cmd_speed},
     {.command = "expr", .help = "intonation range (models with a pitch predictor)", .hint = "0.5-2.5", .func = cmd_expr},
     {.command = "chunk", .help = "largest streaming chunk in frames (the firmware may pick smaller)", .hint = "1-256", .func = cmd_chunk},
     {.command = "first", .help = "frames in the first chunk", .hint = "N", .func = cmd_first},
     {.command = "cores", .help = "synthesis on one or two cores", .hint = "1|2", .func = cmd_cores},
     {.command = "selftest", .help = "SIMD kernels against plain C, including two cores at once", .func = cmd_selftest},
+    {.command = "memtest", .help = "SIMD kernel on both cores with weights over ~2 MB of PSRAM, results stored to PSRAM", .func = cmd_memtest},
     {.command = "fusetest", .help = "ESP32-S3: the fused ld.ip kernel over memory x cores x interrupts", .func = cmd_fusetest},
 };
 

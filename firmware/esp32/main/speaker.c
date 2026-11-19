@@ -24,6 +24,36 @@ static inline float shape(float v) {
     return v < 0 ? -y : y;
 }
 
+/* Optional de-buzz post filter (console `debuzz DB`, default off): an RBJ high-shelf biquad at
+ * DEBUZZ_HZ that lowers the band above it by DB dB, at the model rate, before gain and limiter.
+ * With 6 dB it takes ~3.3 dB off 5-10 kHz and leaves 0-4 kHz within 0.03 dB. */
+#define DEBUZZ_HZ 6000.0f
+static float s_bq[5], s_bz[4]; /* b0 b1 b2 a1 a2; x1 x2 y1 y2 */
+
+void speaker_filter_set(int db) {
+    g.debuzz = db < 0 ? 0 : db > 12 ? 12 : db;
+    if (!g.debuzz) return;
+    float A = powf(10.0f, -(float)g.debuzz / 40.0f), w0 = 2.0f * (float)M_PI * DEBUZZ_HZ / (float)g.models[g.cur].sample_rate;
+    float c = cosf(w0), al = sinf(w0) / 2.0f * sqrtf(2.0f), sa = 2.0f * sqrtf(A) * al; /* shelf slope S = 1 */
+    float a0 = (A + 1) - (A - 1) * c + sa;
+    s_bq[0] = A * ((A + 1) + (A - 1) * c + sa) / a0;
+    s_bq[1] = -2.0f * A * ((A - 1) + (A + 1) * c) / a0;
+    s_bq[2] = A * ((A + 1) + (A - 1) * c - sa) / a0;
+    s_bq[3] = 2.0f * ((A - 1) - (A + 1) * c) / a0;
+    s_bq[4] = ((A + 1) - (A - 1) * c - sa) / a0;
+}
+
+void speaker_filter_reset(void) {
+    s_bz[0] = s_bz[1] = s_bz[2] = s_bz[3] = 0.0f;
+    if (g.debuzz) speaker_filter_set(g.debuzz); /* the model (rate) may have changed */
+}
+
+static inline float debuzz(float x) {
+    float y = s_bq[0] * x + s_bq[1] * s_bz[0] + s_bq[2] * s_bz[1] - s_bq[3] * s_bz[2] - s_bq[4] * s_bz[3];
+    s_bz[1] = s_bz[0]; s_bz[0] = x; s_bz[3] = s_bz[2]; s_bz[2] = y;
+    return y;
+}
+
 void speaker_init(void) {
     const int rates[2] = {OUT_RATE_TRY, OUT_RATE_FALLBACK};
     g.out_rate = bsp_speaker_open(rates, 2);
@@ -38,7 +68,10 @@ void speaker_stream(const float *pcm, long n) {
     if (!g.t_first) g.t_first = esp_timer_get_time();
     for (long i = 0; i < n;) {
         int k = 0;
-        for (; k < 1024 && i < n; k++, i++) buf[k] = (int16_t)lrintf(shape(pcm[i]) * 32767.0f);
+        if (g.debuzz)
+            for (; k < 1024 && i < n; k++, i++) buf[k] = (int16_t)lrintf(shape(debuzz(pcm[i])) * 32767.0f);
+        else
+            for (; k < 1024 && i < n; k++, i++) buf[k] = (int16_t)lrintf(shape(pcm[i]) * 32767.0f);
         int64_t tb = esp_timer_get_time();
         xStreamBufferSend(g.sb, buf, sizeof(int16_t) * (size_t)k, portMAX_DELAY);
         g.blocked_us += esp_timer_get_time() - tb;
@@ -50,6 +83,14 @@ void speaker_play_buffer(void) {
     if (!g.spk || !g.pcm || n == 0) return;
     const int sr = g.models[g.cur].sample_rate;
     static int16_t block[512];
+    if (g.debuzz) { /* filter the kept copy at the model rate, then resample */
+        speaker_filter_reset();
+        for (long i = 0; i < n; i++) {
+            float v = debuzz(g.pcm[i] / 32767.0f);
+            v = v > 1.0f ? 1.0f : v < -1.0f ? -1.0f : v;
+            g.pcm[i] = (int16_t)lrintf(v * 32767.0f);
+        }
+    }
     double step = (double)sr / g.out_rate, pos = 0.0;
     while (pos < n - 1) {
         int k = 0;

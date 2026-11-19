@@ -1,0 +1,12 @@
+# Texts for say_parity (vi-en models): single and multi-sentence, Vietnamese, English, mixed,
+# short first sentences, numbers, units, times.
+Xin chào, tôi là trợ lý giọng nói của bạn.
+Hello! I am a text-to-speech voice that runs entirely on an ESP32 microcontroller.
+Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai.
+Vâng. Tôi đã bật đèn phòng khách.
+OK! Đã tắt quạt. Hẹn gặp lại bạn sau nhé!
+Hôm nay là thứ Bảy, ngày 14/11/2026. Trời nắng, nhiệt độ từ 24 đến 31 độ.
+The meeting starts at 9:45 AM. Please bring your laptop. Thanks!
+Bạn có muốn nghe nhạc không? Tôi có thể mở playlist yêu thích của bạn trên Spotify.
+Chào buổi sáng! Hôm nay bạn có 3 cuộc họp, cuộc họp đầu tiên lúc 8 giờ 15. Đừng quên mang theo tài liệu nhé.
+Wi-Fi đã kết nối. Địa chỉ IP là 192.168.1.25.

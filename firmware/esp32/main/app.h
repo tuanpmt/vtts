@@ -28,6 +28,7 @@ typedef struct {
     const char *arena_where;
     int16_t *pcm;    /* NULL, or KEEP_SECONDS of audio while `dump` or resampled playback needs it */
     long pcm_cap, n; /* samples kept, samples synthesized */
+    int chunks_done; /* text chunks synthesized in the current utterance */
     double sumsq;    /* for the RMS on the report line, accumulated while synthesizing */
     int64_t synth_us;
     int spk; /* speaker available */
@@ -39,6 +40,7 @@ typedef struct {
     volatile int underruns;
     SemaphoreHandle_t utt_start, utt_end; /* one utterance at a time between console and speaker */
     float gain;         /* digital gain before the codec (linear), with a soft limiter */
+    int debuzz;         /* 0 = off, else dB taken off above ~6 kHz before the speaker (speaker_filter_set) */
     float speed;        /* length_scale: > 1 reads slower */
     int64_t blocked_us; /* time the synthesizer waited on a full playback buffer */
     float rtf[2];       /* measured RTF per model (synthesis only), sets the prebuffer */
@@ -93,11 +95,14 @@ void speaker_play_buffer(void);               /* play g.pcm resampled (speaker a
 int pcm_keep(void);                           /* allocate g.pcm (PSRAM) for the next utterance */
 void pcm_release(void);
 int speaker_chunk_cap(void);
+void speaker_filter_set(int db); /* de-buzz high-shelf cut in dB, 0 = off */
+void speaker_filter_reset(void); /* clear the filter state before an utterance */
 size_t speaker_prebuffer_bytes(void);
 
 /* selftest.c */
 int selftest_run(void);
 int fusetest_run(void);
+int memtest_run(void); /* SIMD kernel on two cores over ~2 MB of PSRAM weights */
 
 /* console.c */
 void console_start(void);

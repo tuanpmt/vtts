@@ -220,13 +220,17 @@ static int on_ids(const int32_t *ids, int n, void *user) {
     int64_t t0 = esp_timer_get_time();
     /* only the first sentence needs a small first chunk; later ones play from a full buffer */
     int cap = speaker_chunk_cap(), first = (g.n == 0 && g.first < cap) ? g.first : cap;
+    /* silence between chunks (none after the last), like the host renderers (VTTS_CHUNK_GAP_MS) */
+    if (g.chunks_done) {
+        long gap = (long)VTTS_CHUNK_GAP_MS * m->sample_rate / 1000;
+        static const float zeros[512];
+        for (long i = 0; i < gap; i += 512)
+            if (on_pcm(zeros, gap - i < 512 ? gap - i : 512, NULL)) return 1;
+    }
     long s = vtts_synthesize_stream_ex(m, ids, n, g.speed, first, cap, on_pcm, NULL, g.arena, g.arena_bytes);
     g.synth_us += esp_timer_get_time() - t0;
     if (s < 0) { printf("ERROR synth %ld\n", s); return 1; }
-    /* 150 ms pause between chunks, like the host renderer */
-    long gap = (long)(0.15f * m->sample_rate);
-    static const float zeros[512];
-    for (long i = 0; i < gap; i += 512) on_pcm(zeros, gap - i < 512 ? gap - i : 512, NULL);
+    g.chunks_done++;
     return 0;
 }
 
@@ -255,6 +259,7 @@ static int synth_ids(const char *s) {
 
 int synth_text(const char *text, int64_t *total_us) {
     g.n = 0;
+    g.chunks_done = 0;
     g.sumsq = 0;
     g.synth_us = 0;
     int64_t t0 = esp_timer_get_time();
@@ -339,6 +344,7 @@ void synth_say(const char *text) {
     g.underruns = 0;
     g.synth_done = 0;
     cpu_snap_t cs = cpu_snap();
+    speaker_filter_reset();
     if (direct) xSemaphoreGive(g.utt_start);
     int64_t t0 = esp_timer_get_time();
     int c = synth_text(text, &us);

@@ -25,6 +25,7 @@ Start with the [project README](../README.md) for the released voices and the qu
 | [Korean + English student evaluation](reports/ko-student-eval.md) | CER/WER and UTMOS of the released Korean + English models (v0.5.0), a fair CER for mixed Korean sentences (Hangul only) and the VoxCPM2 reference voice |
 | [Chinese + English student evaluation](reports/zh-student-eval.md) | CER/WER and UTMOS of the released Chinese + English models (`nu-zh`, v0.5.0), with the errors per group and ASR effects on mixed sentences |
 | [Japanese + English student evaluation](reports/ja-student-eval.md) | CER and UTMOS of the released Japanese + English models (`nu-ja`, v0.6.0), a reading-based CER for Japanese, the kana-only CER for mixed sentences and the VoxCPM2 reference voice |
+| [Portuguese (Brazil) + English student evaluation](reports/pt-student-eval.md) | CER/WER and UTMOS of the released Portuguese + English models (`nu-pt`, v0.7.0), the VoxCPM2 reference voice, and why whole English sentences score lower in the pt mode |
 | [Bilingual teacher evaluation](reports/bilingual-teacher-eval.md) | CER/WER and UTMOS of the bilingual teachers on Vietnamese, English and mixed sentences, per checkpoint |
 | [Runtime optimization research](reports/runtime-optimization-research.md) | Compute budget, bottlenecks and a prioritized optimization plan for both chips (in progress) |
 | [Baselines](reports/baseline.md) | sanoTTS and Piper Vietnamese voices on the out-of-domain set; the derived teacher gate |

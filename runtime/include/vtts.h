@@ -27,6 +27,10 @@ enum {
     VTTS_ERR_RANGE = -5
 };
 
+/* Silence between the text front-end's chunks (sentences) in a rendered utterance: the teacher,
+ * the Python renderers, tools/vtts_say and the firmware all join chunks with it (none after the last). */
+#define VTTS_CHUNK_GAP_MS 150
+
 enum { VTTS_DEC_HIFIGAN = 0, VTTS_DEC_ISTFT = 1, VTTS_DEC_VOCOS = 2 };
 
 /* Token set a model was trained with (dim `token_set`, docs/model-format.md). Files without the
@@ -136,6 +140,13 @@ long vtts_synthesize_stream_ex(const vtts_model *m, const int32_t *ids, int n_id
  * Buffers that do not fit stay in the arena; the arena size from vtts_stream_arena_bytes is
  * unchanged. The memory must stay valid while synthesizing; pass NULL to stop using it. */
 void vtts_set_fast_scratch(void *p, size_t n);
+
+/* Optional: n bytes of internal RAM where the int8 layers stage their outputs (a block of frames
+ * at a time) before the calling core copies them to the arena; results are unchanged. Used on the
+ * ESP32-S3, where two cores storing to PSRAM while streaming weights from it now and then lost a
+ * value (vtts_synth.c). While it is set, only these int8 layers use two cores (vtts_par_run); the
+ * other parallel passes, which also store to the arena, run on the calling core. NULL stops it. */
+void vtts_set_out_stage(void *p, size_t n);
 
 /* Prosody models only: scale the predicted pitch movement (1.0 = as trained, >1 livelier). */
 void vtts_set_expressiveness(vtts_model *m, float e);

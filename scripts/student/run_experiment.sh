@@ -10,7 +10,9 @@
 #                 artifacts/teacher/nu10_vien_b32_g.pt
 #   SENTENCES.jsonl: {"text", "lang"} rows, e.g. data/bilingual/sentences.jsonl (57,883 rows)
 # Every setting can be overridden from the environment (PRESET LIMIT FS DS JS SNAP DEC_DISC
-# JOINT_DISC HF HF_LO PACK PACK_DEVICE PROSODY_WORKERS EVAL), e.g. FS=50 DS=50 JS=50 SNAP=25 for
+# JOINT_DISC HF HF_LO PACK PACK_DEVICE PACK_ARGS TRAIN_ARGS PROSODY_WORKERS EVAL; TRAIN_ARGS: extra
+# train_student.py flags for every stage, e.g. "--fast --prefetch 2"; DEC_TRAIN_ARGS: dec stage only; PACK_ARGS: extra
+# build_distill_pack.py flags, e.g. "--per-item" for the reference render), e.g. FS=50 DS=50 JS=50 SNAP=25 for
 # a smoke run; DRY_RUN=1 only prints the resolved settings. EVAL=hf scores each snapshot with the 5-10 kHz metrics (CPU, no ASR); EVAL=full
 # also runs ASR + UTMOS (needs a free GPU / time).
 # Outputs in OUT: PRESET.q8.vtts (final), snapshots/PRESET-joint_NNNNNNN.q8.vtts (every SNAP
@@ -19,7 +21,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/../.."
 EXP=$1; G=$2; SENT=$3; OUT=$4; DEV=${5:-cuda}
-KNOBS="PRESET LIMIT FS DS JS SNAP DEC_DISC JOINT_DISC HF HF_LO"
+KNOBS="PRESET LIMIT FS DS JS SNAP DEC_DISC JOINT_DISC HF HF_LO INIT_FROM INIT_FRONT"
 # set NAME=VALUE unless NAME is already set (environment first, then the experiment, then the
 # defaults); plain bash 3.2 so it also runs on macOS
 put() { local kv k; for kv in "$@"; do k=${kv%%=*}; [ -n "${!k:-}" ] || printf -v "$k" '%s' "${kv#*=}"; done; }
@@ -31,13 +33,17 @@ case $EXP in
   e3) put LIMIT=all JS=60000 ;;             # whole corpus as the distillation pack
   e4) put PRESET=L-vocos-p-bi JS=60000 ;;   # L student (ESP32-P4 only)
   e5) put LIMIT=all JS=100000 HF=2 DEC_DISC=mpd+mrd-hf JOINT_DISC=mpd+mrd-hf ;;  # combination: edit after the E1-E4 decision
+  e6) put DS=10000 ;;                       # warm decoder from INIT_FROM: dec 10k instead of 30k
   *) echo "unknown experiment $EXP" >&2; exit 2 ;;
 esac
 # v0.4.0 recipe (run_bilingual_chain.sh): 20k sentences, front 10k bs32, dec 30k bs16 with MPD,
 # joint 20k bs16 with MPD + MRD
 put PRESET=M-vocos-p-bi LIMIT=20000 FS=10000 DS=30000 JS=20000 SNAP=10000 DEC_DISC=mpd \
-    JOINT_DISC=mpd+mrd HF=0 HF_LO=4000
+    JOINT_DISC=mpd+mrd HF=0 HF_LO=4000 INIT_FROM= INIT_FRONT=0
 if [ -n "${DRY_RUN:-}" ]; then for k in $KNOBS; do echo "$k=${!k}"; done; exit 0; fi
+if [ "$EXP" = e6 ] && [ -z "$INIT_FROM" ]; then
+  echo "e6 needs INIT_FROM=student checkpoint of preset $PRESET (PRESET.student.pt or joint_*.pt)" >&2; exit 2
+fi
 
 mkdir -p "$OUT/snapshots"
 exec > >(tee -a "$OUT/run.log") 2>&1
@@ -57,7 +63,7 @@ if command -v flock >/dev/null 2>&1; then exec 8>"$PACK.lock"; flock 8; fi
 if [ ! -f "$PACK/READY" ]; then
   LIM=(); [ "$LIMIT" = all ] || LIM=(--limit "$LIMIT")
   "${PY[@]}" scripts/student/build_distill_pack.py --ckpt "$G" --sentences "$SENT" ${LIM[@]+"${LIM[@]}"} \
-    --out "$PACK/shards" --device "${PACK_DEVICE:-$DEV}"
+    --out "$PACK/shards" --device "${PACK_DEVICE:-$DEV}" --prosody-workers "${PROSODY_WORKERS:-8}" ${PACK_ARGS:-}
   "${PY[@]}" scripts/student/convert_shards.py --src "$PACK/shards" --dst "$PACK/mm" --delete-src
   nice -n 10 "${PY[@]}" scripts/student/add_prosody.py --root "$PACK/mm" --workers "${PROSODY_WORKERS:-8}"
   touch "$PACK/READY"
@@ -66,12 +72,20 @@ if command -v flock >/dev/null 2>&1; then flock -u 8; fi
 
 # ---- training ----
 last() { ls "$OUT"/$1_*.pt 2>/dev/null | tail -1; }
-T() { "${PY[@]}" scripts/student/train_student.py --preset "$PRESET" --shards "$PACK/mm" --out "$OUT" --device "$DEV" "$@"; }
+T() { "${PY[@]}" scripts/student/train_student.py --preset "$PRESET" --shards "$PACK/mm" --out "$OUT" --device "$DEV" ${TRAIN_ARGS:-} "$@"; }
 export_model() {  # $1 = output .vtts
-  "${PY[@]}" scripts/student/export_student.py --front "$(last front)" --dec "$(last dec)" --joint "$(last joint)" --out "$1" --int8
+  "${PY[@]}" scripts/student/export_student.py --front "$(last front)" --dec "$(last dec)" --joint "$(last joint)" --out "$1" --int8 "${@:2}"
 }
-T --stage front --max-steps "$FS" --batch-size 32
-T --stage dec --max-steps "$DS" --batch-size 16 --init "$(last front)" --disc "$DEC_DISC" --hf-weight "$HF" --hf-lo-hz "$HF_LO"
+# INIT_FROM (E6, any experiment): decoder weights from that student; INIT_FRONT=1 also starts the
+# front stage from its duration + acoustic weights (same token set only)
+FRONT_INIT=(); DEC_INIT=()
+if [ -n "$INIT_FROM" ]; then
+  DEC_INIT=(--init-decoder "$INIT_FROM")
+  [ "$INIT_FRONT" = 1 ] && FRONT_INIT=(--init "$INIT_FROM")
+fi
+T --stage front --max-steps "$FS" --batch-size 32 ${FRONT_INIT[@]+"${FRONT_INIT[@]}"}
+T --stage dec ${DEC_TRAIN_ARGS:-} --max-steps "$DS" --batch-size 16 --init "$(last front)" ${DEC_INIT[@]+"${DEC_INIT[@]}"} \
+  --disc "$DEC_DISC" --hf-weight "$HF" --hf-lo-hz "$HF_LO"
 steps=""; for ((s = SNAP; s < JS; s += SNAP)); do steps="$steps $s"; done; steps="$steps $JS"
 for s in $steps; do
   snap=$OUT/snapshots/$PRESET-joint_$(printf %07d "$s").q8.vtts
@@ -85,5 +99,6 @@ for s in $steps; do
   esac
 done
 cp "$snap" "$OUT/$PRESET.q8.vtts"
+export_model "$OUT/snapshots/final.q8.vtts" --save-pt "$OUT/$PRESET.student.pt"  # float weights (INIT_FROM)
 touch "$OUT/CHAIN_DONE"
 echo "CHAIN DONE $EXP $PRESET -> $OUT/$PRESET.q8.vtts"
