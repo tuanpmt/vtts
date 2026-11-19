@@ -6,7 +6,9 @@ from vtts.student.distill_data import pack_inputs
 
 
 def test_pair_presets_cover_their_token_sets():
-    assert {"zh-en", "ko-en", "ja-en", "es-en", "id-en", "pt-en", "th-en", "hi-en"} <= set(PAIR_MODES.values())
+    assert {"zh-en", "ko-en", "ja-en", "es-en", "id-en", "pt-en", "th-en", "hi-en", "fr-en", "de-en", "it-en",
+            "tr-en", "ru-en", "pl-en", "ar-en", "fi-en", "el-en", "ms-en",
+            "tl-en", "sw-en", "nl-en", "sv-en", "no-en"} <= set(PAIR_MODES.values())
     for pair in PAIR_MODES.values():
         size = len(TOKEN_SETS[pair])
         for base in ("M-vocos-p", "S-vocos-p"):
@@ -19,7 +21,17 @@ def test_pack_inputs_uses_the_pair_token_set(tmp_path):
             {"text": "오늘 날씨가 좋아요.", "lang": "ko"}, {"text": "今日はいい天気です。", "lang": "ja"},
             {"text": "Hoy hace buen tiempo.", "lang": "es"}, {"text": "Hari ini cuacanya cerah.", "lang": "id"},
             {"text": "Hoje o tempo está bom.", "lang": "pt"}, {"text": "आज मौसम अच्छा है।", "lang": "hi"},
-            {"text": "วันนี้อากาศดีมาก", "lang": "th"}]
+            {"text": "Het weer is vandaag mooi.", "lang": "nl"},
+            {"text": "Været er fint i dag.", "lang": "no"},
+            {"text": "Vädret är fint i dag.", "lang": "sv"},
+            {"text": "วันนี้อากาศดีมาก", "lang": "th"}, {"text": "Il fait beau aujourd'hui.", "lang": "fr"},
+            {"text": "Heute ist das Wetter schön.", "lang": "de"},
+            {"text": "Oggi fa bel tempo.", "lang": "it"}, {"text": "Bugün hava çok güzel.", "lang": "tr"},
+            {"text": "Сегодня хорошая погода.", "lang": "ru"}, {"text": "Dzisiaj jest ładna pogoda.", "lang": "pl"},
+            {"text": "الطقس جميل اليوم.", "lang": "ar"},
+            {"text": "Tänään on kaunis ilma.", "lang": "fi"}, {"text": "Σήμερα ο καιρός είναι ωραίος.", "lang": "el"},
+            {"text": "Hari ini cuaca cerah.", "lang": "ms"}, {"text": "Maganda ang panahon ngayon.", "lang": "tl"},
+            {"text": "Hali ya hewa ni nzuri leo.", "lang": "sw"}]
     p = tmp_path / "s.jsonl"
     p.write_text("".join(json.dumps(r, ensure_ascii=False) + "\n" for r in rows), encoding="utf-8")
     packs = pack_inputs(p, None)

@@ -57,14 +57,35 @@ The token set decides which text front-end produces the ids, so the firmware and
 | 8 | `pt-en` | 150 | `pt` |
 | 9 | `th-en` | 162 | `th` |
 | 10 | `hi-en` | 157 | `hi` |
+| 11 | `fr-en` | 143 | `fr` (device: when built with `VTTS_ENABLE_FR`) |
+| 12 | `de-en` | 167 | `de` (device: when built with `VTTS_ENABLE_DE`) |
+| 13 | `it-en` | 142 | `it` (device: when built with `VTTS_ENABLE_IT`) |
+| 14 | unused | | |
+| 15 | `tr-en` | 146 | `tr` (device: when built with `VTTS_ENABLE_TR`) |
+| 16 | `ru-en` | 154 | `ru` (device: when built with `VTTS_ENABLE_RU`; RLEX blob for the stress tables) |
+| 17 | `pl-en` | 151 | `pl` (device: when built with `VTTS_ENABLE_PL`) |
+| 18 | unused | | |
+| 19 | `ar-en` | 149 | `ar` (device: when built with `VTTS_ENABLE_AR`) |
+| 20 | unused | | |
+| 21 | `nl-en` | 159 | `nl` (device: when built with `VTTS_ENABLE_NL`) |
+| 22 | reserved | | |
+| 23 | `sv-en` | 155 | `sv` (device: when built with `VTTS_ENABLE_SV`) |
+| 24 | `no-en` | 156 | `no` (device: when built with `VTTS_ENABLE_NO`) |
+| 25 | `fi-en` | 142 | `fi` (device: when built with `VTTS_ENABLE_FI`) |
+| 26 | `el-en` | 139 | `el` (device: when built with `VTTS_ENABLE_EL`) |
+| 27 | reserved | | |
+| 28 | `ms-en` | 145 | `ms` (device: when built with `VTTS_ENABLE_MS`) |
+| 29 | `tl-en` | 139 | `tl` (device: when built with `VTTS_ENABLE_TL`) |
+| 30-32 | reserved | | |
+| 33 | `sw-en` | 147 | `sw` (device: when built with `VTTS_ENABLE_SW`) |
 
 The names and sizes are those of `TOKEN_SETS` in `src/vtts/frontend/phoneme_set.py`. Reading rules (`vtts_init`, `vtts.export.format.token_set_of`):
 
 - Present with a known code: `vocab` must be at least the set's size, else the file is rejected (`VTTS_ERR_FORMAT`).
 - Present with a code this runtime does not know: the model loads with token set `unknown`; only raw ids can be synthesized.
-- Absent or 0 (all files exported before revision 1.1): by `vocab`: 65 → `v1`, 107 → `vi-en`, 171 → `zh-en`, 153 → `ko-en`, 144 → `ja-en`, 138 → `es-en`, 141 → `id-en`, 150 → `pt-en`, 162 → `th-en`, 157 → `hi-en` (every exporter records the dim for these sets); any other `vocab` > 65 → `vi-en` and ≤ 65 → `v1` (the rule the firmware used before).
+- Absent or 0 (all files exported before revision 1.1): by `vocab`: 65 → `v1`, 107 → `vi-en`, 171 → `zh-en`, 153 → `ko-en`, 144 → `ja-en`, 138 → `es-en`, 141 → `id-en`, 150 → `pt-en`, 162 → `th-en`, 157 → `hi-en` (only the sets that existed before the dim, codes 1-10, whose sizes are distinct; a set added later is never inferred, its size may equal another's); any other `vocab` > 65 → `vi-en` and ≤ 65 → `v1` (the rule the firmware used before).
 
-Writers (`write_model`, `write_model_int8`, `scripts/student/export_student.py`) record the set given with `token_set=` / `--token-set`, else the set the `vocab` names exactly; a model with spare embedding rows needs the explicit argument. C: `vtts_token_set(&m)`, `vtts_token_set_name()`, `vtts_token_set_size()`; `m.token_set_in_file` tells whether the file had the dim.
+Writers (`write_model`, `write_model_int8`, `scripts/student/export_student.py`) record the set given with `token_set=` / `--token-set`, else the one set whose size is the `vocab` (no dim when several sets have that size, such as it-en and fi-en; `export_student.py` then requires `--token-set`); a model with spare embedding rows needs the explicit argument. C: `vtts_token_set(&m)`, `vtts_token_set_name()`, `vtts_token_set_size()`; `m.token_set_in_file` tells whether the file had the dim.
 
 ## Tensor names
 

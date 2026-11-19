@@ -1,0 +1,48 @@
+# Words read in Tagalog in the tl-en pair even when they are also in lexicons/latin/english.txt
+# or their spelling does not fit the Tagalog rules (frontend/latin.py, rule 1). One lower-case
+# word per line.
+#
+# Tagalog words that are also English entries
+at
+man
+# Places and names written with Spanish letters (c, f, j, q, v, z, ll)
+luzon
+visayas
+mindanao
+cebu
+quezon
+davao
+cavite
+bulacan
+ilocos
+bicol
+rizal
+vigan
+caloocan
+valenzuela
+boracay
+zamboanga
+pampanga
+jose
+juan
+jesus
+maria
+cristo
+cruz
+garcia
+lopez
+gonzales
+fernandez
+mendoza
+bonifacio
+marcos
+aquino
+pacquiao
+francisco
+felipe
+josefina
+jollibee
+villa
+# Particles without a vowel or with a cluster
+ng
+mga

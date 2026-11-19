@@ -7,7 +7,7 @@ import pytest
 
 SETS = Path(__file__).resolve().parents[2] / "eval" / "sets"
 GROUPS = {"device", "numbers", "names", "questions", "long"}
-LATIN_LANGS = ["pt", "id", "es"]
+LATIN_LANGS = ["pt", "id", "es", "fr", "de", "it", "tr", "pl", "fi", "ms", "tl", "sw", "nl", "sv", "no"]
 
 
 def _rows(name):
@@ -17,10 +17,10 @@ def _rows(name):
 def _english_words(text, lang):
     from vtts.frontend.lang import split_sentences_raw, tag_words
 
-    return [w for s in split_sentences_raw(text) for w, t in tag_words(s, lang) if t == "en"]
+    return [w for s in split_sentences_raw(text, lang) for w, t in tag_words(s, lang) if t == "en"]
 
 
-@pytest.mark.parametrize("lang", ["zh", "ko", "ja", "th", *LATIN_LANGS])
+@pytest.mark.parametrize("lang", ["zh", "ko", "ja", "th", "ru", "ar", "el", *LATIN_LANGS])
 @pytest.mark.parametrize("kind", ["ood", "mixed"])
 def test_pair_set_shape_and_front_end(kind, lang):
     from vtts.data.train_list import unreadable

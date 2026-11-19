@@ -1,0 +1,50 @@
+{"id": "ood_ru_device_00", "text": "В гостиной погас свет.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_01", "text": "Очиститель воздуха работает в автоматическом режиме.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_02", "text": "Задняя дверь не закрыта, закрыть её?", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_03", "text": "Я убавил громкость колонки на кухне.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_04", "text": "Стиральная машина закончит через двадцать минут.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_05", "text": "Кондиционер в спальне включится в семь утра.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_06", "text": "Робот-пылесос вернулся на базу и заряжается.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_07", "text": "Батарея телефона почти разряжена, подключите зарядку.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_08", "text": "Будильник на завтра поставлен на половину седьмого.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_device_09", "text": "Чайник уже вскипел, можно заваривать чай.", "group": "device", "lang": "ru"}
+{"id": "ood_ru_numbers_00", "text": "Сейчас 15:45.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_01", "text": "Встреча назначена на 15.12.2026 в 9:30.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_02", "text": "Общая стоимость составляет 1 250 рублей.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_03", "text": "Сегодня днём будет до 32°.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_04", "text": "Позвоните по номеру 8 (495) 123-45-67, чтобы записаться.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_05", "text": "75% студентов сдали экзамен.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_06", "text": "Я живу на 3-м этаже, квартира 21.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_07", "text": "В городе живёт 2 500 000 человек.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_08", "text": "Поезд проезжает 120 км меньше чем за час.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_numbers_09", "text": "До отпуска осталось 22 дня.", "group": "numbers", "lang": "ru"}
+{"id": "ood_ru_names_00", "text": "Мария и Иван в следующем месяце едут в Казань.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_01", "text": "Сергей Петров выиграл забег в Новосибирске.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_02", "text": "Анна Ахматова и Борис Пастернак были известными поэтами.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_03", "text": "Летом мы с Ольгой поедем на Байкал.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_04", "text": "Дмитрий Шостакович написал пятнадцать симфоний.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_05", "text": "Наталья работает врачом в Екатеринбурге.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_06", "text": "Пётр Первый основал Санкт-Петербург.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_07", "text": "Мой друг Алексей живёт во Владивостоке.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_08", "text": "Лев Толстой родился в Ясной Поляне.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_names_09", "text": "Татьяна и Михаил поженились в Сочи.", "group": "names", "lang": "ru"}
+{"id": "ood_ru_questions_00", "text": "Который сейчас час?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_01", "text": "Ты не знаешь, где ближайшая аптека?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_02", "text": "Сколько стоит билет до Москвы?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_03", "text": "Почему сегодня так холодно?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_04", "text": "Можно мне ещё чашку чая?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_05", "text": "Во сколько начинается фильм?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_06", "text": "Что ты будешь делать в выходные?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_07", "text": "Как пройти к вокзалу?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_08", "text": "Ты уже позавтракал?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_questions_09", "text": "Кто оставил дверь открытой?", "group": "questions", "lang": "ru"}
+{"id": "ood_ru_long_00", "text": "Если завтра будет хорошая погода, мы поедем за город, погуляем в лесу и вернёмся домой к ужину.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_01", "text": "Вчера вечером мы долго сидели на кухне, пили чай с вареньем и вспоминали, как ездили летом на море.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_02", "text": "Чтобы приготовить настоящий борщ, нужно сварить бульон, нарезать свёклу, капусту и картошку и долго тушить всё на медленном огне.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_03", "text": "Когда я был маленьким, бабушка каждое воскресенье пекла пироги с капустой, и весь дом пах свежим хлебом.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_04", "text": "Весной в нашем парке расцветают яблони, и по выходным там гуляет много людей с детьми и собаками.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_05", "text": "Мой брат учится в университете на втором курсе и мечтает после учёбы поработать за границей.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_06", "text": "Если вы опоздаете на последний автобус, придётся вызвать такси или идти пешком через весь город.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_07", "text": "Зимой в Сибири бывает очень холодно, но местные жители привыкли и не отказываются от прогулок.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_08", "text": "Учительница попросила учеников прочитать рассказ к понедельнику и написать о нём небольшое сочинение.", "group": "long", "lang": "ru"}
+{"id": "ood_ru_long_09", "text": "Мы долго выбирали подарок для мамы и в конце концов купили ей красивый шарф и билеты в театр.", "group": "long", "lang": "ru"}

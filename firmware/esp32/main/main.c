@@ -20,8 +20,11 @@
  *   ids <ids;ids...>      speak token ids from a host front-end (scripts/device/say.py --lang)
  *   lang <mode>           text mode, valid modes per token set of the current model: v1 vi;
  *                         vi-en vi|en|auto (vi reads English words too); zh-en zh; ko-en ko; hi-en hi;
- *                         ja-en ja; es-en es; id-en id; pt-en pt; th-en th. The front-end follows the
- *                         model's token set (header)
+ *                         ja-en ja; es-en es; id-en id; pt-en pt; th-en th; fr-en fr; de-en de; it-en it; tr-en tr;
+ *                         ru-en ru; pl-en pl; ar-en ar; fi-en fi; el-en el;
+ *                         ms-en ms; tl-en tl; sw-en sw; nl-en nl; sv-en sv; no-en no (each
+ *                         language only when built in: the models need it, main/vtts_langs.cmake).
+ *                         The front-end follows the model's token set (header)
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments
  */
 #include <math.h>
@@ -91,9 +94,15 @@ void app_main(void) {
 #else
     printf("ja readings not embedded\n");
 #endif
+#if VTTS_EMBED_RU
+    /* Russian stress tables for ru-en models, read in place from flash */
+    g.has_ru = vtts_rlex_init(&g.ru, lex_ru_start, (size_t)(lex_ru_end - lex_ru_start)) == 0;
+    printf("ru stress %u bytes, %s\n", (unsigned)(lex_ru_end - lex_ru_start), g.has_ru ? "ok" : "invalid");
+#endif
     for (int k = 0; k < 2; k++) {
         if (g.lang[k] == VTTS_LANG_ZH && !g.has_zh) printf("WARNING model %c is zh-en but has no zh readings: Han text is skipped\n", k ? 'M' : 'S');
         if (g.lang[k] == VTTS_LANG_JA && !g.has_ja) printf("WARNING model %c is ja-en but has no ja readings: Japanese text is skipped\n", k ? 'M' : 'S');
+        if (g.lang[k] == VTTS_LANG_RU && !g.has_ru) printf("WARNING model %c is ru-en but has no ru stress tables: default stress only\n", k ? 'M' : 'S');
     }
     g.arena_bytes = need;
     g.arena = heap_caps_aligned_alloc(16, need, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT);

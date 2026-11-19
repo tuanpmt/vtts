@@ -1,0 +1,39 @@
+# Words ending in -er read with an open e and a pronounced r (mer, hiver) instead of [e]
+# (fr/g2p_fr.py; one-syllable words like mer, fer, cher need no entry). Words in -ers whose s is
+# not a plural (divers, univers) are listed with the s.
+fier
+hier
+tiers
+hiver
+enfer
+amer
+cancer
+super
+laser
+hamster
+poster
+revolver
+reporter
+bunker
+joker
+poker
+scooter
+starter
+jupiter
+lucifer
+éther
+gangster
+cuiller
+esther
+niger
+alger
+cocker
+corner
+master
+magister
+divers
+univers
+travers
+envers
+revers
+pervers

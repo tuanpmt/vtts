@@ -1,0 +1,251 @@
+# German words read unlike the rules of frontend/de/g2p_de.py, with their phonemes (de-en tokens
+# without the DE: prefix; "1" marks the stressed vowel). Matching: the whole word, lower case.
+# Function words (articles, pronouns, prepositions, conjunctions, auxiliaries) have no stress.
+# See docs/frontend/pronunciation-rules.md.
+#
+# articles and pronouns
+der	d E 6
+die	d i:
+das	d a s
+den	d e: n
+dem	d e: m
+des	d E s
+ein	? aI n
+eine	? aI n @
+einen	? aI n @ n
+einem	? aI n @ m
+einer	? aI n 6
+eines	? aI n @ s
+es	? E s
+er	? E 6
+sie	z i:
+ich	? I C
+du	d u:
+wir	v i: 6
+ihr	? i: 6
+man	m a n
+sich	z I C
+mich	m I C
+dich	d I C
+mir	m i: 6
+dir	d i: 6
+ihn	? i: n
+ihm	? i: m
+ihnen	? i: n @ n
+uns	? U n s
+euch	? OY C
+was	v a s
+wer	v e: 6
+wem	v e: m
+wen	v e: n
+dessen	d E s @ n
+deren	d e: R @ n
+denen	d e: n @ n
+# prepositions and conjunctions
+und	? U n t
+oder	? o: d 6
+aber	? a: b 6
+in	? I n
+im	? I m
+an	? a n
+am	? a m
+auf	? aU f
+aus	? aU s
+bei	b aI
+beim	b aI m
+mit	m I t
+von	f O n
+vom	f O m
+zu	t s u:
+zum	t s U m
+zur	t s u: 6
+für	f y: 6
+fürs	f y: 6 s
+um	? U m
+ums	? U m s
+ins	? I n s
+ans	? a n s
+aufs	? aU f s
+als	? a l s
+wie	v i:
+ob	? O p
+ab	? a p
+bis	b I s
+dass	d a s
+daß	d a s
+nach	n a: x
+vor	f o: 6
+durch	d U 6 C
+über	? y: b 6
+unter	? U n t 6
+ohne	? o: n @
+gegen	g e: g @ n
+seit	z aI t
+# auxiliaries
+ist	? I s t
+sind	z I n t
+bin	b I n
+bist	b I s t
+seid	z aI t
+war	v a: 6
+waren	v a: R @ n
+hat	h a t
+hast	h a s t
+hatte	h a t @
+hatten	h a t @ n
+wird	v I 6 t
+wirst	v I 6 s t
+# adverbs with the stress on the second part
+zurück	t s u: R Y1 k
+zusammen	t s u: z a1 m @ n
+zuerst	t s u: ? e:1 6 s t
+zuletzt	t s u: l E1 t s t
+zunächst	t s u: n E:1 C s t
+zugleich	t s u: g l aI1 C
+zudem	t s u: d e:1 m
+zuvor	t s u: f o:1 6
+zufolge	t s u: f O1 l g @
+zumindest	t s u: m I1 n d @ s t
+zumal	t s u: m a:1 l
+zwar	t s v a:1 6
+allein	? a l aI1 n
+alleine	? a l aI1 n @
+vielleicht	f i: l aI1 C t
+warum	v a R U1 m
+darum	d a R U1 m
+woher	v o: h e:1 6
+wohin	v o: h I1 n
+daher	d a h e:1 6
+dahin	d a h I1 n
+dafür	d a f y:1 6
+dabei	d a b aI1
+damit	d a m I1 t
+danach	d a n a:1 x
+dazu	d a t s u:1
+davon	d a f O1 n
+davor	d a f o:1 6
+darauf	d a R aU1 f
+daran	d a R a1 n
+darin	d a R I1 n
+daraus	d a R aU1 s
+darüber	d a R y:1 b 6
+darunter	d a R U1 n t 6
+dagegen	d a g e:1 g @ n
+dadurch	d a d U1 6 C
+dahinter	d a h I1 n t 6
+daneben	d a n e:1 b @ n
+dazwischen	d a t s v I1 S @ n
+worauf	v o: R aU1 f
+womit	v o: m I1 t
+wofür	v o: f y:1 6
+wozu	v o: t s u:1
+wovon	v o: f O1 n
+woran	v o: R a1 n
+worüber	v o: R y:1 b 6
+worin	v o: R I1 n
+wodurch	v o: d U1 6 C
+hierbei	h i: 6 b aI1
+hierfür	h i: 6 f y:1 6
+hierzu	h i: 6 t s u:1
+heraus	h E R aU1 s
+herein	h E R aI1 n
+herum	h E R U1 m
+hinaus	h I n aU1 s
+hinein	h I n aI1 n
+voran	f o: R a1 n
+voraus	f o: R aU1 s
+vorbei	f o: 6 b aI1
+vorher	f o: 6 h e:1 6
+nachher	n a: x h e:1 6
+bevor	b @ f o:1 6
+hervor	h E 6 f o:1 6
+empor	? E m p o:1 6
+überall	? y: b 6 ? a1 l
+überhaupt	? y: b 6 h aU1 p t
+unterwegs	? U n t 6 v e:1 k s
+untereinander	? U n t 6 ? aI n a1 n d 6
+miteinander	m I t ? aI n a1 n d 6
+einander	? aI n a1 n d 6
+sowie	z o: v i:1
+sowohl	z o: v o:1 l
+sogar	z o: g a:1 6
+jedoch	j e: d O1 x
+indem	? I n d e:1 m
+obwohl	? O p v o:1 l
+nachdem	n a: x d e:1 m
+anstatt	? a n S t a1 t
+weg	v E1 k
+# frequent words the rules read wrongly
+abend	? a:1 b @ n t
+abends	? a:1 b @ n t s
+abenteuer	? a:1 b @ n t OY 6
+gestern	g E1 s t 6 n
+erst	? e:1 6 s t
+nachbar	n a1 x b a: 6
+hotel	h o: t E1 l
+kaffee	k a1 f e:
+version	v E 6 z j o:1 n
+jahrhundert	j a: 6 h U1 n d 6 t
+jahrhunderts	j a: 6 h U1 n d 6 t s
+jahrhunderten	j a: 6 h U1 n d 6 t @ n
+jahrzehnt	j a: 6 t s e:1 n t
+jahrzehnte	j a: 6 t s e:1 n t @
+jahrzehnten	j a: 6 t s e:1 n t @ n
+jahrtausend	j a: 6 t aU1 z @ n t
+lebendig	l e: b E1 n d I C
+österreich	? 2:1 s t @ R aI C
+australien	? aU s t R a:1 l j @ n
+europa	? OY R o:1 p a
+berlin	b E 6 l i:1 n
+paris	p a R i:1 s
+kapitel	k a p I1 t @ l
+theater	t e: a:1 t 6
+museum	m u: z e:1 U m
+paket	p a k e:1 t
+prinzip	p R I n t s i:1 p
+konzert	k O n t s E1 6 t
+ebene	? e:1 b @ n @
+ereignis	? E 6 ? aI1 k n I s
+ereignisse	? E 6 ? aI1 k n I s @
+erinnerung	? E 6 ? I1 n @ R U N
+erinnern	? E 6 ? I1 n 6 n
+eszett	? E s t s E1 t
+ypsilon	? Y1 p s i: l O n
+e-mail	? i:1 m e: l
+damals	d a:1 m a: l s
+venedig	v e: n e:1 d I C
+herzog	h E1 6 t s o: k
+hochzeit	h O1 x t s aI t
+außerdem	? aU1 s 6 d e: m
+hin	h I n
+her	h e: 6
+gegenüber	g e: g @ n ? y:1 b 6
+maria	m a R i:1 a
+bisher	b I s h e:1 6
+kilometer	k i: l o: m e:1 t 6
+kilometern	k i: l o: m e:1 t 6 n
+karriere	k a R j e:1 R @
+allerdings	? a1 l 6 d I N s
+insbesondere	? I n s b @ z O1 n d @ R @
+somit	z o: m I1 t
+zumeist	t s u: m aI1 s t
+nahezu	n a: @ t s u:1
+hingegen	h I n g e:1 g @ n
+umgeben	? U m g e:1 b @ n
+umgebung	? U m g e:1 b U N
+johann	j o:1 h a n
+johannes	j o: h a1 n @ s
+hannover	h a n o:1 f 6
+alexander	? a l E k s a1 n d 6
+daraufhin	d a R aU1 f h I n
+sodass	z o: d a1 s
+sofort	z o: f O1 6 t
+inzwischen	? I n t s v I1 S @ n
+hinzu	h I n t s u:1
+desselben	d E s z E1 l b @ n
+derselbe	d e: 6 z E1 l b @
+dieselbe	d i: z E1 l b @
+dasselbe	d a s z E1 l b @
+derselben	d e: 6 z E1 l b @ n
+dieselben	d i: z E1 l b @ n
+wahrscheinlich	v a: 6 S aI1 n l I C

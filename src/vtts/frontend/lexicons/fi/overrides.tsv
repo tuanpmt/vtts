@@ -1,0 +1,22 @@
+# Loanwords and names read unlike their spelling, respelled in Finnish orthography (doubled
+# letters are long sounds; š = sh). Matching: the whole word, lower case, after folding
+# (é -> e, ü -> y). See docs/frontend/pronunciation-rules.md.
+show	šou
+chili	tšili
+chile	tšile
+design	disain
+ok	ookoo
+jazz	jatsi
+geneve	šeneve
+zyrich	tsyrih
+mynchen	mynhen
+bach	bah
+chicago	šikaago
+wien	viin
+champagne	šampanja
+beethoven	beethooven
+shakki	šakki
+sheikki	šeikki
+shampoo	šampoo
+shortsit	šortsit
+sheriffi	šeriffi

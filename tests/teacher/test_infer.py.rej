@@ -1,0 +1,9 @@
+@@ -55,7 +55,7 @@
+     seen = []
+     monkeypatch.setattr(t, "synthesize_ids", lambda ids: seen.append(ids) or np.zeros(10, np.float32))
+     for lang, text in [("zh", "打开Wi-Fi设置。"), ("ko", "Wi-Fi를 켜 주세요."), ("ja", "Wi-Fiを設定してください。"),
+-                       ("es", "Abre GitHub, por favor."), ("pt", "Abra o GitHub, por favor."), ("hi", "कृपया GitHub खोलो।"), ("th", "ช่วยเปิด GitHub ให้หน่อย"), ("id", "Tolong buka GitHub, ya.")]:
++                       ("es", "Abre GitHub, por favor."), ("pt", "Abra o GitHub, por favor."), ("hi", "कृपया GitHub खोलो।"), ("th", "ช่วยเปิด GitHub ให้หน่อย"), ("id", "Tolong buka GitHub, ya."), ("nl", "Open GitHub, alsjeblieft."), ("sv", "Öppna GitHub, tack."), ("no", "Åpne GitHub, takk.")]:
+         seen.clear()
+         t.synthesize(text, lang=lang)
+         assert seen == text_to_ids(text, lang) == [encode_text(text, lang)]  # as in training

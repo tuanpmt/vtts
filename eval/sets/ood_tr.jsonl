@@ -1,0 +1,50 @@
+{"id": "ood_tr_device_00", "text": "Oturma odasının ışığı kapatıldı.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_01", "text": "Klima otomatik modda çalışıyor.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_02", "text": "Arka kapı kilitli değil, kilitlememi ister misin?", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_03", "text": "Mutfaktaki radyonun sesini kıstım.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_04", "text": "Çamaşır makinesi yıkamayı bitirdi.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_05", "text": "Hava kararınca bahçe ışıklarını aç.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_06", "text": "Yatak odasının kaloriferi kapalı.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_07", "text": "Telefonun şarjı neredeyse bitmek üzere.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_08", "text": "Yarın sabah için alarmı kurdum.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_device_09", "text": "Çalışma odasının panjurları iniyor.", "group": "device", "lang": "tr"}
+{"id": "ood_tr_numbers_00", "text": "Saat şu an 15:45.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_01", "text": "Toplantı 15.12.2026 tarihinde saat 9:30'da başlıyor.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_02", "text": "Bilet 12,50 TL.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_03", "text": "Dışarıda hava 25 °C ve nem %60.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_04", "text": "Yürüyerek 3,5 km sürüyor.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_05", "text": "Dedem 3 Mayıs'ta 87 yaşına girdi.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_06", "text": "Tren 10 dakika sonra 21 numaralı perondan kalkıyor.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_07", "text": "Bir haftada 1.250 kitap sattık.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_08", "text": "Telefon numaram 0532 123 45 67.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_numbers_09", "text": "Cumartesi günkü yarışta 2. olduk.", "group": "numbers", "lang": "tr"}
+{"id": "ood_tr_names_00", "text": "Ayşe ile Mehmet gelecek ay İzmir'e gidiyor.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_01", "text": "Ahmet Yılmaz Bursa'daki koşuyu kazandı.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_02", "text": "Zeynep Hanım on yıldır Ankara'da öğretmenlik yapıyor.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_03", "text": "Elif, Can ile Antalya'daki bir düğünde tanıştı.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_04", "text": "Doktor Kaya, Trabzon'daki hastanede çalışıyor.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_05", "text": "Emre ile Selin Eskişehir'de yaşıyor.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_06", "text": "Burak kız kardeşine Orhan Pamuk'un bir kitabını hediye etti.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_07", "text": "Deniz, Boğaziçi Üniversitesi'nde mimarlık okuyor.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_08", "text": "Murat'ın babaannesi Konya'da doğmuş.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_names_09", "text": "Ali ile Fatma baharda Kapadokya'yı gezdi.", "group": "names", "lang": "tr"}
+{"id": "ood_tr_questions_00", "text": "Bu akşam ne yemek istersin?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_01", "text": "Bu şarkının adını biliyor musun?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_02", "text": "Eczane yarın saat kaçta açılıyor?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_03", "text": "Pencereyi kapatabilir misin, lütfen?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_04", "text": "Bir kilo domates kaç lira?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_05", "text": "Cumartesi için restorana yer ayırttın mı?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_06", "text": "Arabanın anahtarlarını nereye koydun?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_07", "text": "Bebek neden bu kadar çok ağlıyor?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_08", "text": "Sen de bizimle sinemaya geliyor musun?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_questions_09", "text": "Tarih sınavı nasıl geçti?", "group": "questions", "lang": "tr"}
+{"id": "ood_tr_long_00", "text": "Yağmur çok şiddetli yağmasına rağmen çocuklar akşama kadar bahçede futbol oynadı.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_01", "text": "Babaannem bahçesinde domates ve biber yetiştiriyor, her yaz bize kocaman bir kasa gönderiyor.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_02", "text": "Uzun bir iş gününün ardından nehir kenarında yürüyüş yapmayı çok seviyorum.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_03", "text": "Şehir müzesi yenilendi ve artık eski tablolardan oluşan bir koleksiyona ev sahipliği yapıyor.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_04", "text": "Küçükken tatillerimizi havanın temiz ve serin olduğu dağ köyünde geçirirdik.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_05", "text": "Kütüphane çatısı onarılacağı için iki hafta boyunca kapalı kalacak.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_06", "text": "Yolculuğa çıkmadan önce pasaportunu ve biletlerini kontrol etmeyi unutma.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_07", "text": "Aşçı mantarlı, tereyağlı ve peynirli taze bir makarna hazırladı.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_08", "text": "Kışın kar ormanları örtüyor ve köy masallardan çıkmış gibi görünüyor.", "group": "long", "lang": "tr"}
+{"id": "ood_tr_long_09", "text": "Her pazar sabahı meydan meyve ve çiçek satan tezgâhlarla doluyor.", "group": "long", "lang": "tr"}

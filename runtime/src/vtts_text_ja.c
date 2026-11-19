@@ -2,6 +2,9 @@
 /* vtts_text_ja.c -- Japanese front-end of the device (token set ja-en): JLEX reader and NFKC,
  * readings by forward longest match (mirrors src/vtts/frontend/ja/g2p_ja.py), kana -> phonemes
  * (ja/kana.py) and normalization (ja/normalize_ja.py). */
+#include "vtts_langs.h"
+#if VTTS_ENABLE_JA /* else an empty unit (vtts_langs.h) */
+
 #include "vtts_text_ja.h"
 
 #include <stdio.h>
@@ -1338,3 +1341,5 @@ int vtts_ja_normalize(const vtts_jlex *j, const uint32_t *in, int n, uint32_t *a
     *out = x.p;
     return x.n;
 }
+
+#endif /* VTTS_ENABLE_JA */

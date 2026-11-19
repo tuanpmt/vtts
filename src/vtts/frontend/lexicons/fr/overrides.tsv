@@ -1,0 +1,85 @@
+# Words read unlike the rules of fr/g2p_fr.py. Matching: the whole word, lower case (with its
+# apostrophe), or the word without a plural s. The reading is a respelling read by the rules
+# (one token: femme -> fame, é/è mark e/E) or phonemes of the fr-en set separated by spaces.
+# See docs/frontend/pronunciation-rules.md.
+# function words
+et	é
+est	è
+es	è
+ai	é
+les	lé
+des	dé
+mes	mé
+tes	té
+ses	sé
+ces	sé
+eu	u
+eus	u
+eut	u
+eût	u
+où	ou
+ok	o k E
+# numbers (six, dix and huit before a consonant or a vowel: normalize_fr)
+six	s i s
+dix	d i s
+sept	s E t
+# silent or unexpected letters
+fils	f i s
+femme	fame
+monsieur	m @ s j eu
+messieurs	m e s j eu
+second	segon
+seconde	segonde
+secondaire	segondère
+oignon	ognon
+août	u t
+automne	otone
+pays	p e i
+paysage	p e i z a zh
+paysan	p e i z an
+paysanne	p e i z a n
+abbaye	a b e i
+aujourd'hui	o zh u r d H i
+quelqu'un	k E l k un
+quelqu'une	k E l k y n
+sculpteur	s k y l t oe r
+sculpture	s k y l t y r
+baptême	batème
+dessert	d e s E r
+dessin	d e s in
+dessiner	d e s i n e
+faisons	f @ z on
+faisait	f @ z E
+faisais	f @ z E
+faisaient	f @ z E
+faisant	f @ z an
+équateur	e k w a t oe r
+aquarium	a k w a r j O m
+quatuor	k w a t H O r
+yacht	j O t
+œufs	eu
+bœufs	b eu
+examen	E g z a m in
+parfum	p a r f un
+wagon	vagon
+alcool	alkol
+zoo	z o
+respect	r E s p E
+aspect	a s p E
+suspect	s y s p E
+instinct	in s t in
+distinct	d i s t in
+prompt	p r on
+exempt	E g z an
+pollen	p O l E n
+lichen	l i k E n
+abdomen	a b d O m E n
+spécimen	s p e s i m E n
+gluten	g l y t E n
+amen	a m E n
+hymen	i m E n
+dolmen	d O l m E n
+solennel	s O l a n E l
+jean	jan
+jeanne	jane
+septième	s E t j E m

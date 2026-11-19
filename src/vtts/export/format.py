@@ -15,18 +15,57 @@ ROW = struct.Struct("<48sBBH4iIII")
 ALIGN = 16
 DECODER_IDS = {"hifigan": 0, "istft": 1, "vocos": 2}
 # Optional dim `token_set` (vtts_token_set_t in runtime/include/vtts.h); 0 or absent = derive
-# from vocab. Sizes are those of src/vtts/frontend/phoneme_set.py (checked by tests). Codes from 6
+# from vocab. Sizes are those of src/vtts/frontend/phoneme_set.py (checked by tests). Codes from 11
 # have a Python front-end only so far: the C runtime does not know them yet and loads such models
 # with token set "unknown" (raw ids only).
 TOKEN_SET_CODES = {"v1": 1, "vi-en": 2, "zh-en": 3, "ko-en": 4, "ja-en": 5, "es-en": 6, "id-en": 7,
                    "pt-en": 8, "th-en": 9, "hi-en": 10}
 TOKEN_SET_SIZES = {"v1": 65, "vi-en": 107, "zh-en": 171, "ko-en": 153, "ja-en": 144, "es-en": 138,
                    "id-en": 141, "pt-en": 150, "th-en": 162, "hi-en": 157}
+TOKEN_SET_CODES["no-en"], TOKEN_SET_SIZES["no-en"] = 24, 156
+TOKEN_SET_CODES["sv-en"], TOKEN_SET_SIZES["sv-en"] = 23, 155
+TOKEN_SET_CODES["nl-en"], TOKEN_SET_SIZES["nl-en"] = 21, 159
+# The sets that existed before the token_set dim: a file without the dim holds one of them, so only
+# these are inferred from the vocab (their sizes are distinct). Every later set is recorded by its
+# code (its size may equal another's: it-en and fi-en both have 142 ids).
+LEGACY_TOKEN_SETS = ("v1", "vi-en", "zh-en", "ko-en", "ja-en", "es-en", "id-en", "pt-en", "th-en", "hi-en")
+TOKEN_SET_CODES["fr-en"] = 11
+TOKEN_SET_SIZES["fr-en"] = 143
+TOKEN_SET_CODES["de-en"] = 12
+TOKEN_SET_SIZES["de-en"] = 167
+TOKEN_SET_CODES["it-en"] = 13
+TOKEN_SET_SIZES["it-en"] = 142
+TOKEN_SET_CODES["tr-en"] = 15
+TOKEN_SET_SIZES["tr-en"] = 146
+TOKEN_SET_CODES["ru-en"] = 16
+TOKEN_SET_SIZES["ru-en"] = 154
+TOKEN_SET_CODES["pl-en"] = 17
+TOKEN_SET_SIZES["pl-en"] = 151
+TOKEN_SET_CODES["ar-en"] = 19
+TOKEN_SET_SIZES["ar-en"] = 149
+TOKEN_SET_CODES["fi-en"] = 25
+TOKEN_SET_SIZES["fi-en"] = 142
+TOKEN_SET_CODES["el-en"] = 26
+TOKEN_SET_SIZES["el-en"] = 139
+TOKEN_SET_CODES["ms-en"] = 28
+TOKEN_SET_SIZES["ms-en"] = 145
+TOKEN_SET_CODES["tl-en"] = 29
+TOKEN_SET_SIZES["tl-en"] = 139
+TOKEN_SET_CODES["sw-en"] = 33
+TOKEN_SET_SIZES["sw-en"] = 147
 
 
 def token_set_for_vocab(vocab: int) -> str | None:
-    """The token set whose size is exactly vocab, else None (ambiguous)."""
-    return next((k for k, n in TOKEN_SET_SIZES.items() if n == vocab), None)
+    """The legacy token set whose size is exactly vocab (how a file without the dim is read), else None."""
+    return next((k for k in LEGACY_TOKEN_SETS if TOKEN_SET_SIZES[k] == vocab), None)
+
+
+def export_token_set_for_vocab(vocab: int) -> str | None:
+    """The one token set of any age whose size is exactly vocab (the default of an export), None when
+    no set or several sets have that size (it-en and fi-en: 142 ids): the dim is then left out unless
+    the caller names the set (scripts/student/export_student.py requires it)."""
+    hits = [k for k, n in TOKEN_SET_SIZES.items() if n == vocab]
+    return hits[0] if len(hits) == 1 else None
 
 
 def token_set_of(dims: dict[str, int]) -> str:
@@ -44,7 +83,7 @@ def resolve_token_set(vocab: int, token_set: str | None) -> str | None:
     """The token set to record for an export: the given one (checked against the vocab), else
     the one the vocab names unambiguously, else None (dim omitted)."""
     if token_set is None:
-        return token_set_for_vocab(vocab)
+        return export_token_set_for_vocab(vocab)
     if token_set not in TOKEN_SET_CODES:
         raise ValueError(f"unknown token set {token_set!r}; one of {sorted(TOKEN_SET_CODES)}")
     if vocab < TOKEN_SET_SIZES[token_set]:
@@ -121,7 +160,9 @@ def write_model(model, path: Path, token_set: str | None = None) -> None:
 def model_dims(model, token_set: str | None = None) -> dict[str, int]:
     """Dims of a Student; token_set (e.g. "zh-en") is recorded in the token_set dim, by default
     the set the vocab names (65 -> v1, 107 -> vi-en, 171 -> zh-en, 153 -> ko-en, 144 -> ja-en,
-    138 -> es-en, 141 -> id-en, 150 -> pt-en, 162 -> th-en, 157 -> hi-en)."""
+    138 -> es-en, 141 -> id-en, 150 -> pt-en, 162 -> th-en, 157 -> hi-en, 143 -> fr-en, 167 -> de-en, 142 -> it-en,
+    146 -> tr-en, 154 -> ru-en, 151 -> pl-en, 149 -> ar-en,
+    145 -> ms-en, 147 -> sw-en, 159 -> nl-en, 155 -> sv-en, 156 -> no-en; it-en and fi-en (142), el-en and tl-en (139) need the argument)."""
     d = config_dims(model.cfg)
     d["expr_milli"] = round(getattr(model, "expressiveness", 1.0) * 1000)
     ts = resolve_token_set(model.cfg.vocab, token_set)

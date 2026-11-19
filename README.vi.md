@@ -28,6 +28,9 @@
 | Indonesia + Anh | 🇮🇩 id + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 | Hindi + Anh | 🇮🇳 hi + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 | Thái + Anh | 🇹🇭 th + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Hà Lan + Anh | 🇳🇱 nl + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Thụy Điển + Anh | 🇸🇪 sv + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| Na Uy + Anh | 🇳🇴 no + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 <!-- END:voices -->
 
 Giọng song ngữ đọc được câu một thứ tiếng và câu trộn như "Đã kết nối Bluetooth với AirPods" bằng cùng một giọng; front-end chọn ngôn ngữ cho từng từ. Front-end tiếng Anh cũng chạy trên thiết bị (bản C, có test khớp với Python), nên câu trộn được xử lý ngay trên chip.
@@ -215,7 +218,21 @@ vtts phát hành **giọng song ngữ: một ngôn ngữ chính + tiếng Anh**,
 - [ ] **Indonesia + Anh** (front-end Python đã xong)
 - [ ] **Hindi + Anh** (front-end Python đã xong)
 - [ ] **Thái + Anh** (front-end Python đã xong)
-- [ ] Sau đó, theo nhu cầu: Đức, Pháp
+- [ ] **Pháp + Anh** (front-end Python đã xong)
+- [ ] **Đức + Anh** (front-end Python đã xong)
+- [ ] **Ý + Anh** (front-end Python đã xong)
+- [ ] **Thổ Nhĩ Kỳ + Anh** (front-end Python đã xong)
+- [ ] **Nga + Anh** (front-end Python đã xong)
+- [ ] **Ba Lan + Anh** (front-end Python đã xong)
+- [ ] **Ả Rập + Anh** (front-end Python đã xong; khôi phục nguyên âm đúng khoảng 86% số từ)
+- [ ] **Phần Lan + Anh** (front-end Python đã xong)
+- [ ] **Hy Lạp + Anh** (front-end Python đã xong)
+- [ ] **Mã Lai + Anh** (front-end Python đã xong)
+- [ ] **Tagalog (Filipino) + Anh** (front-end Python đã xong)
+- [ ] **Swahili + Anh** (front-end Python và trên thiết bị đã xong)
+- [ ] **Hà Lan + Anh** (front-end Python đã xong)
+- [ ] **Thụy Điển + Anh** (front-end Python đã xong)
+- [ ] **Na Uy + Anh** (front-end Python đã xong)
 - [ ] Từ điển phát âm của người dùng
 
 Lịch sử phát hành: [CHANGELOG.md](CHANGELOG.md).

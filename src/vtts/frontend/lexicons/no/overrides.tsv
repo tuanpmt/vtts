@@ -1,0 +1,65 @@
+# Norwegian (Bokmål, Urban East Norwegian) words read unlike the rules of g2p_no, as no-en phonemes
+# with the tone token ('1 / '2) after the stressed vowel. Matching: the whole word, lower case.
+# Hand-written. See docs/frontend/pronunciation-rules.md.
+og	O
+å	O
+jeg	j {I
+meg	m {I
+deg	d {I
+seg	s {I
+de	d i:
+dem	d E m
+det	d e:
+et	E t
+er	{: r
+var	v A: r
+har	h A: r
+hva	v A:
+hvor	v u: r
+hvem	v E m
+hun	h } n
+han	h A n
+man	m A n
+kan	k A n
+men	m E n
+den	d E n
+en	e: n
+til	t I l
+vil	v I l
+skal	s k A l
+sin	s I n
+min	m I n
+din	d I n
+som	s O m
+om	O m
+fra	f r A:
+ikke	I '2 k @
+noen	n u: '2 @ n
+noe	n u: '2 @
+mye	m y: '2 @
+norge	n O '2 r g @
+norsk	n O '1 s` k
+norske	n O '2 s` k @
+oslo	U '2 s` l U
+også	O '2 s O
+fordi	f O r d i: '1
+ble	b l e:
+hadde	h A '2 d @
+være	v {: '2 r @
+gjøre	j 2: '2 r @
+sier	s i: '1 @ r
+nå	n O
+ved	v e:
+med	m e:
+mot	m u: t
+etter	E '2 t @ r
+mellom	m E '2 l O m
+over	o: '2 v @ r
+under	} '2 n @ r
+kommune	k U m }: '2 n @
+kommunen	k U m }: '2 n @ n
+eksempel	E k s E '1 m p @ l
+sammen	s A '2 m @ n
+for	f O r
+at	A t
+annet	A '2 n @ t

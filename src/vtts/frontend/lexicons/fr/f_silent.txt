@@ -1,0 +1,4 @@
+# Words whose final f is silent (fr/g2p_fr.py).
+clef
+nerf
+cerf

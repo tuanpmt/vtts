@@ -3,6 +3,9 @@
  * with the nasal and schwa-deletion rules and the exception table (mirrors
  * src/vtts/frontend/hi/g2p_hi.py), and normalization (mirrors src/vtts/frontend/hi/normalize_hi.py).
  * All tables are in the generated vtts_text_tables.h; no blob is needed. */
+#include "vtts_langs.h"
+#if VTTS_ENABLE_HI /* else an empty unit (vtts_langs.h) */
+
 #include "vtts_text_hi.h"
 
 #include <string.h>
@@ -987,3 +990,5 @@ int vtts_hi_normalize(const uint32_t *in, int n, uint32_t *a, uint32_t *b, int c
     *out = x.p;
     return x.n;
 }
+
+#endif /* VTTS_ENABLE_HI */

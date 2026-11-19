@@ -35,7 +35,11 @@ def test_offsets_aligned(tmp_path):
 
 @pytest.mark.parametrize("vocab,name", [(65, "v1"), (107, "vi-en"), (171, "zh-en"), (153, "ko-en"),
                                         (144, "ja-en"), (138, "es-en"), (141, "id-en"),
-                                        (150, "pt-en"), (162, "th-en"), (157, "hi-en")])
+                                        (150, "pt-en"), (162, "th-en"), (157, "hi-en"),
+                                        (143, "fr-en"), (167, "de-en"),
+                                        (146, "tr-en"), (154, "ru-en"), (151, "pl-en"),
+                                        (149, "ar-en"), (145, "ms-en"), (147, "sw-en"),
+                                        (159, "nl-en"), (155, "sv-en"), (156, "no-en")])
 def test_token_set_derived_from_vocab(tmp_path, vocab, name):
     from vtts.export.format import TOKEN_SET_CODES, token_set_of
 
@@ -44,6 +48,27 @@ def test_token_set_derived_from_vocab(tmp_path, vocab, name):
     dims, _ = read_model(tmp_path / "m.vtts")
     assert dims["token_set"] == TOKEN_SET_CODES[name]
     assert token_set_of(dims) == name
+
+
+def test_token_set_shared_size_needs_the_name(tmp_path):
+    """it-en and fi-en both have 142 ids: an export must name the set; the file then records it."""
+    from vtts.export.format import TOKEN_SET_CODES, TOKEN_SET_SIZES, token_set_of
+
+    shared = {}
+    for name, n in TOKEN_SET_SIZES.items():
+        shared.setdefault(n, []).append(name)
+    shared = {n: names for n, names in shared.items() if len(names) > 1}
+    assert sorted(shared[142]) == ["fi-en", "it-en"]
+    for names in shared.values():
+        m = Student(replace(PRESETS["S-vocos"], vocab=TOKEN_SET_SIZES[names[0]]))
+        write_model(m, tmp_path / "x.vtts")  # not named: no dim (read as vi-en), never a guess
+        assert "token_set" not in read_model(tmp_path / "x.vtts")[0]
+        for name in names:
+            write_model(m, tmp_path / "m.vtts", token_set=name)
+            dims, _ = read_model(tmp_path / "m.vtts")
+            assert dims["token_set"] == TOKEN_SET_CODES[name] and token_set_of(dims) == name
+            del dims["token_set"]  # a file without the dim is never read as a newer set
+            assert token_set_of(dims) == "vi-en"
 
 
 def test_token_set_explicit_and_int8(tmp_path):
@@ -72,6 +97,9 @@ def test_token_set_old_files_by_vocab(tmp_path):
     assert token_set_of({"vocab": 40}) == "v1"
     assert token_set_of({"vocab": 171, "token_set": 0}) == "zh-en"
     assert token_set_of({"vocab": 300, "token_set": 99}) == "unknown"
+    # sets newer than the dim are never inferred from the vocab (sizes collide): such a file is vi-en
+    assert token_set_of({"vocab": 143}) == "vi-en"
+    assert token_set_of({"vocab": 143, "token_set": 11}) == "fr-en"
     write_tensors(tmp_path / "old.vtts", {"vocab": 107}, {"x": (np.zeros(4, np.float32), None)})
     assert token_set_of(read_model(tmp_path / "old.vtts")[0]) == "vi-en"
 
@@ -89,13 +117,21 @@ def test_token_set_codes_match_c_header():
     assert len(in_c) >= 5 and all(TOKEN_SET_CODES[name] == code for name, code in in_c.items())
     src = (rt / "src" / "vtts_model.c").read_text()
     body = src[src.index("TOKEN_SETS[] = {"):]
-    rows = re.findall(r'\{"([\w-]+)", (\d+)\}', body[:body.index("};")])
+    rows = {}  # designated rows: [VTTS_TOKSET_FR_EN] = {"fr-en", 143}
+    for m in re.finditer(r'\[VTTS_TOKSET_(\w+)\] = \{"([\w-]+)", (\d+)\}', body[:body.index("};")]):
+        if m.group(1) != "UNKNOWN":
+            rows[in_c[m.group(1).lower().replace("_", "-")]] = (m.group(2), m.group(3))
+    assert len(rows) == len(in_c)
     for name, code in TOKEN_SET_CODES.items():
-        known = rows[code] if code < len(rows) else ("unknown", "0")
+        known = rows.get(code, ("unknown", "0"))
         want = (name, str(TOKEN_SET_SIZES[name])) if name in in_c else ("unknown", "0")
         assert known == want, (name, code, known)
     assert len(set(TOKEN_SET_CODES.values())) == len(TOKEN_SET_CODES)
-    assert len(set(TOKEN_SET_SIZES.values())) == len(TOKEN_SET_SIZES)  # vocab -> set unambiguous
+    from vtts.export.format import LEGACY_TOKEN_SETS
+
+    legacy = [TOKEN_SET_SIZES[k] for k in LEGACY_TOKEN_SETS]
+    assert len(set(legacy)) == len(legacy)  # vocab -> legacy set unambiguous
+    assert set(LEGACY_TOKEN_SETS) == {k for k, c in TOKEN_SET_CODES.items() if c <= 10}
 
 
 def test_token_set_sizes_match_frontend():

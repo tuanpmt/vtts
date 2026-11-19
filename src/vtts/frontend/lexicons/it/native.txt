@@ -1,0 +1,35 @@
+# Words read in Italian in the it-en pair even when they are also in lexicons/latin/english.txt or
+# their spelling does not fit the Italian rules (frontend/latin.py, rule 1). One lower-case word
+# per line, without accents (a word with à è é ì ò ó ù is Italian anyway).
+#
+# Italian words that are also English entries (checked against the words of Italian Wikipedia)
+in
+come
+dell
+fine
+note
+camera
+console
+case
+date
+file
+sale
+mode
+menu
+latte
+cappuccino
+modem
+tennis
+# Italian words whose spelling the rules reject (final consonant, letters j k w x y)
+per
+con
+non
+sport
+bar
+gas
+film
+nord
+sud
+est
+ovest
+ex

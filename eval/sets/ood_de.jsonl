@@ -1,0 +1,50 @@
+{"id": "ood_de_device_00", "text": "Das Licht im Wohnzimmer ist jetzt aus.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_01", "text": "Der Luftreiniger läuft im automatischen Modus.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_02", "text": "Die Hintertür ist nicht abgeschlossen, soll ich sie zusperren?", "group": "device", "lang": "de"}
+{"id": "ood_de_device_03", "text": "Ich habe die Lautstärke des Lautsprechers in der Küche verringert.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_04", "text": "Die Waschmaschine ist in zwanzig Minuten fertig.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_05", "text": "Die Heizung im Schlafzimmer wurde auf eine niedrigere Stufe gestellt.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_06", "text": "Der Staubsauger ist zurück an seiner Ladestation.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_07", "text": "Der Wecker klingelt morgen früh um sieben.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_08", "text": "Im Kühlschrank ist die Milch fast leer.", "group": "device", "lang": "de"}
+{"id": "ood_de_device_09", "text": "Die Rollläden im Arbeitszimmer gehen gleich herunter.", "group": "device", "lang": "de"}
+{"id": "ood_de_numbers_00", "text": "Es ist jetzt 15:45 Uhr.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_01", "text": "Die Besprechung beginnt am 15.12.2026 um 9.30 Uhr.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_02", "text": "Der Gesamtbetrag beträgt 1.250,00 €.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_03", "text": "Die Höchsttemperatur liegt heute bei 33 °C.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_04", "text": "Rufen Sie unter 030 98765432 an, um einen Termin zu vereinbaren.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_05", "text": "Etwa 75 % der Schüler haben die Prüfung bestanden.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_06", "text": "Der Zug fährt am 3. Mai um 7:15 Uhr von Gleis 12 ab.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_07", "text": "Das Paket wiegt 2,5 kg und kostet 4,99 € Versand.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_08", "text": "Bis zum Ziel sind es noch 21 km.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_numbers_09", "text": "Er wurde am 1. Januar 1990 in Köln geboren.", "group": "numbers", "lang": "de"}
+{"id": "ood_de_names_00", "text": "Frau Schneider wohnt seit vielen Jahren in Leipzig.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_01", "text": "Der Rhein fließt durch Basel, Köln und Düsseldorf.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_02", "text": "Johann Wolfgang von Goethe schrieb den Faust.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_03", "text": "Wir fahren im Sommer an den Bodensee.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_04", "text": "Herr Müller arbeitet bei einer Bank in Frankfurt.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_05", "text": "Die Zugspitze ist der höchste Berg Deutschlands.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_06", "text": "Meine Schwester Katharina studiert in Heidelberg.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_07", "text": "Am Wochenende besuchen wir die Großeltern in Bayern.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_08", "text": "Ludwig van Beethoven wurde in Bonn geboren.", "group": "names", "lang": "de"}
+{"id": "ood_de_names_09", "text": "Der Hamburger Hafen ist einer der größten in Europa.", "group": "names", "lang": "de"}
+{"id": "ood_de_questions_00", "text": "Wie spät ist es gerade?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_01", "text": "Kannst du mir sagen, wo der nächste Bahnhof ist?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_02", "text": "Wird es morgen regnen?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_03", "text": "Hast du schon gegessen?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_04", "text": "Wann kommt der nächste Bus?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_05", "text": "Soll ich das Fenster im Bad öffnen?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_06", "text": "Wie lange dauert die Fahrt nach München?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_07", "text": "Möchtest du lieber Tee oder Kaffee?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_08", "text": "Wer hat heute Abend Zeit für einen Spaziergang?", "group": "questions", "lang": "de"}
+{"id": "ood_de_questions_09", "text": "Warum ist die Straße heute gesperrt?", "group": "questions", "lang": "de"}
+{"id": "ood_de_long_00", "text": "Gestern Abend sind wir nach der Arbeit noch lange durch die Altstadt spaziert und haben in einem kleinen Restaurant am Fluss gegessen.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_01", "text": "Wenn das Wetter am Samstag schön bleibt, fahren wir mit den Fahrrädern zum See und machen dort ein Picknick mit der ganzen Familie.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_02", "text": "Die Bibliothek der Universität ist während der Prüfungszeit bis Mitternacht geöffnet, damit die Studierenden in Ruhe lernen können.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_03", "text": "Meine Großmutter erzählt oft Geschichten aus ihrer Kindheit, als es im Dorf noch keinen Strom und kein fließendes Wasser gab.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_04", "text": "Nachdem der Regen aufgehört hatte, gingen die Kinder sofort nach draußen und sprangen fröhlich in jede Pfütze auf dem Weg.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_05", "text": "Der Arzt hat mir geraten, mich mehr zu bewegen, weniger Zucker zu essen und abends früher ins Bett zu gehen.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_06", "text": "Im Herbst färben sich die Blätter der Bäume im Park rot und gelb, und viele Menschen gehen dort am Sonntag spazieren.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_07", "text": "Weil die Brücke repariert wird, müssen alle Autos in den nächsten Wochen einen langen Umweg über die Landstraße nehmen.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_08", "text": "Unser Nachbar hat im Garten ein kleines Gewächshaus gebaut, in dem er Tomaten, Gurken und verschiedene Kräuter anpflanzt.", "group": "long", "lang": "de"}
+{"id": "ood_de_long_09", "text": "Bevor wir in den Urlaub fahren, müssen wir noch die Koffer packen, die Pflanzen gießen und den Schlüssel bei der Nachbarin abgeben.", "group": "long", "lang": "de"}

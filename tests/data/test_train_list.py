@@ -60,8 +60,38 @@ def test_unreadable_per_pair_language():
     assert unreadable("Halo Москва.", "id") and not unreadable("Apa kabar, Kafé?", "id")
     assert unreadable("สวัสดี Москва", "th") and not unreadable("สวัสดี Café 5 บาท", "th")
     assert unreadable("Olá Москва.", "pt") and not unreadable("Olá, tudo bem? François", "pt")
+    assert unreadable("Ciao Москва.", "it") and not unreadable("Perché, François? È così.", "it")
+    assert unreadable("Merhaba Москва.", "tr") and not unreadable("Çok güzel, François! İyi.", "tr")
+    assert unreadable("Γεια Москва.", "el") and not unreadable("Γεια σου, François και Wi-Fi.", "el")
+    assert unreadable("Hei Москва.", "fi") and not unreadable("Hyvää päivää, François ja Wi-Fi.", "fi")
     assert unreadable("नमस्ते Москва।", "hi") and not unreadable("नमस्ते, François और Wi-Fi।", "hi")
+    assert unreadable("Bonjour Москва.", "fr") and not unreadable("Ça va, Muñoz? Œuvre à 5 €.", "fr")
+    assert unreadable("Grüß Gott, Москва.", "de") and not unreadable("Grüß Gott, François, Straße!", "de")
+    assert unreadable("Cześć Москва.", "pl") and not unreadable("Cześć, François i Škoda.", "pl")
+    assert unreadable("Привет, नमस्ते.", "ru") and not unreadable("Привет, François и Wi-Fi, Київ.", "ru")
+    assert unreadable("مرحبا Москва.", "ar") and not unreadable("مرحبا، François و Wi-Fi.", "ar")
+    assert unreadable("Hallo Москва.", "nl") and not unreadable("Hallo, hoe gaat het? François, België", "nl")
+    assert unreadable("Hei Москва.", "no") and not unreadable("Hei, hvordan går det? François, Ærlig", "no")
+    assert unreadable("Hej Москва.", "sv") and not unreadable("Hej, hur mår du? François, Åsa", "sv")
     assert not unreadable("Москва", "vi")  # languages without a check keep every row
+
+
+def test_unreadable_malay():
+    from vtts.data.train_list import unreadable
+
+    assert unreadable("Helo Москва.", "ms") and not unreadable("Apa khabar, Kafé?", "ms")
+
+
+def test_unreadable_tagalog():
+    from vtts.data.train_list import unreadable
+
+    assert unreadable("Kumusta Москва.", "tl") and not unreadable("Kumusta, Niño? Walâ, Café.", "tl")
+
+
+def test_unreadable_swahili():
+    from vtts.data.train_list import unreadable
+
+    assert unreadable("Habari Москва.", "sw") and not unreadable("Habari, ng'ombe? Café.", "sw")
 
 
 def test_lang_override_and_absolute_path_outside_root(tmp_path):

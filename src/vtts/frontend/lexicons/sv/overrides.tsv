@@ -1,0 +1,51 @@
+# Swedish words read unlike the rules of g2p_sv, as sv-en phonemes with the tone token ('1 / '2)
+# after the stressed vowel. Matching: the whole word, lower case. Hand-written.
+# See docs/frontend/pronunciation-rules.md.
+och	O k
+jag	j A:
+mig	m E j
+dig	d E j
+sig	s E j
+de	d O m
+dem	d O m
+det	d e:
+är	E: r
+var	v A: r
+sade	s A:
+sa	s A:
+någon	n o: '2 n O n
+något	n o: '2 n O t
+några	n o: '2 r a
+mycket	m Y '2 k @ t
+morgon	m O '2 r O n
+kväll	k v E '1 l
+dag	d A: '1 g
+hon	h U n
+en	E n
+den	d E n
+men	m E n
+sverige	s v { '2 r j @
+sveriges	s v { '2 r j @ s
+hade	h a '2 d @
+kommun	k O m }: '1 n
+kommunen	k O m }: '1 n @ n
+kommuner	k O m }: '1 n @ r
+exempel	e k s E '1 m p @ l
+idag	I d A: '1 g
+honom	h O '2 n O m
+område	O '2 m r o: d @
+området	O '2 m r o: d @ t
+områden	O '2 m r o: d @ n
+han	h a n
+man	m a n
+kan	k a n
+in	I n
+än	E n
+till	t I l
+vill	v I l
+europa	E }: r u: '2 p a
+tillsammans	t I l s a '1 m a n s
+sin	s I n
+min	m I n
+din	d I n
+son	s o: '1 n

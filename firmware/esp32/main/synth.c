@@ -61,11 +61,97 @@ static const char *const BENCH_PT[] = {
     "O alarme de amanhã às 6:30 já está ativado.",
     "Hoje é sábado, 14/11/2026.",
 };
+static const char *const BENCH_FR[] = {
+    "Bonjour, je suis votre assistant vocal.",
+    "La température de la chambre est de 26 degrés, avec 65 % d'humidité.",
+    "Le réveil de demain à 6 h 30 est déjà activé.",
+    "Nous sommes le samedi 14/11/2026.",
+};
+static const char *const BENCH_DE[] = {
+    "Hallo, ich bin dein Sprachassistent.",
+    "Die Temperatur im Zimmer liegt bei 26 Grad, die Luftfeuchtigkeit bei 65 %.",
+    "Der Wecker für morgen um 6:30 Uhr ist gestellt.",
+    "Heute ist Samstag, der 14.11.2026.",
+};
+static const char *const BENCH_IT[] = {
+    "Ciao, sono il tuo assistente vocale.",
+    "La temperatura della stanza è di 26 gradi, con un'umidità del 65%.",
+    "La sveglia di domani alle 6:30 è già impostata.",
+    "Oggi è sabato, 14/11/2026.",
+};
+static const char *const BENCH_TR[] = {
+    "Merhaba, ben sesli asistanınım.",
+    "Oda sıcaklığı şu an 26 derece, nem %65.",
+    "Yarın sabah 6:30 alarmı kuruldu.",
+    "Bugün 14.11.2026, cumartesi.",
+};
+static const char *const BENCH_RU[] = {
+    "Здравствуйте, я ваш голосовой помощник.",
+    "Температура в комнате сейчас 26 градусов, влажность 65%.",
+    "Будильник на завтра поставлен на 6:30.",
+    "Сегодня суббота, 14.11.2026.",
+};
+static const char *const BENCH_PL[] = {
+    "Dzień dobry, jestem twoim asystentem głosowym.",
+    "Temperatura w pokoju wynosi 26 stopni, wilgotność 65%.",
+    "Budzik na jutro jest ustawiony na 6:30.",
+    "Dzisiaj jest sobota, 14.11.2026.",
+};
+static const char *const BENCH_MS[] = {
+    "Hai, saya pembantu suara anda.",
+    "Suhu bilik sekarang 26 darjah, kelembapan 65%.",
+    "Penggera esok pukul 6.30 pagi sudah ditetapkan.",
+    "Hari ini hari Sabtu, 14 Nov 2026.",
+};
+static const char *const BENCH_TL[] = {
+    "Kumusta, ako ang inyong voice assistant.",
+    "Ang temperatura ng kuwarto ay 26 °C, halumigmig 65%.",
+    "Naka-set na ang alarm bukas, alas 6:30 ng umaga.",
+    "Ngayon ay Sabado, Nobyembre 14, 2026.",
+};
+static const char *const BENCH_NL[] = {
+    "Hallo, ik ben je spraakassistent.",
+    "De temperatuur in de kamer is 26 graden, de luchtvochtigheid 65%.",
+    "De wekker voor morgen om 6:30 uur staat aan.",
+    "Vandaag is het zaterdag 14-11-2026.",
+};
+static const char *const BENCH_SV[] = {
+    "Hej, jag är din röstassistent.",
+    "Temperaturen i rummet är 26 grader och luftfuktigheten 65 %.",
+    "Väckarklockan för i morgon kl. 6.30 är ställd.",
+    "I dag är det lördag den 14 november 2026.",
+};
+static const char *const BENCH_NO[] = {
+    "Hei, jeg er stemmeassistenten din.",
+    "Temperaturen i rommet er 26 grader og luftfuktigheten 65 %.",
+    "Vekkerklokka for i morgen kl. 6.30 er stilt inn.",
+    "I dag er det lørdag 14. november 2026.",
+};
 static const char *const BENCH_TH[] = {
     "สวัสดีครับ ผมเป็นผู้ช่วยเสียงของคุณ",
     "อุณหภูมิในห้องตอนนี้ 26 องศา ความชื้น 65%",
     "ตั้งนาฬิกาปลุกเวลา 6:30 น. พรุ่งนี้เช้าแล้ว",
     "วันนี้วันเสาร์ที่ 14/11/2026",
+};
+
+static const char *const BENCH_FI[] = {
+    "Hei, olen sinun ääniavustajasi.",
+    "Huoneen lämpötila on nyt 26 astetta ja kosteus 65 %.",
+    "Huomisen herätys on asetettu kello 6.30.",
+    "Tänään on lauantai 14.11.2026.",
+};
+
+static const char *const BENCH_EL[] = {
+    "Γεια σου, είμαι ο φωνητικός σου βοηθός.",
+    "Η θερμοκρασία στο δωμάτιο είναι 26 βαθμοί και η υγρασία 65%.",
+    "Το ξυπνητήρι για αύριο στις 6:30 είναι έτοιμο.",
+    "Σήμερα είναι Σάββατο, 14/11/2026.",
+};
+static const char *const BENCH_SW[] = {
+    "Habari, mimi ni msaidizi wako wa sauti.",
+    "Joto la chumba sasa ni nyuzi 26, unyevu asilimia 65.",
+    "Kengele ya kesho saa 6:30 asubuhi imewekwa.",
+    "Leo ni Jumamosi, tarehe 14/11/2026.",
 };
 
 const char *synth_lang_name(int k) { return g.lang[k] < 0 ? "none" : vtts_text_lang_name((vtts_lang)g.lang[k]); }
@@ -153,9 +239,13 @@ int synth_text(const char *text, int64_t *total_us) {
                vtts_token_set_name(vtts_token_set(&g.models[g.cur])));
         chunks = 0;
     } else { /* the mode follows the model's token set: V1 (v1), VI|EN|AUTO (vi-en), ZH (zh-en), KO (ko-en),
-              * HI (hi-en), JA (ja-en), ES (es-en), ID (id-en), PT (pt-en), TH (th-en) */
+              * HI (hi-en), JA (ja-en), ES (es-en), ID (id-en), PT (pt-en), TH (th-en), FR (fr-en), DE (de-en), IT (it-en),
+              * TR (tr-en), RU (ru-en), PL (pl-en), AR (ar-en), FI (fi-en),
+              * EL (el-en), MS (ms-en), TL (tl-en), SW (sw-en),
+              * NL (nl-en), SV (sv-en), NO (no-en) */
         vtts_text_opts o = {.lang = (vtts_lang)g.lang[g.cur], .lex = g.has_lex ? &g.lex : NULL,
-                            .zh = g.has_zh ? &g.zh : NULL, .ja = g.has_ja ? &g.ja : NULL};
+                            .zh = g.has_zh ? &g.zh : NULL, .ja = g.has_ja ? &g.ja : NULL,
+                            .ru = g.has_ru ? &g.ru : NULL};
         chunks = vtts_text_to_ids_ex(text, g.ws, &o, on_ids, NULL);
     }
     *total_us = esp_timer_get_time() - t0;
@@ -170,11 +260,24 @@ void synth_report(const char *tag, int idx, int chunks, int64_t total_us) {
            audio > 0 ? (total_us / 1e6) / audio : 0.0, rms, (unsigned)g.arena_bytes, g.arena_where);
 }
 
+static const char *const BENCH_AR[] = {
+    "مرحبا، أنا مساعدك الصوتي.",
+    "درجة الحرارة في الغرفة الآن 26 درجة، والرطوبة 65%.",
+    "تم ضبط المنبه على الساعة 6:30 صباحا.",
+    "اليوم هو السبت 14/11/2026.",
+};
+
 void synth_bench(void) {
     const int l = g.lang[g.cur];
     const char *const *set = l == VTTS_LANG_ZH ? BENCH_ZH : l == VTTS_LANG_KO ? BENCH_KO : l == VTTS_LANG_HI ? BENCH_HI
                              : l == VTTS_LANG_JA ? BENCH_JA : l == VTTS_LANG_ES ? BENCH_ES : l == VTTS_LANG_ID ? BENCH_ID
-                             : l == VTTS_LANG_PT ? BENCH_PT : l == VTTS_LANG_TH ? BENCH_TH : BENCH;
+                             : l == VTTS_LANG_PT ? BENCH_PT : l == VTTS_LANG_TH ? BENCH_TH
+                             : l == VTTS_LANG_FR ? BENCH_FR : l == VTTS_LANG_DE ? BENCH_DE : l == VTTS_LANG_IT ? BENCH_IT
+                             : l == VTTS_LANG_TR ? BENCH_TR : l == VTTS_LANG_RU ? BENCH_RU : l == VTTS_LANG_PL ? BENCH_PL
+                             : l == VTTS_LANG_AR ? BENCH_AR : l == VTTS_LANG_FI ? BENCH_FI : l == VTTS_LANG_EL ? BENCH_EL
+                             : l == VTTS_LANG_MS ? BENCH_MS : l == VTTS_LANG_TL ? BENCH_TL : l == VTTS_LANG_SW ? BENCH_SW
+                             : l == VTTS_LANG_NL ? BENCH_NL : l == VTTS_LANG_SV ? BENCH_SV : l == VTTS_LANG_NO ? BENCH_NO
+                             : BENCH;
     for (int k = 0; k < 4; k++) {
         int64_t us;
         int c = synth_text(set[k], &us);

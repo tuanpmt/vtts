@@ -1,0 +1,35 @@
+# Words read in Swahili in the sw-en pair even when they are also in lexicons/latin/english.txt
+# or their spelling does not fit the Swahili rules (frontend/latin.py, rule 1). One lower-case
+# word per line.
+#
+# Swahili words that are also English entries
+menu
+visa
+safari
+# Names and places that end in a consonant or break the spelling check
+dar
+es
+salaam
+zanzibar
+mohamed
+mohammed
+muhammad
+ahmed
+hassan
+hussein
+abdul
+allah
+islam
+yesu
+kristo
+victoria
+uganda
+rwanda
+takriban
+# Currency abbreviations before a number (TSh 5,000)
+tsh
+ksh
+ush
+tzs
+kes
+ugx

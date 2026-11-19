@@ -4,7 +4,7 @@ Templates are scripts/data/bilingual/templates_<lang>.txt ({T} = term), terms ar
 scripts/data/bilingual/terms_en.txt. Rows have the pair language as lang ("zh", "ko", "ja"), so
 the pair token set reads both the main language and the English term. Durations are estimated
 from the main-language part at the corpus rates (zh 4.5 Han characters/s, ko 5.5 syllables/s,
-ja 7.5 morae/s; es, id, pt, th, hi at the vtts.data.wiki_corpus rates) plus 2.6 English words/s.
+ja 7.5 morae/s; es, id, pt, th, hi, ar, fi, el at the vtts.data.wiki_corpus rates) plus 2.6 English words/s.
 """
 
 from __future__ import annotations
@@ -16,6 +16,21 @@ from pathlib import Path
 TEMPLATE_DIR = Path(__file__).resolve().parents[3] / "scripts" / "data" / "bilingual"
 ID_PREFIX = {"zh": "zm", "ko": "km", "ja": "jm",
              "es": "em", "id": "im", "pt": "pm", "th": "tm", "hi": "hm"}
+ID_PREFIX["nl"] = "nlm"
+ID_PREFIX["sv"] = "svm"
+ID_PREFIX["no"] = "nom"
+ID_PREFIX["fr"] = "fm"
+ID_PREFIX["de"] = "dm"
+ID_PREFIX["it"] = "itm"
+ID_PREFIX["tr"] = "trm"
+ID_PREFIX["ru"] = "rum"
+ID_PREFIX["pl"] = "plm"
+ID_PREFIX["ar"] = "am"
+ID_PREFIX["fi"] = "fim"
+ID_PREFIX["el"] = "elm"
+ID_PREFIX["ms"] = "msm"
+ID_PREFIX["tl"] = "tlm"
+ID_PREFIX["sw"] = "swm"
 EN_RATE = 2.6  # English words per second
 
 

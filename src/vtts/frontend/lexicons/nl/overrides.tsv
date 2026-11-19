@@ -1,0 +1,79 @@
+# Dutch words read unlike the rules of g2p_nl, as nl-en phonemes ("1" on the stressed vowel).
+# Matching: the whole word, lower case. Hand-written. See docs/frontend/pronunciation-rules.md.
+een	@ n
+het	h @ t
+er	@ r
+'s	s
+s	s
+t	@ t
+n	@ n
+'n	@ n
+station	s t a: S O1 n
+pension	p E n S O1 n
+miljard	m I l j A1 r t
+miljarden	m I l j A1 r d @
+amsterdam	A m s t @ r d A1 m
+rotterdam	r O t @ r d A1 m
+januari	j A n y a:1 r i
+februari	f e: b r y a:1 r i
+april	a: p r I1 l
+augustus	Au x Y1 s t Y s
+september	s E p t E1 m b @ r
+oktober	O k t o:1 b @ r
+november	n o: v E1 m b @ r
+december	d e: s E1 m b @ r
+museum	m y z e:1 j Y m
+europa	2: r o:1 p a:
+europese	2: r o: p e:1 s @
+amerika	a: m e:1 r i k a:
+amerikaanse	a: m e: r i k a:1 n s @
+minuut	m i n y1 t
+minuten	m i n y1 t @
+seconde	s @ k O1 n d @
+seconden	s @ k O1 n d @
+procent	p r o: s E1 n t
+bureau	b y r o:1
+cadeau	k a: d o:1
+niveau	n i v o:1
+politie	p o: l i1 t s i
+familie	f a: m i1 l i
+ook	o:1 k
+nederland	n e:1 d @ r l A n t
+nederlands	n e:1 d @ r l A n t s
+nederlandse	n e:1 d @ r l A n t s @
+kilometer	k i1 l o: m e: t @ r
+telefoon	t e: l @ f o:1 n
+machine	m A S i1 n @
+douche	d u1 S
+garage	x a: r a:1 Z @
+zowel	z o: w E1 l
+hoewel	h u w E1 l
+vanaf	v A n A1 f
+vanwege	v A n w e:1 x @
+waardoor	w a: r d o:1 r
+waarom	w a: r O1 m
+terug	t @ r Y1 x
+dezelfde	d @ z E1 l v d @
+hetzelfde	h @ t z E1 l v d @
+regering	r @ x e:1 r I N
+regeringen	r @ x e:1 r I N @ n
+hotel	h o: t E1 l
+kapel	k a: p E1 l
+belgië	b E1 l x i j @
+belgische	b E1 l x i s @
+canada	k A1 n a: d a:
+parijs	p a: r Ei1 s
+alleen	A l e:1 n
+misschien	m I s x i1 n
+bovendien	b o: v @ n d i1 n
+natuurlijk	n a: t y1 r l @ k
+eigenlijk	Ei1 x @ l @ k
+waarschijnlijk	w a: r s x Ei1 n l @ k
+helemaal	h e: l @ m a:1 l
+tegelijk	t e: x @ l Ei1 k
+tevreden	t @ v r e:1 d @ n
+meteen	m @ t e:1 n
+kalender	k a: l E1 n d @ r
+problemen	p r o: b l e:1 m @ n
+probleem	p r o: b l e:1 m
+ministerie	m i n I s t e:1 r i

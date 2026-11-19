@@ -1,0 +1,50 @@
+{"id": "ood_fi_device_00", "text": "Olohuoneen valo sammui juuri.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_01", "text": "Ilmanpuhdistin toimii nyt automaattitilassa.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_02", "text": "Takaovi ei ole lukossa, haluatko että lukitsen sen?", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_03", "text": "Laskin keittiön kaiuttimen äänenvoimakkuutta.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_04", "text": "Pyykinpesukone valmistuu kahdenkymmenen minuutin kuluttua.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_05", "text": "Makuuhuoneen lämpötila on nyt sopiva.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_06", "text": "Herätys on asetettu huomiseksi aamuksi.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_07", "text": "Jääkaapin ovi on jäänyt auki.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_08", "text": "Imuri palasi latausasemalleen.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_device_09", "text": "En löydä lähistöltä yhtään laitetta, yritä uudelleen.", "group": "device", "lang": "fi"}
+{"id": "ood_fi_numbers_00", "text": "Kello on nyt 15.45.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_01", "text": "Kokous alkaa 15.12.2026 kello 9.30.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_02", "text": "Kokonaishinta on 1 250 euroa.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_03", "text": "Tänään lämpötila nousee 32 asteeseen.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_04", "text": "Soita numeroon 040 123 4567 ja varaa aika.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_05", "text": "Kokeen läpäisi 75 % oppilaista.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_06", "text": "Asun 3. kerroksessa, ovi numero 2.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_07", "text": "Kaupungissa on 2 500 000 asukasta.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_08", "text": "Juna kulkee 120 km alle tunnissa.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_numbers_09", "text": "Lomaan on enää 21 päivää.", "group": "numbers", "lang": "fi"}
+{"id": "ood_fi_names_00", "text": "Matti ja Liisa matkustavat ensi kuussa Ouluun.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_01", "text": "Aino Virtanen voitti Tampereen juoksukilpailun.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_02", "text": "Juhani soittaa pianoa Sibelius-akatemiassa.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_03", "text": "Mummo asuu pienessä kylässä Savonlinnan lähellä.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_04", "text": "Eero ja Kaisa menivät naimisiin Turun tuomiokirkossa.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_05", "text": "Pekka Lehtonen on kirjoittanut kolme romaania.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_06", "text": "Jyväskylässä on kaunis järvimaisema.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_07", "text": "Minna lähti kesällä Lappiin vaeltamaan.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_08", "text": "Rovaniemellä voi nähdä revontulia talvella.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_names_09", "text": "Heikki opettaa historiaa Kuopion lukiossa.", "group": "names", "lang": "fi"}
+{"id": "ood_fi_questions_00", "text": "Mitä kuuluu, onko kaikki hyvin?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_01", "text": "Mihin aikaan bussi lähtee huomenna?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_02", "text": "Voitko auttaa minua kantamaan nämä laatikot?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_03", "text": "Missä on lähin apteekki?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_04", "text": "Paljonko tämä takki maksaa?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_05", "text": "Oletko jo syönyt aamupalaa?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_06", "text": "Miksi et vastannut puhelimeen eilen?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_07", "text": "Kuka tulee mukaan elokuviin lauantaina?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_08", "text": "Onko huomenna sateista?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_questions_09", "text": "Haluaisitko oppia soittamaan kitaraa?", "group": "questions", "lang": "fi"}
+{"id": "ood_fi_long_00", "text": "Vaikka satoi kovasti, lapset pelasivat jalkapalloa pihalla, kunnes tuli pimeää.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_01", "text": "Isoäitini kasvattaa tomaatteja ja paprikoita puutarhassaan, ja joka kesä hän lähettää meille täyden laatikon.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_02", "text": "Kun saavuimme mökille, järvi oli aivan tyyni ja aurinko laski hitaasti metsän taakse.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_03", "text": "Kirjaston uusi lukusali on avoinna arkisin aamukahdeksasta iltaan asti, ja sinne mahtuu sata ihmistä.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_04", "text": "Opiskelin koko viikon tenttiä varten, mutta en silti ollut varma, muistanko kaiken tarpeellisen.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_05", "text": "Naapurin koira haukkuu joka aamu, kun postinkantaja tuo lehden ja kirjeet ovelle.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_06", "text": "Talvella tiet ovat usein liukkaita, joten kannattaa ajaa varovasti ja pitää riittävä turvaväli.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_07", "text": "Ystäväni leipoi syntymäpäivilleni ihanan mansikkakakun, ja söimme sen yhdessä kahvin kanssa.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_08", "text": "Vanha puusilta korjattiin viime syksynä, ja nyt sen yli voi taas kävellä turvallisesti.", "group": "long", "lang": "fi"}
+{"id": "ood_fi_long_09", "text": "Jos huomenna on kaunis ilma, lähdemme pyöräretkelle saaristoon ja otamme eväät mukaan.", "group": "long", "lang": "fi"}

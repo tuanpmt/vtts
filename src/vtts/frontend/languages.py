@@ -198,6 +198,189 @@ def _th_word(word: str) -> list[str]:
     return [t for unit in _th_units(word) for t in unit]
 
 
+def _fr_normalize(text: str) -> str:
+    from .fr.normalize_fr import normalize_fr
+
+    return normalize_fr(text)
+
+
+def _fr_word(word: str) -> list[str]:
+    from .fr.g2p_fr import word_tokens_fr
+
+    return word_tokens_fr(word)
+
+
+def _de_normalize(text: str) -> str:
+    from .de.normalize_de import normalize_de
+
+    return normalize_de(text)
+
+
+def _de_word(word: str) -> list[str]:
+    from .de.g2p_de import word_tokens_de
+
+    return word_tokens_de(word)
+
+
+def _it_normalize(text: str) -> str:
+    from .it.normalize_it import normalize_it
+
+    return normalize_it(text)
+
+
+def _it_word(word: str) -> list[str]:
+    from .it.g2p_it import word_tokens_it
+
+    return word_tokens_it(word)
+
+
+def _tr_normalize(text: str) -> str:
+    from .tr.normalize_tr import normalize_tr
+
+    return normalize_tr(text)
+
+
+def _tr_word(word: str) -> list[str]:
+    from .tr.g2p_tr import word_tokens_tr
+
+    return word_tokens_tr(word)
+
+
+def _ru_normalize(text: str) -> str:
+    from .ru.normalize_ru import normalize_ru
+
+    return normalize_ru(text)
+
+
+def _ru_word(word: str) -> list[str]:
+    """A Cyrillic word; a Latin word (from a mixed chunk) is read in English."""
+    from .ru.g2p_ru import is_ru_word, word_tokens_ru
+
+    return word_tokens_ru(word) if is_ru_word(word) else _en_word(word)
+
+
+def _pl_normalize(text: str) -> str:
+    from .pl.normalize_pl import normalize_pl
+
+    return normalize_pl(text)
+
+
+def _pl_word(word: str) -> list[str]:
+    from .pl.g2p_pl import word_tokens_pl
+
+    return word_tokens_pl(word)
+
+
+def _ar_normalize(text: str) -> str:
+    from .ar.normalize_ar import normalize_ar
+
+    return normalize_ar(text)
+
+
+def _ar_word(word: str) -> list[str]:
+    """An Arabic word (vowels restored, see ar/g2p_ar.py); a Latin word is read in English."""
+    from .ar.g2p_ar import is_arabic_word, word_tokens_ar
+
+    return word_tokens_ar(word) if is_arabic_word(word) else _en_word(word)
+
+
+def _fi_normalize(text: str) -> str:
+    from .fi.normalize_fi import normalize_fi
+
+    return normalize_fi(text)
+
+
+def _fi_word(word: str) -> list[str]:
+    from .fi.g2p_fi import word_tokens_fi
+
+    return word_tokens_fi(word)
+
+
+def _el_normalize(text: str) -> str:
+    from .el.normalize_el import normalize_el
+
+    return normalize_el(text)
+
+
+def _el_word(word: str) -> list[str]:
+    """A Greek word; a Latin word (from a mixed chunk) is read in English."""
+    from .el.g2p_el import is_greek_word, word_tokens_el
+
+    return word_tokens_el(word) if is_greek_word(word) else _en_word(word)
+
+
+def _ms_normalize(text: str) -> str:
+    from .ms.normalize_ms import normalize_ms
+
+    return normalize_ms(text)
+
+
+def _ms_word(word: str) -> list[str]:
+    from .ms.g2p_ms import word_tokens_ms
+
+    return word_tokens_ms(word)
+
+
+def _tl_normalize(text: str) -> str:
+    from .tl.normalize_tl import normalize_tl
+
+    return normalize_tl(text)
+
+
+def _tl_word(word: str) -> list[str]:
+    from .tl.g2p_tl import word_tokens_tl
+
+    return word_tokens_tl(word)
+
+
+def _sw_normalize(text: str) -> str:
+    from .sw.normalize_sw import normalize_sw
+
+    return normalize_sw(text)
+
+
+def _sw_word(word: str) -> list[str]:
+    from .sw.g2p_sw import word_tokens_sw
+
+    return word_tokens_sw(word)
+
+
+def _nl_normalize(text: str) -> str:
+    from .nl.normalize_nl import normalize_nl
+
+    return normalize_nl(text)
+
+
+def _nl_word(word: str) -> list[str]:
+    from .nl.g2p_nl import word_tokens_nl
+
+    return word_tokens_nl(word)
+
+
+def _sv_normalize(text: str) -> str:
+    from .sv.normalize_sv import normalize_sv
+
+    return normalize_sv(text)
+
+
+def _sv_word(word: str) -> list[str]:
+    from .sv.g2p_sv import word_tokens_sv
+
+    return word_tokens_sv(word)
+
+
+def _no_normalize(text: str) -> str:
+    from .no.normalize_no import normalize_no
+
+    return normalize_no(text)
+
+
+def _no_word(word: str) -> list[str]:
+    from .no.g2p_no import word_tokens_no
+
+    return word_tokens_no(word)
+
+
 LANGUAGES: dict[str, LanguageModule] = {
     "vi": LanguageModule("vi", _vi_normalize, _vi_word),
     "en": LanguageModule("en", _en_normalize, _en_word),
@@ -209,4 +392,19 @@ LANGUAGES: dict[str, LanguageModule] = {
     "pt": LanguageModule("pt", _pt_normalize, _pt_word),
     "hi": LanguageModule("hi", _hi_normalize, _hi_word),
     "th": LanguageModule("th", _th_normalize, _th_word, _th_units),
+    "it": LanguageModule("it", _it_normalize, _it_word),
+    "tr": LanguageModule("tr", _tr_normalize, _tr_word),
+    "ru": LanguageModule("ru", _ru_normalize, _ru_word),
+    "pl": LanguageModule("pl", _pl_normalize, _pl_word),
+    "ar": LanguageModule("ar", _ar_normalize, _ar_word),
 }
+LANGUAGES["nl"] = LanguageModule("nl", _nl_normalize, _nl_word)
+LANGUAGES["sv"] = LanguageModule("sv", _sv_normalize, _sv_word)
+LANGUAGES["no"] = LanguageModule("no", _no_normalize, _no_word)
+LANGUAGES["fr"] = LanguageModule("fr", _fr_normalize, _fr_word)
+LANGUAGES["de"] = LanguageModule("de", _de_normalize, _de_word)
+LANGUAGES["fi"] = LanguageModule("fi", _fi_normalize, _fi_word)
+LANGUAGES["el"] = LanguageModule("el", _el_normalize, _el_word)
+LANGUAGES["ms"] = LanguageModule("ms", _ms_normalize, _ms_word)
+LANGUAGES["tl"] = LanguageModule("tl", _tl_normalize, _tl_word)
+LANGUAGES["sw"] = LanguageModule("sw", _sw_normalize, _sw_word)

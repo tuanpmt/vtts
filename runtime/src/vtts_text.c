@@ -854,6 +854,18 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 #include "vtts_text_ja.h"
 #include "vtts_text_lt.h"
 #include "vtts_text_th.h"
+#include "vtts_text_fr.h"
+#include "vtts_text_de.h"
+#include "vtts_text_it.h"
+#include "vtts_text_tr.h"
+#include "vtts_text_ru.h"
+#include "vtts_text_pl.h"
+#include "vtts_text_ar.h"
+#include "vtts_text_fi.h"
+#include "vtts_text_el.h"
+#include "vtts_text_tl.h"
+#include "vtts_text_sw.h"
+#include "vtts_text_nx.h"
 
 #define V2_MAX_WORDS 40
 #define V2_MAX_TOKENS 318
@@ -861,7 +873,8 @@ int vtts_text_to_ids(const char *utf8, vtts_text_ws *ws, vtts_ids_cb cb, void *u
 /* lang.py: EDGE characters stripped from a chunk before tagging */
 static int is_edge(uint32_t c) {
     static const uint32_t E[] = {'.', ',', ';', ':', '!', '?', '"', '\'', '(', ')', '[', ']', '{', '}',
-                                 0x2026, 0x201C, 0x201D, 0x2018, 0x2019, 0x00AB, 0x00BB, 0x2013, 0x2014};
+                                 0x2026, 0x201C, 0x201D, 0x2018, 0x2019, 0x00AB, 0x00BB, 0x2013, 0x2014,
+                                 0x060C, 0x061B, 0x061F}; /* Arabic comma, semicolon, question mark */
     for (size_t i = 0; i < sizeof E / sizeof *E; i++) if (E[i] == c) return 1;
     return 0;
 }
@@ -902,7 +915,11 @@ static int ascii_syllable(const uint32_t *w, int n) { /* parse_syllable(p.lower(
 }
 
 enum { TAG_NEUTRAL = -1, TAG_VI = 0, TAG_EN = 1, TAG_ZH = 2, TAG_KO = 3, TAG_HI = 4, TAG_JA = 5, TAG_ES = 6,
-       TAG_ID = 7, TAG_PT = 8, TAG_TH = 9 }; /* indices into LANGS; TAG_ES + VTTS_LT_* */
+       TAG_ID = 7, TAG_PT = 8, TAG_TH = 9, TAG_FR = 10,
+       TAG_DE = 11, TAG_IT = 12, TAG_TR = 13,
+       TAG_RU = 14, TAG_PL = 15, TAG_AR = 16, TAG_FI = 17,
+       TAG_EL = 18, TAG_MS = 19, TAG_TL = 20, TAG_SW = 21,
+       TAG_NX = 22, /* TAG_NX + VTTS_NX_* (nl sv no) */ TAG_LAST = TAG_NX + 3 }; /* indices into LANGS; TAG_ES + VTTS_LT_* */
 
 static int key_eq(const uint32_t *w, int n, const char *k, int lower) {
     int i = 0;
@@ -1009,8 +1026,14 @@ static int en_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int
     return vtts_en_g2p(o->lex, w, out, cap);
 }
 
+#if defined(__GNUC__)
+#define VTTS_MAYBE_UNUSED __attribute__((unused)) /* used only by some optional languages */
+#else
+#define VTTS_MAYBE_UNUSED
+#endif
+
 /* one word of n code points into ws->words as UTF-8 (dropped when full, like push_raw) */
-static void push_cps(ctx_t *c, const uint32_t *cp, int n) {
+VTTS_MAYBE_UNUSED static void push_cps(ctx_t *c, const uint32_t *cp, int n) {
     vtts_text_ws *ws = c->ws;
     if (ws->n_words >= VTTS_TEXT_MAX_WORDS || ws->words_used + 4 * n + 1 > VTTS_TEXT_WORD_BYTES) return;
     int k = ws->words_used;
@@ -1020,6 +1043,20 @@ static void push_cps(ctx_t *c, const uint32_t *cp, int n) {
     ws->words_used = k;
 }
 
+/* the reading callback of zh and ja, its state also th's (one unit per syllable / reading unit,
+ * joined to the first) */
+#if VTTS_ENABLE_ZH || VTTS_ENABLE_JA || VTTS_ENABLE_TH
+typedef struct { vtts_text_ws *ws; int n; } zh_units_t;
+#endif
+
+#if VTTS_ENABLE_ZH || VTTS_ENABLE_JA
+static void zh_unit(void *user, const uint8_t *ids, int n) {
+    zh_units_t *u = user;
+    add_item(u->ws, ids, n, 0, u->n++ > 0);
+}
+#endif
+
+#if VTTS_ENABLE_ZH
 /* normalize_zh; its result holds words separated by single spaces. ws->run (the input) is free
  * once the first pass has copied it, so its halves are the English normalizer's scratch. */
 static void zh_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
@@ -1041,13 +1078,6 @@ static int zh_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int
     return vtts_en_g2p(o->lex, w, out, cap); /* a Latin word of a Chinese run is read in English */
 }
 
-typedef struct { vtts_text_ws *ws; int n; } zh_units_t;
-
-static void zh_unit(void *user, const uint8_t *ids, int n) {
-    zh_units_t *u = user;
-    add_item(u->ws, ids, n, 0, u->n++ > 0);
-}
-
 /* _zh_units: a Han run is read syllable by syllable; any other word is one English unit */
 static void zh_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
     uint32_t c0 = 0;
@@ -1060,7 +1090,9 @@ static void zh_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o
     int n = zh_word_ids(w, o, ids, (int)sizeof ids);
     if (n > 0) add_item(ws, ids, n, 0, 0);
 }
+#endif
 
+#if VTTS_ENABLE_KO
 /* normalize_ko; same buffers as zh_normalize */
 static void ko_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
     vtts_text_ws *ws = c->ws;
@@ -1107,7 +1139,9 @@ static void ko_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o
     }
     for (int s = 0; s < ns; s++) add_item(ws, ids, vtts_ko_syllable_ids(syl + 3 * s, ids), 0, s > 0);
 }
+#endif
 
+#if VTTS_ENABLE_HI
 /* normalize_hi; the run's halves hold the passes, en_a and en_b the first pass and English scratch */
 static void hi_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
     vtts_text_ws *ws = c->ws;
@@ -1115,21 +1149,6 @@ static void hi_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o
     const int half = VTTS_TEXT_MAX_CP / 2;
     (void)o;
     int m = vtts_hi_normalize(run, n, run, run + half, half, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, ws->en_out,
-                              (int)sizeof ws->en_out, &r);
-    for (int i = 0; i < m;) {
-        int j = i;
-        while (j < m && r[j] != ' ') j++;
-        if (j > i) push_cps(c, r + i, j - i);
-        i = j + 1;
-    }
-}
-
-/* normalize_ja; same buffers as zh_normalize */
-static void ja_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
-    vtts_text_ws *ws = c->ws;
-    const uint32_t *r = NULL;
-    const int half = VTTS_TEXT_MAX_CP / 2;
-    int m = vtts_ja_normalize(o->ja, run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
                               (int)sizeof ws->en_out, &r);
     for (int i = 0; i < m;) {
         int j = i;
@@ -1159,6 +1178,23 @@ static void hi_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o
         k = 0;
     if (k > 0) add_item(ws, ids, k, 0, 0);
 }
+#endif
+
+#if VTTS_ENABLE_JA
+/* normalize_ja; same buffers as zh_normalize */
+static void ja_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    int m = vtts_ja_normalize(o->ja, run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
 
 static int ja_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
     return vtts_en_g2p(o->lex, w, out, cap); /* a Latin word of a Japanese run is read in English */
@@ -1179,7 +1215,9 @@ static void ja_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o
     int k = ja_word_ids(w, o, ids, (int)sizeof ids);
     if (k > 0) add_item(ws, ids, k, 0, 0);
 }
+#endif
 
+#if VTTS_ENABLE_LT
 /* Latin-script pairs (es, id, pt): normalize_es|id|pt and one item per word (vtts_text_lt.c). ws->run
  * and en_a are free when words are added (the run's words were copied to ws->words). */
 static void lt_normalize(ctx_t *c, uint32_t *run, int n, int lang) {
@@ -1200,14 +1238,21 @@ static void lt_add_word(vtts_text_ws *ws, const char *w, int lang) {
     int k = vtts_lt_word_ids(lang, ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
     if (k > 0) add_item(ws, ids, k, 0, 0);
 }
-
+#endif
+#if VTTS_ENABLE_ES
 static void es_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_ES); }
-static void id_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_ID); }
-static void pt_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_PT); }
 static void es_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_ES); }
+#endif
+#if VTTS_ENABLE_ID
+static void id_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_ID); }
 static void id_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_ID); }
+#endif
+#if VTTS_ENABLE_PT
+static void pt_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_PT); }
 static void pt_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_PT); }
+#endif
 
+#if VTTS_ENABLE_TH
 /* normalize_th; the passes run in en_a / en_b (Thai number words are long), the English
  * normalizer's scratch is ws->run (free once the first pass has copied it) */
 static void th_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
@@ -1252,18 +1297,448 @@ static void th_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o
 static int th_latin_edge(uint32_t a, uint32_t b) {
     return (vtts_th_is_thai(a) && ascii_alpha(b)) || (ascii_alpha(a) && vtts_th_is_thai(b));
 }
+#endif
 
+#if VTTS_ENABLE_FR
+/* French: normalize_fr (with liaison) and one item per word (vtts_text_fr.c); en_a and en_b are the
+ * normalizer's buffers, en_a the reader's scratch (the run's words were copied to ws->words) */
+static void fr_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_fr_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static void fr_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_fr_word_ids(ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_DE
+/* German (de): normalize_de and one item per word (vtts_text_de.c); en_a is free when words are added */
+static void de_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_de_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static void de_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_de_word_ids(ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+/* Italian and Turkish (vtts_text_it.c, vtts_text_tr.c): like the Latin-script pairs, one item per word */
+#if VTTS_ENABLE_IT || VTTS_ENABLE_TR
+static void lt2_push(ctx_t *c, const uint32_t *r, int m) {
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+#endif
+
+#if VTTS_ENABLE_IT
+static void it_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_it_normalize(run, n, c->ws->en_a, c->ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    lt2_push(c, r, m);
+}
+
+static void it_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_it_word_ids(ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_TR
+static void tr_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_tr_normalize(run, n, c->ws->en_a, c->ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    lt2_push(c, r, m);
+}
+
+static void tr_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_tr_word_ids(ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_RU
+/* normalize_ru; the passes run in en_a / en_b (number words are long), the English normalizer's
+ * scratch is ws->run (free once the compose pass has copied it) */
+static void ru_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_ru_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static int ru_word_ids(const char *w, const vtts_text_opts *o, uint8_t *out, int cap) {
+    return vtts_en_g2p(o->lex, w, out, cap); /* a word without Cyrillic is read in English */
+}
+
+/* _ru_word: a Cyrillic word, else an English word (ws->run, en_a and en_b are free here) */
+static void ru_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint32_t *cp = ws->run;
+    int n = utf8_decode(w, cp, VTTS_TEXT_MAX_CP), k = 0, ascii = 1;
+    uint8_t ids[V2_MAX_TOKENS];
+    for (int i = 0; i < n; i++) ascii &= cp[i] < 0x80;
+    if (vtts_ru_has_cyrillic(cp, n)) k = vtts_ru_word_ids(o->ru, cp, n, ws->en_a, ids, V2_MAX_TOKENS);
+    else if (ascii) k = ru_word_ids(w, o, ids, 256); /* Latin words reach here as ASCII (normalize_en) */
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_PL
+/* normalize_pl; the passes run in en_a / en_b, en_out's space is not needed (no English pass) */
+static void pl_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_pl_normalize(run, n, ws->en_a, ws->en_b, run, VTTS_TEXT_MAX_CP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+/* _pl_word: word_tokens_pl reads every word of a Polish run */
+static void pl_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_pl_word_ids(ws->run, n, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_AR
+/* normalize_ar; same buffers as hi_normalize */
+static void ar_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_ar_normalize(run, n, run, run + half, half, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+/* _ar_word: an Arabic word (vowels restored, up to a chunk's worth of tokens), else an English word.
+ * ws->run, en_a and en_b are free here (the run's words were copied to ws->words). */
+static void ar_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint32_t *cp = ws->run;
+    int n = utf8_decode(w, cp, VTTS_TEXT_MAX_CP), k, ascii = 1;
+    uint8_t ids[V2_MAX_TOKENS];
+    for (int i = 0; i < n; i++) ascii &= cp[i] < 0x80;
+    if (vtts_ar_has_arabic(cp, n))
+        k = vtts_ar_word_ids(cp, n, ws->en_a, ws->en_b, ids, V2_MAX_TOKENS);
+    else if (ascii) /* Latin letters reach here as ASCII (normalize_en); other scripts read as nothing */
+        k = vtts_en_g2p(o->lex, w, ids, 256);
+    else
+        k = 0;
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_FI
+/* normalize_fi and one item per word (vtts_text_fi.c); same buffers as the Latin-script pairs */
+static void fi_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_fi_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static void fi_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_fi_word_ids(ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+
+/* lang._by_context: a Finnish word of both word lists (on, he) is English when the nearest tagged
+ * word on each side (or the only one) is English. tag: 1 fi, 0 en, -1 neutral (word_lang), in place */
+static void fi_context(const uint32_t *cp, const int *cs, const int *ce, int nc, int *tag) {
+    for (int k = 0; k < nc; k++) {
+        int a = cs[k], b = ce[k];
+        while (a < b && is_edge(cp[a])) a++;
+        while (b > a && is_edge(cp[b - 1])) b--;
+        if (tag[k] == 1 && vtts_fi_ambiguous(cp + a, b - a)) tag[k] = 2; /* 2: of both lists */
+    }
+    for (int k = 0; k < nc; k++) { /* the neighbours skip words of both lists (2, -3, -4) and neutral ones */
+        if (tag[k] != 2) continue;
+        int en = 0, fi = 0;
+        for (int step = -1; step <= 1; step += 2)
+            for (int q = k + step; q >= 0 && q < nc; q += step) {
+                if (tag[q] != 0 && tag[q] != 1) continue;
+                if (tag[q] == 0) en = 1; else fi = 1;
+                break;
+            }
+        tag[k] = en && !fi ? -4 : -3; /* -4 en, -3 fi */
+    }
+    for (int k = 0; k < nc; k++) tag[k] = tag[k] == -3 ? 1 : tag[k] == -4 ? 0 : tag[k];
+}
+#endif
+
+#if VTTS_ENABLE_EL
+/* normalize_el; the passes run in en_a / en_b (number words are long), the English normalizer's
+ * scratch is ws->run (free once the first pass has copied it), like th_normalize */
+static void el_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    const int half = VTTS_TEXT_MAX_CP / 2;
+    (void)o;
+    int m = vtts_el_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, run, run + half, half, ws->en_out,
+                              (int)sizeof ws->en_out, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+/* _el_word: a Greek word, else an English word (Latin letters reach here as ASCII; other scripts
+ * read as nothing). ws->run and en_a are free here. */
+static void el_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP), k = 0, ascii = 1;
+    for (int i = 0; i < n; i++) ascii &= ws->run[i] < 0x80;
+    if (vtts_el_is_greek_word(ws->run, n)) k = vtts_el_word_ids(ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    else if (ascii) k = vtts_en_g2p(o->lex, w, ids, 256);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_MS
+static void ms_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; lt_normalize(c, run, n, VTTS_LT_MS); }
+static void ms_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; lt_add_word(ws, w, VTTS_LT_MS); }
+#endif
+
+#if VTTS_ENABLE_TL
+/* Tagalog: normalize_tl and one item per word (vtts_text_tl.c); en_a / en_b are free here as for es */
+static void tl_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_tl_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static void tl_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_tl_word_ids(ws->run, n, ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_SW
+/* Swahili (sw): normalize_sw and one item per word (vtts_text_sw.c); scratch as for es, id, pt */
+static void sw_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) {
+    vtts_text_ws *ws = c->ws;
+    const uint32_t *r = NULL;
+    (void)o;
+    int m = vtts_sw_normalize(run, n, ws->en_a, ws->en_b, VTTS_TEXT_EN_CAP, &r);
+    for (int i = 0; i < m;) {
+        int j = i;
+        while (j < m && r[j] != ' ') j++;
+        if (j > i) push_cps(c, r + i, j - i);
+        i = j + 1;
+    }
+}
+
+static void sw_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) {
+    uint8_t ids[V2_MAX_TOKENS];
+    (void)o;
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_sw_word_ids(ws->run, n, ws->en_a, sizeof ws->en_a, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+#endif
+
+#if VTTS_ENABLE_NX
+/* Dutch, Swedish, Norwegian (nl, sv, no): the scanner normalizer and one item per word
+ * (vtts_text_nx*.c). The normalizer writes UTF-8 words into en_a; en_b is the g2p scratch. */
+static void nx_normalize(ctx_t *c, uint32_t *run, int n, int lang) {
+    vtts_text_ws *ws = c->ws;
+    char *out = (char *)ws->en_a;
+    vtts_nx_normalize(lang, run, n, out, (int)sizeof ws->en_a);
+    for (char *w = out; *w;) {
+        char *sp = strchr(w, ' ');
+        if (sp) *sp = 0;
+        if (*w) push_raw(c, w);
+        if (!sp) break;
+        w = sp + 1;
+    }
+}
+
+static void nx_add_word(vtts_text_ws *ws, const char *w, int lang) {
+    uint8_t ids[V2_MAX_TOKENS];
+    int n = utf8_decode(w, ws->run, VTTS_TEXT_MAX_CP);
+    int k = vtts_nx_word_ids(lang, ws->run, n, ws->en_b, ids, V2_MAX_TOKENS);
+    if (k > 0) add_item(ws, ids, k, 0, 0);
+}
+
+#endif
+
+#if VTTS_ENABLE_NL
+static void nl_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; nx_normalize(c, run, n, VTTS_NX_NL); }
+static void nl_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; nx_add_word(ws, w, VTTS_NX_NL); }
+#endif
+#if VTTS_ENABLE_SV
+static void sv_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; nx_normalize(c, run, n, VTTS_NX_SV); }
+static void sv_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; nx_add_word(ws, w, VTTS_NX_SV); }
+#endif
+#if VTTS_ENABLE_NO
+static void no_normalize(ctx_t *c, uint32_t *run, int n, const vtts_text_opts *o) { (void)o; nx_normalize(c, run, n, VTTS_NX_NO); }
+static void no_add_word(vtts_text_ws *ws, const char *w, const vtts_text_opts *o) { (void)o; nx_add_word(ws, w, VTTS_NX_NO); }
+#endif
+/* the VTTS_NX_* language of a mode, or -1 (also when it is not compiled in) */
+static int nx_of(int mode) {
+#if VTTS_ENABLE_NX
+    int k = mode == VTTS_LANG_NL ? VTTS_NX_NL : mode == VTTS_LANG_SV ? VTTS_NX_SV : mode == VTTS_LANG_NO ? VTTS_NX_NO : -1;
+    return k >= 0 && vtts_nx_enabled(k) ? k : -1;
+#else
+    (void)mode;
+    return -1;
+#endif
+}
+
+/* indexed by TAG_*; a language that is not compiled in (vtts_langs.h) has an empty row */
 static const lang_mod_t LANGS[] = {
-    {"vi", vi_normalize, vi_word_ids, NULL},
-    {"en", en_normalize, en_word_ids, NULL},
-    {"zh", zh_normalize, zh_word_ids, zh_add_word},
-    {"ko", ko_normalize, ko_word_ids, ko_add_word},
-    {"hi", hi_normalize, hi_word_ids, hi_add_word},
-    {"ja", ja_normalize, ja_word_ids, ja_add_word},
-    {"es", es_normalize, NULL, es_add_word},
-    {"id", id_normalize, NULL, id_add_word},
-    {"pt", pt_normalize, NULL, pt_add_word},
-    {"th", th_normalize, th_word_ids, th_add_word},
+    [TAG_VI] = {"vi", vi_normalize, vi_word_ids, NULL},
+    [TAG_EN] = {"en", en_normalize, en_word_ids, NULL},
+#if VTTS_ENABLE_ZH
+    [TAG_ZH] = {"zh", zh_normalize, zh_word_ids, zh_add_word},
+#endif
+#if VTTS_ENABLE_KO
+    [TAG_KO] = {"ko", ko_normalize, ko_word_ids, ko_add_word},
+#endif
+#if VTTS_ENABLE_HI
+    [TAG_HI] = {"hi", hi_normalize, hi_word_ids, hi_add_word},
+#endif
+#if VTTS_ENABLE_JA
+    [TAG_JA] = {"ja", ja_normalize, ja_word_ids, ja_add_word},
+#endif
+#if VTTS_ENABLE_ES
+    [TAG_ES] = {"es", es_normalize, NULL, es_add_word},
+#endif
+#if VTTS_ENABLE_ID
+    [TAG_ID] = {"id", id_normalize, NULL, id_add_word},
+#endif
+#if VTTS_ENABLE_PT
+    [TAG_PT] = {"pt", pt_normalize, NULL, pt_add_word},
+#endif
+#if VTTS_ENABLE_TH
+    [TAG_TH] = {"th", th_normalize, th_word_ids, th_add_word},
+#endif
+#if VTTS_ENABLE_FR
+    [TAG_FR] = {"fr", fr_normalize, NULL, fr_add_word},
+#endif
+#if VTTS_ENABLE_DE
+    [TAG_DE] = {"de", de_normalize, NULL, de_add_word},
+#endif
+#if VTTS_ENABLE_IT
+    [TAG_IT] = {"it", it_normalize, NULL, it_add_word},
+#endif
+#if VTTS_ENABLE_TR
+    [TAG_TR] = {"tr", tr_normalize, NULL, tr_add_word},
+#endif
+#if VTTS_ENABLE_RU
+    [TAG_RU] = {"ru", ru_normalize, ru_word_ids, ru_add_word},
+#endif
+#if VTTS_ENABLE_PL
+    [TAG_PL] = {"pl", pl_normalize, NULL, pl_add_word},
+#endif
+#if VTTS_ENABLE_AR
+    [TAG_AR] = {"ar", ar_normalize, NULL, ar_add_word},
+#endif
+#if VTTS_ENABLE_FI
+    [TAG_FI] = {"fi", fi_normalize, NULL, fi_add_word},
+#endif
+#if VTTS_ENABLE_EL
+    [TAG_EL] = {"el", el_normalize, NULL, el_add_word},
+#endif
+#if VTTS_ENABLE_MS
+    [TAG_MS] = {"ms", ms_normalize, NULL, ms_add_word},
+#endif
+#if VTTS_ENABLE_TL
+    [TAG_TL] = {"tl", tl_normalize, NULL, tl_add_word},
+#endif
+#if VTTS_ENABLE_SW
+    [TAG_SW] = {"sw", sw_normalize, NULL, sw_add_word},
+#endif
+#if VTTS_ENABLE_NL
+    [TAG_NX + VTTS_NX_NL] = {"nl", nl_normalize, NULL, nl_add_word},
+#endif
+#if VTTS_ENABLE_SV
+    [TAG_NX + VTTS_NX_SV] = {"sv", sv_normalize, NULL, sv_add_word},
+#endif
+#if VTTS_ENABLE_NO
+    [TAG_NX + VTTS_NX_NO] = {"no", no_normalize, NULL, no_add_word},
+#endif
+    [TAG_LAST] = {NULL, NULL, NULL, NULL},
 };
 
 static void add_word_or_mark(vtts_text_ws *ws, const char *w, const lang_mod_t *m, const vtts_text_opts *o) {
@@ -1343,8 +1818,12 @@ static void pack_items(ctx_t *c) {
 }
 
 /* lang.py _script_class: 1 Han, 2 CJK punctuation and full-width forms, 0 other */
+static int is_thai_cp(uint32_t c) { return c >= 0x0E01 && c <= 0x0E4E; } /* vtts_th_is_thai */
+
+#if VTTS_ENABLE_ZH
+static int is_han_cp(uint32_t c) { return c >= 0x4E00 && c <= 0x9FFF; } /* vtts_zh_is_han */
 static int script_class(uint32_t c) {
-    if (vtts_zh_is_han(c)) return 1;
+    if (is_han_cp(c)) return 1;
     if ((c >= 0x3000 && c <= 0x303F) || (c >= 0xFF00 && c <= 0xFFEF) || c == 0x201C || c == 0x201D ||
         c == 0x2018 || c == 0x2019 || c == 0x2026 || c == 0x2014 || c == 0x00B7)
         return 2;
@@ -1352,7 +1831,53 @@ static int script_class(uint32_t c) {
 }
 
 static int has_han(const uint32_t *w, int n) {
-    for (int i = 0; i < n; i++) if (vtts_zh_is_han(w[i])) return 1;
+    for (int i = 0; i < n; i++) if (is_han_cp(w[i])) return 1;
+    return 0;
+}
+#endif
+
+/* the text mode is compiled in (vtts_langs.h) */
+static int lang_enabled(vtts_lang l) {
+    switch (l) {
+    case VTTS_LANG_ZH: return VTTS_ENABLE_ZH;
+    case VTTS_LANG_KO: return VTTS_ENABLE_KO;
+    case VTTS_LANG_HI: return VTTS_ENABLE_HI;
+    case VTTS_LANG_JA: return VTTS_ENABLE_JA;
+    case VTTS_LANG_ES: return VTTS_ENABLE_ES;
+    case VTTS_LANG_ID: return VTTS_ENABLE_ID;
+    case VTTS_LANG_PT: return VTTS_ENABLE_PT;
+    case VTTS_LANG_TH: return VTTS_ENABLE_TH;
+    case VTTS_LANG_FR: return VTTS_ENABLE_FR;
+    case VTTS_LANG_DE: return VTTS_ENABLE_DE;
+    case VTTS_LANG_IT: return VTTS_ENABLE_IT;
+    case VTTS_LANG_TR: return VTTS_ENABLE_TR;
+    case VTTS_LANG_RU: return VTTS_ENABLE_RU;
+    case VTTS_LANG_PL: return VTTS_ENABLE_PL;
+    case VTTS_LANG_AR: return VTTS_ENABLE_AR;
+    case VTTS_LANG_FI: return VTTS_ENABLE_FI;
+    case VTTS_LANG_EL: return VTTS_ENABLE_EL;
+    case VTTS_LANG_MS: return VTTS_ENABLE_MS;
+    case VTTS_LANG_TL: return VTTS_ENABLE_TL;
+    case VTTS_LANG_SW: return VTTS_ENABLE_SW;
+    case VTTS_LANG_NL: return VTTS_ENABLE_NL;
+    case VTTS_LANG_SV: return VTTS_ENABLE_SV;
+    case VTTS_LANG_NO: return VTTS_ENABLE_NO;
+    default: return 1;
+    }
+}
+
+/* split_scripts and THAI_LATIN: does c start a new chunk after the chunk w[0..n) of the mode? */
+static int script_edge(int mode, const uint32_t *w, int n, uint32_t c) {
+    (void)mode; (void)w; (void)n; (void)c;
+#if VTTS_ENABLE_ZH
+    if (mode == VTTS_LANG_ZH) return script_class(c) != script_class(w[0]);
+#endif
+#if VTTS_ENABLE_JA
+    if (mode == VTTS_LANG_JA) return vtts_ja_script_class(c) != vtts_ja_script_class(w[0]);
+#endif
+#if VTTS_ENABLE_TH
+    if (mode == VTTS_LANG_TH) return n > 0 && th_latin_edge(w[n - 1], c);
+#endif
     return 0;
 }
 
@@ -1360,24 +1885,44 @@ static int has_han(const uint32_t *w, int n) {
 static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
     vtts_text_ws *ws = c->ws;
     const uint32_t *cp = ws->cp;
-    const int mode = o->lang, zh = mode == VTTS_LANG_ZH, ko = mode == VTTS_LANG_KO, hi = mode == VTTS_LANG_HI,
-              ja = mode == VTTS_LANG_JA;
+    /* each flag is 0 when its language is not compiled in (vtts_text_to_ids_ex refuses the mode) */
+    const int mode = o->lang, zh = VTTS_ENABLE_ZH && mode == VTTS_LANG_ZH, ko = VTTS_ENABLE_KO && mode == VTTS_LANG_KO,
+              hi = VTTS_ENABLE_HI && mode == VTTS_LANG_HI, ja = VTTS_ENABLE_JA && mode == VTTS_LANG_JA;
     const int lt = mode == VTTS_LANG_ES ? VTTS_LT_ES : mode == VTTS_LANG_ID ? VTTS_LT_ID
-                 : mode == VTTS_LANG_PT ? VTTS_LT_PT : -1;
-    const int th = mode == VTTS_LANG_TH;
+                 : mode == VTTS_LANG_PT ? VTTS_LT_PT : (VTTS_ENABLE_MS && mode == VTTS_LANG_MS) ? VTTS_LT_MS : -1;
+    const int th = VTTS_ENABLE_TH && mode == VTTS_LANG_TH, fr = VTTS_ENABLE_FR && mode == VTTS_LANG_FR;
+    const int de = VTTS_ENABLE_DE && mode == VTTS_LANG_DE;
+    /* it, tr: Latin-script pairs with apostrophes inside words (latin.APOSTROPHE_MODES) */
+    const int lt2 = (VTTS_ENABLE_IT && mode == VTTS_LANG_IT) ? TAG_IT : (VTTS_ENABLE_TR && mode == VTTS_LANG_TR) ? TAG_TR : -1;
+    const int ru = VTTS_ENABLE_RU && mode == VTTS_LANG_RU, pl = VTTS_ENABLE_PL && mode == VTTS_LANG_PL;
+    const int ar = VTTS_ENABLE_AR && mode == VTTS_LANG_AR;
+    const int fi = VTTS_ENABLE_FI && mode == VTTS_LANG_FI, el = VTTS_ENABLE_EL && mode == VTTS_LANG_EL;
+    const int tl = VTTS_ENABLE_TL && mode == VTTS_LANG_TL, sw = VTTS_ENABLE_SW && mode == VTTS_LANG_SW;
+    const int nx = nx_of(mode);
+    (void)tl; (void)sw;
+    (void)zh; (void)ko; (void)hi; (void)ja; (void)th; (void)fr; (void)de; (void)ru; (void)pl; (void)ar; (void)fi;
+    if (el) /* lang.tag_words: ";" and U+037E are the Greek question mark */
+        for (int q = s; q < e; q++) if (ws->cp[q] == ';' || ws->cp[q] == 0x37E) ws->cp[q] = '?';
     enum { MAXCH = 1024 };
     static int cs[MAXCH], ce[MAXCH], tag[MAXCH];
     int nc = 0;
     /* sentence.split(); zh, ja: split_scripts(sentence).split(); es, id, pt: ¿ and ¡ are spaces */
-#define SEP(c) (is_space_cp(c) || (lt >= 0 && ((c) == 0xBF || (c) == 0xA1)))
+#define SEP(c) (is_space_cp(c) || ((lt >= 0 || fr || de || lt2 >= 0 || pl || fi || tl || sw || nx >= 0) && ((c) == 0xBF || (c) == 0xA1)))
+    if (lt2 >= 0) /* ’ is read as ' */
+        for (int i = s; i < e; i++) if (ws->cp[i] == 0x2019) ws->cp[i] = '\'';
     for (int i = s; i < e && nc < MAXCH;) {
         while (i < e && SEP(cp[i])) i++;
         if (i >= e) break;
         int j = i;
-        while (j < e && !SEP(cp[j]) && (!zh || script_class(cp[j]) == script_class(cp[i])) &&
-               (!ja || vtts_ja_script_class(cp[j]) == vtts_ja_script_class(cp[i])) &&
-               !(th && j > i && th_latin_edge(cp[j - 1], cp[j])))
-            j++;
+        while (j < e && !SEP(cp[j]) && !script_edge(mode, cp + i, j - i, cp[j])) j++;
+        int k2 = 0; /* latin.split_elision (it, tr): sull' / iPhone, iPhone / 'da */
+#if VTTS_ENABLE_IT
+        if (lt2 == TAG_IT) k2 = vtts_it_split(cp + i, j - i);
+#endif
+#if VTTS_ENABLE_TR
+        if (lt2 == TAG_TR) k2 = vtts_tr_split(cp + i, j - i);
+#endif
+        if (k2 > 0 && nc + 1 < MAXCH) { cs[nc] = i; ce[nc] = i + k2; nc++; i += k2; }
         cs[nc] = i; ce[nc] = j; nc++;
         i = j;
     }
@@ -1400,37 +1945,144 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
         int a = cs[k], b = ce[k];
         while (a < b && is_edge(cp[a])) a++;
         while (b > a && is_edge(cp[b - 1])) b--;
+#if VTTS_ENABLE_ZH
         if (zh) { /* word_lang in "zh" mode: Han -> zh, plain Latin -> en, neutral -> zh */
             tag[k] = has_han(cp + a, b - a) ? TAG_ZH : plain_latin(cp + a, b - a) ? TAG_EN : TAG_ZH;
             continue;
         }
+#endif
+#if VTTS_ENABLE_TH
         if (th) { /* "th" mode: Thai letters -> th, plain Latin -> en, neutral -> th */
             tag[k] = vtts_th_has_thai(cp + a, b - a) ? TAG_TH : plain_latin(cp + a, b - a) ? TAG_EN : TAG_TH;
             continue;
         }
+#endif
+#if VTTS_ENABLE_PL
+        if (pl) { /* "pl" mode: Polish letters, word lists, CamelCase, acronyms, spelling (latin.py) */
+            tag[k] = vtts_pl_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_PL;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_RU
+        if (ru) { /* "ru" mode: Cyrillic -> ru, plain Latin -> en (the normalizer's units and currency
+                   * codes -> ru), neutral -> ru */
+            tag[k] = vtts_ru_has_cyrillic(cp + a, b - a) ? TAG_RU
+                     : plain_latin(cp + a, b - a) && !vtts_ru_latin_word(cp + a, b - a) ? TAG_EN : TAG_RU;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_EL
+        if (el) { /* "el" mode: Greek letters -> el, plain Latin -> en (the normalizer's units and currency
+                   * words -> el), neutral -> el */
+            tag[k] = vtts_el_is_greek_word(cp + a, b - a) ? TAG_EL
+                     : plain_latin(cp + a, b - a) && !vtts_el_latin_word(cp + a, b - a) ? TAG_EN : TAG_EL;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_FI
+        if (fi) { /* fi: as es, id, pt; the neighbours decide the words of both lists (fi_context) */
+            tag[k] = vtts_fi_word_lang(cp + a, b - a); /* 1 fi, 0 en, -1 neutral; resolved below */
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_AR
+        if (ar) { /* "ar" mode: Arabic letters -> ar, plain Latin -> en (the normalizer's units and currency
+                   * words -> ar), neutral -> ar */
+            tag[k] = vtts_ar_has_arabic(cp + a, b - a) ? TAG_AR
+                     : plain_latin(cp + a, b - a) && !vtts_ar_latin_word(cp + a, b - a) ? TAG_EN : TAG_AR;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_KO
         if (ko) { /* "ko" mode: Hangul (syllables or jamo) -> ko, plain Latin -> en, neutral -> ko */
             tag[k] = vtts_ko_has_hangul(cp + a, b - a) ? TAG_KO : plain_latin(cp + a, b - a) ? TAG_EN : TAG_KO;
             continue;
         }
+#endif
+#if VTTS_ENABLE_HI
         if (hi) { /* "hi" mode: Devanagari -> hi, plain Latin -> en (the normalizer's units and currency
                    * words -> hi), neutral -> hi */
             tag[k] = vtts_hi_has_devanagari(cp + a, b - a) ? TAG_HI
                      : plain_latin(cp + a, b - a) && !vtts_hi_latin_word(cp + a, b - a) ? TAG_EN : TAG_HI;
             continue;
         }
+#endif
+#if VTTS_ENABLE_JA
         if (ja) { /* "ja" mode: kana or kanji (_has_japanese) -> ja, plain Latin -> en, neutral -> ja */
             int has = 0;
             for (int q = a; q < b && !has; q++) has = vtts_ja_script_class(cp[q]) == 1;
             tag[k] = has ? TAG_JA : plain_latin(cp + a, b - a) ? TAG_EN : TAG_JA;
             continue;
         }
-        if (lt >= 0) { /* es, id, pt: own letters, word lists, CamelCase, acronyms, spelling (latin.py) */
-            tag[k] = vtts_lt_word_lang(lt, cp + a, b - a) == 0 ? TAG_EN : TAG_ES + lt;
+#endif
+#if VTTS_ENABLE_FR
+        if (fr) { /* fr: lang._fr_tags; an elided clitic glued to an English word is its own chunk */
+            int split = 0, t = vtts_fr_chunk_tag(cp + cs[k], ce[k] - cs[k], &split);
+            if (split > 0 && nc < MAXCH) {
+                for (int q = nc; q > k + 1; q--) { cs[q] = cs[q - 1]; ce[q] = ce[q - 1]; }
+                nc++;
+                cs[k + 1] = cs[k] + split;
+                ce[k + 1] = ce[k];
+                ce[k] = cs[k] + split;
+                tag[k] = TAG_FR;
+                tag[++k] = TAG_EN;
+                continue;
+            }
+            tag[k] = t == 0 ? TAG_EN : TAG_FR;
             continue;
         }
+#endif
+#if VTTS_ENABLE_DE
+        if (de) { /* de: German letters, word lists, CamelCase, acronyms, spelling (latin.py) */
+            tag[k] = vtts_de_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_DE;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_IT
+        if (lt2 == TAG_IT) { /* it: as es, id, pt (latin.py) */
+            tag[k] = vtts_it_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_IT;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_TR
+        if (lt2 == TAG_TR) { /* tr: as es, id, pt (latin.py) */
+            tag[k] = vtts_tr_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_TR;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_NX
+        if (nx >= 0) { /* nl, sv, no: own letters, word lists, CamelCase, acronyms, spelling (latin.py) */
+            tag[k] = vtts_nx_word_lang(nx, cp + a, b - a) == 0 ? TAG_EN : TAG_NX + nx;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_TL
+        if (tl) { /* tl: ñ and accent marks, word lists, hyphenated English, CamelCase, acronyms, spelling */
+            tag[k] = vtts_tl_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_TL;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_SW
+        if (sw) { /* sw: word lists, CamelCase, acronyms, Swahili spelling (latin.py; ng' is one word) */
+            tag[k] = vtts_sw_word_lang(cp + a, b - a) == 0 ? TAG_EN : TAG_SW;
+            continue;
+        }
+#endif
+#if VTTS_ENABLE_LT
+        if (lt >= 0) { /* es, id, pt: own letters, word lists, CamelCase, acronyms, spelling (latin.py) */
+            tag[k] = vtts_lt_word_lang(lt, cp + a, b - a) == 0 ? TAG_EN : lt == VTTS_LT_MS ? TAG_MS : TAG_ES + lt;
+            continue;
+        }
+#endif
         int t = word_tag(cp + a, b - a, sent_en);
         tag[k] = t == TAG_NEUTRAL ? (sent_en ? TAG_EN : TAG_VI) : t;
     }
+#if VTTS_ENABLE_FI
+    if (fi) {
+        fi_context(cp, cs, ce, nc, tag);
+        for (int k = 0; k < nc; k++) tag[k] = tag[k] == 0 ? TAG_EN : TAG_FI; /* neutral -> fi */
+    }
+#endif
     ws->n_items = ws->pool_used = 0;
     for (int k = 0; k < nc && !c->stop;) { /* runs of one language, chunks joined by single spaces */
         int k1 = k, len = 0;
@@ -1454,27 +2106,92 @@ static void v2_sentence(ctx_t *c, int s, int e, const vtts_text_opts *o) {
 /* lang.py SENTENCE_END: split at whitespace after . ! ? ; (not after a dot that follows a Thai
  * letter) and, in the zh, ko, hi, ja, es, id, pt and th modes, right after 。！？；।॥ (the vi-en modes
  * keep their earlier behaviour) */
+/* lang.DOT_CONTINUES: the characters that continue a sentence after a dot and whitespace */
+static int dot_continues_cp(int lang, uint32_t c) {
+    if (c >= '0' && c <= '9') return 1;
+    if (lang == VTTS_LANG_FI)
+        return (c >= 'a' && c <= 'z') || c == 0xE5 || c == 0xE4 || c == 0xF6 || c == 0x161 || c == 0x17E;
+    if (lang == VTTS_LANG_EL) return (c >= 0x3AC && c <= 0x3CE) || c == 0x390; /* α-ω ς, accented, ΐ ΰ */
+    return 0;
+}
+
+/* [a-zçğıöşüâîû] */
+static int tr_lower_letter(uint32_t c) {
+    return (c >= 'a' && c <= 'z') || c == 0xE7 || c == 0x11F || c == 0x131 || c == 0xF6 || c == 0x15F || c == 0xFC ||
+           c == 0xE2 || c == 0xEE || c == 0xFB;
+}
+
+/* A dot at cp[i - 1] followed by whitespace at cp[i] (the text is cp[a..z)) that does not end a
+ * sentence (lang.py SENTENCE_END and the per-mode rules):
+ * - every mode: a dot after a Thai letter ends an abbreviation (พ.ศ. 2567);
+ * - every mode: a dot before whitespace and a lower-case Cyrillic letter ends an abbreviation (т. е.,
+ *   ул. ленина);
+ * - tr (SENTENCE_END_TR): a dot after a digit before exactly one space and a lower-case word is an
+ *   ordinal (5. sınıf; two spaces still split, as the regex);
+ * - fi, el (lang.DOT_CONTINUES): a dot before whitespace and a lower-case letter of the language or a
+ *   digit (n. 50, 3. toukokuuta, χλμ. σε). */
+static int dot_continues(int lang, const uint32_t *cp, int a, int z, int i) {
+    if (i - 2 >= a && is_thai_cp(cp[i - 2])) return 1;
+    if (is_space_cp(cp[i])) {
+        int j = i;
+        while (j < z && is_space_cp(cp[j])) j++;
+        if (j < z && ((cp[j] >= 0x430 && cp[j] <= 0x44F) || cp[j] == 0x451)) return 1;
+    }
+    if (lang == VTTS_LANG_TR && i - 2 >= a && vtts_u_digit(cp[i - 2]) >= 0 && is_space_cp(cp[i]) && i + 1 < z &&
+        tr_lower_letter(cp[i + 1]))
+        return 1;
+    if ((lang == VTTS_LANG_FI || lang == VTTS_LANG_EL) && is_space_cp(cp[i])) {
+        int q = i;
+        while (q < z && is_space_cp(cp[q])) q++;
+        if (q < z && dot_continues_cp(lang, cp[q])) return 1;
+    }
+    return 0;
+}
+
 static int cjk_end(uint32_t c) {
     return c == 0x3002 || c == 0xFF01 || c == 0xFF1F || c == 0xFF1B || c == 0x0964 || c == 0x0965;
 }
 
 int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts *o, vtts_ids_cb cb, void *user) {
     if (!o || o->lang == VTTS_LANG_V1) return vtts_text_to_ids(utf8, ws, cb, user);
-    if (!utf8 || !ws) return -1;
+    if (!utf8 || !ws || !lang_enabled(o->lang)) return -1; /* a mode that is not compiled in */
     ctx_t ctx = {ws, cb, user, 0, 0, 0}, *c = &ctx;
     const int cjk = o->lang == VTTS_LANG_ZH || o->lang == VTTS_LANG_KO || o->lang == VTTS_LANG_HI ||
                     o->lang == VTTS_LANG_JA || o->lang == VTTS_LANG_ES || o->lang == VTTS_LANG_ID ||
-                    o->lang == VTTS_LANG_PT || o->lang == VTTS_LANG_TH;
+                    o->lang == VTTS_LANG_PT || o->lang == VTTS_LANG_TH || o->lang == VTTS_LANG_FR ||
+                    o->lang == VTTS_LANG_IT || o->lang == VTTS_LANG_TR || o->lang == VTTS_LANG_RU ||
+                    o->lang == VTTS_LANG_PL || o->lang == VTTS_LANG_AR || o->lang == VTTS_LANG_FI ||
+                    o->lang == VTTS_LANG_EL || o->lang == VTTS_LANG_MS || o->lang == VTTS_LANG_TL ||
+                    o->lang == VTTS_LANG_SW;
     int n = ws->n_cp = utf8_decode(utf8, ws->cp, VTTS_TEXT_MAX_CP);
+#if VTTS_ENABLE_NX
+    if (o->lang == VTTS_LANG_NL || o->lang == VTTS_LANG_SV || o->lang == VTTS_LANG_NO) {
+        /* scan_norm.split_sentences: abbreviations, initials and (no) ordinals keep their dot */
+        int nx = nx_of(o->lang);
+        vtts_nx_split st = {0, 0, 0, 0};
+        int s0, e0;
+        while (!c->stop && vtts_nx_next_sentence(nx, ws->cp, n, &st, &s0, &e0)) v2_sentence(c, s0, e0, o);
+        return c->chunks;
+    }
+#endif
+#if VTTS_ENABLE_DE
+    if (o->lang == VTTS_LANG_DE) { /* split_sentences_de: ordinals and abbreviations keep their dot */
+        vtts_de_split st = {0, 0, 0, 0};
+        int s0, e0;
+        while (!c->stop && vtts_de_next_sentence(ws->cp, n, &st, &s0, &e0)) v2_sentence(c, s0, e0, o);
+        return c->chunks;
+    }
+#endif
     int a = 0, z = n;
     while (a < z && is_space_cp(ws->cp[a])) a++; /* text.strip() */
     while (z > a && is_space_cp(ws->cp[z - 1])) z--;
     int s = a;
     for (int i = a; i < z && !c->stop; i++) {
         uint32_t pc = i > s ? ws->cp[i - 1] : 0;
-        /* a dot after a Thai letter ends an abbreviation (พ.ศ. 2567), not a sentence */
-        int thai_dot = pc == '.' && i - 2 >= a && vtts_th_is_thai(ws->cp[i - 2]);
-        if ((is_space_cp(ws->cp[i]) && (pc == '.' || pc == '!' || pc == '?' || pc == ';') && !thai_dot) ||
+        int thai_dot = pc == '.' && dot_continues(o->lang, ws->cp, a, z, i);
+        /* SENTENCE_END: . ! ? ; and the Arabic ؟ ؛ ۔ before whitespace (every mode) */
+        if ((is_space_cp(ws->cp[i]) && (pc == '.' || pc == '!' || pc == '?' || pc == ';' || pc == 0x061F ||
+                                        pc == 0x061B || pc == 0x06D4) && !thai_dot) ||
             (cjk && cjk_end(pc))) {
             v2_sentence(c, s, i, o);
             while (i < z && is_space_cp(ws->cp[i])) i++;
@@ -1488,15 +2205,79 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
 
 /* ---------------- text modes per token set ---------------- */
 
+/* the first mode of a token set is its default; a language that is not compiled in has no mode */
 static const struct { int token_set; const char *name; vtts_lang lang; } MODES[] = {
     {VTTS_TOKSET_V1, "vi", VTTS_LANG_V1},       {VTTS_TOKSET_VI_EN, "vi", VTTS_LANG_VI},
     {VTTS_TOKSET_VI_EN, "en", VTTS_LANG_EN},    {VTTS_TOKSET_VI_EN, "auto", VTTS_LANG_AUTO},
-    {VTTS_TOKSET_ZH_EN, "zh", VTTS_LANG_ZH},    {VTTS_TOKSET_KO_EN, "ko", VTTS_LANG_KO},
+#if VTTS_ENABLE_ZH
+    {VTTS_TOKSET_ZH_EN, "zh", VTTS_LANG_ZH},
+#endif
+#if VTTS_ENABLE_KO
+    {VTTS_TOKSET_KO_EN, "ko", VTTS_LANG_KO},
+#endif
+#if VTTS_ENABLE_HI
     {VTTS_TOKSET_HI_EN, "hi", VTTS_LANG_HI},
+#endif
+#if VTTS_ENABLE_JA
     {VTTS_TOKSET_JA_EN, "ja", VTTS_LANG_JA},
-    {VTTS_TOKSET_ES_EN, "es", VTTS_LANG_ES},    {VTTS_TOKSET_ID_EN, "id", VTTS_LANG_ID},
+#endif
+#if VTTS_ENABLE_ES
+    {VTTS_TOKSET_ES_EN, "es", VTTS_LANG_ES},
+#endif
+#if VTTS_ENABLE_ID
+    {VTTS_TOKSET_ID_EN, "id", VTTS_LANG_ID},
+#endif
+#if VTTS_ENABLE_PT
     {VTTS_TOKSET_PT_EN, "pt", VTTS_LANG_PT},
+#endif
+#if VTTS_ENABLE_TH
     {VTTS_TOKSET_TH_EN, "th", VTTS_LANG_TH},
+#endif
+#if VTTS_ENABLE_FR
+    {VTTS_TOKSET_FR_EN, "fr", VTTS_LANG_FR},
+#endif
+#if VTTS_ENABLE_DE
+    {VTTS_TOKSET_DE_EN, "de", VTTS_LANG_DE},
+#endif
+#if VTTS_ENABLE_IT
+    {VTTS_TOKSET_IT_EN, "it", VTTS_LANG_IT},
+#endif
+#if VTTS_ENABLE_TR
+    {VTTS_TOKSET_TR_EN, "tr", VTTS_LANG_TR},
+#endif
+#if VTTS_ENABLE_RU
+    {VTTS_TOKSET_RU_EN, "ru", VTTS_LANG_RU},
+#endif
+#if VTTS_ENABLE_PL
+    {VTTS_TOKSET_PL_EN, "pl", VTTS_LANG_PL},
+#endif
+#if VTTS_ENABLE_AR
+    {VTTS_TOKSET_AR_EN, "ar", VTTS_LANG_AR},
+#endif
+#if VTTS_ENABLE_FI
+    {VTTS_TOKSET_FI_EN, "fi", VTTS_LANG_FI},
+#endif
+#if VTTS_ENABLE_EL
+    {VTTS_TOKSET_EL_EN, "el", VTTS_LANG_EL},
+#endif
+#if VTTS_ENABLE_MS
+    {VTTS_TOKSET_MS_EN, "ms", VTTS_LANG_MS},
+#endif
+#if VTTS_ENABLE_TL
+    {VTTS_TOKSET_TL_EN, "tl", VTTS_LANG_TL},
+#endif
+#if VTTS_ENABLE_SW
+    {VTTS_TOKSET_SW_EN, "sw", VTTS_LANG_SW},
+#endif
+#if VTTS_ENABLE_NL
+    {VTTS_TOKSET_NL_EN, "nl", VTTS_LANG_NL},
+#endif
+#if VTTS_ENABLE_SV
+    {VTTS_TOKSET_SV_EN, "sv", VTTS_LANG_SV},
+#endif
+#if VTTS_ENABLE_NO
+    {VTTS_TOKSET_NO_EN, "no", VTTS_LANG_NO},
+#endif
 };
 #define N_MODES ((int)(sizeof(MODES) / sizeof(MODES[0])))
 
@@ -1520,19 +2301,9 @@ int vtts_text_default_lang(int token_set, vtts_lang *out) { /* the first mode li
 }
 
 const char *vtts_text_modes(int token_set) {
-    switch (token_set) {
-    case VTTS_TOKSET_V1: return "vi";
-    case VTTS_TOKSET_VI_EN: return "vi|en|auto";
-    case VTTS_TOKSET_ZH_EN: return "zh";
-    case VTTS_TOKSET_KO_EN: return "ko";
-    case VTTS_TOKSET_HI_EN: return "hi";
-    case VTTS_TOKSET_JA_EN: return "ja";
-    case VTTS_TOKSET_ES_EN: return "es";
-    case VTTS_TOKSET_ID_EN: return "id";
-    case VTTS_TOKSET_PT_EN: return "pt";
-    case VTTS_TOKSET_TH_EN: return "th";
-    default: return "";
-    }
+    vtts_lang l;
+    if (token_set == VTTS_TOKSET_VI_EN) return "vi|en|auto";
+    return vtts_text_default_lang(token_set, &l) == 0 ? vtts_text_lang_name(l) : ""; /* one mode per pair set */
 }
 
 const char *vtts_text_lang_name(vtts_lang lang) {
@@ -1547,6 +2318,21 @@ const char *vtts_text_lang_name(vtts_lang lang) {
     case VTTS_LANG_ID: return "id";
     case VTTS_LANG_PT: return "pt";
     case VTTS_LANG_TH: return "th";
+    case VTTS_LANG_FR: return "fr";
+    case VTTS_LANG_DE: return "de";
+    case VTTS_LANG_IT: return "it";
+    case VTTS_LANG_TR: return "tr";
+    case VTTS_LANG_RU: return "ru";
+    case VTTS_LANG_PL: return "pl";
+    case VTTS_LANG_AR: return "ar";
+    case VTTS_LANG_FI: return "fi";
+    case VTTS_LANG_EL: return "el";
+    case VTTS_LANG_MS: return "ms";
+    case VTTS_LANG_TL: return "tl";
+    case VTTS_LANG_SW: return "sw";
+    case VTTS_LANG_NL: return "nl";
+    case VTTS_LANG_SV: return "sv";
+    case VTTS_LANG_NO: return "no";
     default: return "vi";
     }
 }

@@ -51,11 +51,23 @@ static int set_indexed(vtts_model *m, const uint8_t *key, int32_t v) {
     return 0;
 }
 
+/* indexed by code; codes without a row (reserved or unused) are unknown here: {NULL, 0} */
 static const struct { const char *name; int size; } TOKEN_SETS[] = {
-    {"unknown", 0}, {"v1", 65},     {"vi-en", 107}, {"zh-en", 171}, {"ko-en", 153},
-    {"ja-en", 144}, {"es-en", 138}, {"id-en", 141}, {"pt-en", 150}, {"th-en", 162},
-    {"hi-en", 157}};
+    [VTTS_TOKSET_UNKNOWN] = {"unknown", 0},
+    [VTTS_TOKSET_V1] = {"v1", 65},        [VTTS_TOKSET_VI_EN] = {"vi-en", 107}, [VTTS_TOKSET_ZH_EN] = {"zh-en", 171},
+    [VTTS_TOKSET_KO_EN] = {"ko-en", 153}, [VTTS_TOKSET_JA_EN] = {"ja-en", 144}, [VTTS_TOKSET_ES_EN] = {"es-en", 138},
+    [VTTS_TOKSET_ID_EN] = {"id-en", 141}, [VTTS_TOKSET_PT_EN] = {"pt-en", 150}, [VTTS_TOKSET_TH_EN] = {"th-en", 162},
+    [VTTS_TOKSET_HI_EN] = {"hi-en", 157},
+    [VTTS_TOKSET_FR_EN] = {"fr-en", 143}, [VTTS_TOKSET_DE_EN] = {"de-en", 167}, [VTTS_TOKSET_IT_EN] = {"it-en", 142},
+    [VTTS_TOKSET_TR_EN] = {"tr-en", 146}, [VTTS_TOKSET_RU_EN] = {"ru-en", 154}, [VTTS_TOKSET_PL_EN] = {"pl-en", 151},
+    [VTTS_TOKSET_AR_EN] = {"ar-en", 149}, [VTTS_TOKSET_NL_EN] = {"nl-en", 159}, [VTTS_TOKSET_SV_EN] = {"sv-en", 155},
+    [VTTS_TOKSET_NO_EN] = {"no-en", 156}, [VTTS_TOKSET_FI_EN] = {"fi-en", 142}, [VTTS_TOKSET_EL_EN] = {"el-en", 139},
+    [VTTS_TOKSET_MS_EN] = {"ms-en", 145}, [VTTS_TOKSET_TL_EN] = {"tl-en", 139}, [VTTS_TOKSET_SW_EN] = {"sw-en", 147},
+};
 #define N_TOKEN_SETS ((int)(sizeof(TOKEN_SETS) / sizeof(TOKEN_SETS[0])))
+/* files written before the dim existed hold one of the sets up to hi-en: only those are inferred from
+ * the vocab (their sizes are distinct); every later set needs its recorded code (sizes collide) */
+#define LAST_LEGACY_TOKEN_SET VTTS_TOKSET_HI_EN
 
 /* dim token_set present (non-zero): a known code must fit the embedding; a code newer than this
  * runtime loads as UNKNOWN. Absent (or 0): by vocab, as the firmware did before the dim. */
@@ -66,14 +78,17 @@ static int resolve_token_set(vtts_model *m) {
         return m->vocab >= TOKEN_SETS[code].size ? VTTS_OK : VTTS_ERR_FORMAT;
     if (code != 0) { m->token_set = VTTS_TOKSET_UNKNOWN; return VTTS_OK; }
     m->token_set = m->vocab > 65 ? VTTS_TOKSET_VI_EN : VTTS_TOKSET_V1;
-    for (int k = 1; k < N_TOKEN_SETS; k++)
+    for (int k = 1; k <= LAST_LEGACY_TOKEN_SET; k++)
         if (m->vocab == TOKEN_SETS[k].size) m->token_set = k;
     return VTTS_OK;
 }
 
 int vtts_token_set(const vtts_model *m) { return m ? m->token_set : VTTS_TOKSET_UNKNOWN; }
 
-const char *vtts_token_set_name(int ts) { return TOKEN_SETS[ts > 0 && ts < N_TOKEN_SETS ? ts : 0].name; }
+const char *vtts_token_set_name(int ts) {
+    const char *name = TOKEN_SETS[ts > 0 && ts < N_TOKEN_SETS ? ts : 0].name;
+    return name ? name : "unknown";
+}
 
 int vtts_token_set_size(int ts) { return TOKEN_SETS[ts > 0 && ts < N_TOKEN_SETS ? ts : 0].size; }
 

@@ -2,7 +2,7 @@
 
 Usage: uv run python scripts/data/build_mixed.py --lang zh --out data/zh/mixed.jsonl [--hours 5]
        (--lang ko -> data/ko/mixed.jsonl, ids km...; --lang ja -> data/ja/mixed.jsonl, ids jm...;
-       es em..., id im..., pt pm..., th tm..., hi hm...)
+       es em..., id im..., pt pm..., th tm..., hi hm..., de dm..., it itm..., tr trm..., ar am..., fi fim..., el elm..., nl nlm..., sv svm..., no nom...)
 Templates are scripts/data/bilingual/templates_<lang>.txt ({T} = term), terms are the shared
 scripts/data/bilingual/terms_en.txt; see vtts.data.mixed. Rows have lang = the pair language,
 so the pair token set (zh-en, ko-en, ja-en) reads both. With the same seed and hours, --lang zh

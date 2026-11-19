@@ -32,7 +32,8 @@ enum { VTTS_DEC_HIFIGAN = 0, VTTS_DEC_ISTFT = 1, VTTS_DEC_VOCOS = 2 };
 /* Token set a model was trained with (dim `token_set`, docs/model-format.md). Files without the
  * dim map by vocab: 65 -> V1, 107 -> VI_EN, 171 -> ZH_EN, 153 -> KO_EN, 144 -> JA_EN, 138 -> ES_EN,
  * 141 -> ID_EN, 150 -> PT_EN, 162 -> TH_EN, 157 -> HI_EN, any other vocab > 65 -> VI_EN and <= 65 -> V1
- * (the rule the firmware used before the dim existed). */
+ * (the rule the firmware used before the dim existed). Sets added after the dim (FR_EN on) are known
+ * only by their recorded code. */
 typedef enum {
     VTTS_TOKSET_UNKNOWN = 0, /* a code newer than this runtime: only raw ids can be used */
     VTTS_TOKSET_V1 = 1,      /* Vietnamese, 65 ids */
@@ -44,7 +45,22 @@ typedef enum {
     VTTS_TOKSET_ID_EN = 7,   /* "id-en", 141 ids */
     VTTS_TOKSET_PT_EN = 8,   /* "pt-en", 150 ids */
     VTTS_TOKSET_TH_EN = 9,   /* "th-en", 162 ids */
-    VTTS_TOKSET_HI_EN = 10   /* "hi-en", 157 ids */
+    VTTS_TOKSET_HI_EN = 10,  /* "hi-en", 157 ids */
+    VTTS_TOKSET_FR_EN = 11,  /* "fr-en", 143 ids */
+    VTTS_TOKSET_DE_EN = 12,  /* "de-en", 167 ids */
+    VTTS_TOKSET_IT_EN = 13,  /* "it-en", 142 ids (14: unused) */
+    VTTS_TOKSET_TR_EN = 15,  /* "tr-en", 146 ids */
+    VTTS_TOKSET_RU_EN = 16,  /* "ru-en", 154 ids */
+    VTTS_TOKSET_PL_EN = 17,  /* "pl-en", 151 ids (18: unused) */
+    VTTS_TOKSET_AR_EN = 19,  /* "ar-en", 149 ids (20: unused) */
+    VTTS_TOKSET_NL_EN = 21,  /* "nl-en", 159 ids (22 reserved) */
+    VTTS_TOKSET_SV_EN = 23,  /* "sv-en", 155 ids */
+    VTTS_TOKSET_NO_EN = 24,  /* "no-en", 156 ids */
+    VTTS_TOKSET_FI_EN = 25,  /* "fi-en", 142 ids */
+    VTTS_TOKSET_EL_EN = 26,  /* "el-en", 139 ids (27 reserved) */
+    VTTS_TOKSET_MS_EN = 28,  /* "ms-en", 145 ids */
+    VTTS_TOKSET_TL_EN = 29,  /* "tl-en", 139 ids (30-32 reserved) */
+    VTTS_TOKSET_SW_EN = 33   /* "sw-en", 147 ids */
 } vtts_token_set_t;
 
 typedef struct {
@@ -123,7 +139,7 @@ void vtts_set_expressiveness(vtts_model *m, float e);
 /* Token set of a loaded model (vtts_token_set_t); see the enum for files without the dim. */
 int vtts_token_set(const vtts_model *m);
 
-/* "v1", "vi-en", "zh-en", "ko-en", "ja-en", "es-en", "id-en", "pt-en", "th-en", "hi-en" or "unknown". */
+/* "v1", "vi-en", ... (the names of the codes above) or "unknown". */
 const char *vtts_token_set_name(int token_set);
 
 /* Number of ids of a token set (0 for VTTS_TOKSET_UNKNOWN). */

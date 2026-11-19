@@ -21,12 +21,32 @@ token set.
 - In "th" mode a word with Thai letters is Thai and every plain Latin word is English. Thai is
   written without spaces between words; a space is put between Thai and Latin letters
   ("เปิดWi-Fiให้" -> เปิด / Wi-Fi / ให้). Spaces between Thai runs are pauses (th/normalize_th).
-- In the Latin-script pair modes ("es", "id", "pt") a word with the language's own letters (á, ñ ...)
-  is that language and a plain Latin word is decided by latin.latin_word_lang (word lists,
-  CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are dropped.
+- In the Latin-script pair modes ("es", "id", "pt", "it", "tr", "pl", "fi", "ms", "tl",
+  "sw") a word with the language's own
+  letters (á, ñ ...) is that language and a plain Latin word is decided by latin.latin_word_lang
+  (word lists, CamelCase, acronyms, then whether its spelling fits the language); ¿ and ¡ are
+  dropped. In "it" and "tr" ’ is read as ' and latin.split_elision splits an elided Italian word
+  before an English one (sull'iPhone) and a Turkish suffix after an English word (iPhone'da).
 - In "hi" mode a word with Devanagari is Hindi and a plain Latin word is English, except the
   multi-letter units and currency words of the Hindi normalizer (km, GB, Rs), which are read with
   their number in Hindi. The danda । and double danda ॥ end a sentence (in every mode).
+- In "fr" mode words are tagged like the other Latin-script pairs (French letters à â æ ç é è ê ë
+  î ï ô œ ù û ü ÿ), and an elided clitic takes the language of its word (_fr_tags).
+- "de" is a Latin-script pair (own letters ä ö ü ß); its sentences are split by
+  de.normalize_de.split_sentences_de, which does not cut after an ordinal dot (am 3. Mai) or an
+  abbreviation (z. B.).
+- In "ru" mode a word with Cyrillic letters is Russian and a plain Latin word is English, except
+  the multi-letter units and currency codes of the Russian normalizer (km, GB, USD). A full stop
+  followed by a lower-case Cyrillic letter does not end a sentence (т. е., г. москва, ул. ленина),
+  in every mode.
+- In "ar" mode a word with Arabic letters is Arabic and a plain Latin word is English, except the
+  multi-letter units and currency words of the Arabic normalizer (km, GB, USD). Arabic is written
+  right to left, but Unicode text is stored in reading order, so no reordering is needed. The
+  Arabic question mark ؟, semicolon ؛ and full stop ۔ end a sentence like ? ; . (in every mode);
+  the Arabic comma ، is stripped from word edges like ",".
+- "nl", "sv" and "no" are Latin-script pairs (latin.py); their sentences are split by
+  scan_norm.split_sentences, which does not cut after an abbreviation of the language's table
+  (o.a., t.ex.), an initial or (no) an ordinal dot (17. mai).
 """
 
 from __future__ import annotations
@@ -35,14 +55,16 @@ import re
 import unicodedata
 from collections.abc import Callable
 
-from .latin import LATIN_PAIRS, has_letters_of, latin_word_lang
+from .latin import APOSTROPHE_MODES, LATIN_PAIRS, has_letters_of, latin_word_lang, split_elision
 from .lexicon import ABBREVIATIONS, LOANWORDS
 from .phoneme_set import PAIR_MODES
 from .syllable import parse_syllable
 
-EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—"
+EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—،؛؟"
 # A dot after a Thai letter ends an abbreviation (พ.ศ. 2567, 14.30 น.), not a sentence.
-SENTENCE_END = re.compile(r"(?<=[.!?;])(?<![\u0e01-\u0e4e]\.)\s+|(?<=[。！？；।॥])\s*")
+# A full stop before a lower-case Cyrillic letter ends an abbreviation (т. е., ул. ленина).
+SENTENCE_END = re.compile(r"(?<=[!?;؟؛۔])\s+|(?<=\.)(?<![\u0e01-\u0e4e]\.)\s+(?![\sа-яё])"
+                          r"|(?<=[。！？；।॥])\s*")
 VI_RATIO = 0.2
 
 
@@ -86,6 +108,24 @@ def _has_devanagari(word: str) -> bool:
     from .hi.g2p_hi import is_devanagari_word
 
     return is_devanagari_word(word)
+
+
+def _has_cyrillic(word: str) -> bool:
+    return any("\u0400" <= ch <= "\u04ff" for ch in word)
+
+
+def _has_arabic(word: str) -> bool:
+    """Arabic letters (not only Arabic digits or punctuation)."""
+    from .ar.g2p_ar import is_arabic_word
+
+    return is_arabic_word(word)
+
+
+def _has_greek(word: str) -> bool:
+    """Greek letters (not only signs such as the ano teleia)."""
+    from .el.g2p_el import is_greek_word
+
+    return is_greek_word(word)
 
 
 def _script_class_ja(ch: str) -> int:
@@ -150,6 +190,9 @@ SCRIPT_RULES: list[tuple[str, Callable[[str], bool]]] = [
     ("ko", _has_hangul),
     ("hi", _has_devanagari),
     ("th", _has_thai),
+    ("ru", _has_cyrillic),
+    ("ar", _has_arabic),
+    ("el", _has_greek),
     *((code, has_letters_of(code)) for code in LATIN_PAIRS),
     ("vi", _has_vietnamese_letters),
 ]
@@ -170,6 +213,18 @@ def word_lang(core: str, mode: str) -> str:
         from .hi.normalize_hi import LATIN_WORDS
 
         return "hi" if core in LATIN_WORDS else "en"
+    if mode == "ru":
+        from .ru.normalize_ru import LATIN_WORDS as RU_LATIN
+
+        return "ru" if core in RU_LATIN else "en"
+    if mode == "ar":
+        from .ar.normalize_ar import LATIN_WORDS as AR_LATIN_WORDS
+
+        return "ar" if core in AR_LATIN_WORDS else "en"
+    if mode == "el":
+        from .el.normalize_el import LATIN_WORDS as EL_LATIN_WORDS
+
+        return "el" if core in EL_LATIN_WORDS else "en"
     if mode == "en" or mode in PAIR_MODES:
         return "en"
     parts = [p for p in re.split(r"[-']", core) if p]
@@ -193,7 +248,74 @@ def tag_words(sentence: str, mode: str) -> list[tuple[str, str]]:
         sentence = THAI_LATIN.sub(" ", sentence)
     elif mode in LATIN_PAIRS:  # ¿Abriste Netflix? -> Abriste / Netflix
         sentence = sentence.replace("¿", " ").replace("¡", " ")
-    return [(c, word_lang(_core(c), lang)) for c in sentence.split()]
+    elif mode == "el":  # the Greek question mark ; (U+037E) -> ? (also for an English word before it)
+        sentence = sentence.replace(";", "?").replace("\u037e", "?")
+    if mode == "fr":
+        return [t for c in sentence.split() for t in _fr_tags(c, lang)]
+    if mode in APOSTROPHE_MODES:  # sull’iPhone -> sull' / iPhone (an English word after an elision)
+        sentence = sentence.replace("’", "'")
+        return [(c, word_lang(_core(c), lang)) for w in sentence.split() for c in split_elision(w, mode)]
+    tags = [(c, word_lang(_core(c), lang)) for c in sentence.split()]
+    if mode in CONTEXT_PAIRS:
+        tags = _by_context(tags, mode)
+    return tags
+
+
+# Latin-script pairs whose most frequent words are also English words (Finnish on, he, home): a
+# word in both lexicons/<mode>/native.txt and lexicons/latin/english.txt is English when the
+# nearest tagged word on each side (or the only one) is English ("Turn on the light"), else the
+# main language ("Spotify on hyvä").
+CONTEXT_PAIRS = frozenset(("fi",))
+
+
+def _by_context(tags: list[tuple[str, str]], mode: str) -> list[tuple[str, str]]:
+    from .lexicons import load_words
+
+    both = load_words(mode, "native") & load_words("latin", "english")
+    amb = [_core(c).lower() in both and t == mode for c, t in tags]
+
+    def side(k: int, step: int) -> str | None:
+        k += step
+        while 0 <= k < len(tags):
+            if not amb[k] and tags[k][1] != "neutral":
+                return tags[k][1]
+            k += step
+        return None
+
+    out = []
+    for k, (c, t) in enumerate(tags):
+        if amb[k]:
+            near = {x for x in (side(k, -1), side(k, 1)) if x is not None}
+            if near == {"en"}:
+                t = "en"
+        out.append((c, t))
+    return out
+
+
+# French: an elided clitic (l' d' qu' jusqu' ...) takes the language of the word it is glued to,
+# and is split from an English word (l'iPhone -> l' / iPhone); in a hyphenated word one-letter
+# parts (a-t-il) are ignored and the word is French unless a part is English.
+FR_ROMAN_ORDINAL = re.compile(r"[IVXLC]+(?:e|er|re|ème)")
+FR_CLITICS = ("l", "d", "j", "m", "t", "s", "n", "c", "qu", "jusqu", "lorsqu", "puisqu", "quoiqu")
+FR_ELISION = re.compile(r"^([\"“«(]*(?:" + "|".join(FR_CLITICS) + r")['’])(.+)$", re.IGNORECASE)
+
+
+def _fr_tags(chunk: str, lang: str) -> list[tuple[str, str]]:
+    m = FR_ELISION.match(chunk)
+    if m and not chunk.lower().startswith(("aujourd'hui", "aujourd’hui")):
+        rest = word_lang(_core(m.group(2)), lang)
+        if rest == "en":
+            return [(m.group(1), "fr"), (m.group(2), "en")]
+        return [(chunk, rest)]
+    core = _core(chunk)
+    if FR_ROMAN_ORDINAL.fullmatch(core):  # XXIe siècle: read by the French normalizer
+        return [(chunk, "neutral")]
+    tag = word_lang(core, lang)
+    if tag == "en" and "-" in core:
+        parts = [p for p in core.split("-") if len(p) > 1]
+        if parts and all(word_lang(p, lang) != "en" for p in parts):
+            return [(chunk, "fr")]
+    return [(chunk, tag)]
 
 
 def runs(sentence: str, mode: str) -> list[tuple[str, str]]:
@@ -210,5 +332,42 @@ def runs(sentence: str, mode: str) -> list[tuple[str, str]]:
     return out
 
 
-def split_sentences_raw(text: str) -> list[str]:
-    return [s for s in SENTENCE_END.split(text.strip()) if s.strip()]
+# tr: a dot after a number followed by a lower-case word is an ordinal (5. sınıf), not a sentence end.
+SENTENCE_END_TR = re.compile(r"(?<=[!?;؟؛۔])\s+|(?<=\.)(?<![\u0e01-\u0e4e]\.)(?<!\d\.)\s+(?![\sа-яё])"
+                             r"|(?<=\d\.)\s+(?![a-zçğıöşüâîû])(?!\s*[а-яё])|(?<=[。！？；।॥])\s*")
+
+
+# Modes whose sentences start with a capital letter: a dot followed by a lower-case letter of the
+# language or a digit 0-9 ends an abbreviation or an ordinal (fi: n. 50, esim. kissa,
+# 3. toukokuuta; el: χλμ. σε), not a sentence.
+DOT_CONTINUES = {
+    "fi": "0123456789abcdefghijklmnopqrstuvwxyzåäöšž",
+    "el": "0123456789αβγδεζηθικλμνξοπρσςτυφχψωάέήίόύώϊϋΐΰ",
+}
+
+
+def split_sentences_raw(text: str, mode: str | None = None) -> list[str]:
+    """Sentences of a text; mode "tr" keeps an ordinal dot (5. sınıf) inside the sentence, "de" uses
+    its own splitter as do "nl", "sv", "no" (scan_norm), "fi" and "el" join a part that starts after a dot with a DOT_CONTINUES character."""
+    if mode == "de":  # ordinals and abbreviations end with a dot (am 3. Mai, z. B.)
+        from .de.normalize_de import split_sentences_de
+
+        return split_sentences_de(text)
+    if mode in ("nl", "sv", "no"):  # abbreviations and (no) ordinals end with a dot
+        import importlib
+
+        from .scan_norm import split_sentences
+
+        norm = importlib.import_module(f"vtts.frontend.{mode}.normalize_{mode}")
+        return split_sentences(text, norm.spec())
+    pattern = SENTENCE_END_TR if mode == "tr" else SENTENCE_END
+    parts = [s for s in pattern.split(text.strip()) if s.strip()]
+    if mode not in DOT_CONTINUES:
+        return parts
+    out: list[str] = []
+    for p in parts:
+        if out and out[-1].endswith(".") and p[0] in DOT_CONTINUES[mode]:
+            out[-1] += " " + p
+        else:
+            out.append(p)
+    return out

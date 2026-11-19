@@ -98,6 +98,17 @@ def test_latin_pair_cer_reads_numbers_and_keeps_spaces():
     assert WHISPER_LANGUAGE["th"] == "th"
     assert cer("Ada 21 orang.", "ada dua puluh satu orang", "id") == 0.0
     assert WHISPER_LANGUAGE["id"] == "id"
+    assert cer("J'ai 21 ans.", "j'ai vingt et un ans", "fr") == 0.0  # liaison on both sides
+    assert WHISPER_LANGUAGE["fr"] == "fr"
+    assert cer("Ich habe 21 Äpfel.", "ich habe einundzwanzig äpfel", "de") == 0.0
+    assert prep_for_cer("Am 3. Mai um 14:30 Uhr.", "de") == "am dritten mai um vierzehn uhr dreißig"
+    assert WHISPER_LANGUAGE["de"] == "de"
+    assert cer("Ho 21 anni.", "ho ventun anni", "it") == 0.0
+    assert prep_for_cer("Apri l’app alle 7:30.", "it") == "apri l\u02bc app alle sette e trenta"
+    assert WHISPER_LANGUAGE["it"] == "it"
+    assert cer("21 yaşındayım.", "yirmi bir yaşındayım", "tr") == 0.0
+    assert prep_for_cer("İstanbul’da 5. sınıf.", "tr") == "istanbul'da beşinci sınıf"
+    assert WHISPER_LANGUAGE["tr"] == "tr"
 
 
 def test_hindi_cer_reads_numbers_and_keeps_spaces():
@@ -106,3 +117,60 @@ def test_hindi_cer_reads_numbers_and_keeps_spaces():
     assert cer("मेरी उम्र २१ साल है।", "मेरी उम्र इक्कीस साल है", "hi") == 0.0
     assert prep_for_cer("YouTube खोलो।", "hi") == "you tube खोलो"
     assert WHISPER_LANGUAGE["hi"] == "hi"
+
+
+def test_dutch_cer_reads_numbers_and_keeps_spaces():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert prep_for_cer("Ik ben 21 jaar.", "nl") == "ik ben eenentwintig jaar"
+    assert cer("Het kost € 5,50.", "het kost vijf euro en vijftig cent", "nl") == 0.0
+    assert WHISPER_LANGUAGE["nl"] == "nl"
+    assert cer("Olen 21 vuotta.", "olen kaksikymmentäyksi vuotta", "fi") == 0.0
+    assert cer("Kokous 3. toukokuuta.", "kokous kolmas toukokuuta", "fi") == 0.0
+    assert WHISPER_LANGUAGE["fi"] == "fi"
+    assert cer("Είμαι 21 χρονών.", "είμαι είκοσι ένα χρονών", "el") == 0.0
+    assert prep_for_cer("Άνοιξες το Netflix;", "el") == "άνοιξες το netflix"
+    assert WHISPER_LANGUAGE["el"] == "el"
+
+
+def test_polish_cer_reads_numbers():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert prep_for_cer("Mam 21 lat.", "pl") == "mam dwadzieścia jeden lat"
+    assert cer("Mam 21 lat.", "mam dwadzieścia jeden lat", "pl") == 0.0
+    assert WHISPER_LANGUAGE["pl"] == "pl"
+
+
+def test_russian_cer_reads_numbers_and_folds_yo():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert prep_for_cer("Мне 21 год.", "ru") == "мне двадцать один год"
+    assert cer("Она ещё в доме.", "она еще в доме", "ru") == 0.0
+    assert prep_for_cer("Открой YouTube.", "ru") == "открой you tube"
+    assert WHISPER_LANGUAGE["ru"] == "ru"
+
+
+def test_arabic_cer_reads_numbers_and_ignores_vowel_marks():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert prep_for_cer("عمري 21 سنة.", "ar") == "عمري واحد وعشرون سنة"
+    assert cer("عمري ٢١ سنة.", "عُمْرِي وَاحِد وَعِشْرُونَ سَنَة", "ar") == 0.0
+    assert prep_for_cer("افتح YouTube.", "ar") == "افتح you tube"
+    assert WHISPER_LANGUAGE["ar"] == "ar"
+
+
+def test_malay_cer_reads_numbers():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert cer("Ada 8 orang.", "ada lapan orang", "ms") == 0.0
+    assert prep_for_cer("Harga RM12.50.", "ms") == "harga dua belas ringgit lima puluh sen"
+    assert WHISPER_LANGUAGE["ms"] == "ms"
+
+
+def test_tagalog_cer_reads_numbers():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert cer("May 3 aso.", "may tatlong aso", "tl") == 0.0
+    assert prep_for_cer("Alas 3:30 na.", "tl") == "alas tres i medya na"
+    assert WHISPER_LANGUAGE["tl"] == "tl"
+
+
+def test_swahili_cer_reads_numbers():
+    from vtts.eval.cer import WHISPER_LANGUAGE, cer, prep_for_cer
+    assert cer("Watu 3.", "watu tatu", "sw") == 0.0
+    assert prep_for_cer("Bei ni TSh 5,000.", "sw") == "bei ni shilingi elfu tano"
+    assert WHISPER_LANGUAGE["sw"] == "sw"

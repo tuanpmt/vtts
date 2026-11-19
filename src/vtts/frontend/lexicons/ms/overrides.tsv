@@ -1,0 +1,45 @@
+# Malay words whose e is not read by the default rules, respelled: in a reading, e is always the
+# schwa (e pepet, as in "besar") and é the e of "elok" (e taling). Looked up before the shared
+# Indonesian table lexicons/id/overrides.tsv; an entry equal to its key cancels an Indonesian
+# entry. Matching: the whole word, lower case; a word with a suffix (-nya -lah -kah -pun -ku -mu
+# -kan -an -i) or a prefix (di- ke- se- ber- ter- per- pe- me-) uses the entry of its stem.
+# See docs/frontend/pronunciation-rules.md.
+esok	ésok
+elak	élak
+eja	éja
+nenek	nénék
+tengok	téngok
+beza	béza
+lewat	léwat
+perak	pérak
+bendera	bendéra
+merdeka	merdéka
+selesema	selésema
+teksi	téksi
+telefon	téléfon
+televisyen	télévisyén
+elektrik	éléktrik
+eksport	éksport
+kredit	krédit
+sektor	séktor
+rekod	rékod
+sesi	sési
+media	média
+memo	mémo
+demokrasi	démokrasi
+disember	disémber
+sekretariat	sékretariat
+reka	réka
+rekaan	rékaan
+sistem	sistem
+filem	filem
+tentera	tentéra
+indonesia	indonésia
+problem	problem
+pekan	pékan
+gereja	geréja
+sepak	sépak
+kempen	kémpén
+pelepah	pelépah
+eropah	éropah
+sumatera	sumatéra

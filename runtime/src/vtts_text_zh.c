@@ -2,6 +2,9 @@
 /* vtts_text_zh.c -- Mandarin front-end of the device (token set zh-en): ZLEX reader, readings by
  * forward maximum matching (mirrors src/vtts/frontend/zh/g2p_zh.py) and normalization (mirrors
  * src/vtts/frontend/zh/normalize_zh.py). */
+#include "vtts_langs.h"
+#if VTTS_ENABLE_ZH /* else an empty unit (vtts_langs.h) */
+
 #include "vtts_text_zh.h"
 
 #include <string.h>
@@ -650,3 +653,5 @@ int vtts_zh_normalize(const uint32_t *in, int n, uint32_t *a, uint32_t *b, int c
     *out = x.p;
     return x.n;
 }
+
+#endif /* VTTS_ENABLE_ZH */

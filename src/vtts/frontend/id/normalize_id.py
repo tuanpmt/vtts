@@ -81,22 +81,23 @@ NUMBER = re.compile(r"(?<![\w.,])(-?)(" + NUM + r")(?![\d])")
 REDUP = re.compile(r"\b([^\W\d_]{2,})2\b")
 
 
-def _below_1000(n: int) -> str:
+def _below_1000(n: int, ones: tuple[str, ...] = ONES) -> str:
+    """1-999 (Malay passes its own digit names: lapan for 8)."""
     h, r = divmod(n, 100)
     parts = []
     if h:
-        parts.append("seratus" if h == 1 else f"{ONES[h]} ratus")
+        parts.append("seratus" if h == 1 else f"{ones[h]} ratus")
     if r >= 20:
         t, u = divmod(r, 10)
-        parts.append(f"{ONES[t]} puluh" + (f" {ONES[u]}" if u else ""))
+        parts.append(f"{ones[t]} puluh" + (f" {ones[u]}" if u else ""))
     elif r >= 12:
-        parts.append(f"{ONES[r - 10]} belas")
+        parts.append(f"{ones[r - 10]} belas")
     elif r == 11:
         parts.append("sebelas")
     elif r == 10:
         parts.append("sepuluh")
     elif r:
-        parts.append(ONES[r])
+        parts.append(ones[r])
     return " ".join(parts)
 
 

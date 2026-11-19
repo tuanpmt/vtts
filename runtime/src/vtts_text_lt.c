@@ -3,12 +3,37 @@
  * Indonesian (id-en) and Brazilian Portuguese (pt-en). Mirrors src/vtts/frontend/latin.py
  * (tagging of plain Latin words), latin_norm.py and es|id|pt/normalize_*.py (normalization, pass by
  * pass) and es|id|pt/g2p_*.py (spelling rules, stress). All tables are in the generated
- * vtts_text_tables.h; no blob is needed. */
+ * vtts_text_tables.h; no blob is needed. The Unicode classes and the shared English word list are
+ * always built (other Latin-script modules use them); the rest only with VTTS_ENABLE_ES, _ID or _PT. */
 #include "vtts_text_lt.h"
+#include "vtts_langs.h"
 
 #include <string.h>
 
 #include "vtts_text_tables.h"
+#if VTTS_ENABLE_MS
+#include "vtts_text_ms_tables.h"
+#endif
+
+/* Malay runs the Indonesian code paths (IDL: Indonesian or Malay) with its own tables and the
+ * differences of ms/normalize_ms.py and ms/g2p_ms.py under MS(k) */
+#if VTTS_ENABLE_MS
+#define MS(k) ((k) == VTTS_LT_MS)
+#define LT_LAST VTTS_LT_MS
+#else
+#define MS(k) 0
+#define LT_LAST VTTS_LT_PT
+#endif
+#define IDL(k) ((k) == VTTS_LT_ID || MS(k))
+
+#if VTTS_ENABLE_LT
+static const vtts_lt_lang *lt_lang(int k) {
+#if VTTS_ENABLE_MS
+    if (k == VTTS_LT_MS) return &VTTS_MS_LANG;
+#endif
+    return &VTTS_LT_LANGS[k];
+}
+#endif
 
 /* ======================= Unicode classes of Python's re ======================= */
 
@@ -55,6 +80,23 @@ uint32_t vtts_u_lower(uint32_t c) {
     return (uint32_t)((int32_t)c + r[2]);
 }
 
+/* sorted list of ASCII strings */
+static int in_sorted(const char *const *list, int n, const char *w) {
+    int lo = 0, hi = n - 1;
+    while (lo <= hi) {
+        int m = (lo + hi) / 2, c = strcmp(list[m], w);
+        if (!c) return 1;
+        if (c < 0) lo = m + 1; else hi = m - 1;
+    }
+    return 0;
+}
+
+/* lexicons/latin/english.txt is shared by every Latin-script pair (fr, de, it, tr, pl, fi ...) */
+int vtts_lt_english_word(const char *low) { return in_sorted(VTTS_LT_ENGLISH, VTTS_LT_N_ENGLISH, low); }
+
+/* everything below is the es, id and pt module (VTTS_ENABLE_ES|ID|PT, vtts_langs.h) */
+#if VTTS_ENABLE_LT
+
 static int is_letter(uint32_t c) { return c != '_' && vtts_u_word(c) && vtts_u_digit(c) < 0; } /* [^\W\d_] */
 
 /* ======================= small helpers ======================= */
@@ -92,17 +134,6 @@ static int u8_decode(const char *k, uint32_t *o, int cap) {
     int l, n = 0;
     while ((l = dec1(k, &x)) > 0 && n < cap) { o[n++] = x; k += l; }
     return n;
-}
-
-/* sorted list of ASCII strings */
-static int in_sorted(const char *const *list, int n, const char *w) {
-    int lo = 0, hi = n - 1;
-    while (lo <= hi) {
-        int m = (lo + hi) / 2, c = strcmp(list[m], w);
-        if (!c) return 1;
-        if (c < 0) lo = m + 1; else hi = m - 1;
-    }
-    return 0;
 }
 
 /* list of strings holds the len chars s */
@@ -263,20 +294,22 @@ static void es_card(lb_t *d, const uint32_t *s, int n) {
 
 /* ---- Indonesian ---- */
 
-static void id_below_1000(lb_t *d, int v) {
+static void below_1000_ones(lb_t *d, int v, const char *const *ones) { /* _below_1000(n, ones) */
     int h = v / 100, r = v % 100;
-    if (h) { if (h == 1) puts8(d, "seratus"); else { puts8(d, VTTS_ID_ONES[h]); puts8(d, " ratus"); } }
+    if (h) { if (h == 1) puts8(d, "seratus"); else { puts8(d, ones[h]); puts8(d, " ratus"); } }
     if (!r) return;
     if (h) put(d, ' ');
     if (r >= 20) {
-        puts8(d, VTTS_ID_ONES[r / 10]);
+        puts8(d, ones[r / 10]);
         puts8(d, " puluh");
-        if (r % 10) { put(d, ' '); puts8(d, VTTS_ID_ONES[r % 10]); }
-    } else if (r >= 12) { puts8(d, VTTS_ID_ONES[r - 10]); puts8(d, " belas"); }
+        if (r % 10) { put(d, ' '); puts8(d, ones[r % 10]); }
+    } else if (r >= 12) { puts8(d, ones[r - 10]); puts8(d, " belas"); }
     else if (r == 11) puts8(d, "sebelas");
     else if (r == 10) puts8(d, "sepuluh");
-    else puts8(d, VTTS_ID_ONES[r]);
+    else puts8(d, ones[r]);
 }
+
+static void id_below_1000(lb_t *d, int v) { below_1000_ones(d, v, VTTS_ID_ONES); }
 
 static void id_card_v(lb_t *d, uint64_t v) {
     static const uint64_t SC[3] = {1000000000000ull, 1000000000ull, 1000000ull};
@@ -296,6 +329,33 @@ static void id_card_v(lb_t *d, uint64_t v) {
     if (th) { if (any) put(d, ' '); if (th == 1) puts8(d, "seribu"); else { id_below_1000(d, th); puts8(d, " ribu"); } any = 1; }
     if (r) { if (any) put(d, ' '); id_below_1000(d, r); }
 }
+
+/* ---- Malay (normalize_ms.cardinal: lapan, sejuta, bilion, sifar) ---- */
+
+#if VTTS_ENABLE_MS
+static void ms_card_v(lb_t *d, uint64_t v) {
+    static const uint64_t SC[3] = {1000000000000ull, 1000000000ull, 1000000ull};
+    int any = 0;
+    if (!v) { puts8(d, VTTS_MS_ZERO); return; }
+    for (int k = 0; k < 3; k++) {
+        uint64_t q = v / SC[k];
+        v %= SC[k];
+        if (!q) continue;
+        if (any) put(d, ' ');
+        if (q == 1 && k == 2) puts8(d, "se");
+        else { ms_card_v(d, q); put(d, ' '); }
+        puts8(d, VTTS_MS_SCALES[k]);
+        any = 1;
+    }
+    int th = (int)(v / 1000), r = (int)(v % 1000);
+    if (th) {
+        if (any) put(d, ' ');
+        if (th == 1) puts8(d, "seribu"); else { below_1000_ones(d, th, VTTS_MS_ONES); puts8(d, " ribu"); }
+        any = 1;
+    }
+    if (r) { if (any) put(d, ' '); below_1000_ones(d, r, VTTS_MS_ONES); }
+}
+#endif
 
 /* ---- Portuguese ---- */
 
@@ -333,6 +393,9 @@ static void card(const lt_t *x, lb_t *d, const uint32_t *s, int n) {
     if (x->k == VTTS_LT_ES) { es_card(d, s, n); return; }
     int st, nd = sig(s, n, &st);
     if (nd > 15) { digit_words(d, x->digits, s, n, st); return; }
+#if VTTS_ENABLE_MS
+    if (x->k == VTTS_LT_MS) { ms_card_v(d, value(s, n, st)); return; }
+#endif
     if (x->k == VTTS_LT_ID) id_card_v(d, value(s, n, st)); else pt_card_v(d, value(s, n, st));
 }
 
@@ -389,8 +452,42 @@ static int read_number(const lt_t *x, lb_t *d, const uint32_t *s, int n, int *on
     return 1;
 }
 
+#if VTTS_ENABLE_MS
+/* normalize_ms.parse_number: 1,250.50 (comma groups, point decimals); 1.000.000 (two or more dot
+ * groups, comma decimals); else the first point, else the first comma is the decimal mark (the
+ * integer part [0, *ie) may hold commas: they are skipped like every separator) */
+static void ms_parse_number(const uint32_t *s, int n, int *ie, int *f0) {
+    if (groups_full(s, n, ',', '.', ie, f0)) return;
+    if (groups_full(s, n, '.', ',', ie, f0) && (*ie - drun(s, n, 0)) / 4 >= 2) return;
+    for (int m = 0; m < 2; m++) {
+        uint32_t c = m ? ',' : '.';
+        for (int i = 0; i < n; i++)
+            if (s[i] == c) { *ie = i; *f0 = i + 1; return; }
+    }
+    *ie = n;
+    *f0 = -1;
+}
+
+/* normalize_ms.number: negatif, the cardinal, perpuluhan and the decimals digit by digit */
+static void ms_number(const lt_t *x, lb_t *d, const uint32_t *s, int n, int neg) {
+    int ie, f0;
+    if (neg) puts8(d, "negatif ");
+    ms_parse_number(s, n, &ie, &f0);
+    card(x, d, s, ie);
+    if (f0 >= 0 && f0 < n) {
+        put(d, ' ');
+        puts8(d, VTTS_MS_POINT);
+        put(d, ' ');
+        digit_words(d, x->digits, s, n, f0);
+    }
+}
+#endif
+
 /* number(sign + s): es with before_word (un, veintiún before a word); *one as read_number */
 static void number(const lt_t *x, lb_t *d, const uint32_t *s, int n, int neg, int before_word, int *one) {
+#if VTTS_ENABLE_MS
+    if (x->k == VTTS_LT_MS) { ms_number(x, d, s, n, neg); if (one) *one = 0; return; }
+#endif
     if (neg) puts8(d, x->k == VTTS_LT_ID ? "minus " : "menos ");
     int st = d->n, frac = read_number(x, d, s, n, one);
     if (x->k == VTTS_LT_ES && before_word && !frac) es_apocope(d, st);
@@ -517,10 +614,10 @@ static void date_out(const lt_t *x, lb_t *d, int dd, int mm, const uint32_t *y, 
     if (!(dd >= 1 && dd <= 31 && mm >= 1 && mm <= 12)) { putn(d, orig, on); return; }
     put(d, ' ');
     if (x->k == VTTS_LT_PT && dd == 1) puts8(d, "primeiro"); else card_i(x, d, dd);
-    puts8(d, x->k == VTTS_LT_ID ? " " : " de ");
+    puts8(d, IDL(x->k) ? " " : " de ");
     puts8(d, x->L->months[mm]);
     if (y) {
-        puts8(d, x->k == VTTS_LT_ID ? " " : " de ");
+        puts8(d, IDL(x->k) ? " " : " de ");
         card_i(x, d, val(y, 0, yl) + (yl == 2 ? 2000 : 0));
     }
     put(d, ' ');
@@ -565,6 +662,55 @@ static void p_date_dmy(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
     }
 }
 
+#if VTTS_ENABLE_MS
+/* the ASCII letter a (lower case) under re.IGNORECASE: c is a, A or one of VTTS_MS_ICASE */
+static int icase_eq(uint32_t c, char a) {
+    if (c == (uint32_t)a || c == (uint32_t)a - 32) return 1;
+    if (c < 0x80) return 0;
+    for (size_t k = 0; k < sizeof VTTS_MS_ICASE / sizeof *VTTS_MS_ICASE; k++)
+        if (VTTS_MS_ICASE[k][0] == c && VTTS_MS_ICASE[k][1] == (uint32_t)a) return 1;
+    return 0;
+}
+
+/* re.IGNORECASE match of the ASCII text k (lower case; a space matches itself) at s[i] */
+static int icase_at(const uint32_t *s, int n, int i, const char *k) {
+    int m = 0;
+    for (; k[m]; m++)
+        if (!IN(i + m) || (k[m] == ' ' ? s[i + m] != ' ' : !icase_eq(s[i + m], k[m]))) return 0;
+    return m;
+}
+
+/* ms DATE_ABBR: (?<![\d])(\d{1,2})\s+(ABBR...|MONTH...)\.?(?:\s+(\d{4}))?(?![\w]) (re.IGNORECASE) ->
+ * _date(d, month, y); the month is that of the alternative when the matched letters lower() to it,
+ * else (ſ, İ, ı) the text is kept */
+static void p_date_abbr(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
+    const int na = (int)(sizeof VTTS_MS_MONTH_ALTS / sizeof *VTTS_MS_MONTH_ALTS);
+    for (int i = 0; i < n;) {
+        int r = DG(i) && !DG(i - 1) ? drun(s, n, i) : 0, end = -1, mm = 0, y0 = -1, a0 = 0, al = 0;
+        if (r >= 1 && r <= 2 && SP(i + r)) {
+            int p = i + r;
+            while (SP(p)) p++;
+            for (int k = 0; k < na && end < 0; k++) {
+                int l = icase_at(s, n, p, VTTS_MS_MONTH_ALTS[k].key);
+                if (!l) continue;
+                for (int dot = AT(p + l, '.'); dot >= 0 && end < 0; dot--) {
+                    int q = p + l + dot, t = q;
+                    while (SP(t)) t++;
+                    if (t > q && drun(s, n, t) >= 4 && !W(t + 4)) { end = t + 4; y0 = t; }
+                    else if (!W(q)) end = q;
+                    if (end >= 0) { mm = VTTS_MS_MONTH_ALTS[k].month; a0 = p; al = l; }
+                }
+            }
+        }
+        if (end < 0) { put(d, s[i++]); continue; }
+        for (int k = a0; k < a0 + al; k++)
+            if (s[k] == 0x130 || vtts_u_lower(s[k]) >= 0x80) mm = 0; /* key not in the tables: no date */
+        date_out(x, d, val(s, i, r), mm, y0 >= 0 ? s + y0 : NULL, 4, s + i, end - i);
+        i = end;
+    }
+}
+#endif
+
 /* ([01]?\d|2[0-4]) at i: the hour lengths in the order the regex tries them */
 static int hours(const uint32_t *s, int n, int i, int hl[3]) {
     int k = 0;
@@ -585,6 +731,9 @@ static void time_out(const lt_t *x, lb_t *d, int h, int mi, int sec) {
         es_feminine(d, st);
         if (mi) { puts8(d, " y "); card_i(x, d, mi); } else puts8(d, " en punto");
         if (sec > 0) { puts8(d, " y "); card_i(x, d, sec); puts8(d, " segundos"); }
+    } else if (MS(x->k)) {
+        if (mi) { put(d, ' '); card_i(x, d, mi); puts8(d, " minit"); }
+        if (sec > 0) { put(d, ' '); card_i(x, d, sec); puts8(d, " saat"); }
     } else if (x->k == VTTS_LT_ID) {
         if (mi) { puts8(d, " lewat "); card_i(x, d, mi); puts8(d, " menit"); }
         if (sec > 0) { put(d, ' '); card_i(x, d, sec); puts8(d, " detik"); }
@@ -621,14 +770,14 @@ static void p_time(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
         int hl[3], nh = DG(i) ? hours(s, n, i, hl) : 0, end = -1, h = 0, mi = 0, sec = -1;
         /* es (?<![\d:])H:M(?::S)?(?:\s?(?:h|hs|hrs)(?![\w]))?(?![\d:]); id: (?<![\d:.])H:M(?::S)?(?![\d:]);
          * pt (?<![\d:])H(?::|h)M(?::S)?(?:\s?h(?![\w]))?(?![\d:]) */
-        if (nh && !DG(i - 1) && !AT(i - 1, ':') && !(x->k == VTTS_LT_ID && AT(i - 1, '.'))) {
+        if (nh && !DG(i - 1) && !AT(i - 1, ':') && !(IDL(x->k) && AT(i - 1, '.'))) {
             for (int c = 0; c < nh && end < 0; c++) {
                 int j = i + hl[c];
                 if (!((AT(j, ':') || (x->k == VTTS_LT_PT && AT(j, 'h'))) && m05(s, n, j + 1))) continue;
                 int k = j + 3, has = AT(k, ':') && m05(s, n, k + 1);
                 for (int sv = has; sv >= 0 && end < 0; sv--) {
                     int k2 = sv ? k + 3 : k;
-                    if (x->k != VTTS_LT_ID)
+                    if (!IDL(x->k))
                         for (int sp = SP(k2); sp >= 0 && end < 0; sp--)
                             for (int a = 0; a < (x->k == VTTS_LT_ES ? 3 : 1) && end < 0; a++) {
                                 int p = k2 + sp, l = key_at(s, n, p, SUF[a]);
@@ -640,7 +789,7 @@ static void p_time(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
             }
         }
         /* id: (?<=pukul |jam )H\.M(?![\d.]) (re.IGNORECASE) */
-        if (end < 0 && nh && x->k == VTTS_LT_ID && (behind_icase(s, n, i, "pukul ") || behind_icase(s, n, i, "jam ")))
+        if (end < 0 && nh && IDL(x->k) && (behind_icase(s, n, i, "pukul ") || behind_icase(s, n, i, "jam ")))
             for (int c = 0; c < nh && end < 0; c++) {
                 int j = i + hl[c];
                 if (AT(j, '.') && m05(s, n, j + 1) && !DG(j + 3) && !AT(j + 3, '.')) {
@@ -649,6 +798,17 @@ static void p_time(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
                     mi = val(s, j + 1, 2);
                 }
             }
+#if VTTS_ENABLE_MS
+        /* ms: (?<![\d.,])H\.M(?![\d.])(?=\s+(?:pagi|tengah hari|...)) (re.IGNORECASE) */
+        if (end < 0 && nh && MS(x->k) && !DG(i - 1) && !AT(i - 1, '.') && !AT(i - 1, ','))
+            for (int c = 0; c < nh && end < 0; c++) {
+                int j = i + hl[c], q = j + 3;
+                if (!(AT(j, '.') && m05(s, n, j + 1) && !DG(q) && !AT(q, '.') && SP(q))) continue;
+                while (SP(q)) q++;
+                for (size_t k = 0; k < sizeof VTTS_MS_DAY_PARTS / sizeof *VTTS_MS_DAY_PARTS && end < 0; k++)
+                    if (icase_at(s, n, q, VTTS_MS_DAY_PARTS[k])) { end = j + 3; h = val(s, i, hl[c]); mi = val(s, j + 1, 2); sec = -1; }
+            }
+#endif
         /* pt: (?<![\w:.,])Hh(?![\w]) */
         if (end < 0 && nh && x->k == VTTS_LT_PT && !WDC(i - 1) && !AT(i - 1, ':'))
             for (int c = 0; c < nh && end < 0; c++) {
@@ -681,7 +841,7 @@ static int phone_core(const uint32_t *s, int n, int q, int lo, int hi, int gmin,
  * optional (\d{2})\s? and has groups of 2-5 digits, 1-4 times; both | (?<![\d.,])0\d{2,}(?![\d]|[.,]\d) */
 static void p_phone(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
     const int pt = x->k == VTTS_LT_PT, hi = pt ? 5 : 4, gmin = pt ? 1 : 2;
-    const char *plus = x->k == VTTS_LT_ES ? "más" : x->k == VTTS_LT_ID ? "plus" : "mais";
+    const char *plus = x->k == VTTS_LT_ES ? "más" : x->k == VTTS_LT_ID ? "plus" : MS(x->k) ? "tambah" : "mais";
     for (int i = 0; i < n;) {
         int e = -1;
         if (!DG(i - 1) && (AT(i, '+') || DG(i) || (pt && AT(i, '(')))) {
@@ -728,6 +888,25 @@ static void money_out(const lt_t *x, lb_t *d, const uint32_t *num, int nn, const
                       const uint32_t *scale, int sn) {
     int one;
     put(d, ' ');
+#if VTTS_ENABLE_MS
+    if (MS(x->k)) { /* _ringgit: RM12.50 -> dua belas ringgit lima puluh sen */
+        int ie, f0;
+        ms_parse_number(num, nn, &ie, &f0);
+        if (!scale && f0 >= 0 && nn - f0 == 2 && strcmp(cur->one, "ringgit") == 0) {
+            int st, cents = val(num, f0, 2);
+            if (sig(num, ie, &st)) { card(x, d, num, ie); puts8(d, " ringgit "); }
+            if (cents) { card_i(x, d, cents); puts8(d, " sen"); }
+            put(d, ' ');
+            return;
+        }
+        ms_number(x, d, num, nn, 0);
+        if (scale) { put(d, ' '); putn(d, scale, sn); }
+        put(d, ' ');
+        puts8(d, cur->one);
+        put(d, ' ');
+        return;
+    }
+#endif
     if (x->k == VTTS_LT_ID) {
         number(x, d, num, nn, 0, 0, NULL);
         if (scale) { put(d, ' '); putn(d, scale, sn); }
@@ -768,6 +947,7 @@ static void money_out(const lt_t *x, lb_t *d, const uint32_t *num, int nn, const
 /* (CUR)\s?(NUM) [id: (\s?(?:ribu|juta|miliar|triliun))?; pt: (\s?(?:milhões|milhão|bilhões|bilhão|mil)(?![\w]))?] */
 static void p_money_before(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
     static const char *const ID_SCALES[] = {"ribu", "juta", "miliar", "triliun"};
+    static const char *const MS_SCALES[] = {"ribu", "juta", "bilion", "trilion"};
     static const char *const PT_SCALES[] = {"milhões", "milhão", "bilhões", "bilhão", "mil"};
     for (int i = 0; i < n;) {
         int e = -1, j = 0, k;
@@ -783,8 +963,8 @@ static void p_money_before(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
             const vtts_lt_reading *cur = &x->L->currency[k - 1];
             int sc0 = -1, sl = 0, end = e;
             if (x->k != VTTS_LT_ES) {
-                const char *const *SC = x->k == VTTS_LT_ID ? ID_SCALES : PT_SCALES;
-                int nsc = x->k == VTTS_LT_ID ? 4 : 5;
+                const char *const *SC = x->k == VTTS_LT_ID ? ID_SCALES : MS(x->k) ? MS_SCALES : PT_SCALES;
+                int nsc = IDL(x->k) ? 4 : 5;
                 for (int sp = SP(e); sp >= 0 && sc0 < 0; sp--)
                     for (int a = 0; a < nsc && sc0 < 0; a++) {
                         int l = key_at(s, n, e + sp, SC[a]);
@@ -804,11 +984,14 @@ static void p_money_after(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
     static const vtts_lt_reading ID_AFTER[] = {{"€", 0, 0}, {"£", 0, 0}, {"¥", 0, 0}, {"$", 0, 0}};
     keys_m m = {x->L->currency, x->L->n_currency, 0, 0, 0};
     if (x->k != VTTS_LT_ES) { m.keys = ID_AFTER; m.nk = x->k == VTTS_LT_ID ? 4 : 3; }
+#if VTTS_ENABLE_MS
+    if (MS(x->k)) { m.keys = VTTS_MS_CURRENCY_AFTER; m.nk = 4; }
+#endif
     for (int i = 0; i < n;) {
         if (!WDC(i - 1)) {
             int e = num_match(s, n, i, ok_keys, &m);
             if (e >= 0) {
-                money_out(x, d, s + i, e - i, currency(x, m.keys[m.key].key), NULL, 0);
+                money_out(x, d, s + i, e - i, MS(x->k) ? &m.keys[m.key] : currency(x, m.keys[m.key].key), NULL, 0);
                 i = m.end;
                 continue;
             }
@@ -816,6 +999,32 @@ static void p_money_after(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
         put(d, s[i++]);
     }
 }
+
+#if VTTS_ENABLE_MS
+static int ok_sen(const uint32_t *s, int n, int e, void *u) { /* \s?sen(?![\w]) */
+    int *end = u;
+    for (int sp = SP(e); sp >= 0; sp--)
+        if (key_at(s, n, e + sp, "sen") && !W(e + sp + 3)) { *end = e + sp + 3; return 1; }
+    return 0;
+}
+
+/* ms SEN: (?<![\w.,])(NUM)\s?sen(?![\w]) -> " number sen " */
+static void p_sen(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
+    for (int i = 0; i < n;) {
+        if (!WDC(i - 1)) {
+            int end = 0, e = num_match(s, n, i, ok_sen, &end);
+            if (e >= 0) {
+                put(d, ' ');
+                ms_number(x, d, s + i, e - i, 0);
+                puts8(d, " sen ");
+                i = end;
+                continue;
+            }
+        }
+        put(d, s[i++]);
+    }
+}
+#endif
 
 /* (?<![\w.,])(-?)(NUM)\s?% -> " number por ciento | persen | por cento " */
 static void p_percent(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
@@ -825,7 +1034,7 @@ static void p_percent(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
             if (e >= 0) {
                 put(d, ' ');
                 number(x, d, s + j, e - j, j > i, 0, NULL);
-                puts8(d, x->k == VTTS_LT_ES ? " por ciento " : x->k == VTTS_LT_ID ? " persen " : " por cento ");
+                puts8(d, x->k == VTTS_LT_ES ? " por ciento " : x->k == VTTS_LT_ID ? " persen " : MS(x->k) ? " peratus " : " por cento ");
                 i = end;
                 continue;
             }
@@ -843,10 +1052,10 @@ static void p_unit(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
             if (e >= 0) {
                 int one;
                 put(d, ' ');
-                if (x->k == VTTS_LT_ID) number(x, d, s + j, e - j, j > i, 0, &one);
+                if (IDL(x->k)) number(x, d, s + j, e - j, j > i, 0, &one);
                 else { if (j > i) puts8(d, "menos "); number(x, d, s + j, e - j, 0, 1, &one); }
                 put(d, ' ');
-                puts8(d, one || x->k == VTTS_LT_ID ? m.keys[m.key].one : m.keys[m.key].many);
+                puts8(d, one || IDL(x->k) ? m.keys[m.key].one : m.keys[m.key].many);
                 put(d, ' ');
                 i = m.end;
                 continue;
@@ -860,7 +1069,7 @@ static void p_unit(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
 static void p_ordinal(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
     static const char *const SUF[3] = {"º", "ª", "er"};
     for (int i = 0; i < n;) {
-        if (x->k == VTTS_LT_ID) {
+        if (IDL(x->k)) {
             if (!W(i - 1) && (AT(i, 'K') || AT(i, 'k')) && AT(i + 1, 'e')) {
                 int q = AT(i + 2, '-') && DG(i + 3) ? i + 3 : i + 2;
                 if (DG(q)) {
@@ -905,7 +1114,7 @@ static void p_range(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
                     if (!W(b0 + r2)) {
                         put(d, ' ');
                         card(x, d, s + i, r1);
-                        puts8(d, x->k == VTTS_LT_ID ? " sampai " : " a ");
+                        puts8(d, x->k == VTTS_LT_ID ? " sampai " : MS(x->k) ? " hingga " : " a ");
                         card(x, d, s + b0, r2);
                         put(d, ' ');
                         i = b0 + r2;
@@ -1085,8 +1294,12 @@ static void p_words(const lt_t *x, const uint32_t *s, int n, lb_t *d) {
 
 int vtts_lt_normalize(int lang, const uint32_t *in, int n, uint32_t *a, uint32_t *b, int cap, const uint32_t **out) {
     static const char *const *const DIGITS[3] = {VTTS_ES_ONES, VTTS_ID_ONES, VTTS_PT_ONES};
-    if (lang < 0 || lang > 2) return -1;
-    lt_t x = {&VTTS_LT_LANGS[lang], lang, DIGITS[lang]};
+    if (lang < 0 || lang > LT_LAST) return -1;
+#if VTTS_ENABLE_MS
+    lt_t x = {lt_lang(lang), lang, lang == VTTS_LT_MS ? VTTS_MS_ONES : DIGITS[lang]};
+#else
+    lt_t x = {lt_lang(lang), lang, DIGITS[lang]};
+#endif
     lb_t p = {a, 0, cap, 0}, q = {b, 0, cap, 0};
     putn(&p, in, n);
     if (p.err) return -1;
@@ -1102,11 +1315,17 @@ int vtts_lt_normalize(int lang, const uint32_t *in, int n, uint32_t *a, uint32_t
     PASS(p_drop);
     PASS(p_date_iso);
     PASS(p_date_dmy);
+#if VTTS_ENABLE_MS
+    if (lang == VTTS_LT_MS) PASS(p_date_abbr);
+#endif
     PASS(p_time);
     PASS(p_phone);
     if (lang == VTTS_LT_PT) PASS(p_parens);
     PASS(p_money_before);
     PASS(p_money_after);
+#if VTTS_ENABLE_MS
+    if (lang == VTTS_LT_MS) PASS(p_sen);
+#endif
     PASS(p_percent);
     PASS(p_unit);
     PASS(p_ordinal);
@@ -1114,7 +1333,7 @@ int vtts_lt_normalize(int lang, const uint32_t *in, int n, uint32_t *a, uint32_t
     PASS(p_pause);
     PASS(p_code);
     PASS(p_number);
-    if (lang == VTTS_LT_ID) PASS(p_redup);
+    if (IDL(lang)) PASS(p_redup);
     PASS(p_symbols);
     PASS(p_acronym);
     PASS(p_lower);
@@ -1197,7 +1416,7 @@ static int foreign(const vtts_lt_lang *L, const char *w, int n) {
 
 /* valid_spelling of a lower-case ASCII word (w is modified; t is scratch of n + 1 chars) */
 static int valid_spelling(int lang, char *w, int n, char *t) {
-    const vtts_lt_lang *L = &VTTS_LT_LANGS[lang];
+    const vtts_lt_lang *L = lt_lang(lang);
     if (lang == VTTS_LT_ES) {
         memcpy(t, w, (size_t)n);
         int tn = replace_all(t, n, "desh", "dez");
@@ -1211,7 +1430,7 @@ static int valid_spelling(int lang, char *w, int n, char *t) {
         n = digraphs(L, w, n);
         return clusters(L, w, n, 1);
     }
-    if (lang == VTTS_LT_ID) {
+    if (IDL(lang)) { /* ms: the same check with gh and dh as one letter (L->digraphs) */
         for (int k = 0; k < n; k++)
             if (w[k] == 'c' && (k + 1 == n || !lt_vowel(w[k + 1]))) return 0;
         int ee = n >= 3 && (memcmp(w, "kee", 3) == 0 || memcmp(w, "see", 3) == 0);
@@ -1240,7 +1459,8 @@ static int plain_latin(const uint32_t *w, int n) {
 }
 
 int vtts_lt_word_lang(int lang, const uint32_t *w, int n) {
-    const vtts_lt_lang *L = &VTTS_LT_LANGS[lang];
+    if (lang < 0 || lang > LT_LAST) return -1;
+    const vtts_lt_lang *L = lt_lang(lang);
     char low[128], part[128], t[128];
     if (n <= 0) return -1;
     for (int i = 0; i < n; i++) if (in_u8(w[i], L->own)) return 1;
@@ -1283,7 +1503,7 @@ static uint32_t fold1(const vtts_lt_lang *L, int lang, uint32_t c) {
     if (c < 0x80) {
         if (c >= 'A' && c <= 'Z') return c + 32;
         if (c >= 'a' && c <= 'z') return c;
-        return lang == VTTS_LT_ID && c == '\'' ? c : 0;
+        return IDL(lang) && c == '\'' ? c : 0;
     }
     int lo = 0, hi = L->n_fold - 1, k = -1;
     while (lo <= hi) {
@@ -1436,6 +1656,7 @@ static void es_phonemes(emit_t *e, const uint32_t *word, int wn, uint32_t *w, se
 
 static void id_phonemes(emit_t *e, const uint32_t *word, int wn, uint32_t *w, uint32_t *t, seg_t *S) {
     const vtts_lt_lang *L = e->L;
+    const int malay = MS(VTTS_LT_MS) && L->code[0] == 'm'; /* g2p_ms: rule_phonemes(..., malay=True) */
     int n = fold_word(L, VTTS_LT_ID, word, wn, w), ns = 0, explicit_ = 0, tn = -1;
     const char *r = override(L, w, n);
     if (r) { tn = u8_decode(r, t, VTTS_LT_MAXW); explicit_ = 1; }
@@ -1466,6 +1687,29 @@ static void id_phonemes(emit_t *e, const uint32_t *word, int wn, uint32_t *w, ui
     for (int i = 0; i < n;) {
         uint32_t c = w[i], nx = AT_(i + 1);
         char one[4] = {0};
+#if VTTS_ENABLE_MS
+        if (malay) { /* Malay digraphs (gh dh th sh ch too) and letter sounds (q k, sh sy, ch c) */
+            const char *snd = NULL;
+            int two = 0;
+            one[0] = (char)c;
+            one[1] = (char)nx;
+            for (size_t k = 0; c < 0x80 && nx && nx < 0x80 && k < sizeof VTTS_MS_DIGRAPH_SOUNDS / sizeof *VTTS_MS_DIGRAPH_SOUNDS; k++)
+                if (!strcmp(one, VTTS_MS_DIGRAPH_SOUNDS[k])) two = 1;
+            if (!two) one[1] = 0;
+            for (size_t k = 0; c < 0x80 && k < sizeof VTTS_MS_LETTER_SOUNDS / sizeof *VTTS_MS_LETTER_SOUNDS; k++)
+                if (!strcmp(one, VTTS_MS_LETTER_SOUNDS[k][0])) { snd = VTTS_MS_LETTER_SOUNDS[k][1]; break; }
+            if (two) { seg(S, &ns, 'C', snd ? snd : one); i += 2; continue; }
+            if (c == 'a' || c == 'i' || c == 'u' || c == 'o') seg(S, &ns, 'V', one);
+            else if (c == 0xE9) seg(S, &ns, 'V', "e");
+            else if (c == 'e') seg(S, &ns, 'V', "E");
+            else if (c == '\'') seg(S, &ns, 'C', "?");
+            else if (c == 'x') { if (i) seg(S, &ns, 'C', "k"); seg(S, &ns, 'C', "s"); }
+            else if (i && c == w[i - 1] && !in_u8(c, VTTS_ID_VOWELS) && !(i >= 2 && w[i - 2] == 'n' && w[i - 1] == 'g')) { }
+            else seg(S, &ns, 'C', snd ? snd : one);
+            i++;
+            continue;
+        }
+#endif
         if ((c == 'n' && (nx == 'g' || nx == 'y')) || (c == 's' && nx == 'y') || (c == 'k' && nx == 'h')) {
             one[0] = (char)c;
             one[1] = (char)nx;
@@ -1489,7 +1733,9 @@ static void id_phonemes(emit_t *e, const uint32_t *word, int wn, uint32_t *w, ui
     int kese = eq_u8(w, n, "ke") || eq_u8(w, n, "se");
     for (int k = 0; k < ns; k++) {
         if (S[k].kind != 'V' || strcmp(S[k].ph, "E") != 0) continue;
-        if (explicit_ || kese) { strcpy(S[k].ph, "@"); continue; }
+        int prefix = malay && k == 1 && n >= 3 && (w[0] == 'k' || w[0] == 's') && w[1] == 'e' &&
+                     (w[2] == 'a' || w[2] == 'i' || w[2] == 'o' || w[2] == 'u'); /* seorang, keadaan */
+        if (explicit_ || kese || prefix) { strcpy(S[k].ph, "@"); continue; }
         int next_v = (k > 0 && S[k - 1].kind == 'V') || (k + 1 < ns && S[k + 1].kind == 'V');
         int last = k == lastv, open_end = last && k + 1 == ns, closed_end = last && k + 1 < ns && strcmp(S[ns - 1].ph, "r") != 0;
         strcpy(S[k].ph, next_v || open_end || closed_end ? "e" : "@");
@@ -1656,8 +1902,8 @@ static void pt_phonemes(emit_t *e, const uint32_t *word, int wn, uint32_t *w, se
 
 /* word_tokens_es / _id / _pt */
 int vtts_lt_word_ids(int lang, const uint32_t *w, int n, uint32_t *scratch, uint8_t *out, int cap) {
-    if (lang < 0 || lang > 2) return 0;
-    const vtts_lt_lang *L = &VTTS_LT_LANGS[lang];
+    if (lang < 0 || lang > LT_LAST) return 0;
+    const vtts_lt_lang *L = lt_lang(lang);
     uint32_t *f1 = scratch, *f2 = scratch + VTTS_LT_MAXW, *f3 = scratch + 2 * VTTS_LT_MAXW;
     seg_t *S = (seg_t *)(void *)(scratch + 3 * VTTS_LT_MAXW), *O = S + VTTS_LT_MAXW;
     emit_t e = {L, out, 0, cap};
@@ -1666,7 +1912,7 @@ int vtts_lt_word_ids(int lang, const uint32_t *w, int n, uint32_t *scratch, uint
     for (int i = 0; i < n1; i++) {
         uint32_t c = f1[i];
         vowel |= lang == VTTS_LT_ES ? in_u8(c, VTTS_ES_VOWELS) || c == 'y'
-               : lang == VTTS_LT_ID ? in_u8(c, VTTS_ID_VOWELS)
+               : IDL(lang) ? in_u8(c, VTTS_ID_VOWELS)
                                     : pt_vl(c) || c == 'y';
     }
     if (n1 && !vowel) { /* spelled letter by letter */
@@ -1684,7 +1930,7 @@ int vtts_lt_word_ids(int lang, const uint32_t *w, int n, uint32_t *scratch, uint
                 piece[l] = 0;
                 pn = u8_decode(piece, pc, 32);
                 if (lang == VTTS_LT_ES) es_phonemes(&e, pc, pn, f2, S);
-                else if (lang == VTTS_LT_ID) id_phonemes(&e, pc, pn, f2, f3, S);
+                else if (IDL(lang)) id_phonemes(&e, pc, pn, f2, f3, S);
                 else pt_phonemes(&e, pc, pn, f2, S, O);
                 name += l;
             }
@@ -1692,7 +1938,9 @@ int vtts_lt_word_ids(int lang, const uint32_t *w, int n, uint32_t *scratch, uint
         return e.n;
     }
     if (lang == VTTS_LT_ES) es_phonemes(&e, w, n, f2, S);
-    else if (lang == VTTS_LT_ID) id_phonemes(&e, w, n, f2, f3, S);
+    else if (IDL(lang)) id_phonemes(&e, w, n, f2, f3, S);
     else pt_phonemes(&e, w, n, f2, S, O);
     return e.n;
 }
+
+#endif /* VTTS_ENABLE_LT */

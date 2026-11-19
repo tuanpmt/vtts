@@ -1,0 +1,9 @@
+@@ -5,7 +5,7 @@
+ from vtts.data.mixed import ID_PREFIX, TEMPLATE_DIR, load_templates, mixed_rows
+ from vtts.data.wiki_corpus import LATIN_LETTERS
+ 
+-LANGS = ("es", "id", "pt", "th", "hi")
++LANGS = ("es", "id", "pt", "th", "hi", "nl", "sv", "no")
+ PLAIN = {
+     **{lang: re.compile(rf"^[{letters} ,.?!¿¡\-]+$") for lang, letters in LATIN_LETTERS.items()},
+     "th": re.compile(r"^[ก-ฮะ-ฺเ-๎ ]+$"),

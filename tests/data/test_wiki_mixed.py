@@ -3,14 +3,20 @@ import re
 import pytest
 
 from vtts.data.mixed import ID_PREFIX, TEMPLATE_DIR, load_templates, mixed_rows
-from vtts.data.wiki_corpus import LATIN_LETTERS
+from vtts.data.wiki_corpus import APOSTROPHE, LATIN_LETTERS
 
-LANGS = ("es", "id", "pt", "th", "hi")
+LANGS = ("es", "id", "pt", "th", "hi", "fr", "de", "it", "tr", "ru", "pl", "ar", "fi", "el", "ms", "tl", "sw", "nl", "sv", "no")
+JOINS = {lang: "'" for lang in APOSTROPHE}  # it: l'app, dell'ufficio
 PLAIN = {
-    **{lang: re.compile(rf"^[{letters} ,.?!¿¡\-]+$") for lang, letters in LATIN_LETTERS.items()},
+    **{lang: re.compile(rf"^[{letters} ,.?!¿¡\-{JOINS.get(lang, '')}]+$")
+       for lang, letters in LATIN_LETTERS.items()},
     "th": re.compile(r"^[ก-ฮะ-ฺเ-๎ ]+$"),
     "hi": re.compile(r"^[ऀ-ॣॱ-ॿ ,.?!]+$"),
+    "ru": re.compile(r"^[а-яА-ЯёЁ ,.?!\-]+$"),
+    "ar": re.compile(r"^[\u0621-\u063a\u0640-\u064a ،.؟!]+$"),
 }
+PLAIN["el"] = re.compile(rf"^[{LATIN_LETTERS['el']} ,.;!\-]+$")
+PLAIN["fr"] = re.compile(rf"^[{LATIN_LETTERS['fr']} ,.?!'\-]+$")  # elision: l'école
 AVAILABLE = [lang for lang in LANGS if (TEMPLATE_DIR / f"templates_{lang}.txt").exists()]
 
 
@@ -20,10 +26,10 @@ def test_templates_one_slot_plain_text(lang):
     assert 60 <= len(temps) <= 100 and len(set(temps)) == len(temps)
     for t in temps:
         assert t.count("{T}") == 1, t
-        assert PLAIN[lang].match(t.replace("{T}", "x" if lang in LATIN_LETTERS else "")), t
+        assert PLAIN[lang].match(t.replace("{T}", "x" if lang in LATIN_LETTERS and lang != "el" else "")), t
         assert "  " not in t and t == t.strip(), t
         if lang != "th":
-            assert t[-1] in ".?!", t
+            assert t[-1] in (".;!" if lang == "el" else ".?!؟"), t
         if lang == "es":
             assert ("¿" in t) == ("?" in t), t
 

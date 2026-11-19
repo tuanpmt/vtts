@@ -4,6 +4,8 @@
 #define VTTS_TEXT_TABLES_H
 #include <stdint.h>
 
+#include "vtts_langs.h" /* VTTS_ENABLE_ES, _ID, _PT: rows of VTTS_LT_LANGS */
+
 #define VTTS_PHONEME_SET_VERSION "1"
 typedef struct { uint32_t cp; char code; uint8_t tone; } vtts_letter;
 static const vtts_letter VTTS_LETTERS[242] = {
@@ -2868,6 +2870,7 @@ static const struct { uint32_t cp; char base; uint8_t accent; } VTTS_PT_BASE[] =
 #define VTTS_PT_N_BASE 12
 
 static const vtts_lt_lang VTTS_LT_LANGS[3] = {  /* es, id, pt */
+#if VTTS_ENABLE_ES
     {"es", 107, 31, 138, VTTS_ES_TOKENS, VTTS_ES_ABBREV, 23,
      "“”‘’\"«»()[]{}<>¿¡*_~|", VTTS_ES_LETTERS, 27, VTTS_ES_ACRONYM_WORDS, 20,
      VTTS_ES_UNITS, 27, VTTS_ES_CURRENCY, 5, VTTS_ES_SYMBOLS, 8,
@@ -2877,6 +2880,10 @@ static const vtts_lt_lang VTTS_LT_LANGS[3] = {  /* es, id, pt */
      VTTS_ES_FOLD, 282, VTTS_ES_ONSETS, 16, VTTS_ES_CODAS, 20,
      VTTS_ES_FINALS, 9, VTTS_ES_DOUBLES, 7, VTTS_ES_FOREIGN, 9,
      VTTS_ES_DIGRAPHS, 4},
+#else
+    {0},
+#endif
+#if VTTS_ENABLE_ID
     {"id", 107, 34, 141, VTTS_ID_TOKENS, VTTS_ID_ABBREV, 21,
      "“”‘’\"«»()[]{}<>¿¡*_~|", VTTS_ID_LETTERS, 26, VTTS_ID_ACRONYM_WORDS, 12,
      VTTS_ID_UNITS, 26, VTTS_ID_CURRENCY, 7, VTTS_ID_SYMBOLS, 8,
@@ -2886,6 +2893,10 @@ static const vtts_lt_lang VTTS_LT_LANGS[3] = {  /* es, id, pt */
      VTTS_ID_FOLD, 260, VTTS_ID_ONSETS, 23, VTTS_ID_CODAS, 15,
      VTTS_ID_FINALS, 19, VTTS_ID_DOUBLES, 5, VTTS_ID_FOREIGN, 11,
      VTTS_ID_DIGRAPHS, 4},
+#else
+    {0},
+#endif
+#if VTTS_ENABLE_PT
     {"pt", 107, 43, 150, VTTS_PT_TOKENS, VTTS_PT_ABBREV, 20,
      "“”‘’\"«»[]{}<>¿¡*_~|", VTTS_PT_LETTERS, 26, VTTS_PT_ACRONYM_WORDS, 17,
      VTTS_PT_UNITS, 26, VTTS_PT_CURRENCY, 6, VTTS_PT_SYMBOLS, 8,
@@ -2895,6 +2906,9 @@ static const vtts_lt_lang VTTS_LT_LANGS[3] = {  /* es, id, pt */
      VTTS_PT_FOLD, 276, VTTS_PT_ONSETS, 18, VTTS_PT_CODAS, 16,
      VTTS_PT_FINALS, 8, VTTS_PT_DOUBLES, 5, VTTS_PT_FOREIGN, 9,
      VTTS_PT_DIGRAPHS, 8},
+#else
+    {0},
+#endif
 };
 
 #endif

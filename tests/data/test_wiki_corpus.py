@@ -50,11 +50,38 @@ def test_accept_indonesian_reduplication_and_reject():
     assert not accept("Kota ini adalah tempat yang sangat indah dan ramai.-", "id")
 
 
+def test_accept_german():
+    assert accept("Die Stadt liegt am Ufer des Rheins und hat einen großen Hafen.", "de")
+    assert accept("Weißt du, wo der nächste Bahnhof ist?", "de")
+    assert not accept("Die Stadt hat z. B. einen großen Hafen am Fluss.", "de")
+    assert not accept("Die Stadt wurde im Jahr 1241 erstmals urkundlich erwähnt.", "de")
+    assert not accept("Er war Mitglied der SPD und des Bundestages bis zum Tod.", "de")
+    assert split_sentences("Er kam. Sie ging.", "de") == ["Er kam.", "Sie ging."]
+
+
 def test_accept_portuguese():
     assert accept("O Brasil é o maior país da América do Sul em área.", "pt")
     assert accept("Você pode me dizer onde fica a estação de trem?", "pt")
     assert not accept("¿Você pode me dizer onde fica a estação de trem?", "pt")
     assert not accept("A cidade de Madrid é famosa pelo museu del Prado, señor.", "pt")
+
+
+def test_accept_italian_elision_and_reject():
+    assert accept("L'Italia è una repubblica parlamentare dell'Europa meridionale.", "it")
+    assert accept("Perché la città è così famosa nel mondo intero?", "it")
+    assert not accept("Il XX secolo fu un periodo di grandi cambiamenti.", "it")
+    assert not accept("La chiesa fu costruita nel 1350 dai monaci.", "it")
+    assert not accept("Il libro fu scritto da un autore dell'ONU molto noto.", "it")
+    assert not accept("La regione è famosa per vini, formaggi, salumi, ecc.", "it")
+    assert not accept("Il paese si trova in una valle molto bella, un po'.", "it")
+
+
+def test_accept_turkish_suffix_apostrophe_and_reject():
+    assert accept("Türkiye'nin en kalabalık şehri İstanbul'dur ve çok güzeldir.", "tr")
+    assert accept("Ilık bir rüzgâr şehrin üzerinden hafifçe esiyordu.", "tr")
+    assert not accept("Ankara ABD ile ilişkilerini geliştirdi ve anlaşma yaptı.", "tr")
+    assert not accept("Şehir 1923 yılında başkent ilan edildi ve büyüdü.", "tr")
+    assert not accept("Bu konuda birçok kitap, dergi, makale vb. yazıldı.", "tr")
 
 
 @pytest.mark.parametrize("s", [
@@ -107,6 +134,21 @@ def test_hindi_danda_and_accept():
     assert not accept("भारत एक देश है.", "hi")
 
 
+def test_arabic_split_and_accept():
+    parts = split_sentences("ذهب الولد إلى المدرسة صباحا. هل تعرف أين يقع المسجد الكبير؟ نعم!", "ar")
+    assert parts == ["ذهب الولد إلى المدرسة صباحا.", "هل تعرف أين يقع المسجد الكبير؟", "نعم!"]
+    assert accept("ذهب الولد إلى المدرسة في الصباح الباكر.", "ar")
+    assert accept("هل تعرف أين يقع المسجد الكبير في المدينة؟", "ar")
+    assert accept("كتب الشاعر قصيدة طويلة عن البحر، ثم نشرها.", "ar")
+    assert not accept("ذهب الولد إلى المدرسة في الصباح الباكر", "ar")
+    assert not accept("ولد في عام 1947 في القاهرة المصرية.", "ar")
+    assert not accept("ولد في عام ١٩٤٧ في القاهرة المصرية.", "ar")
+    assert not accept("قال إن NASA أطلقت الصاروخ أمس.", "ar")
+    assert not accept("قال إن الوكالة (ناسا) أطلقت الصاروخ.", "ar")
+    assert not accept("هذا كتاب جميل.", "ar")
+    assert seconds("ذَهَبَ الولد إلى المدرسة.", "ar") == 18 / 9.5  # letters, not vowel marks
+
+
 def test_thai_joins_chunks_into_utterances():
     a = "ประเทศไทยเป็นประเทศที่ตั้งอยู่ในเอเชียตะวันออกเฉียงใต้"   # 52
     b = "มีประชากรประมาณหกสิบหกล้านคน"                              # 28
@@ -141,13 +183,40 @@ def test_thai_accept():
 
 
 
+def test_accept_russian():
+    assert accept("Москва является столицей Российской Федерации и крупнейшим городом страны.", "ru")
+    assert accept("Ты знаешь, где находится ближайшая станция метро?", "ru")
+    assert accept("Он родился в семье учителя и с детства любил читать книги.", "ru")
+    assert not accept("В 1990 году он переехал в Москву и начал работать.", "ru")
+    assert not accept("Он работал в СССР и в других странах Восточной Европы.", "ru")
+    assert not accept("Это был, т. е. оказался, хороший человек и верный друг.", "ru")
+    assert not accept("Город стоит на берегу реки (притока Волги) в центре области.", "ru")
+    assert not accept("Он работал в Berlin и в других городах Европы.", "ru")
+    assert not accept("Москва является столицей Российской Федерации", "ru")
+
+
+def test_accept_polish():
+    assert accept("Warszawa jest stolicą Polski i największym miastem w kraju.", "pl")
+    assert accept("Czy wiesz, gdzie jest najbliższa stacja metra?", "pl")
+    assert not accept("W 1990 roku przeprowadził się do Krakowa i zaczął pracę.", "pl")
+    assert not accept("Pracował w PKP i w innych firmach przez wiele lat.", "pl")
+    assert not accept("Był to dobry człowiek, tzw. przyjaciel całej rodziny.", "pl")
+    assert not accept("Miasto leży nad rzeką Москва w środkowej części kraju.", "pl")
+
+
 @pytest.mark.parametrize("text,lang,n", [
     ("Hola amigo.", "es", 5),                     # ho-la a-mi-go
     ("Bom dia, João.", "pt", 3),                   # vowel groups: o, ia, oão (hiatus undercounted)
     ("Selamat pagi.", "id", 5),
+    ("Bonjour, l'école.", "fr", 5),                # o, ou, é, o, e (final e counted)
+    ("Guten Morgen, Bäcker.", "de", 6),            # gu-ten mor-gen bä-cker
+    ("Ciao, l'acqua è buona.", "it", 6),            # vowel groups: iao, a, ua, è, uo, a
+    ("Dağ yolu, İstanbul'a.", "tr", 7),            # a, o, u, İ, a, u, a
     ("भारत देश", "hi", 5),                         # भा र त दे श
     ("क्या", "hi", 1),                              # क् + या
     ("สวัสดีครับ", "th", 7),                         # spacing chars ส ว ส ด ค ร บ
+    ("Россия, привет.", "ru", 5),                   # every vowel letter: Ро-сси-я при-вет
+    ("Ciasto i dziecko.", "pl", 5),                 # cia-sto i dzie-cko: softening i not counted
 ])
 def test_unit_count(text, lang, n):
     assert unit_count(text, lang) == n
@@ -155,3 +224,68 @@ def test_unit_count(text, lang, n):
 
 def test_seconds_uses_rate():
     assert seconds("Hola amigo.", "es") == 5 / RATE["es"]
+
+
+def test_dutch_swedish_norwegian_sentences():
+    assert accept("Het is een mooie dag in België, zei hij.", "nl")
+    assert not accept("Het is een mooie dag in België, zei J. Jansen.", "nl")  # initial
+    assert not accept("Hij woonde o.a. in Utrecht en in Leiden.", "nl")
+    assert not accept("Het kost bijv. tien euro.", "nl") and not accept("Het jaar 1999 was koud.", "nl")
+
+
+def test_french_accept():
+    assert accept("L'Europe est un continent très peuplé et riche en histoire.", "fr")
+    assert accept("La ville de Saint-Étienne est située dans la Loire.", "fr")
+    assert split_sentences("Qui est-ce que tu as vu hier soir au marché ?", "fr") == [
+        "Qui est-ce que tu as vu hier soir au marché?"]
+    assert split_sentences("Aujourd’hui, les enfants vont à l’école en bus.", "fr") == [
+        "Aujourd'hui, les enfants vont à l'école en bus."]
+    assert not accept("Le roi Louis XIV régna sur la France pendant longtemps.", "fr")
+    assert not accept("La ville compte 2 000 habitants et une grande église.", "fr")
+    assert not accept("Il est né au XIXe siècle dans une petite ville.", "fr")
+    assert not accept("Les fruits, les légumes, les fleurs, etc.", "fr")
+
+
+def test_accept_finnish():
+    assert accept("Helsinki on Suomen pääkaupunki ja suurin kaupunki.", "fi")
+    assert accept("Tiedätkö, missä lähin rautatieasema on tässä kaupungissa?", "fi")
+    assert not accept("Kaupungissa on paljon puistoja, kirjastoja jne.", "fi")
+    assert not accept("Hän syntyi vuonna 1950 Helsingissä ja kuoli myöhemmin.", "fi")
+    assert not accept("Yhtiön pääkonttori on Helsingissä, ja sen omistaa YLE.", "fi")
+    assert seconds("Helsinki on Suomen pääkaupunki.", "fi") == unit_count("Helsinki on Suomen pääkaupunki.", "fi") / RATE["fi"]
+
+
+def test_accept_greek():
+    parts = split_sentences("Η Αθήνα είναι η πρωτεύουσα της Ελλάδας. Πού είναι το σπίτι σου; Έλα εδώ!", "el")
+    assert parts == ["Η Αθήνα είναι η πρωτεύουσα της Ελλάδας.", "Πού είναι το σπίτι σου;", "Έλα εδώ!"]
+    assert accept("Η Αθήνα είναι η πρωτεύουσα και μεγαλύτερη πόλη της Ελλάδας.", "el")
+    assert accept("Πού βρίσκεται ο σταθμός του τρένου της πόλης;", "el")
+    assert split_sentences("Πού είναι ο σταθμός; Εδώ.", "el") == ["Πού είναι ο σταθμός;", "Εδώ."]
+    assert not accept("Υπάρχουν πολλά είδη, όπως πουλιά, ψάρια κλπ.", "el")
+    assert not accept("Η πόλη ιδρύθηκε το 1834 από τον βασιλιά Όθωνα.", "el")
+    assert not accept("Η πόλη είναι γνωστή για τα μνημεία της· ιδίως την Ακρόπολη.", "el")
+    assert not accept("Η πόλη είναι η πρωτεύουσα της Ελλάδας", "el")
+def test_accept_malay():
+    assert accept("Kuala Lumpur ialah ibu negara Malaysia yang paling besar.", "ms")
+    assert not accept("Kota ini mempunyai banyak taman, muzium, dll.", "ms")
+    assert not accept("Beliau dilahirkan pada tahun 1957 di Kuala Lumpur.", "ms")
+    assert not accept("Syarikat itu berpusat di Jln. Ampang, Kuala Lumpur.", "ms")
+    assert RATE["ms"] == 5.5
+
+
+def test_accept_tagalog_contractions():
+    assert accept("Ang bahay ay may dalawampu't limang silid sa loob.", "tl")
+    assert accept("Ang bahay ay may dalawampu’t limang silid sa loob.".replace("’", "'"), "tl")
+    assert split_sentences("Ito’y isang bayan sa lalawigan ng Batangas.", "tl") == [
+        "Ito'y isang bayan sa lalawigan ng Batangas."]
+    assert not accept("Ang bahay ay may 'di limang silid sa loob.", "tl")
+    assert not accept("Ang bahay ay may dalawampu't limang silid sa loob.", "ms")
+    assert not accept("Ipinanganak siya noong 1990 sa Maynila, Pilipinas.", "tl")
+
+
+def test_accept_swahili_ng_apostrophe():
+    assert accept("Ng'ombe wa Juma ni mkubwa sana kuliko wote.", "sw")
+    assert split_sentences("Ng’ombe wa Juma ni mkubwa sana kuliko wote.", "sw") == [
+        "Ng'ombe wa Juma ni mkubwa sana kuliko wote."]
+    assert not accept("Kumi na mbili n'go wa Juma ni mkubwa sana.", "sw")
+    assert not accept("Alizaliwa mwaka 1990 katika mji wa Nairobi.", "sw")

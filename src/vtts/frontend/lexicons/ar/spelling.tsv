@@ -1,0 +1,32 @@
+# Arabic words whose usual spelling hides a long vowel or has a silent letter, with a vowelled
+# spelling that reads right (dagger alif ٰ = aa). Applied to the bare word (also after the
+# proclitics و ف ب ك ل) whether or not the text has vowel marks. Hand-written.
+# See docs/frontend/pronunciation-rules.md.
+هذا	هٰذَا
+هذه	هٰذِه
+هذان	هٰذَان
+هذين	هٰذَيْن
+هكذا	هٰكَذَا
+هؤلاء	هٰؤُلَاء
+ذلك	ذٰلِك
+ذلكم	ذٰلِكُم
+لكن	لٰكِنْ
+لكنه	لٰكِنَّه
+لكنها	لٰكِنَّهَا
+لكنهم	لٰكِنَّهُم
+أولئك	أُلٰئِك
+أولو	أُلُو
+أولي	أُلِي
+الله	اللّٰه
+لله	لِلّٰه
+إله	إِلٰه
+الإله	الْإِلٰه
+الرحمن	الرَّحْمٰن
+رحمن	رَحْمٰن
+عمرو	عَمْر
+مائة	مِئَة
+مائتين	مِئَتَيْن
+مائتان	مِئَتَان
+داود	دَاوُود
+طه	طٰهٰ
+إسحاق	إِسْحَاق

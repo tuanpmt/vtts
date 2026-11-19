@@ -4,6 +4,9 @@
  * tones (mirrors src/vtts/frontend/th/g2p_th.py), and normalization (mirrors
  * src/vtts/frontend/th/normalize_th.py). All tables are in the generated vtts_text_th_tables.h
  * (Thai letters coded as code point - 0x0E00); no blob is needed. */
+#include "vtts_langs.h"
+#if VTTS_ENABLE_TH /* else an empty unit (vtts_langs.h) */
+
 #include "vtts_text_th.h"
 
 #include <string.h>
@@ -1319,3 +1322,5 @@ int vtts_th_normalize(const uint32_t *in, int n, uint32_t *a, uint32_t *b, int c
     *out = x.p;
     return x.n;
 }
+
+#endif /* VTTS_ENABLE_TH */

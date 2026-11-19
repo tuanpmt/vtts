@@ -1,0 +1,50 @@
+{"id": "ood_pl_device_00", "text": "W salonie zgasło światło.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_01", "text": "Oczyszczacz powietrza działa w trybie automatycznym.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_02", "text": "Tylne drzwi nie są zamknięte, czy mam je zamknąć?", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_03", "text": "Ściszyłem głośnik w kuchni.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_04", "text": "Pralka skończy pracę za dwadzieścia minut.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_05", "text": "Klimatyzacja w sypialni włączy się o siódmej rano.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_06", "text": "Odkurzacz wrócił do stacji i się ładuje.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_07", "text": "Bateria telefonu jest prawie rozładowana, podłącz ładowarkę.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_08", "text": "Budzik na jutro jest ustawiony na wpół do siódmej.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_device_09", "text": "Czajnik już się zagotował, możesz zrobić herbatę.", "group": "device", "lang": "pl"}
+{"id": "ood_pl_numbers_00", "text": "Jest teraz 15:45.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_01", "text": "Spotkanie jest zaplanowane na 15.12.2026 o 9:30.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_02", "text": "Łączny koszt wynosi 1250 zł.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_03", "text": "Dzisiaj będzie do 32 stopni.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_04", "text": "Zadzwoń pod numer 600 123 456, żeby się umówić.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_05", "text": "75% studentów zdało egzamin.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_06", "text": "Mieszkam na trzecim piętrze, w mieszkaniu numer 21.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_07", "text": "Miasto ma 2 500 000 mieszkańców.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_08", "text": "Pociąg pokonuje 120 km w niecałą godzinę.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_numbers_09", "text": "Do wakacji zostały 22 dni.", "group": "numbers", "lang": "pl"}
+{"id": "ood_pl_names_00", "text": "Maria i Jan jadą w przyszłym miesiącu do Gdańska.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_01", "text": "Piotr Nowak wygrał bieg w Poznaniu.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_02", "text": "Wisława Szymborska i Czesław Miłosz dostali Nagrodę Nobla.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_03", "text": "Latem pojedziemy z Agnieszką nad morze.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_04", "text": "Fryderyk Chopin urodził się w Żelazowej Woli.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_05", "text": "Katarzyna pracuje jako lekarka we Wrocławiu.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_06", "text": "Mikołaj Kopernik mieszkał we Fromborku.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_07", "text": "Mój przyjaciel Tomasz mieszka w Szczecinie.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_08", "text": "Maria Skłodowska-Curie urodziła się w Warszawie.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_names_09", "text": "Magda i Paweł wzięli ślub w Zakopanem.", "group": "names", "lang": "pl"}
+{"id": "ood_pl_questions_00", "text": "Która jest teraz godzina?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_01", "text": "Wiesz, gdzie jest najbliższa apteka?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_02", "text": "Ile kosztuje bilet do Krakowa?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_03", "text": "Dlaczego dzisiaj jest tak zimno?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_04", "text": "Czy mogę prosić o jeszcze jedną herbatę?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_05", "text": "O której zaczyna się film?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_06", "text": "Co robisz w sobotę?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_07", "text": "Jak dojść na dworzec?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_08", "text": "Zjadłeś już śniadanie?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_questions_09", "text": "Kto zostawił otwarte drzwi?", "group": "questions", "lang": "pl"}
+{"id": "ood_pl_long_00", "text": "Jeśli jutro będzie ładna pogoda, pojedziemy za miasto, pospacerujemy po lesie i wrócimy do domu na kolację.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_01", "text": "Wczoraj wieczorem długo siedzieliśmy w kuchni, piliśmy herbatę z konfiturą i wspominaliśmy wakacje nad morzem.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_02", "text": "Żeby ugotować prawdziwy barszcz, trzeba przygotować wywar, pokroić buraki i długo gotować wszystko na małym ogniu.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_03", "text": "Kiedy byłem mały, babcia w każdą niedzielę piekła szarlotkę, a cały dom pachniał świeżym ciastem.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_04", "text": "Wiosną w naszym parku kwitną jabłonie i w soboty spaceruje tam mnóstwo ludzi z dziećmi i psami.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_05", "text": "Mój brat studiuje na drugim roku i marzy o tym, żeby po studiach popracować za granicą.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_06", "text": "Jeśli spóźnicie się na ostatni autobus, trzeba będzie wezwać taksówkę albo iść pieszo przez całe miasto.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_07", "text": "Zimą w górach bywa bardzo zimno, ale miejscowi są przyzwyczajeni i nie rezygnują ze spacerów.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_08", "text": "Nauczycielka poprosiła uczniów, żeby przeczytali opowiadanie do poniedziałku i napisali krótkie wypracowanie.", "group": "long", "lang": "pl"}
+{"id": "ood_pl_long_09", "text": "Długo wybieraliśmy prezent dla mamy i w końcu kupiliśmy jej piękny szal i bilety do teatru.", "group": "long", "lang": "pl"}

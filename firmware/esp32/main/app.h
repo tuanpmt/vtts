@@ -49,6 +49,8 @@ typedef struct {
     int has_zh;
     vtts_jlex ja;       /* Japanese readings and NFKC data (JLEX blob in flash), for ja-en models */
     int has_ja;
+    vtts_rlex ru;       /* Russian stress tables (RLEX blob in flash), for ru-en models */
+    int has_ru;
     /* text mode per model, from its token set (vtts_text_default_lang, console `lang`);
      * -1: the token set has no device front-end (unknown): only `ids` */
     int lang[2];
@@ -69,6 +71,10 @@ extern const uint8_t lex_zh_end[] asm("_binary_lex_zh_bin_end");
 #if VTTS_EMBED_JA /* main/lex_ja.bin was present at build time (build.sh builds it) */
 extern const uint8_t lex_ja_start[] asm("_binary_lex_ja_bin_start");
 extern const uint8_t lex_ja_end[] asm("_binary_lex_ja_bin_end");
+#endif
+#if VTTS_EMBED_RU /* Russian is enabled (a ru-en model is embedded) and main/lex_ru.bin was built */
+extern const uint8_t lex_ru_start[] asm("_binary_lex_ru_bin_start");
+extern const uint8_t lex_ru_end[] asm("_binary_lex_ru_bin_end");
 #endif
 
 /* synth.c */

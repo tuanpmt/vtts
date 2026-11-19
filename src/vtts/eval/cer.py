@@ -17,10 +17,12 @@ also counts spacing differences. Japanese CER is orthographic: Whisper writing a
 where the reference has kana (or the other way round) counts as an error. Thai CER counts Thai
 characters (spaces removed); Thai WER counts the words of the front-end's word segmentation.
 
-Latin-script pair languages (LATIN_PAIR_LANGS: es ...) go through their pair front-end the same
+Latin-script pair languages (LATIN_PAIR_LANGS: es id pt de it tr pl fi ms tl sw nl sv no) go through their pair front-end the same
 way (numbers read in the main language, English words through the English normalizer, accents
 kept, lower case); CER counts characters with the spaces between words, WER counts words. Hindi
-("hi") is scored the same way (Devanagari words separated by spaces, numbers read in Hindi)."""
+("hi") is scored the same way (Devanagari words separated by spaces, numbers read in Hindi), and
+Russian ("ru"; ё counted as е, since Whisper and writers often omit it; the one-letter
+prepositions joined by the normalizer, в-доме, count as one word on both sides), and so is Arabic ("ar": words without vowel marks or tatweel, numbers read in Arabic)."""
 
 from __future__ import annotations
 
@@ -44,12 +46,18 @@ def _plain_words(text: str) -> list[str]:
     return out
 
 
-LATIN_PAIR_LANGS = ("es", "id", "pt")
-SPACED_PAIR_LANGS = (*LATIN_PAIR_LANGS, "hi")  # words separated by spaces: CER keeps them
+LATIN_PAIR_LANGS = ("es", "id", "pt", "de", "it", "tr", "pl", "fi", "ms", "tl", "sw", "nl", "sv", "no")
+SPACED_PAIR_LANGS = (*LATIN_PAIR_LANGS, "hi", "ru", "ar", "el")  # words separated by spaces: CER keeps them
 PAIR_LANGS = ("zh", "ko", "ja", "th", *SPACED_PAIR_LANGS)
 WHISPER_LANGUAGE = {"vi": "vi", "en": "en", "mixed": "vi", "zh": "zh", "ko": "ko", "ja": "ja",
                     "th": "th",
                     **{code: code for code in SPACED_PAIR_LANGS}}
+# French (fr-en): a Latin-script pair (liaison consonants written by the normalizer, z'amis, count
+# on both sides alike).
+LATIN_PAIR_LANGS = (*LATIN_PAIR_LANGS, "fr")
+SPACED_PAIR_LANGS = (*SPACED_PAIR_LANGS, "fr")
+PAIR_LANGS = (*PAIR_LANGS, "fr")
+WHISPER_LANGUAGE["fr"] = "fr"
 
 
 def _is_cjk(ch: str) -> bool:
@@ -65,13 +73,19 @@ def _pair_words(text: str, lang: str) -> list[str]:
 
         text = to_simplified(text)
     words: list[str] = []
-    for sentence in split_sentences_raw(unicodedata.normalize("NFC", text)):
+    for sentence in split_sentences_raw(unicodedata.normalize("NFC", text), lang):
         for run, code in runs(sentence, lang):
             words += [w for w in LANGUAGES[code].normalize(run).split() if w not in PUNCTUATION]
+    if lang == "ru":
+        words = [w.replace("ё", "е") for w in words]
     if lang == "ja":
         from vtts.frontend.ja.kana import to_hiragana
 
         words = [to_hiragana(w) for w in words]
+    if lang == "ar":  # ASR output rarely has vowel marks: compare the letters
+        from vtts.frontend.ar.g2p_ar import is_arabic_word, strip_marks
+
+        return [strip_marks(w) if is_arabic_word(w) else w for w in words]
     if lang == "ko" or lang in SPACED_PAIR_LANGS:
         return words
     if lang == "th":  # Thai runs cut into words by the front-end's word segmentation

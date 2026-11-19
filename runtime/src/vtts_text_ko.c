@@ -3,6 +3,9 @@
  * exception table and the ordered pronunciation rules (mirrors src/vtts/frontend/ko/g2p_ko.py and
  * hangul.py), and normalization (mirrors src/vtts/frontend/ko/normalize_ko.py). All tables are in
  * the generated vtts_text_tables.h; no blob is needed. */
+#include "vtts_langs.h"
+#if VTTS_ENABLE_KO /* else an empty unit (vtts_langs.h) */
+
 #include "vtts_text_ko.h"
 
 #include <string.h>
@@ -758,3 +761,5 @@ int vtts_ko_normalize(const uint32_t *in, int n, uint32_t *a, uint32_t *b, int c
     *out = x.p;
     return x.n;
 }
+
+#endif /* VTTS_ENABLE_KO */

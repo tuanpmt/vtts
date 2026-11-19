@@ -1,0 +1,24 @@
+# Greek words read unlike the spelling rules: their phonemes (el-en tokens without the EL:
+# prefix), mostly a glide j the rules do not see. Matching: the whole word, lower case (NFC).
+# See docs/frontend/pronunciation-rules.md.
+διακόσια	dh j a k o1 s j a
+διακόσιες	dh j a k o1 s j e s
+διακόσιοι	dh j a k o1 s j i
+διακόσιους	dh j a k o1 s j u s
+τριακόσια	t r j a k o1 s j a
+τριακόσιες	t r j a k o1 s j e s
+τριακόσιοι	t r j a k o1 s j i
+τριακόσιους	t r j a k o1 s j u s
+εννιακόσια	e n j a k o1 s j a
+εννιακόσιες	e n j a k o1 s j e s
+εννιακόσιοι	e n j a k o1 s j i
+εννιακόσιους	e n j a k o1 s j u s
+βιολί	v j o l i1
+ενδιαφέρον	e n dh j a f e1 r o n
+ενδιαφέρει	e n dh j a f e1 r i
+ενδιαφέρουσα	e n dh j a f e1 r u s a
+ενδιαφέρομαι	e n dh j a f e1 r o m e
+διαφορετικό	dh j a f o r e t i k o1
+διαφορετικά	dh j a f o r e t i k a1
+μιλιαμπερώριο	m i l j a b e r o1 r j o
+μιλιαμπερώρια	m i l j a b e r o1 r j a

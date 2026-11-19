@@ -1,0 +1,40 @@
+# Words read in Malay in the ms-en pair even when they are also in lexicons/latin/english.txt or
+# their spelling does not fit the Malay rules (frontend/latin.py, rule 1). One lower-case word per
+# line.
+#
+# Malay words that are also English entries
+menu
+mode
+model
+modem
+salad
+yoga
+visa
+tablet
+set
+# Malay (or fully adopted) words and names whose spelling breaks the rules
+film
+pizza
+tv
+ok
+okey
+allah
+quran
+alquran
+muhammad
+abdullah
+hussein
+hussin
+mahathir
+shah
+syah
+malaysia
+maybank
+mekah
+makkah
+hassan
+china
+majlis
+uthman
+othman
+usman

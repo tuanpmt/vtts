@@ -56,10 +56,11 @@ def fold(word: str) -> str:
     return "".join(out)
 
 
-def respell(w: str) -> tuple[str, bool]:
+def respell(w: str, table: dict[str, str] | None = None) -> tuple[str, bool]:
     """(word, explicit): the overrides entry of the word or of its stem (with its affixes kept);
-    explicit means every plain e of the result is the schwa."""
-    table = override_table()
+    explicit means every plain e of the result is the schwa. table: Indonesian overrides by
+    default (Malay passes its own, ms/g2p_ms.py)."""
+    table = override_table() if table is None else table
     if w in table:
         return table[w], True
     for pre in ("", *PREFIXES):
@@ -73,15 +74,22 @@ def respell(w: str) -> tuple[str, bool]:
     return w, False
 
 
-def _segments(w: str) -> list[list[str]]:
-    """["C", phoneme] or ["V", vowel] per sound; the letter e is ["V", "E"] (decided later)."""
+DIGRAPH_SOUNDS = ("ng", "ny", "sy", "kh")
+LETTER_SOUNDS = {"v": "f", "q": "k"}
+
+
+def _segments(w: str, digraphs: tuple[str, ...] = DIGRAPH_SOUNDS,
+              letters: dict[str, str] = LETTER_SOUNDS, ngg: bool = False) -> list[list[str]]:
+    """["C", phoneme] or ["V", vowel] per sound; the letter e is ["V", "E"] (decided later).
+    ngg: the g after the digraph ng is read (Malay tinggi -> ng g); Indonesian drops it as a
+    doubled letter."""
     out: list[list[str]] = []
     i, n = 0, len(w)
     while i < n:
         c = w[i]
         two = w[i:i + 2]
-        if two in ("ng", "ny", "sy", "kh"):
-            out.append(["C", two])
+        if two in digraphs:
+            out.append(["C", letters.get(two, two)])
             i += 2
             continue
         if c in "aiuo":
@@ -94,22 +102,25 @@ def _segments(w: str) -> list[list[str]]:
             out.append(["C", "?"])
         elif c == "x":
             out += [["C", "s"]] if i == 0 else [["C", "k"], ["C", "s"]]
-        elif i and c == w[i - 1] and c not in VOWELS:
+        elif i and c == w[i - 1] and c not in VOWELS and not (ngg and w[i - 2:i] == "ng"):
             pass  # doubled consonant letter
         else:
-            out.append(["C", {"v": "f", "q": "k"}.get(c, c)])
+            out.append(["C", letters.get(c, c)])
         i += 1
     if out and out[-1] == ["C", "k"]:
         out[-1] = ["C", "?"]
     return out
 
 
-def _resolve_e(segs: list[list[str]], word: str, explicit: bool) -> None:
+def _resolve_e(segs: list[list[str]], word: str, explicit: bool, schwa_prefix: bool = False) -> None:
+    """schwa_prefix: the e of a word-initial ke-/se- before a vowel is the schwa (Malay seorang,
+    keadaan)."""
     vowels = [k for k, s in enumerate(segs) if s[0] == "V"]
     for k in vowels:
         if segs[k][1] != "E":
             continue
-        if explicit or word in ("ke", "se"):
+        prefix = schwa_prefix and k == 1 and word[:2] in ("ke", "se") and word[2:3] in ("a", "i", "o", "u")
+        if explicit or word in ("ke", "se") or prefix:
             segs[k][1] = "@"
             continue
         next_to_vowel = (k > 0 and segs[k - 1][0] == "V") or (k + 1 < len(segs) and segs[k + 1][0] == "V")
@@ -125,17 +136,25 @@ def phonemes(word: str) -> tuple[str, ...]:
     """Phonemes of one word ('besar' -> b @ s a1 r), without the ID: prefix."""
     w = fold(word)
     w, explicit = respell(w)
-    w = fold(w)
+    return rule_phonemes(fold(w), explicit)
+
+
+def rule_phonemes(w: str, explicit: bool, digraphs: tuple[str, ...] = DIGRAPH_SOUNDS,
+                  letters: dict[str, str] = LETTER_SOUNDS,
+                  unstressed: frozenset[str] = UNSTRESSED, malay: bool = False) -> tuple[str, ...]:
+    """The letter, e, diphthong and stress rules on a folded, respelled word (shared with Malay,
+    which passes its own digraphs, letter sounds and function words, and malay=True: ngg is
+    ng + g, and ke-/se- before a vowel has the schwa)."""
     if not w.strip("'"):
         return ()
-    segs = _segments(w)
-    _resolve_e(segs, w, explicit)
+    segs = _segments(w, digraphs, letters, ngg=malay)
+    _resolve_e(segs, w, explicit, schwa_prefix=malay)
     if len(segs) >= 2 and segs[-1][0] == segs[-2][0] == "V" and segs[-2][1] + segs[-1][1] in (
             "ai", "au", "oi", "ei"):
         segs[-1] = ["C", "y" if segs[-1][1] == "i" else "w"]
     nuclei = [k for k, s in enumerate(segs) if s[0] == "V"]
     stress = None
-    if nuclei and w not in UNSTRESSED:
+    if nuclei and w not in unstressed:
         stress = nuclei[-1] if len(nuclei) == 1 else nuclei[-2]
         if segs[stress][1] == "@":
             stress = nuclei[-1]
@@ -165,7 +184,7 @@ DOUBLES = frozenset(("aa", "ii", "uu", "nn", "kk"))
 DIGRAPHS = (("ng", "N"), ("ny", "J"), ("sy", "S"), ("kh", "K"))
 
 
-def valid_spelling(w: str) -> bool:
+def valid_spelling(w: str, digraphs: tuple[tuple[str, str], ...] = DIGRAPHS) -> bool:
     """True when a lower-case ASCII word fits Indonesian spelling: no foreign letter groups
     (th sh ph ch ck gh ou oo q x; ng, ny, sy, kh are read first, so menghabiskan is fine), c only
     before a vowel, no doubled letters other than aa ii uu nn kk ngg (saat, temannya, bapakku,
@@ -179,7 +198,7 @@ def valid_spelling(w: str) -> bool:
     if any(a == b and a + b not in DOUBLES and not (a == "e" and w[:3] in ("kee", "see"))
            for a, b in pairwise(w.replace("ngg", "ng"))):
         return False
-    for d, r in DIGRAPHS:
+    for d, r in digraphs:
         w = w.replace(d, r)
     if any(f in w for f in FOREIGN):
         return False

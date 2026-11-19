@@ -58,7 +58,21 @@ The Python tests build and run the C tests, so `uv run pytest -q` at the reposit
 | `VTTS_LANG_HI` | hi-en (ids 0–106 = v2, Hindi from 107, 157 ids) | `lex` for English words only: the Devanagari letter tables, exception table, numbers and normalizer strings are compiled in (`src/vtts_text_tables.h`) |
 | `VTTS_LANG_JA` | ja-en (ids 0–106 = v2, Japanese from 107, 144 ids) | `lex` for English words and `ja`: JLEX blob (Japanese reading tables and NFKC data, ~721 KB, `scripts/frontend/build_ja_blob.py`) |
 | `VTTS_LANG_ES`, `VTTS_LANG_ID`, `VTTS_LANG_PT` | es-en (138 ids), id-en (141), pt-en (150); ids 0–106 = v2, the language from 107 | `lex` for English words only: normalizers, spelling rules, exception tables, word lists and Python's Unicode classes are compiled in (`src/vtts_text_lt.c`) |
+| `VTTS_LANG_IT`, `VTTS_LANG_TR` | it-en (142 ids), tr-en (146); ids 0–106 = v2, the language from 107 | `lex` for English words only: tables compiled in (`src/vtts_text_it_tables.h`, `src/vtts_text_tr_tables.h`, about 51 KB and 44 KB with the code); each built only with `VTTS_ENABLE_IT` / `VTTS_ENABLE_TR` (1 by default) |
+| `VTTS_LANG_PL` | pl-en (ids 0–106 = v2, Polish from 107, 151 ids) | `lex` for English words only: the word lists, rules, number words and the normalizer's patterns (parse trees for `src/vtts_re.c`) are compiled in (`src/vtts_text_pl_tables.h`) when `VTTS_ENABLE_PL` is non-zero (default 1) |
+| `VTTS_LANG_RU` | ru-en (ids 0–106 = v2, Russian from 107, 154 ids) | `lex` for English words, `ru` (RLEX, `build/ru_lex.bin`, 358 KB) for the stress tables; the rules, number words and the normalizer's patterns (as parse trees for `src/vtts_re.c`) are compiled in (`src/vtts_text_ru_tables.h`) when `VTTS_ENABLE_RU` is non-zero (default 1) |
+| `VTTS_LANG_AR` | ar-en (ids 0–106 = v2, Arabic from 107, 149 ids) | `lex` for English words only: the word table (6,920 words, 75 KB, compact encoding), spelling exceptions, word patterns, letter classes and normalizer strings are compiled in (`src/vtts_text_ar_tables.h`; the module with its tables adds 110,448 bytes to the ESP32-P4 app). Compiled only with `VTTS_ENABLE_AR` (default 1; the firmware sets it from the embedded models) |
+| `VTTS_LANG_MS` | ms-en (ids 0–106 = v2, Malay from 107, 145 ids) | `lex` for English words only: the Indonesian code paths of `src/vtts_text_lt.c` with the Malay tables of `src/vtts_text_ms_tables.h` (about 9 KB with the code on the ESP32-P4); compiled only with `VTTS_ENABLE_MS` (default 1; with 0 the mode is unsupported) |
+| `VTTS_LANG_TL` | tl-en (ids 0–106 = v2, Tagalog from 107, 139 ids) | `lex` for English words only: normalizer, spelling, glottal-stop and stress rules, stress table and word lists are compiled in (`src/vtts_text_tl.c`, `src/vtts_text_tl_tables.h`, about 33 KB on the ESP32-P4); compiled only with `VTTS_ENABLE_TL` (default 1; with 0 the mode is unknown) |
+| `VTTS_LANG_SW` | sw-en (ids 0–106 = v2, Swahili from 107, 147 ids) | `lex` for English words only: normalizer, spelling rules, stress table and word lists are compiled in (`src/vtts_text_sw.c`, `src/vtts_text_sw_tables.h`, about 20 KB); only with `VTTS_ENABLE_SW=1` (the default; with 0 the sw-en set loads but has no mode) |
+| `VTTS_LANG_NL`, `VTTS_LANG_SV`, `VTTS_LANG_NO` | nl-en, sv-en, no-en (ids 0–106 = v2, the language from 107; 159, 155, 156 ids; header codes 21, 23, 24) | `lex` for English words only: the scanner normalizer, the Dutch and the Swedish / Norwegian rules and their tables are compiled in (`src/vtts_text_nx*.c`, `vtts_text_nx_tables.h`), each language only with `VTTS_ENABLE_NL` / `_SV` / `_NO` (default 1); about 44 KB of flash for one language |
 | `VTTS_LANG_TH` | th-en (ids 0–106 = v2, Thai from 107, 162 ids) | `lex` for English words only: the Thai word list (front coded, 68 KB), respellings, spelling patterns and normalizer strings are compiled in (`src/vtts_text_th_tables.h`, about 80 KB) |
+| `VTTS_LANG_FR` | fr-en (ids 0–106 = v2, French from 107, 143 ids) | `lex` for English words only: the normalizer strings, liaison lists, `lexicons/fr` tables and spelling-check clusters are compiled in (`src/vtts_text_fr_tables.h`); built only with `VTTS_ENABLE_FR` |
+| `VTTS_LANG_DE` | de-en (ids 0–106 = v2, German from 107, 167 ids) | `lex` for English words only: the stem list, exception table, stress and spelling lists and normalizer strings are compiled in (`src/vtts_text_de.c`, `src/vtts_text_de_tables.h`, about 91 KB on RISC-V); built only with `VTTS_ENABLE_DE` |
+
+Every mode except vi, en and auto belongs to an optional language that is compiled only when its switch `VTTS_ENABLE_<L>` is 1 (`include/vtts_langs.h`: `ZH KO JA HI TH ES ID PT FR DE`). Host builds and `make test` default all of them to 1; with a switch at 0 the module (`src/vtts_text_<l>.c`) is an empty unit, its tables are not linked, `vtts_text_lang_for` / `vtts_text_default_lang` do not offer the mode and `vtts_text_to_ids_ex` returns -1 for it. `make langs_test` builds the front-end with every optional language off and with each one alone. The firmware sets the switches from the token sets of the models it embeds (see `firmware/esp32/README.md`).
+| `VTTS_LANG_FI` | fi-en (ids 0–106 = v2, Finnish from 107, 142 ids) | `lex` for English words only: normalizer tables, spelling rules, word lists and respellings are compiled in (`src/vtts_text_fi_tables.h`, about 38 KB with the code); built when `VTTS_ENABLE_FI` is not 0 (default 1) |
+| `VTTS_LANG_EL` | el-en (ids 0–106 = v2, Greek from 107, 139 ids) | `lex` for English words only: normalizer tables, the Greek decomposition table and the overrides are compiled in (`src/vtts_text_el_tables.h`, about 34 KB with the code); built when `VTTS_ENABLE_EL` is not 0 (default 1) |
 
 The blobs are read in place (flash is fine) and must stay alive while they are used:
 
@@ -78,7 +92,7 @@ Japanese: `vtts_jlex_init(&ja, ja_blob, ja_size)` (`static vtts_jlex ja;`, < 0: 
 A model file records its token set (dim `token_set`, see [docs/model-format.md](../docs/model-format.md#token_set-added-in-format-revision-11); older files map by `vocab`). Pick the mode from it instead of guessing:
 
 ```c
-int ts = vtts_token_set(&m);                    /* VTTS_TOKSET_V1, _VI_EN, _ZH_EN, _KO_EN, _JA_EN, _ES_EN, _ID_EN, _PT_EN, _HI_EN, _UNKNOWN */
+int ts = vtts_token_set(&m);                    /* VTTS_TOKSET_V1, _VI_EN, _ZH_EN, _KO_EN, _JA_EN, _ES_EN, _ID_EN, _PT_EN, _HI_EN, _FI_EN, _EL_EN, _UNKNOWN */
 vtts_lang lang;
 if (vtts_text_default_lang(ts, &lang) < 0) { /* unknown token set: no device front-end, ids only */ }
 if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set */ }
@@ -93,7 +107,18 @@ if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set
 | `hi-en` | `hi` (Devanagari → Hindi, Latin words → English, numbers in Hindi; the only hi-en mode of the Python front-end) | `hi` |
 | `ja-en` | `ja` (kana/kanji → Japanese, Latin words → English, numbers in Japanese; the only ja-en mode of the Python front-end) | `ja` |
 | `es-en`, `id-en`, `pt-en` | `es`, `id`, `pt` (plain Latin words by the `latin.py` rules → the language or English, numbers in the language) | `es`, `id`, `pt` |
+| `it-en`, `tr-en` | `it`, `tr` (as es; Italian elision and Turkish suffixes after apostrophes; only when built in) | `it`, `tr` |
+| `ar-en` | `ar` (Arabic → Arabic, Latin words → English, numbers in Arabic; the only ar-en mode of the Python front-end; only with `VTTS_ENABLE_AR`) | `ar` |
 | `th-en` | `th` (Thai → Thai, Latin words → English, numbers in Thai; the only th-en mode of the Python front-end) | `th` |
+| `fr-en` | `fr` (plain Latin words by the fr rules → French or English, numbers in French, liaison; with `VTTS_ENABLE_FR`) | `fr` |
+| `de-en` | `de` (plain Latin words by the `latin.py` rules → German or English, numbers in German; with `VTTS_ENABLE_DE`) | `de` |
+| `pl-en` | `pl` (Latin words by latin.py rules → Polish or English, numbers in Polish; with `VTTS_ENABLE_PL`) | `pl` |
+| `ru-en` | `ru` (Cyrillic → Russian, Latin words → English, numbers in Russian; with `VTTS_ENABLE_RU`) | `ru` |
+| `fi-en` | `fi` (plain Latin words by the `latin.py` rules → Finnish or English, numbers in Finnish; only with `VTTS_ENABLE_FI`) | `fi` |
+| `el-en` | `el` (Greek → Greek, Latin words → English, numbers in Greek; only with `VTTS_ENABLE_EL`) | `el` |
+| `tl-en` | `tl` (plain Latin words by the `latin.py` rules → Tagalog or English, numbers with the linker, Spanish-derived clock times and peso prices; with `VTTS_ENABLE_TL`) | `tl` |
+| `ms-en` | `ms` (plain Latin words by the `latin.py` rules → Malay or English, numbers, dates, times and ringgit in Malay; with `VTTS_ENABLE_MS`) | `ms` |
+| `sw-en` | `sw` (plain Latin words by the `latin.py` rules → Swahili or English, numbers, dates, times, money and units in Swahili; with `VTTS_ENABLE_SW`) | `sw` |
 | unknown | none (Python front-end only) | |
 
 `tools/vtts_say.c` is the host version of this path: `vtts_say MODEL.vtts OUT.wav --lex lex_en.bin --zh zh_lex.bin --ja ja_lex.bin [--lang MODE] "text"` prints the token set, the mode and the ids of each chunk, then writes the audio.

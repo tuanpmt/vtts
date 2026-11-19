@@ -1,0 +1,24 @@
+# Words read in Finnish in the fi-en pair even when they are also in lexicons/latin/english.txt or
+# their spelling does not fit the Finnish rules (frontend/latin.py, rule 1). One lower-case word
+# per line, without ä ö å (a word with them is Finnish anyway).
+#
+# Finnish words that are also English entries
+on
+he
+me
+te
+home
+tee
+tie
+# Finnish (or fully adopted) words whose spelling breaks the rules
+pizza
+pizzat
+pizzeria
+zoo
+zeniitti
+golf
+shakki
+sheikki
+shampoo
+shortsit
+sheriffi

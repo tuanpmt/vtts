@@ -1,12 +1,14 @@
 """Assemble a student from stage checkpoints and export it (fp32 or int8).
 
 Usage: uv run python scripts/student/export_student.py --front F.pt --dec D.pt [--joint J.pt] \
-   --out model.vtts [--int8] [--token-set vi-en|zh-en|ko-en|ja-en|es-en|id-en|pt-en|th-en|hi-en|v1]
+   --out model.vtts [--int8] [--token-set vi-en|zh-en|ko-en|ja-en|es-en|id-en|pt-en|th-en|hi-en|fr-en|de-en|it-en|tr-en|ru-en|pl-en|ar-en|fi-en|el-en|ms-en|tl-en|sw-en|nl-en|sv-en|no-en|v1]
 The decoder comes from --joint when given (it also refines the acoustic model), else --dec.
 The token set is recorded in the file header (dim token_set, docs/model-format.md): --token-set,
 else a "token_set" entry of the front checkpoint, else the set the vocab names (65 -> v1,
 107 -> vi-en, 171 -> zh-en, 153 -> ko-en, 144 -> ja-en, 138 -> es-en, 141 -> id-en,
-150 -> pt-en, 162 -> th-en, 157 -> hi-en); other vocab sizes need --token-set.
+150 -> pt-en, 162 -> th-en, 157 -> hi-en, 143 -> fr-en, 167 -> de-en, 142 -> it-en, 146 -> tr-en, 154 -> ru-en, 151 -> pl-en, 149 -> ar-en, 145 -> ms-en, 147 -> sw-en, 159 -> nl-en, 155 -> sv-en, 156 -> no-en); fi-en and it-en (142), el-en and tl-en (139) (142) and other vocab
+sizes need
+--token-set.
 """
 
 import argparse

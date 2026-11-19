@@ -1,0 +1,30 @@
+# Words read in Polish in the pl-en pair even when they are also in lexicons/latin/english.txt or
+# their spelling does not fit the Polish rules (frontend/latin.py, rule 1). One lower-case word per
+# line, without Polish letters (a word with ą ć ę ł ń ó ś ź ż is Polish anyway).
+#
+# Polish words that are also English entries
+do
+to
+ten
+go
+on
+one
+my
+we
+as
+by
+ok
+model
+bank
+start
+menu
+order
+sale
+tablet
+blog
+# Abbreviations the normalizer reads with their number (5 mln, 3 tys., 50 gr)
+mln
+mld
+bln
+tys
+gr

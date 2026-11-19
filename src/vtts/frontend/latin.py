@@ -1,4 +1,5 @@
-"""Language of a plain Latin word in a Latin-script pair (es-en, id-en, pt-en).
+"""Language of a plain Latin word in a Latin-script pair (es-en, id-en, pt-en, de-en, it-en,
+tr-en, pl-en, fi-en).
 
 Spanish, Indonesian and Portuguese are written in the same letters as English, so a word without
 the language's own letters (á, ñ, ç, ã ...) needs a rule, like Vietnamese in the vi-en pair
@@ -15,6 +16,12 @@ the language's own letters (á, ñ, ç, ã ...) needs a rule, like Vietnamese in
    clusters of L) is L; any other word is English (Facebook, Bluetooth, weekend).
 
 Hyphenated words are decided on their parts (Wi-Fi: "wi" does not fit Spanish, so English).
+
+Italian and Turkish write apostrophes inside words (APOSTROPHE_MODES): an Italian elided word
+(l', dell', sull': g2p_it.ELIDED) is Italian and l'acqua is decided on "acqua"; a Turkish word is
+decided on its part before the apostrophe (Cumhuriyeti'nde); a part of a hyphenated word may be a
+native word (sud-ovest). split_elision makes two chunks of an elided Italian word before an English
+word (sull'iPhone) and of an English word before a Turkish suffix (iPhone'da).
 """
 
 from __future__ import annotations
@@ -32,12 +39,36 @@ LATIN_PAIRS: dict[str, str] = {
     "es": "áéíóúüñÁÉÍÓÚÜÑ",
     "id": "",  # Indonesian has no letters of its own
     "pt": "áâãàçéêíóôõúüÁÂÃÀÇÉÊÍÓÔÕÚÜ",
+    "de": "äöüßÄÖÜẞ",
+    "it": "àèéìíòóùÀÈÉÌÍÒÓÙ",
+    "tr": "çğıöşüâîûÇĞİÖŞÜÂÎÛ",
+    "pl": "ąćęłńóśźżĄĆĘŁŃÓŚŹŻ",
 }
+LATIN_PAIRS["nl"] = "éëïöüèáóúíàêçÉËÏÖÜÈÁÓÚÍ"
+LATIN_PAIRS["sv"] = "åäöÅÄÖ"
+LATIN_PAIRS["no"] = "æøåÆØÅ"
+LATIN_PAIRS["fr"] = "àâæçéèêëîïôœùûüÿÀÂÆÇÉÈÊËÎÏÔŒÙÛÜŸ"
+LATIN_PAIRS["fi"] = "äöåšžÄÖÅŠŽ"
+LATIN_PAIRS["ms"] = ""  # Malay has no letters of its own
+LATIN_PAIRS["tl"] = "ñÑáàâéèêíìîóòôúùûÁÀÂÉÈÊÍÌÎÓÒÔÚÙÛ"  # ñ and the stress/glottal accent marks
+# Pairs where a hyphenated word with a part in the English list is English (Tagalog affixes on
+# English verbs: i-share, nag-email, na-update).
+HYPHEN_ENGLISH = frozenset(("tl",))
+LATIN_PAIRS["sw"] = ""  # Swahili has no letters of its own (ng' uses the apostrophe)
+# Pairs where an apostrophe is part of a letter (Swahili ng'ombe): words are not split there.
+APOSTROPHE_LETTER = frozenset(("sw",))
 
 
 @cache
 def _valid(code: str) -> Callable[[str], bool]:
     return importlib.import_module(f"vtts.frontend.{code}.g2p_{code}").valid_spelling
+
+
+@cache
+def _elided(code: str) -> frozenset[str]:
+    """Elided words of the language written before an apostrophe (Italian l', dell', un'):
+    g2p_<code>.ELIDED, empty when the module has none."""
+    return getattr(importlib.import_module(f"vtts.frontend.{code}.g2p_{code}"), "ELIDED", frozenset())
 
 
 @cache
@@ -55,6 +86,37 @@ def has_letters_of(code: str) -> Callable[[str], bool]:
     return lambda word: any(ch in letters for ch in word)
 
 
+# Pair languages that write an apostrophe inside words (Italian elision l'acqua, Turkish suffixes
+# after a name İstanbul'da); the typographic apostrophe ’ is read as '.
+APOSTROPHE_MODES = ("it", "tr")
+
+
+EDGE = ".,;:!?\"'()[]{}…“”‘’«»–—"  # lang.EDGE
+SUFFIX_APOSTROPHE = ("tr",)  # a suffix after a name: Google'da, İstanbul'dan
+SUFFIX_LETTERS = frozenset("abcçdefgğhıijklmnoöprsştuüvyzâîû")  # letters of a Turkish suffix
+
+
+def split_elision(chunk: str, code: str) -> list[str]:
+    """An elided word of the language before an English word is its own chunk (it: sull'iPhone ->
+    sull' / iPhone), and so is a suffix after an English word (tr: iPhone'u -> iPhone / 'u), so
+    each part is read in its language; other chunks are kept whole."""
+    head, apostrophe, rest = chunk.partition("'")
+    core, rest_core = head.lstrip(EDGE), rest.strip(EDGE)
+    if not (apostrophe and rest_core and core):
+        return [chunk]
+    if core.lower() in _elided(code) and _is_plain(rest_core) and latin_word_lang(rest_core, code) == "en":
+        return [head + "'", rest]
+    if (code in SUFFIX_APOSTROPHE and all(ch in SUFFIX_LETTERS for ch in rest_core) and _is_plain(core)
+            and latin_word_lang(core, code) == "en"):
+        return [head, "'" + rest]
+    return [chunk]
+
+
+def _is_plain(word: str) -> bool:
+    return all(ch.isascii() and (ch.isalpha() or ch in "-'") for ch in word) and any(
+        ch.isalpha() for ch in word)
+
+
 def _camel(part: str) -> bool:
     return any(a.islower() and b.isupper() for a, b in pairwise(part))
 
@@ -62,16 +124,28 @@ def _camel(part: str) -> bool:
 def latin_word_lang(core: str, code: str) -> str:
     """code or "en" for a Latin word (letters, - and ') in the pair of code."""
     low = core.lower()
-    if has_letters_of(code)(core) or low in load_words(code, "native") or low in _table_keys(code):
+    if (has_letters_of(code)(core) or low in load_words(code, "native") or low in _table_keys(code)
+            or low in _elided(code)):
         return code
     if low in load_words("latin", "english"):
         return "en"
-    parts = [p for p in re.split(r"[-']", core) if p]
+    head, apostrophe, rest = core.partition("'")
+    if apostrophe and rest and head.lower() in _elided(code):  # l'acqua: decided on "acqua"
+        return latin_word_lang(rest, code)
+    # tr: the suffix after an apostrophe (Cumhuriyeti'nde) is not a word of its own
+    stem = core.split("'")[0] if code in SUFFIX_APOSTROPHE else core
+    # sw: the apostrophe of ng' is a letter, the word is split at hyphens only
+    parts = [p for p in re.split(r"-" if code in APOSTROPHE_LETTER else r"[-']", stem) if p]
+    if code in HYPHEN_ENGLISH and "-" in core and any(
+            p.lower() in load_words("latin", "english") for p in parts):
+        return "en"
     if any(_camel(p) for p in parts):
         return "en"
     if len(core) == 1 or all(p.isupper() and 2 <= len(p) <= 5 for p in parts):
         return code
-    if all(_valid(code)(p.lower()) for p in parts):
+    # it, tr: a part may also be a native word (sud-ovest)
+    native = load_words(code, "native") if code in APOSTROPHE_MODES else frozenset()
+    if all(_valid(code)(p.lower()) or p.lower() in native for p in parts):
         return code
     return "en"
 

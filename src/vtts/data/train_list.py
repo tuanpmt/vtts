@@ -34,7 +34,22 @@ UNREADABLE = {
     "pt": ("vtts.frontend.pt.g2p_pt", "unreadable_pt"),
     "hi": ("vtts.frontend.hi.g2p_hi", "unreadable_hi"),
     "th": ("vtts.frontend.th.g2p_th", "unreadable_th"),
+    "de": ("vtts.frontend.de.g2p_de", "unreadable_de"),
+    "it": ("vtts.frontend.it.g2p_it", "unreadable_it"),
+    "tr": ("vtts.frontend.tr.g2p_tr", "unreadable_tr"),
+    "ru": ("vtts.frontend.ru.g2p_ru", "unreadable_ru"),
+    "pl": ("vtts.frontend.pl.g2p_pl", "unreadable_pl"),
+    "ar": ("vtts.frontend.ar.g2p_ar", "unreadable_ar"),
 }
+UNREADABLE["fr"] = ("vtts.frontend.fr.g2p_fr", "unreadable_fr")
+UNREADABLE["fi"] = ("vtts.frontend.fi.g2p_fi", "unreadable_fi")
+UNREADABLE["el"] = ("vtts.frontend.el.g2p_el", "unreadable_el")
+UNREADABLE["ms"] = ("vtts.frontend.ms.g2p_ms", "unreadable_ms")
+UNREADABLE["tl"] = ("vtts.frontend.tl.g2p_tl", "unreadable_tl")
+UNREADABLE["sw"] = ("vtts.frontend.sw.g2p_sw", "unreadable_sw")
+UNREADABLE["nl"] = ("vtts.frontend.nl.g2p_nl", "unreadable_nl")
+UNREADABLE["sv"] = ("vtts.frontend.sv.g2p_sv", "unreadable_sv")
+UNREADABLE["no"] = ("vtts.frontend.no.g2p_no", "unreadable_no")
 
 
 def unreadable(text: str, lang: str) -> bool:

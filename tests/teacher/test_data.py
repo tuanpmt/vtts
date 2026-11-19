@@ -122,7 +122,7 @@ def test_encode_text_ja_uses_jaen_ids_and_english_rows_match():
     assert encode_text(en, "en") == text_to_ids(en, "ja")[0] == text_to_ids(en, "en")[0]
 
 
-WORD_PAIR_ROWS = [("hi", "hi-en", "कृपया GitHub खोलो।"), ("th", "th-en", "ช่วยเปิด GitHub ให้หน่อยนะ"), ("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor.")]
+WORD_PAIR_ROWS = [("nl", "nl-en", "Open GitHub en zet muziek aan, alsjeblieft."), ("no", "no-en", "Åpne GitHub og sett på musikk, takk."), ("sv", "sv-en", "Öppna GitHub och sätt på musik, tack."), ("sw", "sw-en", "Tafadhali fungua GitHub."), ("tl", "tl-en", "Pakibuksan ang GitHub, salamat."), ("ms", "ms-en", "Tolong buka GitHub, ya."), ("el", "el-en", "Άνοιξε το GitHub, παρακαλώ."), ("fi", "fi-en", "Avaa GitHub, kiitos."), ("ar", "ar-en", "افتح GitHub من فضلك."), ("pl", "pl-en", "Otwórz GitHub, proszę."), ("ru", "ru-en", "Открой GitHub, пожалуйста."), ("tr", "tr-en", "GitHub'ı aç, lütfen."), ("it", "it-en", "Apri GitHub, per favore."), ("hi", "hi-en", "कृपया GitHub खोलो।"), ("th", "th-en", "ช่วยเปิด GitHub ให้หน่อยนะ"), ("pt", "pt-en", "Abra o GitHub, por favor."), ("id", "id-en", "Tolong buka GitHub, ya."), ("es", "es-en", "Abre GitHub y pon música, por favor."), ("de", "de-en", "Öffne bitte GitHub.")]
 
 
 @pytest.mark.parametrize("lang, token_set, text", WORD_PAIR_ROWS)
@@ -134,8 +134,24 @@ def test_encode_text_word_pairs_use_their_token_set(lang, token_set, text):
     ids = encode_text(text, lang)
     assert max(ids) >= VOCAB_SIZE_V2 and max(ids) < len(TOKEN_SETS[token_set])
     assert ids == text_to_ids(text, lang)[0]
-    en = "Turn on the light, please."
+    en = ("Close the door, please." if lang == "tr"  # tr: on (ten), turn fit Turkish
+          else "Thank you, see you soon." if lang == "pl"  # on, to: Polish
+          else "Turn on the light, please.")
     assert encode_text(en, "en") == text_to_ids(en, lang)[0] == text_to_ids(en, "en")[0]
+
+
+def test_encode_text_french_uses_fr_en():
+    """fr-en like the word pairs above ("on" is a French word, so the English sentence has none)."""
+    from vtts.frontend.phoneme_set import TOKEN_SETS, VOCAB_SIZE_V2
+    from vtts.frontend.text import text_to_ids
+    from vtts.teacher.data import encode_text
+
+    text = "Ouvre GitHub et mets de la musique, s'il te plaît."
+    ids = encode_text(text, "fr")
+    assert VOCAB_SIZE_V2 <= max(ids) < len(TOKEN_SETS["fr-en"])
+    assert ids == text_to_ids(text, "fr")[0]
+    en = "Please check the light."
+    assert encode_text(en, "en") == text_to_ids(en, "fr")[0] == text_to_ids(en, "en")[0]
 
 
 def test_audio_path_column_relative_absolute_and_old_rows(tmp_path):

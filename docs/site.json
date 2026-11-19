@@ -144,6 +144,48 @@
       "status": "planned",
       "status_text": "Planned",
       "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Dutch + English",
+      "name_vi": "Hà Lan + Anh",
+      "langs": [
+        "nl",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Swedish + English",
+      "name_vi": "Thụy Điển + Anh",
+      "langs": [
+        "sv",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
+    },
+    {
+      "name": "Norwegian + English",
+      "name_vi": "Na Uy + Anh",
+      "langs": [
+        "no",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M",
+      "lite": "S",
+      "status": "planned",
+      "status_text": "Planned",
+      "status_text_vi": "Dự kiến"
     }
   ],
   "hardware": [

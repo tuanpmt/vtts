@@ -1,0 +1,16 @@
+# Words read in Turkish in the tr-en pair even when they are also in lexicons/latin/english.txt or
+# their spelling does not fit the Turkish rules (frontend/latin.py, rule 1). One lower-case word
+# per line, ASCII only (a word with ç ğ ı ö ş ü â î û is Turkish anyway).
+#
+# Turkish words that are also English entries (checked against the words of Turkish Wikipedia)
+her
+on
+boy
+model
+tablet
+yoga
+site
+set
+pay
+has
+in

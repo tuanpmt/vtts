@@ -26,6 +26,9 @@
 | Indonesian + English | 🇮🇩 id + 🇺🇸 en, code-switching | M | S | Planned |
 | Hindi + English | 🇮🇳 hi + 🇺🇸 en, code-switching | M | S | Planned |
 | Thai + English | 🇹🇭 th + 🇺🇸 en, code-switching | M | S | Planned |
+| Dutch + English | 🇳🇱 nl + 🇺🇸 en, code-switching | M | S | Planned |
+| Swedish + English | 🇸🇪 sv + 🇺🇸 en, code-switching | M | S | Planned |
+| Norwegian + English | 🇳🇴 no + 🇺🇸 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
 Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" ("Connected to AirPods over Bluetooth") in one voice; the front-end picks the language per word. The English front-end runs on the device too (C, parity-tested against Python), so mixed text is handled on the chip.
@@ -213,7 +216,21 @@ vtts ships **bilingual voices: one main language + English**, with code-switchin
 - [ ] **Indonesian + English** (Python front-end done)
 - [ ] **Hindi + English** (Python front-end done)
 - [ ] **Thai + English** (Python front-end done)
-- [ ] Later, by demand: German, French
+- [ ] **French + English** (Python front-end done)
+- [ ] **German + English** (Python front-end done)
+- [ ] **Italian + English** (Python front-end done)
+- [ ] **Turkish + English** (Python front-end done)
+- [ ] **Russian + English** (Python front-end done)
+- [ ] **Polish + English** (Python front-end done)
+- [ ] **Arabic + English** (Python front-end done; vowel restoration about 86% of words)
+- [ ] **Finnish + English** (Python front-end done)
+- [ ] **Greek + English** (Python front-end done)
+- [ ] **Malay + English** (Python front-end done)
+- [ ] **Tagalog (Filipino) + English** (Python front-end done)
+- [ ] **Swahili + English** (front-end done in Python and on the device)
+- [ ] **Dutch + English** (Python front-end done)
+- [ ] **Swedish + English** (Python front-end done)
+- [ ] **Norwegian + English** (Python front-end done)
 - [ ] User pronunciation dictionary
 
 Release history: [CHANGELOG.md](CHANGELOG.md).

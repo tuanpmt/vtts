@@ -1,0 +1,81 @@
+@@ -1,5 +1,5 @@
+ """Sentence selection for speech synthesis from Wikipedia: Spanish, Indonesian, Brazilian
+-Portuguese, Thai and Hindi.
++Portuguese, Thai, Hindi, Dutch, Swedish and Norwegian (Bokmål).
+ 
+ Only plain text that needs no normalization before synthesis is kept (no digits, brackets,
+ symbols, acronyms or foreign scripts); nothing else is filtered.
+@@ -8,6 +8,10 @@
+   6-30 words, starting with a capital letter (after ¿ ¡ in es) and ending with . ? !. Words with
+   two or more capitals (acronyms, Roman numerals), single capital letters after the first word
+   (initials) and common abbreviations are rejected.
++- nl, sv, no: as es/pt/id with the letters of the language (nl é ë ï ö ü è á ó ú í à ê ç, sv å ä ö é,
++  no æ ø å é è ò ô ó); a one-letter word with a final dot (initials, o. a.) is also rejected. no is the
++  Bokmål Wikipedia. sv rejects the generated stubs of the Swedish Wikipedia (Lsjbot: species,
++  municipalities, bays, climate and land-use sentences; SV_BOT).
+ - hi: Devanagari letters and signs (no Devanagari digits), spaces, intra-word hyphens and , . ? !,
+   5-30 words, ending with . ? !. The danda । is converted to "." before splitting, so every Hindi
+   row ends with . ? ! like the other languages; double danda ॥ is rejected.
+@@ -28,6 +32,8 @@
+ 
+ Duration estimates (read speech):
+ - es 6.0, pt 5.5, id 5.5 syllables/s, syllables counted as vowel groups.
++- nl 5.5, sv 5.0, no 5.0 syllables/s, syllables counted as vowel groups (Dutch aa ee oe ie ui eu ou
++  ij are one group).
+ - hi 6.0 aksharas/s (independent vowels plus consonants not followed by virama).
+ - th 13 spacing characters/s (Thai characters without the combining vowel and tone marks,
+   about 2.5 per syllable at about 5.2 syllables/s).
+@@ -37,18 +43,24 @@
+ 
+ import re
+ 
+-LANGS = ("es", "id", "pt", "th", "hi")
++LANGS = ("es", "id", "pt", "th", "hi", "nl", "sv", "no")
+ LATIN_LETTERS = {
+     "es": "a-zA-ZáéíóúüñÁÉÍÓÚÜÑ",
+     "pt": "a-zA-ZáâãàçéêíóôõúÁÂÃÀÇÉÊÍÓÔÕÚ",
+     "id": "a-zA-Z",
++    "nl": "a-zA-ZéëïöüèáóúíàêçÉËÏÖÜÈÁÓÚÍ",
++    "sv": "a-zA-ZåäöéÅÄÖÉ",
++    "no": "a-zA-ZæøåéèòôóÆØÅÉ",
+ }
+ VOWELS = {
+     "es": "aeiouáéíóúüAEIOUÁÉÍÓÚÜ",
+     "pt": "aeiouáâãàéêíóôõúAEIOUÁÂÃÀÉÊÍÓÔÕÚ",
+     "id": "aeiouAEIOU",
++    "nl": "aeiouyéëïöüèáóúíàêAEIOUYÉËÏÖÜÈÁÓÚÍ",
++    "sv": "aeiouyåäöéAEIOUYÅÄÖÉ",
++    "no": "aeiouyæøåéèòôóAEIOUYÆØÅÉ",
+ }
+-RATE = {"es": 6.0, "pt": 5.5, "id": 5.5, "hi": 6.0, "th": 13.0}
++RATE = {"es": 6.0, "pt": 5.5, "id": 5.5, "hi": 6.0, "th": 13.0, "nl": 5.5, "sv": 5.0, "no": 5.0}
+ ABBREV = {
+     "es": {"etc", "sr", "sra", "srta", "dr", "dra", "ud", "uds", "pág", "aprox", "núm", "art", "av", "vol",
+            "cap", "ed", "fig", "gral", "lic", "ing", "prof", "st", "sto", "sta", "vs"},
+@@ -56,7 +68,26 @@
+            "fig", "gen", "prof", "st", "sto", "sta", "vs", "séc", "km", "kg", "cm"},
+     "id": {"dll", "dsb", "dkk", "dst", "yg", "tsb", "dr", "kab", "kec", "jl", "no", "st", "hlm", "sdr",
+            "ir", "prof", "drs", "kol", "jend", "letjen", "mayjen", "brigjen", "km", "kg", "cm", "vs"},
++    "nl": {"bijv", "bv", "enz", "nr", "dr", "mr", "ir", "drs", "ing", "prof", "st", "ca", "jr", "sr", "km", "kg",
++           "cm", "vs", "resp", "evt", "incl", "excl", "zgn", "zg", "blz", "afb", "vgl", "ong", "max", "min", "mln",
++           "mld", "jh", "chr", "lat", "gr", "eng", "fr", "ned", "dhr", "mevr", "mw", "pag", "nl", "etc"},
++    "sv": {"osv", "ca", "dvs", "nr", "st", "km", "kg", "cm", "dr", "prof", "kap", "jfr", "resp", "tel", "vs",
++           "inkl", "exkl", "sk", "milj", "mdr", "kl", "bl", "ex", "max", "min", "sid", "nb", "fr", "etc",
++           "mm", "ff", "eng", "lat", "jan", "feb", "aug", "sept", "okt", "nov", "dec", "tex", "ung"},
++    "no": {"osv", "mv", "ca", "dvs", "nr", "st", "km", "kg", "cm", "dr", "prof", "kap", "jf", "resp", "tlf", "vs",
++           "inkl", "ekskl", "mill", "mrd", "kl", "pga", "ifm", "iht", "mht", "evt", "ev", "etc", "bl", "eks",
++           "max", "min", "sk", "ff", "eng", "lat", "jan", "feb", "aug", "sept", "okt", "nov", "des", "ang"},
+ }
++# Phrases of the bot-generated Swedish stubs (Lsjbot), which make up about a quarter of the plain
++# Swedish sentences.
++SV_BOT = re.compile(
++    r"\bingår i (?:släktet|familjen|ordningen|klassen|underordningen|divisionen|riket|stammen)\b"
++    r"|\boch familjen\b|\briket (?:svampar|växter|djur)\b|\bär (?:ett|en) (?:släkte|art|familj) (?:av|inom|i)\b"
++    r"|\bär en kommun i\b|\bnaturlig växtlighet\b|\blövskog\b|\bsavann\b|\bär en vik i\b"
++    r"|\bsvenska databasen\b|\bomgivningarna runt\b|\btrakten runt\b|\bglesbefolkat\b|\btätbefolkat\b"
++    r"|\bmedeltemperatur|\bnederbörd|\bjordbruksmark\b|\bår är det\b|\binvånare per kvadratkilometer\b"
++    r"|\bmeter över havet\b|\bkvadratkilometer\b|\bär en (?:tätort|småort|ort|by|sjö|ö|udde|halvö|bergstopp"
++    r"|kulle|ås|dal|slätt|flygplats|vattendrag|glaciär|ögrupp|fjärd|klippa|sund) i\b", re.IGNORECASE)
+ MIN_WORDS, MAX_WORDS = 6, 30
+ HI_MIN_WORDS = 5
+ TH_MIN_CHARS, TH_MAX_CHARS = 25, 150

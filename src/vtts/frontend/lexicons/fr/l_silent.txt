@@ -1,0 +1,10 @@
+# Words whose final l is silent (fr/g2p_fr.py).
+gentil
+fusil
+outil
+sourcil
+persil
+nombril
+chenil
+coutil
+saoul

@@ -1,0 +1,12 @@
+# Words whose final c is silent (fr/g2p_fr.py; c after n is silent anyway: blanc).
+tabac
+estomac
+porc
+croc
+accroc
+escroc
+clerc
+broc
+caoutchouc
+marc
+raccroc

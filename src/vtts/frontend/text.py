@@ -167,7 +167,7 @@ def text_to_tokens(text: str, lang: str = "vi") -> list[list[str]]:
     from .lang import split_sentences_raw
 
     chunks: list[list[str]] = []
-    for sentence in split_sentences_raw(text):
+    for sentence in split_sentences_raw(text, lang):
         for part in _pack_items(_items(sentence, lang)):
             toks = _assemble(part)
             if any(t not in PUNCTUATION for t in toks):

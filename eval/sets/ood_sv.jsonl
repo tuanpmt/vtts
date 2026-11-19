@@ -1,0 +1,50 @@
+{"id": "ood_sv_device_00", "text": "Lampan i vardagsrummet har slocknat.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_01", "text": "Luftrenaren går nu i automatiskt läge.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_02", "text": "Bakdörren är inte låst, ska jag låsa den?", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_03", "text": "Jag har sänkt volymen på högtalaren i köket.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_04", "text": "Tvättmaskinen är klar om tjugo minuter.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_05", "text": "Värmen i sovrummet står på nitton grader.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_06", "text": "Ska jag dra för gardinerna i vardagsrummet?", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_07", "text": "Kylskåpsdörren har stått öppen en stund.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_08", "text": "Dammsugaren har åkt tillbaka till sin laddstation.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_device_09", "text": "Jag hittar ingen enhet i närheten, försök igen.", "group": "device", "lang": "sv"}
+{"id": "ood_sv_numbers_00", "text": "Klockan är nu 15:45.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_01", "text": "Mötet börjar den 15/12/2026 kl. 9.30.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_02", "text": "Det totala priset är 1 250 kr.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_03", "text": "I dag blir det som varmast 32 °C.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_04", "text": "Ring 08-123 45 67 för att boka en tid.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_05", "text": "Ungefär 75 % av eleverna klarade provet.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_06", "text": "Jag bor på 3:e våningen, dörr 2.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_07", "text": "Staden har 2 500 000 invånare.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_08", "text": "Tåget kör 120 km på mindre än en timme.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_numbers_09", "text": "Det är 21 dagar kvar till semestern.", "group": "numbers", "lang": "sv"}
+{"id": "ood_sv_names_00", "text": "Elsa och Oskar åker till Göteborg nästa månad.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_01", "text": "Lars Andersson vann loppet i Uppsala.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_02", "text": "Ingrid har bott i Malmö i tio år.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_03", "text": "I morgon kommer farbror Nils från Umeå.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_04", "text": "Läraren Lindqvist berättade om Visbys historia.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_05", "text": "Maja och Hugo träffades i Lund.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_06", "text": "Nationalmuseum ligger i centrala Stockholm.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_07", "text": "Erik Johansson spelar i ett lag från Linköping.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_08", "text": "Astrid skrev en bok om livet i Dalarna.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_names_09", "text": "Sofias morföräldrar föddes i en by i Norrland.", "group": "names", "lang": "sv"}
+{"id": "ood_sv_questions_00", "text": "Vad vill du äta i kväll?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_01", "text": "Vet du vad den här låten heter?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_02", "text": "Hur lång tid tar bussen till flygplatsen?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_03", "text": "Var lade du bilnycklarna?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_04", "text": "Kan du påminna mig om att ringa mamma i morgon?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_05", "text": "När öppnar apoteket på söndagar?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_06", "text": "Har du sett mina solglasögon någonstans?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_07", "text": "Varför följer du inte med till stranden?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_08", "text": "Vilken är den kortaste vägen till stationen?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_questions_09", "text": "Skulle du vilja lära dig spela gitarr?", "group": "questions", "lang": "sv"}
+{"id": "ood_sv_long_00", "text": "Fast det regnade mycket spelade barnen fotboll på gården tills det blev mörkt.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_01", "text": "Min mormor odlar tomater och paprika i sin trädgård och skickar en full låda till oss varje sommar.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_02", "text": "Efter flera månaders arbete är vi äntligen klara med att måla hela huset invändigt.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_03", "text": "Läkaren rådde honom att promenera en halvtimme om dagen och dricka mer vatten.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_04", "text": "När jag var liten läste jag sagor i biblioteket i vårt kvarter på eftermiddagarna.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_05", "text": "Fotoutställningen är öppen till slutet av månaden, så det finns fortfarande gott om tid.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_06", "text": "Om vi åker tidigt i morgon kan vi vara uppe på fjället innan det blir för varmt.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_07", "text": "Restaurangen på hörnet lagar en härlig ärtsoppa varje torsdag.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_08", "text": "Vi fick slut på bensin mitt på motorvägen och fick vänta nästan två timmar.", "group": "long", "lang": "sv"}
+{"id": "ood_sv_long_09", "text": "Löven på träden börjar byta färg när hösten kommer till staden.", "group": "long", "lang": "sv"}
