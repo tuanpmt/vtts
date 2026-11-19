@@ -22,7 +22,7 @@ uv run python scripts/eval/eval_dir.py --system NAME --set eval/sets/mixed.jsonl
 | `nam-1` | 200k | 0.005 / 0.014 | 0.012 / 0.020 | 0.018 / 0.041 | 3.41 / 4.04 / 3.47 |
 | `nu-10` | 200k | 0.002 / 0.007 | 0.012 / 0.018 | 0.019 / 0.042 | 3.67 / 4.38 / 3.83 |
 
-For reference, the Vietnamese prototype teacher (trained on a recorded corpus) scored CER 0.015 and UTMOS 2.50 on the same Vietnamese set.
+For reference, the teacher of the earlier Vietnamese-only voice (trained on a recorded corpus) scored CER 0.015 and UTMOS 2.50 on the same Vietnamese set.
 
 ## Notes on `nam-1` at 100k
 
@@ -53,7 +53,7 @@ Words come through almost as well as from the teacher; naturalness (UTMOS) drops
 
 ## Clean retraining
 
-These teachers were warm-started from a Vietnamese teacher trained on another corpus (VietBibleVox, CC BY-SA 4.0); `nu-10` started from an early `nam-1` checkpoint. So that the released voices carry only the synthetic VoxCPM2 audio and can be Apache-2.0, both teachers are being retrained from random initialization on that audio alone, and the students will be distilled again. The results above are kept for comparison.
+These teachers were warm-started from a Vietnamese teacher trained on another corpus (VietBibleVox, CC BY-SA 4.0); `nu-10` started from an early `nam-1` checkpoint. So that the released voices carry only the synthetic VoxCPM2 audio and can be Apache-2.0, both teachers were retrained from random initialization on that audio alone and the students distilled again; those students are the v0.4.0 release ([bilingual-student-eval.md](bilingual-student-eval.md)). The results above are kept for comparison.
 
 ## Evaluation of new pairs
 

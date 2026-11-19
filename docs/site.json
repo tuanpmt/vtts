@@ -1,20 +1,6 @@
 {
-  "_comment": "Single source for README.md, README.vi.md and the website (docs/index.html). Edit here, then run: uv run python scripts/docs/sync_docs.py. tests/docs/test_docs_sync.py fails if a generated block is out of date. Fields ending in _vi are used by README.vi.md. 'listen' drives the website's language dropdown and sample table: one entry per language or language pair, one model per column (with size and RTF per chip), one sentence per row; audio paths are relative to docs/ and every clip is the chip's own PCM output, compressed to MP3.",
+  "_comment": "Single source for README.md, README.vi.md and the website (docs/index.html). Edit here, then run: uv run python scripts/docs/sync_docs.py. tests/docs/test_docs_sync.py fails if a generated block is out of date. Fields ending in _vi are used by README.vi.md. 'listen' drives the website's language dropdown and sample table: one entry per language or language pair, one model per column (with size and RTF per chip), one sentence per row; audio paths are relative to docs/ (docs/audio/p4-<voice>-<model>-<sentence>.mp3) and every clip is the chip's own PCM output, compressed to MP3.",
   "voices": [
-    {
-      "name": "Vietnamese prototype",
-      "name_vi": "Prototype tiếng Việt",
-      "langs": [
-        "vi"
-      ],
-      "quality": "M-vocos v0.2 (1.73M params, 2.6 MB)",
-      "lite": "S-vocos v0.1 (0.77M params, 1.1 MB)",
-      "status": "released",
-      "status_text": "Released in v0.3.2 (non-commercial); retired when the bilingual voices are released",
-      "status_text_vi": "Đã phát hành trong v0.3.2 (phi thương mại); ngừng khi phát hành các giọng song ngữ",
-      "quality_vi": "M-vocos v0.2 (1.73M tham số, 2.6 MB)",
-      "lite_vi": "S-vocos v0.1 (0.77M tham số, 1.1 MB)"
-    },
     {
       "name": "`nam-1` (male)",
       "name_vi": "`nam-1` (nam)",
@@ -23,11 +9,13 @@
         "en"
       ],
       "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "training",
-      "status_text": "Training: teacher retrained from scratch for an Apache-2.0 release",
-      "status_text_vi": "Đang train: train lại teacher từ đầu để phát hành Apache-2.0"
+      "quality": "M (1.83M params, 2.6 MB)",
+      "lite": "S (0.82M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.4.0 (Apache-2.0)",
+      "status_text_vi": "Đã phát hành trong v0.4.0 (Apache-2.0)",
+      "quality_vi": "M (1.83M tham số, 2.6 MB)",
+      "lite_vi": "S (0.82M tham số, 1.2 MB)"
     },
     {
       "name": "`nu-10` (female)",
@@ -37,11 +25,13 @@
         "en"
       ],
       "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "training",
-      "status_text": "Training: teacher retrained from scratch for an Apache-2.0 release",
-      "status_text_vi": "Đang train: train lại teacher từ đầu để phát hành Apache-2.0"
+      "quality": "M (1.83M params, 2.6 MB)",
+      "lite": "S (0.82M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.4.0 (Apache-2.0)",
+      "status_text_vi": "Đã phát hành trong v0.4.0 (Apache-2.0)",
+      "quality_vi": "M (1.83M tham số, 2.6 MB)",
+      "lite_vi": "S (0.82M tham số, 1.2 MB)"
     },
     {
       "name": "Chinese + English",
@@ -160,14 +150,14 @@
     {
       "boards": "Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO",
       "chip": "ESP32-P4, 360 MHz, PIE SIMD",
-      "rtf_lite": "0.15",
-      "rtf_quality": "0.24"
+      "rtf_lite": "0.18",
+      "rtf_quality": "0.26"
     },
     {
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
-      "rtf_lite": "0.26",
-      "rtf_quality": "0.49"
+      "rtf_lite": "0.30",
+      "rtf_quality": "0.51"
     }
   ],
   "boards": [
@@ -221,9 +211,9 @@
     },
     {
       "title": "Models",
-      "text": "A VITS teacher (~24M params) is distilled into 0.8–1.7M-param students: duration predictor, acoustic model with pitch and energy, Vocos-style ConvNeXt decoder with an iSTFT head.",
+      "text": "A VITS teacher (~24M params) per voice, trained from scratch, is distilled into 0.8–1.8M-param students: duration predictor, acoustic model with pitch and energy, Vocos-style ConvNeXt decoder with an iSTFT head.",
       "title_vi": "Model",
-      "text_vi": "Teacher VITS (~24M tham số) được distill thành student 0,8–1,7M tham số: bộ dự đoán duration, acoustic model có pitch và energy, decoder ConvNeXt kiểu Vocos với head iSTFT."
+      "text_vi": "Mỗi giọng có một teacher VITS (~24M tham số) train từ đầu, được distill thành student 0,8–1,8M tham số: bộ dự đoán duration, acoustic model có pitch và energy, decoder ConvNeXt kiểu Vocos với head iSTFT."
     },
     {
       "title": "Front-ends",
@@ -233,9 +223,9 @@
     },
     {
       "title": "Data",
-      "text": "The Vietnamese prototype uses a public single-speaker corpus. Bilingual voices use about 98 h each of speech synthesized with VoxCPM2 (Apache-2.0) from designed voices.",
+      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching.",
       "title_vi": "Dữ liệu",
-      "text_vi": "Bản tiếng Việt prototype dùng một corpus công khai một người đọc. Các giọng song ngữ dùng khoảng 98 giờ mỗi giọng, sinh bằng VoxCPM2 (Apache-2.0) từ giọng thiết kế."
+      "text_vi": "Mỗi giọng chỉ được train trên giọng nói sinh bằng VoxCPM2 (Apache-2.0) từ một giọng thiết kế (khoảng 98 giờ cho mỗi giọng Việt + Anh), với các câu chọn để phủ âm tiết hiếm, số và câu trộn ngôn ngữ."
     },
     {
       "title": "Tooling",
@@ -246,118 +236,132 @@
   ],
   "listen": [
     {
-      "id": "vi",
-      "label": "Tiếng Việt",
-      "flags": [
-        "vi"
-      ],
-      "status": "released",
-      "note": "Vietnamese prototype voice, generated on an ESP32-P4.",
-      "models": [
-        {
-          "id": "vi-m",
-          "name": "Quality",
-          "detail": "M v0.2",
-          "params": "1.7M",
-          "size": "2.6 MB",
-          "rtf": {
-            "p4": "0.24",
-            "s3": "0.49"
-          }
-        },
-        {
-          "id": "vi-s",
-          "name": "Lite",
-          "detail": "S v0.1",
-          "params": "0.8M",
-          "size": "1.1 MB",
-          "rtf": {
-            "p4": "0.15",
-            "s3": "0.26"
-          }
-        }
-      ],
-      "samples": [
-        {
-          "text": "Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4.",
-          "audio": {
-            "vi-m": "audio/p4-m-intro.mp3",
-            "vi-s": "audio/p4-s-intro.mp3"
-          }
-        },
-        {
-          "text": "Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11.",
-          "audio": {
-            "vi-m": "audio/p4-m-news.mp3",
-            "vi-s": "audio/p4-s-news.mp3"
-          }
-        },
-        {
-          "text": "Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai.",
-          "audio": {
-            "vi-m": "audio/p4-m-numbers.mp3",
-            "vi-s": "audio/p4-s-numbers.mp3"
-          }
-        },
-        {
-          "text": "Bạn có muốn bật đèn phòng khách không?",
-          "audio": {
-            "vi-m": "audio/p4-m-question.mp3",
-            "vi-s": "audio/p4-s-question.mp3"
-          }
-        },
-        {
-          "text": "Bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ), khoảng 30 giây.",
-          "audio": {
-            "vi-m": "audio/p4-m-paragraph.mp3",
-            "vi-s": "audio/p4-s-paragraph.mp3"
-          }
-        }
-      ]
-    },
-    {
       "id": "vi-en",
       "label": "Việt–English",
       "flags": [
         "vi",
         "en"
       ],
-      "status": "training",
-      "note": "Bilingual voices that read Vietnamese, English and mixed sentences in one voice. Samples arrive when training finishes.",
+      "status": "released",
+      "note": "Released in v0.4.0 (Apache-2.0): two bilingual voices that read Vietnamese, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
       "models": [
         {
           "id": "nam1-m",
           "name": "nam-1 Quality",
-          "detail": "male · quality"
+          "detail": "male · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.26",
+            "s3": "0.51"
+          }
         },
         {
           "id": "nam1-s",
           "name": "nam-1 Lite",
-          "detail": "male · lite"
+          "detail": "male · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.18",
+            "s3": "0.30"
+          }
         },
         {
           "id": "nu10-m",
           "name": "nu-10 Quality",
-          "detail": "female · quality"
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.26",
+            "s3": "0.51"
+          }
         },
         {
           "id": "nu10-s",
           "name": "nu-10 Lite",
-          "detail": "female · lite"
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.18",
+            "s3": "0.30"
+          }
         }
       ],
       "samples": [
         {
-          "text": "Đã kết nối Bluetooth với AirPods, bạn có thể mở Spotify hoặc YouTube Music.",
-          "audio": {}
+          "text": "Xin chào, tôi là giọng đọc tiếng Việt và tiếng Anh chạy hoàn toàn trên chip ESP32.",
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-intro.mp3",
+            "nam1-s": "audio/p4-nam1-s-intro.mp3",
+            "nu10-m": "audio/p4-nu10-m-intro.mp3",
+            "nu10-s": "audio/p4-nu10-s-intro.mp3"
+          }
         },
         {
-          "text": "Your package will arrive on Tuesday, November 18, between 2 and 4 p.m.",
-          "audio": {}
+          "text": "Đã kết nối Bluetooth với AirPods, bạn có thể mở Spotify hoặc YouTube Music.",
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-bluetooth.mp3",
+            "nam1-s": "audio/p4-nam1-s-bluetooth.mp3",
+            "nu10-m": "audio/p4-nu10-m-bluetooth.mp3",
+            "nu10-s": "audio/p4-nu10-s-bluetooth.mp3"
+          }
         },
         {
           "text": "Cuộc họp trên Google Meet sẽ bắt đầu lúc 9 giờ, nhớ chuẩn bị file PowerPoint nhé.",
-          "audio": {}
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-meeting.mp3",
+            "nam1-s": "audio/p4-nam1-s-meeting.mp3",
+            "nu10-m": "audio/p4-nu10-m-meeting.mp3",
+            "nu10-s": "audio/p4-nu10-s-meeting.mp3"
+          }
+        },
+        {
+          "text": "Hello! I am a text-to-speech voice that runs entirely on an ESP32 microcontroller.",
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-en-intro.mp3",
+            "nam1-s": "audio/p4-nam1-s-en-intro.mp3",
+            "nu10-m": "audio/p4-nu10-m-en-intro.mp3",
+            "nu10-s": "audio/p4-nu10-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package will arrive on Tuesday, November 18, between 2 and 4 p.m.",
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-en-package.mp3",
+            "nam1-s": "audio/p4-nam1-s-en-package.mp3",
+            "nu10-m": "audio/p4-nu10-m-en-package.mp3",
+            "nu10-s": "audio/p4-nu10-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11.",
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-news.mp3",
+            "nam1-s": "audio/p4-nam1-s-news.mp3",
+            "nu10-m": "audio/p4-nu10-m-news.mp3",
+            "nu10-s": "audio/p4-nu10-s-news.mp3"
+          }
+        },
+        {
+          "text": "Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai.",
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-numbers.mp3",
+            "nam1-s": "audio/p4-nam1-s-numbers.mp3",
+            "nu10-m": "audio/p4-nu10-m-numbers.mp3",
+            "nu10-s": "audio/p4-nu10-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "Bạn có muốn bật đèn phòng khách không?",
+          "audio": {
+            "nam1-m": "audio/p4-nam1-m-question.mp3",
+            "nam1-s": "audio/p4-nam1-s-question.mp3",
+            "nu10-m": "audio/p4-nu10-m-question.mp3",
+            "nu10-s": "audio/p4-nu10-s-question.mp3"
+          }
         }
       ]
     },

@@ -18,10 +18,11 @@ Start with the [project README](../README.md) for the voice catalog, hardware su
 | Report | Contents |
 |---|---|
 | [On-chip performance](reports/performance.md) | RTF, latency, CPU load and memory on ESP32-P4 and ESP32-S3, and how the runtime got there |
+| [Bilingual student evaluation](reports/bilingual-student-eval.md) | CER/WER and UTMOS of the released Vietnamese + English models (v0.4.0), quality and lite, against their teachers |
 | [Bilingual teacher evaluation](reports/bilingual-teacher-eval.md) | CER/WER and UTMOS of the bilingual teachers on Vietnamese, English and mixed sentences, per checkpoint |
 | [Runtime optimization research](reports/runtime-optimization-research.md) | Compute budget, bottlenecks and a prioritized optimization plan for both chips (in progress) |
 | [Baselines](reports/baseline.md) | sanoTTS and Piper Vietnamese voices on the out-of-domain set; the derived teacher gate |
-| [InfoRe1 dataset](reports/dataset-infore1.md) | Preparation and filtering of the corpus behind the Vietnamese prototype |
+| [InfoRe1 dataset](reports/dataset-infore1.md) | Preparation and filtering of the recorded corpus used in early development (v0.1–v0.3) |
 
 Raw baseline scores: [`piper-25h-ood.json`](reports/piper-25h-ood.json), [`sanotts-vi-ood.json`](reports/sanotts-vi-ood.json).
 

@@ -4,6 +4,57 @@ All notable changes to this project are documented here. Model files for each re
 
 ## Unreleased
 
+### In progress
+- Chinese + English and the other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
+- User pronunciation dictionary.
+
+## v0.4.0 (2026-11-19)
+
+First bilingual release: two Vietnamese + English voices, `nam-1` (male) and `nu-10` (female), each as a quality model (M) and a lite model (S), all **Apache-2.0**. One voice reads Vietnamese, English and sentences that mix both ("Đã kết nối Bluetooth với AirPods"); the language is chosen per word on the chip. The teachers were trained from random initialization on speech synthesized with VoxCPM2 (Apache-2.0) from designed voices, about 98 h per voice, with no recorded corpus and no warm start from another model. Every released model is now bilingual (one main language + English); the Vietnamese-only prototype of v0.1–v0.3 is retired (its files stay on those GitHub releases).
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-vien-nam1-m-v0.4.q8.vtts` | `nam-1` (male) | Quality (M) | 1.83M | 2.6 MB |
+| `vtts-vien-nam1-s-v0.4.q8.vtts` | `nam-1` (male) | Lite (S) | 0.82M | 1.2 MB |
+| `vtts-vien-nu10-m-v0.4.q8.vtts` | `nu-10` (female) | Quality (M) | 1.83M | 2.6 MB |
+| `vtts-vien-nu10-s-v0.4.q8.vtts` | `nu-10` (female) | Lite (S) | 0.82M | 1.2 MB |
+
+Int8, token set `vi-en` (recorded in the file, format revision 1.1), 22.05 kHz.
+
+### Quality
+
+Three out-of-domain sets of 50 sentences (CER from PhoWhisper-large for Vietnamese, Whisper large-v3 for English and mixed; audio from the int8 C runtime). Report: [docs/reports/bilingual-student-eval.md](docs/reports/bilingual-student-eval.md).
+
+| Model | Vietnamese CER | English CER | Mixed CER | UTMOS (vi / en / mixed) |
+|---|---:|---:|---:|---|
+| `nam-1` M | 0.021 | 0.015 | 0.030 | 2.59 / 3.25 / 2.63 |
+| `nam-1` S | 0.024 | 0.009 | 0.036 | 2.38 / 3.05 / 2.45 |
+| `nu-10` M | 0.014 | 0.008 | 0.015 | 2.72 / 3.44 / 2.70 |
+| `nu-10` S | 0.015 | 0.013 | 0.027 | 2.52 / 3.26 / 2.50 |
+
+The earlier (warm-started) teachers scored CER 0.002–0.005 (vi), 0.012 (en) and 0.018–0.019 (mixed) with UTMOS 3.4–4.4; the first, unreleased `nam-1` M student 0.021 / 0.014 / 0.035 with UTMOS 2.40 / 3.23 / 2.49, so the clean `nam-1` M is as intelligible and slightly more natural.
+
+### Performance
+
+| Board | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 (86-Panel, NANO) | 0.17–0.19 / 0.06–0.15 s | 0.25–0.27 / 0.17–0.34 s |
+| ESP32-S3 (Touch-LCD-2.8, EchoEar 2.0) | 0.29–0.31 / 0.17–0.32 s | 0.50–0.52 / 0.31–0.61 s |
+
+RTF from `bench` and `dump` (no playback), speech start from playing eight Vietnamese, English and mixed sentences; the same for both voices. Measured on an ESP32-P4-86-Panel-ETH-2RO and an ESP32-S3-Touch-LCD-2.8. The S model is larger than the old prototype S (0.82M vs 0.77M parameters), so S is a little slower than in v0.3.2. Details: [docs/reports/performance.md](docs/reports/performance.md).
+
+### Flash a board
+
+```bash
+gh release download v0.4.0 -R tuanpmt/vtts -p '*.vtts' -D models
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.4.q8.vtts ../../models/vtts-vien-nu10-m-v0.4.q8.vtts -p PORT flash monitor
+```
+
+`BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`; use the `nam1` files for the male voice. The firmware embeds the English lexicon (1.9 MB). With two vi-en models and only that lexicon the image is 6.35 MB on the ESP32-P4 (86-Panel, 2.03 MB free) and 6.24 MB on the ESP32-S3 (Touch-LCD-2.8, 2.15 MB free) in the 8 MB app partition; `build.sh` also builds and embeds the Chinese and Japanese blobs, which vi-en models do not use (about 0.85 MB more, still within the partition). On the console: `model s|m`, `lang vi|en|auto`.
+
 ### Added
 - **Bilingual device front-end (C):** `vtts_text_to_ids_ex` with modes vi, en and auto (phoneme set v2): English normalization and G2P, per-word language tagging and chunk packing, exactly matching Python (2,018 fixture cases, 13,023 in a larger run, fuzz clean). The English lexicon and letter-to-sound rules ship as a 1.9 MB `VLEX` blob read in place (`scripts/frontend/build_lexicon.py`, `vtts_lex_*`).
 - **Language modules** in Python (`src/vtts/frontend/languages.py`) and C (`LANGS`): a new language plugs in a normalizer, a word-to-token function and a tagging rule; see docs/frontend/pronunciation-rules.md.
@@ -11,13 +62,12 @@ All notable changes to this project are documented here. Model files for each re
 - **Bilingual distillation:** v2 distill packs from a `{text, lang}` corpus, presets `M-vocos-p-bi`, `S-vocos-p-bi` and `M-vocos-p-bi-s3`, `run_bilingual_chain.sh`.
 - Firmware command `ids ...` and `say.py --lang` to play token ids from a host front-end.
 - **On-device bilingual text:** the firmware embeds the VLEX lexicon (read in place from flash) and uses the bilingual front-end for models with token set v2; `lang vi|en|auto` sets the mode. Same audio as the host front-end on ESP32-P4.
-
-- **Bilingual teacher results at 200k:** `nam-1` CER 0.005 / 0.012 / 0.018 (vi / en / mixed), UTMOS 3.41 / 4.04 / 3.47; `nu-10` CER 0.002 / 0.012 / 0.019, UTMOS 3.67 / 4.38 / 3.83 ([report](docs/reports/bilingual-teacher-eval.md)).
-- **First bilingual student** (`nam-1` M, 1.83M params, 2.6 MB): CER 0.021 / 0.014 / 0.035, RTF 0.26–0.28 on the ESP32-P4 with the on-device front-end. Not released (see below).
 - `render_student_c.py --lang` renders bilingual models through the C runtime for evaluation.
+- **Token set in the model file:** optional dim `token_set` (format revision 1.1: v1, vi-en, zh-en, ko-en, ja-en), written by `write_model` / `write_model_int8` and `export_student.py --token-set` (default: from the checkpoint or the vocab size), read with `vtts_token_set()` in C and `token_set_of()` in Python. Files without it map by vocab as before, and older runtimes ignore it.
+
+### Added (front-ends for the next pairs; no released models yet)
 - **Chinese front-end (Python):** token set `zh-en` (v2 ids 0–106 unchanged, Mandarin initials, finals and tones from id 107), `text_to_ids(text, "zh")` for Chinese with English words, readings from a default-per-character table plus a polyphone phrase table generated from pypinyin (`scripts/frontend/build_zh_lexicon.py`), Chinese number, date, time and percentage reading; teacher rows with lang `zh` use it.
 - **Chinese device front-end (C):** mode `VTTS_LANG_ZH` of `vtts_text_to_ids_ex` (token set zh-en) with Chinese normalization, forward-maximum-matching readings and English words, exactly matching `text_to_ids(text, "zh")` (9,397 fixture cases, 78,017 in a larger run, fuzz clean). The reading tables ship as a 116 KB `ZLEX` blob read in place (`scripts/frontend/build_zh_blob.py`, `vtts_zlex_*`); the text workspace grows by 2 KB. `make -C runtime test` runs all text front-end tests.
-- **Token set in the model file:** optional dim `token_set` (format revision 1.1: v1, vi-en, zh-en, ko-en, ja-en), written by `write_model` / `write_model_int8` and `export_student.py --token-set` (default: from the checkpoint or the vocab size), read with `vtts_token_set()` in C and `token_set_of()` in Python. Files without it map by vocab as before, and older runtimes ignore it.
 - **Chinese on the device:** the firmware picks the text front-end from each model's token set instead of its vocab size, embeds the 116 KB ZLEX blob next to the English lexicon (`build.sh` builds `main/lex_zh.bin`), and accepts `lang zh` for zh-en models (`lang` refuses modes of other token sets; ko-en and ja-en models take `ids` only). `bench` uses Mandarin sentences for zh-en models. Host tool `vtts_say` runs the same text → ids → audio path on a PC.
 - **Korean device front-end (C):** mode `VTTS_LANG_KO` of `vtts_text_to_ids_ex` (token set ko-en) with Korean normalization (Sino-Korean and native numbers with counters, dates with 유월/시월, times, decimals, percent, ranges, phone numbers, money, units, product codes in English), the exception table and the ordered pronunciation rules, exactly matching `text_to_ids(text, "ko")` (11,369 fixture cases, 126,277 in a larger run, fuzz clean). The tables are generated into `vtts_text_tables.h` (about 4 KB, no blob); the text workspace grows by 2 KB. The firmware accepts `lang ko` (default for ko-en models), `bench` has Korean sentences, and `vtts_say` runs ko-en models.
 - **Hindi device front-end (C):** mode `VTTS_LANG_HI` of `vtts_text_to_ids_ex` (token set hi-en, model header code 10) with Hindi normalization (numbers 0–99 from the table with sau, hazaar, lakh and crore, decimals, dates, years, times with बजे, rupees and paise, percent, units, ordinals, ranges, phone numbers, product codes, Devanagari digits, the danda as a sentence end), the Devanagari letter, anusvara and schwa-deletion rules and the exception table, exactly matching `text_to_ids(text, "hi")` (10,951 fixture cases, 143,285 more in larger random runs, fuzz clean). The tables are generated into `vtts_text_tables.h` (no blob); the runtime knows token set hi-en (`VTTS_TOKSET_HI_EN`). The firmware accepts `lang hi` (default for hi-en models), `bench` has Hindi sentences, and `vtts_say` runs hi-en models; the front-end adds about 25 KB to the ESP32-P4 image.
@@ -32,15 +82,18 @@ All notable changes to this project are documented here. Model files for each re
 - **Thai front-end (Python):** token set `th-en` (code 9; 55 Thai tokens from id 107: 21 initials with the glottal stop `?`, 21 vowels (nine short/long pairs and the diphthongs ia, uea, ua), 8 finals (k p t m n ng w j), 5 tones; vocabulary 162), `text_to_ids(text, "th")` for Thai with English words: word segmentation over a 16,377-word list made from PyThaiNLP's CC0 word list (`lexicons/th/words.txt`, `scripts/frontend/build_th_lexicon.py`), syllables by a cost-based split over the spelling patterns (preposed vowels, clusters, silent ร, ห and leading consonants, unwritten o/a, ์, ฤ, linking finals ฐ ษ ศ ธ), tones from consonant class, tone mark and live/dead syllables, `lexicons/th/overrides.tsv` (116 respellings), ๆ and ฯ; Thai numbers (เอ็ด, ยี่สิบ, ล้าน), Thai digits, dates, times (14.30 น.), money, percentages, units, phone numbers; spaces between Thai runs read as pauses. 90.4% syllable agreement and 99.4% tone agreement with TLTK's g2p (PyThaiNLP `tltk_g2p`) on 1,193 held-out Wikipedia sentences (`scripts/frontend/eval_th_g2p.py`). Eval sets `ood_th` and `mixed_th`; teacher rows, distill packs, presets, CER with lang `th`.
 - **Thai device front-end (C):** mode `VTTS_LANG_TH` of `vtts_text_to_ids_ex` (token set th-en, code 9; vocab 162 maps to it too) with Thai normalization (Thai digits, abbreviations, numbers, dates, times with น., money, percent, units, phone numbers, product codes, pauses between Thai runs), word segmentation over the word list, the lowest-cost syllable split, silent letters, linking finals, leading consonants, respellings and tones, exactly matching `text_to_ids(text, "th")` (12,997 fixture cases with both Thai eval sets and the Thai unit-test strings, 70,000 more in a larger run, fuzz clean). `gen_text_tables.py` writes the tables into `vtts_text_th_tables.h` (no blob): the 16,493 words front coded in 68 KB plus a 4 KB block index, about 80 KB in all; the text workspace does not grow. A dot after a Thai letter no longer ends a sentence in any mode (as in Python). The firmware accepts `lang th` (default for th-en models), `bench` has Thai sentences, and `vtts_say` runs th-en models.
 - **Pair data and evaluation tools:** Korean and Japanese code-switching templates and `scripts/data/build_mixed.py --lang zh|ko|ja` (replaces `build_zh_mixed.py`); `scripts/data/pair_train_list.py` joins several synthesis runs into one teacher list (optional audio-path column in `train.csv`, per-source hour caps); out-of-domain and mixed evaluation sets for zh, ko and ja with character-level CER (`--lang zh|ko|ja` in `render_teacher.py` and `eval_dir.py`).
-- **Mandarin corpus builder** (`scripts/data/build_zh_corpus.py`): plain Simplified Chinese sentences from Chinese Wikipedia for the planned Chinese + English voice; synthesis with the `nu-10` voice has started.
+- **Mandarin corpus builder** (`scripts/data/build_zh_corpus.py`): plain Simplified Chinese sentences from Chinese Wikipedia for the planned Chinese + English voice.
 
 ### Changed
 - **Direction:** vtts now targets bilingual voices (main language + English): Vietnamese, Chinese, Korean and Japanese first, then more pairs by ESP32 market. Single-language models are retired once the Vietnamese + English voices are released. See the [roadmap](docs/design/plans/2026-11-18-roadmap-bilingual.md).
+- Docs, website and Hugging Face card list only the bilingual voices; all audio samples are the ESP32-P4's own output from the v0.4.0 models.
 
-### In progress
-- Retraining the `nam-1` and `nu-10` teachers from random initialization on the synthetic audio only (the first teachers were warm-started from a model trained on another corpus), so the bilingual voices can be released under Apache-2.0.
-- Chinese + English voice: front-end (pinyin, polyphones, number reading) and data.
-- User pronunciation dictionary.
+### Known issues
+- ESP32-S3, model M with two cores (the default): the output is not deterministic and some sentences contain short bursts a few frames long; `cores 1` avoids it at the cost of speed. S on the S3 and both models on the ESP32-P4 are not affected. See [docs/reports/performance.md](docs/reports/performance.md#chip-output-against-the-pc-runtime).
+- A very short first sentence followed by a long one ("Hello! I am ...") can cause one playback underrun (a short gap).
+
+### Removed
+- The Vietnamese prototype (S-vocos v0.1, M-vocos v0.2, CC BY-NC 4.0) from the voice catalog, website samples and Hugging Face card. The firmware and runtime still read its v1 files for one more release.
 
 ## v0.3.2 (2026-11-17)
 

@@ -5,9 +5,10 @@
 🇻🇳 [Tiếng Việt](README.vi.md) · 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/) · 🤗 [Models on Hugging Face](https://huggingface.co/tuanpm/vtts) · 📚 [Documentation](docs/README.md)
 
 - **On the chip, end to end:** text normalization, grapheme-to-phoneme, an int8 acoustic model and an iSTFT vocoder all run on the MCU.
-- **Faster than real time, streaming:** speech starts after 0.1–0.45 s depending on chip and model.
-- **Two model sizes per voice, on both chips:** *quality* (M) for the best sound and *lite* (S), about 1.7× faster with less CPU load and flash. Both run faster than real time on the ESP32-P4 and the ESP32-S3; pick by sound versus headroom, not by chip.
-- **Small and predictable:** 1.1–2.6 MB models, a C99 runtime with no `malloc` (the caller provides one arena whose size is known up front).
+- **Bilingual voices:** every model reads one main language + English, including sentences that mix both. First pair: Vietnamese + English, with a male (`nam-1`) and a female (`nu-10`) voice, Apache-2.0.
+- **Faster than real time, streaming:** speech starts after 0.1–0.6 s depending on chip and model.
+- **Two model sizes per voice, on both chips:** *quality* (M) for the best sound and *lite* (S), about 1.5–1.7× faster with less CPU load and flash. Both run faster than real time on the ESP32-P4 and the ESP32-S3; pick by sound versus headroom, not by chip.
+- **Small and predictable:** 1.2–2.6 MB models, a C99 runtime with no `malloc` (the caller provides one arena whose size is known up front).
 - **Built to grow:** languages plug in as front-end modules on a versioned token set, so new bilingual voices reuse the same runtime, firmware and training pipeline.
 
 ## Voice catalog
@@ -15,9 +16,8 @@
 <!-- BEGIN:voices -->
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
-| Vietnamese prototype | 🇻🇳 vi | M-vocos v0.2 (1.73M params, 2.6 MB) | S-vocos v0.1 (0.77M params, 1.1 MB) | **Released in v0.3.2 (non-commercial); retired when the bilingual voices are released** |
-| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: teacher retrained from scratch for an Apache-2.0 release** |
-| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M | S | **Training: teacher retrained from scratch for an Apache-2.0 release** |
+| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
+| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
 | Chinese + English | 🇨🇳 zh + 🇺🇸 en, code-switching | M | S | **Data: Mandarin speech synthesizing; front-end next** |
 | Korean + English | 🇰🇷 ko + 🇺🇸 en, code-switching | M | S | Planned |
 | Japanese + English | 🇯🇵 ja + 🇺🇸 en, code-switching | M | S | Planned |
@@ -30,20 +30,20 @@
 
 Bilingual voices read single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods" ("Connected to AirPods over Bluetooth") in one voice; the front-end picks the language per word. The English front-end runs on the device too (C, parity-tested against Python), so mixed text is handled on the chip.
 
-Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts) (one folder per voice; the released Vietnamese models are in `vi/`).
+Every released model is bilingual: one main language + English (today vi + en). Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts) (one folder per voice: `vi-en-nam-1/`, `vi-en-nu-10/`).
 
 ## Hardware and performance
 
 <!-- BEGIN:hardware -->
 | Board | Chip | Lite model RTF | Quality model RTF |
 |---|---|---|---|
-| Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.15 | 0.24 |
-| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.26 | 0.49 |
+| Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.18 | 0.26 |
+| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.30 | 0.51 |
 
 Both models run on both chips. RTF below 1 means faster than real time.
 <!-- END:hardware -->
 
-Both chips use two cores and int8 SIMD kernels. Audio generated on the chip matches the C runtime on a PC (correlation ≥ 0.99999). The ESP32-S3 needs at least 8 MB of PSRAM. Details, CPU load and the optimizations so far: [docs/reports/performance.md](docs/reports/performance.md). Further runtime speedups are in progress: [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).
+Both chips use two cores and int8 SIMD kernels. Audio generated on the ESP32-P4 matches the C runtime on a PC (correlation ≥ 0.999 on the published clips). The ESP32-S3 needs at least 8 MB of PSRAM. Details, CPU load and the optimizations so far: [docs/reports/performance.md](docs/reports/performance.md). Further runtime speedups are in progress: [docs/reports/runtime-optimization-research.md](docs/reports/runtime-optimization-research.md).
 
 ## Technology
 
@@ -52,54 +52,56 @@ Both chips use two cores and int8 SIMD kernels. Audio generated on the chip matc
 
 - **Runtime:** C99, no malloc: the caller passes one arena whose size is known up front. Int8 weights with per-channel scales, int8 activations with one scale per frame. Streaming keeps per-layer state, so every frame is computed once.
 - **On the chip:** Int8 SIMD kernels for the ESP32-P4 (PIE) and the ESP32-S3 (128-bit SIMD), work split over both cores with FreeRTOS. Chip audio matches the reference C runtime on a PC.
-- **Models:** A VITS teacher (~24M params) is distilled into 0.8–1.7M-param students: duration predictor, acoustic model with pitch and energy, Vocos-style ConvNeXt decoder with an iSTFT head.
+- **Models:** A VITS teacher (~24M params) per voice, trained from scratch, is distilled into 0.8–1.8M-param students: duration predictor, acoustic model with pitch and energy, Vocos-style ConvNeXt decoder with an iSTFT head.
 - **Front-ends:** One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. English: CMUdict plus letter-to-sound rules learned from it.
-- **Data:** The Vietnamese prototype uses a public single-speaker corpus. Bilingual voices use about 98 h each of speech synthesized with VoxCPM2 (Apache-2.0) from designed voices.
+- **Data:** Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching.
 - **Tooling:** PyTorch for training, ESP-IDF v6.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness.
 <!-- END:tech -->
 
 More detail in [Architecture](#architecture).
 
-## Quality (Vietnamese prototype)
+## Quality
 
-50 out-of-domain sentences (device prompts, numbers, names, questions, long sentences). CER is the character error rate when an ASR model (PhoWhisper-large) transcribes the audio, tones included; UTMOS predicts naturalness; the whistle index counts tonal artifacts per second. vtts audio comes from the int8 C runtime.
+Three out-of-domain sets of 50 sentences each (device prompts, numbers, names, questions, long sentences), none of them in the training text. CER is the character error rate when an ASR model transcribes the audio: PhoWhisper-large for Vietnamese (tones included), Whisper large-v3 for English and for Vietnamese sentences with English words. UTMOS predicts naturalness. Audio comes from the int8 C runtime, which gives the same output as the chip.
 
-| System | Params | CER ↓ | UTMOS ↑ | Whistle ↓ |
-|---|---:|---:|---:|---:|
-| **vtts M-vocos v0.2** | 1.73M | **0.012** | 2.19 | 7.8 |
-| vtts S-vocos v0.1 | 0.77M | 0.023 | 1.86 | 61.5 |
-| Teacher VITS | 23.7M | 0.015 | 2.50 | 14.8 |
-| sanoTTS `vi` | 1.57M | 0.064 | 1.49 | 1.5 |
-| Piper `vi_VN-25hours_single` | — | 0.089 | 2.06 | 1.1 |
+| Model | Params | Vietnamese CER ↓ | English CER ↓ | Mixed CER ↓ | UTMOS ↑ (vi / en / mixed) |
+|---|---:|---:|---:|---:|---|
+| `nam-1` M | 1.83M | 0.021 | 0.015 | 0.030 | 2.59 / 3.25 / 2.63 |
+| `nam-1` S | 0.82M | 0.024 | 0.009 | 0.036 | 2.38 / 3.05 / 2.45 |
+| `nu-10` M | 1.83M | **0.014** | **0.008** | **0.015** | **2.72 / 3.44 / 2.70** |
+| `nu-10` S | 0.82M | 0.015 | 0.013 | 0.027 | 2.52 / 3.26 / 2.50 |
 
-M-vocos v0.2 has a pitch and energy predictor. On 50 held-out sentences its mean duration is 5.80 s per sentence (human reader: 6.08 s) and its pitch variation is 2.37 semitones (human: 2.60). Baseline details: [docs/reports/baseline.md](docs/reports/baseline.md).
+Most remaining errors are numbers written differently by the ASR ("9:30" as "9.30") and brand names inside Vietnamese sentences. Details and teacher numbers: [docs/reports/bilingual-student-eval.md](docs/reports/bilingual-student-eval.md).
 
 ### Listen (generated on an ESP32-P4)
 
-Audio is produced on the chip with the firmware's `dump` command, sent to a PC over serial and only compressed to mp3. More samples on the [website](https://tuanpmt.github.io/vtts/).
+Audio is produced on the chip with the firmware's `dump` command (`lang auto`), sent to a PC over serial and only compressed to mp3; every clip was checked with ASR before publishing. More samples on the [website](https://tuanpmt.github.io/vtts/).
 
 <!-- BEGIN:samples -->
-🇻🇳 **Tiếng Việt**
+🇻🇳 🇺🇸 **Việt–English**
 
-| Sentence | Quality | Lite |
-|---|---|---|
-| Xin chào, tôi là giọng đọc tiếng Việt chạy hoàn toàn trên chip ESP32-P4. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-intro.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-intro.mp3) |
-| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-news.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-news.mp3) |
-| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-numbers.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-numbers.mp3) |
-| Bạn có muốn bật đèn phòng khách không? | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-question.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-question.mp3) |
-| Bản tin thời tiết 5 câu (dấu phẩy, dấu chấm, số đọc thành chữ), khoảng 30 giây. | [▶ Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-m-paragraph.mp3) | [▶ Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-s-paragraph.mp3) |
+| Sentence | nam-1 Quality | nam-1 Lite | nu-10 Quality | nu-10 Lite |
+|---|---|---|---|---|
+| Xin chào, tôi là giọng đọc tiếng Việt và tiếng Anh chạy hoàn toàn trên chip ESP32. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-intro.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-intro.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-intro.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-intro.mp3) |
+| Đã kết nối Bluetooth với AirPods, bạn có thể mở Spotify hoặc YouTube Music. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-bluetooth.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-bluetooth.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-bluetooth.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-bluetooth.mp3) |
+| Cuộc họp trên Google Meet sẽ bắt đầu lúc 9 giờ, nhớ chuẩn bị file PowerPoint nhé. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-meeting.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-meeting.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-meeting.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-meeting.mp3) |
+| Hello! I am a text-to-speech voice that runs entirely on an ESP32 microcontroller. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-en-intro.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-en-intro.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-en-intro.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-en-intro.mp3) |
+| Your package will arrive on Tuesday, November 18, between 2 and 4 p.m. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-en-package.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-en-package.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-en-package.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-en-package.mp3) |
+| Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-news.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-news.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-news.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-news.mp3) |
+| Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-numbers.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-numbers.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-numbers.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-numbers.mp3) |
+| Bạn có muốn bật đèn phòng khách không? | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-question.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-question.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-question.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-question.mp3) |
 <!-- END:samples -->
 
 ## Quick start
 
 ### Flash a board
 
-You need ESP-IDF v6.1 and the two model files from [Releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts).
+You need ESP-IDF v6.1 and the two model files of one voice (lite S first, then quality M) from [Releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts). The files are `vtts-vien-nam1-{s,m}-v0.4.q8.vtts` (male) and `vtts-vien-nu10-{s,m}-v0.4.q8.vtts` (female).
 
 ```bash
-gh release download v0.3.2 -R tuanpmt/vtts -p '*.vtts' -D models
+gh release download v0.4.0 -R tuanpmt/vtts -p '*.vtts' -D models
 cd firmware/esp32
-BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vi-s-v0.1.q8.vtts ../../models/vtts-vi-m-v0.2.q8.vtts -p PORT flash monitor
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.4.q8.vtts ../../models/vtts-vien-nu10-m-v0.4.q8.vtts -p PORT flash monitor
 ```
 
 <!-- BEGIN:boards -->
@@ -156,9 +158,9 @@ flowchart LR
     V --> P["PCM 22.05 kHz"]
 ```
 
-- **Distillation.** Each voice starts from a large VITS teacher (~24M parameters). The teacher produces durations, latents and audio for tens of thousands of sentences, and a 0.8–1.7M-parameter student learns from them in three stages (front, decoder, joint with multi-resolution discriminators). The student is exported to int8 and runs on the chip.
+- **Distillation.** Each voice starts from a large VITS teacher (~24M parameters). The teacher produces durations, latents and audio for tens of thousands of sentences, and a 0.8–1.8M-parameter student learns from them in three stages (front, decoder, joint with multi-resolution discriminators). The student is exported to int8 and runs on the chip.
 - **Spelling-based Vietnamese G2P.** Tokens follow the written form rather than one dialect (`tr`/`ch`, `s`/`x`, `r`/`d`/`gi` stay distinct; 6 tones from the diacritics), so a regional voice only needs new data.
-- **Training data.** The prototype uses a public single-speaker corpus (InfoRe1, 25 h). The bilingual voices use speech synthesized with VoxCPM2 (Apache-2.0) in one designed voice each, with sentences chosen to cover rare syllables, numbers and code-switching.
+- **Training data.** Speech synthesized with VoxCPM2 (Apache-2.0) in one designed voice each (about 98 h per Vietnamese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching. Teachers are trained from random initialization on this audio only.
 - **Front-end parity.** Every language's front-end exists in Python (training) and C (device), and tests check they produce identical token ids.
 
 Design documents, the model file format and measurement reports are indexed in [docs/README.md](docs/README.md).
@@ -197,13 +199,12 @@ Each script documents its arguments at the top of the file.
 
 ## Roadmap
 
-vtts focuses on **bilingual voices: one main language + English**, with code-switching. Single-language models are retired once the Vietnamese + English voices are released. Details: [docs/design/plans/2026-11-18-roadmap-bilingual.md](docs/design/plans/2026-11-18-roadmap-bilingual.md).
+vtts ships **bilingual voices: one main language + English**, with code-switching. Every released model covers one pair. Details: [docs/design/plans/2026-11-18-roadmap-bilingual.md](docs/design/plans/2026-11-18-roadmap-bilingual.md).
 
-- [x] Vietnamese prototype voices, quality and lite, on ESP32-P4 and ESP32-S3 (to be retired)
 - [x] English front-end in Python and on the device (C, parity-tested), per-word language tagging
 - [x] Synthesized training data for the bilingual voices `nam-1` and `nu-10`
 - [x] Faster runtime: the quality model runs on the ESP32-S3 too
-- [ ] **Vietnamese + English** `nam-1` (male) and `nu-10` (female), Apache-2.0 (teachers retraining from scratch); other pairs start with `nu-10`, more voices later
+- [x] **Vietnamese + English** `nam-1` (male) and `nu-10` (female), quality and lite, Apache-2.0 (v0.4.0)
 - [ ] **Chinese + English** (Mandarin speech synthesizing; pinyin front-end next)
 - [ ] **Korean + English**
 - [ ] **Japanese + English**
@@ -224,6 +225,5 @@ Bug reports, measurements on other boards and new language front-ends are welcom
 ## License
 
 - **Code:** Apache-2.0 ([LICENSE](LICENSE)). Parts derived from Piper/VITS keep their MIT license, and the CMU Pronouncing Dictionary keeps its BSD license; see [NOTICE](NOTICE).
-- **Released models:** the current Vietnamese prototype models are CC BY-NC 4.0 (non-commercial use only). Their teacher was initialized from a Piper checkpoint whose training data allows only non-commercial use, and the commercial terms of the InfoRe1 corpus are unclear. The Apache-2.0 code license does not apply to model files. PyTorch checkpoints and teachers are not released.
-- **Synthetic voices:** the bilingual voices are trained on audio generated with VoxCPM2 (Apache-2.0) from designed voices, not cloned from real people; their teachers are being retrained from random initialization on that audio alone, so that these voices can be released under Apache-2.0. Audio from these models should be labeled as AI-generated.
+- **Models:** the released `.vtts` files (v0.4.0 and later) are Apache-2.0. Their teachers are trained from random initialization only on audio generated with VoxCPM2 (Apache-2.0) from designed voices, not cloned from real people. Audio from these models should be labeled as AI-generated. PyTorch checkpoints and teachers are not released.
 - **Built with Claude Code:** much of this project (runtime and SIMD kernels, front-ends, training and data pipelines, firmware, website and documentation) was written with [Claude Code](https://claude.com/claude-code) by Anthropic, directed and reviewed by the maintainer. Commits made this way carry a `Co-Authored-By: Claude` trailer. This does not change any license above.
