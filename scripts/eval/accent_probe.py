@@ -19,7 +19,8 @@ from pathlib import Path
 import numpy as np
 import soundfile as sf
 
-LID = ("vi", "en", "zh", "ko", "ja", "es", "pt", "id", "ms", "th", "hi", "it", "gl", "ca")
+LID = ("vi", "en", "zh", "ko", "ja", "es", "pt", "id", "ms", "th", "hi", "it", "gl", "ca", "de", "fr", "ru", "ar", "tr", "pl",
+       "nl", "da", "sv", "no", "fi", "el", "he", "tl", "my", "km", "lo", "sw", "uk", "fa", "ur")
 
 
 def norm(t: str) -> str:
