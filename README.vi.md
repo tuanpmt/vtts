@@ -7,7 +7,7 @@
 🇺🇸 [English](README.md) · 🌐 [Trang nghe thử](https://tuanpmt.github.io/vtts/) · 🤗 [Model trên Hugging Face](https://huggingface.co/tuanpm/vtts) · 📚 [Tài liệu](docs/README.md)
 
 - **Chạy trọn trên chip:** chuẩn hoá văn bản, G2P, model âm học int8 và vocoder iSTFT đều chạy trên MCU.
-- **Giọng song ngữ:** mỗi model đọc một ngôn ngữ chính + tiếng Anh, kể cả câu trộn hai thứ tiếng. Cặp đầu tiên: Việt + Anh, với một giọng nam (`nam-1`) và một giọng nữ (`nu-10`), Apache-2.0.
+- **Giọng song ngữ:** mỗi model đọc một ngôn ngữ chính + tiếng Anh, kể cả câu trộn hai thứ tiếng. Các cặp đã phát hành: Việt + Anh, với một giọng nam (`nam-1`) và một giọng nữ (`nu-10`), Hàn + Anh với một giọng nữ (`nu-ko`) và Trung (phổ thông) + Anh với một giọng nữ (`nu-zh`), tất cả theo Apache-2.0.
 - **Nhanh hơn thời gian thực, streaming:** bắt đầu phát sau 0.1–0.6 s tuỳ chip và model.
 - **Hai cỡ model cho mỗi giọng, chạy trên cả hai chip:** *chất lượng* (M) cho âm thanh tốt nhất và *nhẹ* (S), nhanh hơn khoảng 1,5–1,7 lần, tốn ít CPU và flash hơn. Cả hai đều nhanh hơn thời gian thực trên ESP32-P4 và ESP32-S3; chọn theo chất lượng hay độ dư CPU, không theo chip.
 - **Nhỏ và dự đoán được:** model 1.2–2.6 MB, runtime C99 không dùng `malloc` (caller cấp một arena có kích thước biết trước).
@@ -20,8 +20,8 @@
 |---|---|---|---|---|
 | `nam-1` (nam) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M (1.83M tham số, 2.6 MB) | S (0.82M tham số, 1.2 MB) | **Đã phát hành trong v0.4.0 (Apache-2.0)** |
 | `nu-10` (nữ) | 🇻🇳 vi + 🇺🇸 en, đọc câu trộn | M (1.83M tham số, 2.6 MB) | S (0.82M tham số, 1.2 MB) | **Đã phát hành trong v0.4.0 (Apache-2.0)** |
-| Trung + Anh | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M | S | **Dữ liệu: đang sinh audio tiếng Trung; tiếp theo là front-end** |
-| Hàn + Anh | 🇰🇷 ko + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
+| `nu-ko` (nữ) | 🇰🇷 ko + 🇺🇸 en, đọc câu trộn | M (1.84M tham số, 2.6 MB) | S (0.83M tham số, 1.2 MB) | **Đã phát hành trong v0.5.0 (Apache-2.0)** |
+| `nu-zh` (nữ) | 🇨🇳 zh + 🇺🇸 en, đọc câu trộn | M (1.84M tham số, 2.6 MB) | S (0.83M tham số, 1.2 MB) | **Đã phát hành trong v0.5.0 (Apache-2.0)** |
 | Nhật + Anh | 🇯🇵 ja + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 | Tây Ban Nha + Anh | 🇪🇸 es + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 | Bồ Đào Nha (Brazil) + Anh | 🇧🇷 pt + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
@@ -33,17 +33,17 @@
 | Na Uy + Anh | 🇳🇴 no + 🇺🇸 en, đọc câu trộn | M | S | Dự kiến |
 <!-- END:voices -->
 
-Giọng song ngữ đọc được câu một thứ tiếng và câu trộn như "Đã kết nối Bluetooth với AirPods" bằng cùng một giọng; front-end chọn ngôn ngữ cho từng từ. Front-end tiếng Anh cũng chạy trên thiết bị (bản C, có test khớp với Python), nên câu trộn được xử lý ngay trên chip.
+Giọng song ngữ đọc được câu một thứ tiếng và câu trộn như "Đã kết nối Bluetooth với AirPods" hay "스마트폰을 Wi-Fi에 연결했어요" bằng cùng một giọng; front-end chọn ngôn ngữ cho từng từ. Front-end tiếng Anh cũng chạy trên thiết bị (bản C, có test khớp với Python), nên câu trộn được xử lý ngay trên chip.
 
-Mọi model phát hành đều song ngữ: một ngôn ngữ chính + tiếng Anh (hiện tại là vi + en). File model được đính kèm ở [GitHub Releases](https://github.com/tuanpmt/vtts/releases) và có bản sao trên [Hugging Face](https://huggingface.co/tuanpm/vtts) (mỗi giọng một thư mục: `vi-en-nam-1/`, `vi-en-nu-10/`).
+Mọi model phát hành đều song ngữ: một ngôn ngữ chính + tiếng Anh (hiện tại là vi + en, ko + en và zh + en). File model được đính kèm ở [GitHub Releases](https://github.com/tuanpmt/vtts/releases) và có bản sao trên [Hugging Face](https://huggingface.co/tuanpm/vtts) (mỗi giọng một thư mục: `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`).
 
 ## Phần cứng và hiệu năng
 
 <!-- BEGIN:hardware -->
 | Board | Chip | RTF model nhẹ | RTF model chất lượng |
 |---|---|---|---|
-| Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.18 | 0.26 |
-| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.30 | 0.51 |
+| Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17–0.18 | 0.26 |
+| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.29–0.30 | 0.49–0.51 |
 
 Cả hai model đều chạy trên cả hai chip. RTF dưới 1 nghĩa là nhanh hơn thời gian thực.
 <!-- END:hardware -->
@@ -58,8 +58,8 @@ Cả hai chip đều dùng 2 lõi và kernel SIMD int8. Audio sinh trên ESP32-P
 - **Runtime:** C99, không malloc: bên gọi cấp một arena có kích thước biết trước. Trọng số int8 với scale theo kênh, activation int8 với một scale mỗi frame. Streaming giữ state theo từng layer nên mỗi frame chỉ tính một lần.
 - **Trên chip:** Kernel int8 SIMD cho ESP32-P4 (PIE) và ESP32-S3 (SIMD 128-bit), chia việc cho cả hai core bằng FreeRTOS. Audio trên chip khớp với C runtime tham chiếu chạy trên PC.
 - **Model:** Mỗi giọng có một teacher VITS (~24M tham số) train từ đầu, được distill thành student 0,8–1,8M tham số: bộ dự đoán duration, acoustic model có pitch và energy, decoder ConvNeXt kiểu Vocos với head iSTFT.
-- **Front-end:** Mỗi ngôn ngữ một front-end, viết bằng Python cho train và C cho thiết bị, có test bảo đảm ra cùng token id. Tiếng Việt: G2P theo quy tắc chính tả, 6 thanh. Tiếng Anh: CMUdict cùng quy tắc letter-to-sound học từ CMUdict.
-- **Dữ liệu:** Mỗi giọng chỉ được train trên giọng nói sinh bằng VoxCPM2 (Apache-2.0) từ một giọng thiết kế (khoảng 98 giờ cho mỗi giọng Việt + Anh), với các câu chọn để phủ âm tiết hiếm, số và câu trộn ngôn ngữ.
+- **Front-end:** Mỗi ngôn ngữ một front-end, viết bằng Python cho train và C cho thiết bị, có test bảo đảm ra cùng token id. Tiếng Việt: G2P theo quy tắc chính tả, 6 thanh. Tiếng Hàn: tách Hangul và các quy tắc phát âm chuẩn. Tiếng Trung: đọc pinyin với bảng từ đa âm và thanh điệu. Tiếng Anh: CMUdict cùng quy tắc letter-to-sound học từ CMUdict.
+- **Dữ liệu:** Mỗi giọng chỉ được train trên giọng nói sinh bằng VoxCPM2 (Apache-2.0) từ một giọng thiết kế (khoảng 98 giờ cho mỗi giọng Việt + Anh, khoảng 43.600 câu cho giọng Hàn + Anh, 54.636 câu cho giọng Trung + Anh), với các câu chọn để phủ âm tiết hiếm, số và câu trộn ngôn ngữ.
 - **Công cụ:** PyTorch để train, ESP-IDF v6.1 cho firmware, PhoWhisper và Whisper đo độ dễ hiểu, UTMOS và DNSMOS đo độ tự nhiên và độ sạch.
 <!-- END:tech -->
 
@@ -67,7 +67,9 @@ Chi tiết hơn ở phần [Kiến trúc](#kiến-trúc).
 
 ## Chất lượng
 
-Ba tập câu ngoài miền, mỗi tập 50 câu (thông báo thiết bị, số, tên riêng, câu hỏi, câu dài), không câu nào có trong dữ liệu train. CER là tỉ lệ lỗi ký tự khi ASR nghe lại: PhoWhisper-large cho tiếng Việt (có tính dấu thanh), Whisper large-v3 cho tiếng Anh và câu tiếng Việt có từ tiếng Anh. UTMOS dự đoán độ tự nhiên. Audio được tạo bằng runtime C int8, cho kết quả giống hệt trên chip.
+Mỗi cặp ngôn ngữ có ba tập câu ngoài miền, mỗi tập 50 câu (ngôn ngữ chính, tiếng Anh, câu trộn; thông báo thiết bị, số, tên riêng, câu hỏi, câu dài), không câu nào có trong dữ liệu train. CER là tỉ lệ lỗi ký tự khi ASR nghe lại: PhoWhisper-large cho tiếng Việt (có tính dấu thanh), Whisper large-v3 cho tiếng Anh và câu tiếng Việt có từ tiếng Anh. UTMOS dự đoán độ tự nhiên. Audio được tạo bằng runtime C int8, cho kết quả giống hệt trên chip.
+
+**Việt + Anh:**
 
 | Model | Tham số | CER tiếng Việt ↓ | CER tiếng Anh ↓ | CER câu trộn ↓ | UTMOS ↑ (vi / en / trộn) |
 |---|---:|---:|---:|---:|---|
@@ -78,9 +80,28 @@ Ba tập câu ngoài miền, mỗi tập 50 câu (thông báo thiết bị, số
 
 Phần lớn lỗi còn lại là số được ASR viết theo cách khác ("9:30" thành "9.30") và tên thương hiệu trong câu tiếng Việt. Chi tiết và số đo của teacher: [docs/reports/bilingual-student-eval.md](docs/reports/bilingual-student-eval.md).
 
+**Hàn + Anh** (Whisper large-v3 cho mọi tập; CER tiếng Hàn tính theo âm tiết Hangul):
+
+| Model | Tham số | CER tiếng Hàn ↓ | CER tiếng Anh ↓ | CER câu trộn ↓ (chỉ Hangul) | UTMOS ↑ (ko / en / trộn) |
+|---|---:|---:|---:|---:|---|
+| `nu-ko` M | 1.84M | **0.021** | 0.023 | **0.024** | **2.75 / 3.39 / 2.75** |
+| `nu-ko` S | 0.83M | 0.045 | 0.023 | 0.055 | 2.68 / 3.18 / 2.65 |
+| VoxCPM2 `nu-ko` (giọng tham chiếu) | — | — | — | 0.016 | — / — / 3.92 |
+
+Whisper viết phần lớn từ tiếng Anh bằng Hangul ("Google Drive" → 구글 드라이브), nên CER thông thường của tập câu trộn tiếng Hàn là 0.30–0.37 với mọi hệ thống, kể cả giọng tham chiếu; cột câu trộn chỉ tính lỗi trên các ký tự tiếng Hàn. Số trong câu tiếng Anh được đọc bằng tiếng Hàn. Chi tiết: [docs/reports/ko-student-eval.md](docs/reports/ko-student-eval.md).
+
+**Trung + Anh** (Whisper large-v3 cho mọi tập; CER tiếng Trung tính theo chữ Hán):
+
+| Model | Tham số | CER tiếng Trung ↓ | CER tiếng Anh ↓ | CER câu trộn ↓ | UTMOS ↑ (zh / en / trộn) |
+|---|---:|---:|---:|---:|---|
+| `nu-zh` M | 1.84M | **0.020** | **0.021** | 0.047 | **3.16 / 3.64 / 3.23** |
+| `nu-zh` S | 0.83M | 0.042 | 0.034 | **0.032** | 2.89 / 3.35 / 2.96 |
+
+Whisper đôi khi viết từ tiếng Anh trong câu trộn bằng chữ Hán (Samsung → 三星), nên CER câu trộn là cận trên; chữ số trong câu tiếng Anh bị front-end zh-en đọc theo tiếng Trung (lỗi đã biết). Chi tiết: [docs/reports/zh-student-eval.md](docs/reports/zh-student-eval.md).
+
 ### Nghe thử (sinh trên ESP32-P4)
 
-Audio sinh trực tiếp trên chip bằng lệnh `dump` của firmware (`lang auto`), gửi về máy tính qua serial, chỉ nén sang mp3; mọi đoạn đều được kiểm tra bằng ASR trước khi đăng. Thêm mẫu trên [trang web](https://tuanpmt.github.io/vtts/).
+Audio sinh trực tiếp trên chip bằng lệnh `dump` của firmware (`lang auto` cho vi-en, `lang ko` cho ko-en, `lang zh` cho zh-en), gửi về máy tính qua serial, chỉ nén sang mp3; mọi đoạn đều được kiểm tra bằng ASR trước khi đăng. Thêm mẫu trên [trang web](https://tuanpmt.github.io/vtts/).
 
 <!-- BEGIN:samples -->
 🇻🇳 🇺🇸 **Việt–English**
@@ -95,19 +116,52 @@ Audio sinh trực tiếp trên chip bằng lệnh `dump` của firmware (`lang a
 | Mưa kéo dài hơn hai giờ khiến nhiều đường ở Long Thành, Nhơn Trạch ngập gần nửa mét, xe chết máy, người dân phải dắt bộ, sáng 15/11. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-news.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-news.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-news.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-news.mp3) |
 | Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-numbers.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-numbers.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-numbers.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-numbers.mp3) |
 | Bạn có muốn bật đèn phòng khách không? | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-question.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-question.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-question.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-question.mp3) |
+
+🇰🇷 🇺🇸 **한국어–English**
+
+| Câu | nu-ko Quality | nu-ko Lite |
+|---|---|---|
+| 안녕하세요, 저는 ESP32 칩에서 완전히 실행되는 한국어와 영어 음성입니다. | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-intro.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-intro.mp3) |
+| 오늘 오후 3시에 Zoom 회의가 있어요. PowerPoint 파일을 미리 보내 주세요. | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-zoom.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-zoom.mp3) |
+| 스마트폰을 Wi-Fi에 연결했어요. 이제 Netflix를 볼 수 있어요. | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-wifi.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-wifi.mp3) |
+| Hello! I am a text-to-speech voice that runs entirely on an ESP32 microcontroller. | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-en-intro.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-en-intro.mp3) |
+| Your package has arrived at the front door. Would you like me to turn on the porch light? | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-en-package.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-en-package.mp3) |
+| 서울은 오늘 오후부터 비가 내리고, 내일 아침 기온은 영하 3도까지 떨어지겠습니다. | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-news.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-news.mp3) |
+| 배터리가 15% 남았고, 실내 온도는 28도입니다. 알람은 내일 아침 6시 30분에 맞춰져 있어요. | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-numbers.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-numbers.mp3) |
+| 거실 불을 켜 드릴까요? | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-question.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-question.mp3) |
+
+🇨🇳 🇺🇸 **中文–English**
+
+| Câu | nu-zh Quality | nu-zh Lite |
+|---|---|---|
+| 你好，我是完全运行在ESP32芯片上的中文和英文语音。 | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-intro.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-intro.mp3) |
+| 已经通过Bluetooth连接到AirPods，你可以打开Spotify或者YouTube Music。 | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-bluetooth.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-bluetooth.mp3) |
+| 下午三点有一个Zoom会议，请提前把PowerPoint文件发给我。 | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-meeting.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-meeting.mp3) |
+| Hello! I am a text-to-speech voice that runs entirely on a tiny microcontroller. | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-en-intro.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-en-intro.mp3) |
+| Your package has arrived at the front door. Would you like me to turn on the porch light? | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-en-package.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-en-package.mp3) |
+| 北京今天下午有小雨，明天早上最低气温零下三度，出门请注意保暖。 | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-news.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-news.mp3) |
+| 电池还剩15%，室内温度是28度。闹钟已经设在明天早上6点30分。 | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-numbers.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-numbers.mp3) |
+| 要帮你打开客厅的灯吗？ | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-question.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-question.mp3) |
 <!-- END:samples -->
 
 ## Bắt đầu nhanh
 
 ### Nạp firmware
 
-Cần ESP-IDF v6.1 và hai file model của một giọng (bản nhẹ S trước, bản chất lượng M sau) từ [Releases](https://github.com/tuanpmt/vtts/releases) hoặc [Hugging Face](https://huggingface.co/tuanpm/vtts). Tên file là `vtts-vien-nam1-{s,m}-v0.4.q8.vtts` (giọng nam) và `vtts-vien-nu10-{s,m}-v0.4.q8.vtts` (giọng nữ).
+Cần ESP-IDF v6.1 và hai file model của một giọng (bản nhẹ S trước, bản chất lượng M sau) từ [Releases](https://github.com/tuanpmt/vtts/releases) hoặc [Hugging Face](https://huggingface.co/tuanpm/vtts). Tên file là `vtts-vien-nam1-{s,m}-v0.4.q8.vtts` (Việt + Anh, giọng nam), `vtts-vien-nu10-{s,m}-v0.4.q8.vtts` (Việt + Anh, giọng nữ), `vtts-koen-nuko-{s,m}-v0.5.q8.vtts` (Hàn + Anh, giọng nữ) và `vtts-zhen-nuzh-{s,m}-v0.5.q8.vtts` (Trung + Anh, giọng nữ).
 
 ```bash
-gh release download v0.4.0 -R tuanpmt/vtts -p '*.vtts' -D models
+gh release download v0.4.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Việt + Anh
+gh release download v0.5.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Hàn + Anh, Trung + Anh
 cd firmware/esp32
 BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.4.q8.vtts ../../models/vtts-vien-nu10-m-v0.4.q8.vtts -p PORT flash monitor
+# hoặc giọng Hàn + Anh:
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-koen-nuko-s-v0.5.q8.vtts ../../models/vtts-koen-nuko-m-v0.5.q8.vtts -p PORT flash monitor
+# hoặc giọng Trung + Anh:
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-zhen-nuzh-s-v0.5.q8.vtts ../../models/vtts-zhen-nuzh-m-v0.5.q8.vtts -p PORT flash monitor
 ```
+
+Firmware chọn front-end văn bản theo token set của từng model. Model ko-en chỉ có một chế độ đọc là `ko`, model zh-en chỉ có `zh`; cả hai đều đọc được từ và câu tiếng Anh. ko-en không cần blob nào ngoài từ điển tiếng Anh; zh-en cần thêm blob `ZLEX` 116 KB (`main/lex_zh.bin`), do `build.sh` tự tạo và nhúng vào firmware.
 
 <!-- BEGIN:boards -->
 | `BOARD=` | Board | Loa | Âm lượng mặc định |
@@ -165,7 +219,7 @@ flowchart LR
 
 - **Chưng cất.** Mỗi giọng bắt đầu từ một teacher VITS lớn (~24M tham số). Teacher sinh thời lượng, latent và âm thanh cho hàng chục nghìn câu; một student 0.8–1.8M tham số học lại qua ba giai đoạn (front, decoder, joint với bộ phân biệt đa phân giải). Student được export sang int8 và chạy trên chip.
 - **G2P tiếng Việt bám chữ viết.** Token đi theo chữ viết, không gắn với một phương ngữ (`tr`/`ch`, `s`/`x`, `r`/`d`/`gi` là các token riêng; 6 thanh lấy từ dấu), nên thêm giọng vùng miền chỉ cần thêm dữ liệu.
-- **Dữ liệu train.** Audio sinh bằng VoxCPM2 (Apache-2.0), mỗi giọng là một giọng thiết kế (khoảng 98 giờ cho mỗi giọng Việt + Anh), với tập câu chọn để phủ âm tiết hiếm, số và câu trộn. Teacher được train từ khởi tạo ngẫu nhiên chỉ trên audio này.
+- **Dữ liệu train.** Audio sinh bằng VoxCPM2 (Apache-2.0), mỗi giọng là một giọng thiết kế (khoảng 98 giờ cho mỗi giọng Việt + Anh, khoảng 43.600 câu cho giọng Hàn + Anh, 54.636 câu cho giọng Trung + Anh), với tập câu chọn để phủ âm tiết hiếm, số và câu trộn. Teacher được train từ khởi tạo ngẫu nhiên chỉ trên audio này.
 - **Front-end khớp nhau.** Front-end của mỗi ngôn ngữ có bản Python (train) và bản C (thiết bị); test kiểm tra hai bản cho ra cùng token id.
 
 Tài liệu thiết kế, định dạng file model và các báo cáo số đo được liệt kê trong [docs/README.md](docs/README.md).
@@ -210,8 +264,8 @@ vtts phát hành **giọng song ngữ: một ngôn ngữ chính + tiếng Anh**,
 - [x] Dữ liệu tổng hợp cho hai giọng song ngữ `nam-1` và `nu-10`
 - [x] Runtime nhanh hơn: model chất lượng chạy được cả trên ESP32-S3
 - [x] **Việt + Anh** `nam-1` (nam) và `nu-10` (nữ), bản chất lượng và bản nhẹ, Apache-2.0 (v0.4.0)
-- [ ] **Trung + Anh** (đang sinh audio tiếng Trung; tiếp theo là front-end pinyin)
-- [ ] **Hàn + Anh**
+- [x] **Hàn + Anh** `nu-ko` (nữ), bản chất lượng và bản nhẹ, Apache-2.0 (v0.5.0)
+- [x] **Trung (phổ thông) + Anh** `nu-zh` (nữ), bản chất lượng và bản nhẹ, Apache-2.0 (v0.5.0)
 - [ ] **Nhật + Anh**
 - [ ] **Tây Ban Nha + Anh** (front-end Python đã xong)
 - [ ] **Bồ Đào Nha (Brazil) + Anh** (front-end Python đã xong)

@@ -158,3 +158,50 @@ def corpus_wer(pairs: list[tuple[str, str]], lang: str = "vi") -> float:
         errs += _edits(r, h)
         total += len(r)
     return errs / max(total, 1)
+
+
+_SCRIPT = {"ko": lambda ch: "가" <= ch <= "힣",
+           "zh": lambda ch: "一" <= ch <= "鿿",
+           "ja": _is_cjk,
+           "th": lambda ch: "฀" <= ch <= "๿"}
+
+
+def _script_edits(ref: str, hyp: str, own) -> tuple[int, int]:
+    """Edits charged to the reference's main-script characters: a substitution or deletion of
+    such a character, and an insertion between two of them. Reference characters of other
+    scripts (English words) and whatever the ASR writes in their place are not counted."""
+    n, m = len(ref), len(hyp)
+    d = [[0] * (m + 1) for _ in range(n + 1)]
+    for i in range(n + 1):
+        d[i][0] = i
+    for j in range(m + 1):
+        d[0][j] = j
+    for i in range(1, n + 1):
+        for j in range(1, m + 1):
+            d[i][j] = min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (ref[i - 1] != hyp[j - 1]))
+    errs, i, j = 0, n, m
+    while i > 0 or j > 0:
+        if i > 0 and j > 0 and d[i][j] == d[i - 1][j - 1] + (ref[i - 1] != hyp[j - 1]):
+            errs += own(ref[i - 1]) and ref[i - 1] != hyp[j - 1]
+            i, j = i - 1, j - 1
+        elif i > 0 and d[i][j] == d[i - 1][j] + 1:
+            errs += own(ref[i - 1])
+            i -= 1
+        else:  # insertion between ref[i - 1] and ref[i]
+            errs += 0 < i < n and own(ref[i - 1]) and own(ref[i])
+            j -= 1
+    return errs, sum(map(own, ref))
+
+
+def main_script_cer(pairs: list[tuple[str, str]], lang: str) -> float:
+    """Corpus CER over the main-language characters only (Hangul for ko, Han for zh, kana and
+    kanji for ja, Thai for th), for mixed sets: the ASR writes English words in the main script
+    (Google Drive -> 구글 드라이브), which plain CER counts as errors even for a perfect reading.
+    Each reference character of the main script counts once; English words are skipped."""
+    own = _SCRIPT[lang]
+    errs = total = 0
+    for ref, hyp in pairs:
+        e, t = _script_edits(_chars(ref, lang), _chars(hyp, lang), own)
+        errs += e
+        total += t
+    return errs / max(total, 1)

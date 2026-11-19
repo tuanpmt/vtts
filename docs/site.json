@@ -34,32 +34,36 @@
       "lite_vi": "S (0.82M tham số, 1.2 MB)"
     },
     {
-      "name": "Chinese + English",
-      "name_vi": "Trung + Anh",
-      "langs": [
-        "zh",
-        "en"
-      ],
-      "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "training",
-      "status_text": "Data: Mandarin speech synthesizing; front-end next",
-      "status_text_vi": "Dữ liệu: đang sinh audio tiếng Trung; tiếp theo là front-end"
-    },
-    {
-      "name": "Korean + English",
-      "name_vi": "Hàn + Anh",
+      "name": "`nu-ko` (female)",
+      "name_vi": "`nu-ko` (nữ)",
       "langs": [
         "ko",
         "en"
       ],
       "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "planned",
-      "status_text": "Planned",
-      "status_text_vi": "Dự kiến"
+      "quality": "M (1.84M params, 2.6 MB)",
+      "lite": "S (0.83M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.5.0 (Apache-2.0)",
+      "status_text_vi": "Đã phát hành trong v0.5.0 (Apache-2.0)",
+      "quality_vi": "M (1.84M tham số, 2.6 MB)",
+      "lite_vi": "S (0.83M tham số, 1.2 MB)"
+    },
+    {
+      "name": "`nu-zh` (female)",
+      "name_vi": "`nu-zh` (nữ)",
+      "langs": [
+        "zh",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M (1.84M params, 2.6 MB)",
+      "lite": "S (0.83M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.5.0 (Apache-2.0)",
+      "status_text_vi": "Đã phát hành trong v0.5.0 (Apache-2.0)",
+      "quality_vi": "M (1.84M tham số, 2.6 MB)",
+      "lite_vi": "S (0.83M tham số, 1.2 MB)"
     },
     {
       "name": "Japanese + English",
@@ -192,14 +196,14 @@
     {
       "boards": "Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO",
       "chip": "ESP32-P4, 360 MHz, PIE SIMD",
-      "rtf_lite": "0.18",
+      "rtf_lite": "0.17–0.18",
       "rtf_quality": "0.26"
     },
     {
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
-      "rtf_lite": "0.30",
-      "rtf_quality": "0.51"
+      "rtf_lite": "0.29–0.30",
+      "rtf_quality": "0.49–0.51"
     }
   ],
   "boards": [
@@ -259,15 +263,15 @@
     },
     {
       "title": "Front-ends",
-      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. English: CMUdict plus letter-to-sound rules learned from it.",
+      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. English: CMUdict plus letter-to-sound rules learned from it.",
       "title_vi": "Front-end",
-      "text_vi": "Mỗi ngôn ngữ một front-end, viết bằng Python cho train và C cho thiết bị, có test bảo đảm ra cùng token id. Tiếng Việt: G2P theo quy tắc chính tả, 6 thanh. Tiếng Anh: CMUdict cùng quy tắc letter-to-sound học từ CMUdict."
+      "text_vi": "Mỗi ngôn ngữ một front-end, viết bằng Python cho train và C cho thiết bị, có test bảo đảm ra cùng token id. Tiếng Việt: G2P theo quy tắc chính tả, 6 thanh. Tiếng Hàn: tách Hangul và các quy tắc phát âm chuẩn. Tiếng Trung: đọc pinyin với bảng từ đa âm và thanh điệu. Tiếng Anh: CMUdict cùng quy tắc letter-to-sound học từ CMUdict."
     },
     {
       "title": "Data",
-      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching.",
+      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 sentences for the Chinese + English voice), with sentences chosen to cover rare syllables, numbers and code-switching.",
       "title_vi": "Dữ liệu",
-      "text_vi": "Mỗi giọng chỉ được train trên giọng nói sinh bằng VoxCPM2 (Apache-2.0) từ một giọng thiết kế (khoảng 98 giờ cho mỗi giọng Việt + Anh), với các câu chọn để phủ âm tiết hiếm, số và câu trộn ngôn ngữ."
+      "text_vi": "Mỗi giọng chỉ được train trên giọng nói sinh bằng VoxCPM2 (Apache-2.0) từ một giọng thiết kế (khoảng 98 giờ cho mỗi giọng Việt + Anh, khoảng 43.600 câu cho giọng Hàn + Anh, 54.636 câu cho giọng Trung + Anh), với các câu chọn để phủ âm tiết hiếm, số và câu trộn ngôn ngữ."
     },
     {
       "title": "Tooling",
@@ -408,28 +412,188 @@
       ]
     },
     {
-      "id": "zh-en",
-      "label": "中文–English",
-      "flags": [
-        "zh",
-        "en"
-      ],
-      "status": "training",
-      "note": "Chinese + English voices: Mandarin speech is being synthesized; the front-end comes next.",
-      "models": [],
-      "samples": []
-    },
-    {
       "id": "ko-en",
       "label": "한국어–English",
       "flags": [
         "ko",
         "en"
       ],
-      "status": "planned",
-      "note": "Korean + English voices are planned.",
-      "models": [],
-      "samples": []
+      "status": "released",
+      "note": "Released in v0.5.0 (Apache-2.0): a bilingual female voice (about 40, Seoul) that reads Korean, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nuko-m",
+          "name": "nu-ko Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.26",
+            "s3": "0.49"
+          }
+        },
+        {
+          "id": "nuko-s",
+          "name": "nu-ko Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.17",
+            "s3": "0.29"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "안녕하세요, 저는 ESP32 칩에서 완전히 실행되는 한국어와 영어 음성입니다.",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-intro.mp3",
+            "nuko-s": "audio/p4-nuko-s-intro.mp3"
+          }
+        },
+        {
+          "text": "오늘 오후 3시에 Zoom 회의가 있어요. PowerPoint 파일을 미리 보내 주세요.",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-zoom.mp3",
+            "nuko-s": "audio/p4-nuko-s-zoom.mp3"
+          }
+        },
+        {
+          "text": "스마트폰을 Wi-Fi에 연결했어요. 이제 Netflix를 볼 수 있어요.",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-wifi.mp3",
+            "nuko-s": "audio/p4-nuko-s-wifi.mp3"
+          }
+        },
+        {
+          "text": "Hello! I am a text-to-speech voice that runs entirely on an ESP32 microcontroller.",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-en-intro.mp3",
+            "nuko-s": "audio/p4-nuko-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package has arrived at the front door. Would you like me to turn on the porch light?",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-en-package.mp3",
+            "nuko-s": "audio/p4-nuko-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "서울은 오늘 오후부터 비가 내리고, 내일 아침 기온은 영하 3도까지 떨어지겠습니다.",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-news.mp3",
+            "nuko-s": "audio/p4-nuko-s-news.mp3"
+          }
+        },
+        {
+          "text": "배터리가 15% 남았고, 실내 온도는 28도입니다. 알람은 내일 아침 6시 30분에 맞춰져 있어요.",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-numbers.mp3",
+            "nuko-s": "audio/p4-nuko-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "거실 불을 켜 드릴까요?",
+          "audio": {
+            "nuko-m": "audio/p4-nuko-m-question.mp3",
+            "nuko-s": "audio/p4-nuko-s-question.mp3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "zh-en",
+      "label": "中文–English",
+      "flags": [
+        "zh",
+        "en"
+      ],
+      "status": "released",
+      "note": "Released in v0.5.0 (Apache-2.0): the bilingual voice nu-zh (female, Beijing Mandarin) reads Mandarin, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nuzh-m",
+          "name": "nu-zh Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.26",
+            "s3": "0.51"
+          }
+        },
+        {
+          "id": "nuzh-s",
+          "name": "nu-zh Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.18",
+            "s3": "0.30"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "你好，我是完全运行在ESP32芯片上的中文和英文语音。",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-intro.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-intro.mp3"
+          }
+        },
+        {
+          "text": "已经通过Bluetooth连接到AirPods，你可以打开Spotify或者YouTube Music。",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-bluetooth.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-bluetooth.mp3"
+          }
+        },
+        {
+          "text": "下午三点有一个Zoom会议，请提前把PowerPoint文件发给我。",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-meeting.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-meeting.mp3"
+          }
+        },
+        {
+          "text": "Hello! I am a text-to-speech voice that runs entirely on a tiny microcontroller.",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-en-intro.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package has arrived at the front door. Would you like me to turn on the porch light?",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-en-package.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "北京今天下午有小雨，明天早上最低气温零下三度，出门请注意保暖。",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-news.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-news.mp3"
+          }
+        },
+        {
+          "text": "电池还剩15%，室内温度是28度。闹钟已经设在明天早上6点30分。",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-numbers.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "要帮你打开客厅的灯吗？",
+          "audio": {
+            "nuzh-m": "audio/p4-nuzh-m-question.mp3",
+            "nuzh-s": "audio/p4-nuzh-s-question.mp3"
+          }
+        }
+      ]
     },
     {
       "id": "ja-en",

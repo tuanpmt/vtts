@@ -174,3 +174,17 @@ def test_swahili_cer_reads_numbers():
     assert cer("Watu 3.", "watu tatu", "sw") == 0.0
     assert prep_for_cer("Bei ni TSh 5,000.", "sw") == "bei ni shilingi elfu tano"
     assert WHISPER_LANGUAGE["sw"] == "sw"
+
+
+def test_main_script_cer_skips_english_words():
+    from vtts.eval.cer import main_script_cer
+    ref = "사진을 Google Drive에 백업했습니다."
+    # Whisper writes the English words in Hangul: plain CER counts them, the Hangul-only CER does not
+    assert corpus_cer([(ref, "사진을 구글 드라이브에 백업했습니다.")], "ko") > 0.3
+    assert main_script_cer([(ref, "사진을 구글 드라이브에 백업했습니다.")], "ko") == 0.0
+    assert main_script_cer([(ref, "사진을 Google Drive에 백업했습니다.")], "ko") == 0.0
+    # a wrong Hangul syllable counts: 1 of 10 Hangul characters
+    assert main_script_cer([(ref, "사진을 Google Drive에 백업했습니까.")], "ko") == pytest.approx(1 / 10)
+    # a dropped Hangul syllable and an insertion inside a Hangul word count
+    assert main_script_cer([("거실 불을 켜 드릴까요?", "거실 불 켜 드릴까요")], "ko") == pytest.approx(1 / 9)
+    assert main_script_cer([("거실 불을 켜 드릴까요?", "거실 불을을 켜 드릴까요")], "ko") == pytest.approx(1 / 9)

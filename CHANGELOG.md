@@ -5,8 +5,94 @@ All notable changes to this project are documented here. Model files for each re
 ## Unreleased
 
 ### In progress
-- Chinese + English and the other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
+- The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
+
+## v0.5.0 (2026-11-19) — Korean + English and Chinese + English voices
+
+Two new bilingual pairs, each with one designed female voice as a quality model (M) and a lite model (S), all **Apache-2.0**:
+
+- **Korean + English**, voice `nu-ko` (about 40, Seoul standard speech). One voice reads Korean, English and Korean sentences with English words ("스마트폰을 Wi-Fi에 연결했어요"); Hangul goes to the Korean front-end and Latin words to the English one, on the chip. The teacher `ko_nuko` was trained from random initialization for 120k steps on speech synthesized with VoxCPM2 (Apache-2.0) from the designed voice `nu-ko` only: about 43,600 sentences of Korean, mixed Korean and English, and English read by the same voice.
+- **Chinese (Mandarin) + English**, voice `nu-zh` (about 40, Beijing Mandarin). The same voice reads Mandarin, English and Mandarin sentences with English words ("已经通过Bluetooth连接到AirPods"), and the Chinese and English front-ends run on the chip. The teacher (`zh_nuzh`, VITS) was trained from random initialization for 120k steps on speech synthesized with VoxCPM2 (Apache-2.0) in the designed `nu-zh` voice only: 54,636 sentences of Mandarin, Mandarin with English terms and English.
+
+No recorded corpus and no warm start for either teacher. The Vietnamese + English voices of v0.4.0 are unchanged.
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-koen-nuko-m-v0.5.q8.vtts` | `nu-ko` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-koen-nuko-s-v0.5.q8.vtts` | `nu-ko` (female) | Lite (S) | 0.83M | 1.2 MB |
+| `vtts-zhen-nuzh-m-v0.5.q8.vtts` | `nu-zh` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-zhen-nuzh-s-v0.5.q8.vtts` | `nu-zh` (female) | Lite (S) | 0.83M | 1.2 MB |
+
+Int8, 22.05 kHz, token set recorded in the file:
+- `ko-en`: vocabulary 153, the v2 tokens plus 46 Korean onset, vowel and coda tokens. Presets `M-vocos-p-ko-en` and `S-vocos-p-ko-en`; ko-en needs no blob of its own.
+- `zh-en`: 171 tokens, the vi-en set, then Mandarin initials, finals and tones. The firmware needs the 116 KB `ZLEX` blob (`main/lex_zh.bin`), which `build.sh` builds and embeds.
+
+### Quality
+
+Three out-of-domain sets of 50 sentences per pair, Whisper large-v3, audio from the int8 C runtime (`--lang ko` / `--lang zh`). Reports: [docs/reports/ko-student-eval.md](docs/reports/ko-student-eval.md), [docs/reports/zh-student-eval.md](docs/reports/zh-student-eval.md).
+
+**Korean + English**
+
+| Model | Korean CER | English CER | Mixed CER (Hangul only) | UTMOS (ko / en / mixed) |
+|---|---:|---:|---:|---|
+| `nu-ko` M | 0.021 | 0.023 | 0.024 | 2.75 / 3.39 / 2.75 |
+| `nu-ko` S | 0.045 | 0.023 | 0.055 | 2.68 / 3.18 / 2.65 |
+| VoxCPM2 `nu-ko` (reference voice) | — | — | 0.016 | — / — / 3.92 |
+
+Whisper writes most English words in Hangul ("Google Drive" → 구글 드라이브), so the plain CER of the mixed set is 0.30 (M), 0.36 (S) and 0.37 for the VoxCPM2 reference voice itself; it measures the transliteration, not the voice. The mixed column counts only errors on the Korean characters of the reference (`main_script_cer`), and the reference voice synthesized through the VoxCPM2 service and scored the same way shows the floor.
+
+**Chinese + English**
+
+| Model | Mandarin CER | Mixed CER | English CER | UTMOS (zh / mixed / en) |
+|---|---:|---:|---:|---|
+| `nu-zh` M | 0.020 | 0.047 | 0.021 | 3.16 / 3.23 / 3.64 |
+| `nu-zh` S | 0.042 | 0.032 | 0.034 | 2.89 / 2.96 / 3.35 |
+
+Whisper sometimes writes an English word of a mixed sentence in Chinese characters (Samsung → 三星) or a Chinese word as a symbol (瓦 → W), so the zh mixed CER (plain CER) is an upper bound.
+
+### Performance
+
+| Board | Pair | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|---|
+| ESP32-P4 (86-Panel, NANO) | ko-en | 0.17–0.18 / 0.07–0.10 s | 0.25–0.26 / 0.16–0.27 s |
+| ESP32-P4 (86-Panel, NANO) | zh-en | 0.17–0.20 / 0.07–0.11 s | 0.25–0.29 / 0.16–0.29 s |
+| ESP32-S3 (Touch-LCD-2.8, EchoEar 2.0) | ko-en | 0.29–0.30 / 0.18–0.26 s | 0.48–0.49 / 0.27–0.47 s |
+| ESP32-S3 (Touch-LCD-2.8, EchoEar 2.0) | zh-en | 0.28–0.32 / 0.17–0.27 s | 0.49–0.53 / 0.27–0.48 s |
+
+RTF from `bench` (four sentences of the main language), speech start from playing the eight website sentences (main language, mixed and English): the same speed as the vi-en models. Every website clip is the ESP32-P4's own output and was transcribed again with Whisper before publishing. Image size in the 8 MB app partition, with the two models of one pair and the English lexicon:
+- ko-en: 6.40 MB on the ESP32-P4 (1.98 MB free), 6.29 MB on the ESP32-S3 (2.10 MB free).
+- zh-en (plus the ZLEX blob): 6.54 MB on the ESP32-P4 (1.85 MB free), 6.42 MB on the ESP32-S3 (1.96 MB free).
+
+Details: [docs/reports/performance.md](docs/reports/performance.md#korean--english-v050) (Korean) and [docs/reports/performance.md](docs/reports/performance.md#chinese--english-v050) (Chinese).
+
+### Flash a board
+
+```bash
+gh release download v0.5.0 -R tuanpmt/vtts -p '*.vtts' -D models
+cd firmware/esp32
+# Korean + English
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-koen-nuko-s-v0.5.q8.vtts ../../models/vtts-koen-nuko-m-v0.5.q8.vtts -p PORT flash monitor
+# Chinese + English
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-zhen-nuzh-s-v0.5.q8.vtts ../../models/vtts-zhen-nuzh-m-v0.5.q8.vtts -p PORT flash monitor
+```
+
+`BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. On the console type text in the main language, English or mixed; `model s|m` switches the model. ko-en models have one text mode, `ko` (the default), and zh-en models one, `zh` (the default); both also read English words and English sentences with the English front-end.
+
+### Added
+- **Korean + English voice `nu-ko`** (M and S) and **Chinese + English voice `nu-zh`** (M and S), each with 16 on-chip samples (ESP32-P4 dumps of 8 sentences × 2 models, each checked with Whisper) on the website and in the README, and a Korean and a Chinese tab on the website.
+- `vtts.eval.cer.main_script_cer`: CER over the main-language characters only (Hangul, Han, kana/kanji, Thai) for mixed sets, where the ASR writes English words in the main script; `scripts/eval/mixed_cer.py` prints the plain and the main-script CER of eval reports next to a reference voice's.
+- Reports [docs/reports/ko-student-eval.md](docs/reports/ko-student-eval.md) and [docs/reports/zh-student-eval.md](docs/reports/zh-student-eval.md), Korean and Chinese sections in [performance.md](docs/reports/performance.md), Hugging Face folders `ko-en-nu-ko/` and `zh-en-nu-zh/`.
+
+### Known issues
+- **ESP32-S3, two cores (the default):** the output is not deterministic: model M as in v0.4.0, and now also the lite model S for ko-en and zh-en (a token's duration can change, or a short burst appears; zh-en S: 4 of 9 test dumps, peaks up to 0.15 full scale). `cores 1` gives the same output as the ESP32-P4 and the PC at the cost of speed. The ESP32-P4 is not affected; the website samples come from the ESP32-P4.
+- **Digits in English sentences are read in Korean / Mandarin** ("The meeting starts at 9:30" → 아홉 시 삼십 분; "November 18" with 十八): the ko and zh modes normalize every number in the main language. Digits inside Korean or Mandarin sentences are read correctly; write numbers in English sentences as words for now. For zh-en this is the whole English numbers-group error (CER 0.12 M, 0.19 S); the other English groups score 0–0.014.
+- **"Bluetooth" and "Google Meet"** are read poorly inside Korean sentences, more so at the start of a sentence; writing them in Hangul (블루투스) works.
+- S is less accurate than M in Korean (CER 0.045 vs 0.021) and blurs the particle after an English word more often.
+- Mandarin: two-character given names (刘洋, 李明) and English names inside Mandarin sentences are the hardest cases.
+- A very short first sentence followed by a long one ("Hello! I am ...") can cause one playback underrun (a short gap), as in v0.4.0.
 
 ## v0.4.0 (2026-11-19)
 
