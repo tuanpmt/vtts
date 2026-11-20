@@ -12,8 +12,8 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 | `nu-en` (female) | 🇬🇧 en | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.9.0, M and S updated in v0.10.1 (Apache-2.0)** |
 | `nam-1` (male) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
 | `nu-10` (female) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0, M updated in v0.9.1, S in v0.10.2 (Apache-2.0)** |
-| `nu-ko` (female) | 🇰🇷 ko + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
-| `nu-zh` (female) | 🇨🇳 zh + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
+| `nu-ko` (female) | 🇰🇷 ko + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, S updated in v0.10.3 (Apache-2.0)** |
+| `nu-zh` (female) | 🇨🇳 zh + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, M updated in v0.10.3 (Apache-2.0)** |
 | `nu-ja` (female) | 🇯🇵 ja + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0 (Apache-2.0)** |
 | `nu-pt` (female) | 🇧🇷 pt + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.7.0 (Apache-2.0)** |
 | `nu-id` (female) | 🇮🇩 id + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
@@ -36,6 +36,7 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 | `nu-10` S update | `vtts-vien-nu10-s-v0.10.2.q8.vtts` | v0.10.2 | Replaces the v0.4.0 `nu-10` S (longer joint distillation stage, UTMOS +0.4–0.5, lower CER); same size, speed and text modes; use it with the v0.9.1 M |
 | `nu-ko` | `vtts-koen-nuko-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `ko`; no blob beyond the English lexicon |
 | `nu-zh` | `vtts-zhen-nuzh-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `zh`; embeds the 116 KB `ZLEX` blob (`main/lex_zh.bin`) |
+| `nu-ko` S update, `nu-zh` M update | `vtts-koen-nuko-s-v0.10.3.q8.vtts`, `vtts-zhen-nuzh-m-v0.10.3.q8.vtts` | v0.10.3 | Replace the v0.5.0 `nu-ko` S and `nu-zh` M (longer joint distillation stage; `nu-ko` S: UTMOS +0.4–0.5 and lower CER, `nu-zh` M: UTMOS +0.1–0.2, lower mixed and English CER); same size, speed and text mode; use them with the v0.5.0 `nu-ko` M and `nu-zh` S |
 | `nu-ja` | `vtts-jaen-nuja-{s,m}-v0.6.q8.vtts` | v0.6.0 | Text mode `ja`; embeds the 721 KB `JLEX` blob (`main/lex_ja.bin`) |
 | `nu-pt` | `vtts-pten-nupt-{s,m}-v0.7.q8.vtts` | v0.7.0 | Text mode `pt`; no blob beyond the English lexicon |
 | `nu-id` | `vtts-iden-nuid-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `id`; no blob beyond the English lexicon |
@@ -80,20 +81,22 @@ Most remaining errors are numbers written differently by the ASR ("9:30" as "9.3
 
 | Model | Params | Korean CER ↓ | English CER ↓ | Mixed CER ↓ (Hangul only) | UTMOS ↑ (ko / en / mixed) |
 |---|---:|---:|---:|---:|---|
-| `nu-ko` M | 1.84M | **0.021** | 0.023 | **0.024** | **2.75 / 3.39 / 2.75** |
-| `nu-ko` S | 0.83M | 0.045 | 0.023 | 0.055 | 2.68 / 3.18 / 2.65 |
+| `nu-ko` M | 1.84M | **0.021** | 0.023 | **0.024** | 2.75 / 3.39 / 2.75 |
+| `nu-ko` S (v0.10.3) | 0.83M | 0.026 | **0.018** | 0.044 | **3.18 / 3.54 / 3.06** |
+| `nu-ko` S (v0.5.0) | 0.83M | 0.045 | 0.023 | 0.055 | 2.68 / 3.18 / 2.65 |
 | VoxCPM2 `nu-ko` (reference voice) | — | — | — | 0.016 | — / — / 3.92 |
 
-Whisper writes most English words in Hangul ("Google Drive" → 구글 드라이브), so the plain CER of the mixed Korean set is 0.30–0.37 for every system, the reference voice included; the mixed column counts only the errors on the Korean characters.
+Whisper writes most English words in Hangul ("Google Drive" → 구글 드라이브), so the plain CER of the mixed Korean set is 0.30–0.37 for every system, the reference voice included; the mixed column counts only the errors on the Korean characters. The `nu-ko` S of v0.10.3 comes from the improved distillation recipe (joint stage 80k steps instead of 20k): lower CER on all three sets and UTMOS +0.4–0.5, above the M in naturalness; the M of the same re-distillation read Korean less accurately and was not released ([report](reports/ko-student-eval.md#nu-ko-s-update-v0103)). The v0.10.3 row was measured with the current front-end, which gives the v0.5.0 S 0.045 / 0.024 / 0.056.
 
 **Chinese + English** ([report](reports/zh-student-eval.md); Mandarin CER counts Han characters):
 
 | Model | Params | Mandarin CER ↓ | English CER ↓ | Mixed CER ↓ | UTMOS ↑ (zh / en / mixed) |
 |---|---:|---:|---:|---:|---|
-| `nu-zh` M | 1.84M | **0.020** | **0.021** | 0.047 | **3.16 / 3.64 / 3.23** |
-| `nu-zh` S | 0.83M | 0.042 | 0.034 | **0.032** | 2.89 / 3.35 / 2.96 |
+| `nu-zh` M (v0.10.3) | 1.84M | 0.024 | **0.018** | **0.030** | **3.36 / 3.76 / 3.44** |
+| `nu-zh` M (v0.5.0) | 1.84M | **0.020** | 0.021 | 0.047 | 3.16 / 3.64 / 3.23 |
+| `nu-zh` S | 0.83M | 0.042 | 0.034 | 0.032 | 2.89 / 3.35 / 2.96 |
 
-Whisper sometimes writes an English word of a mixed sentence in Chinese characters (Samsung → 三星), so the mixed CER is an upper bound.
+Whisper sometimes writes an English word of a mixed sentence in Chinese characters (Samsung → 三星), so the mixed CER is an upper bound. The `nu-zh` M of v0.10.3 comes from the improved distillation recipe (joint stage 80k steps instead of 20k): UTMOS +0.1–0.2 on all three sets, mixed CER 0.047 → 0.030 (Han characters only 0.046 → 0.015), the same Mandarin CER (0.023 → 0.024 measured with the current front-end); the S of the same re-distillation had a higher mixed CER and was not released ([report](reports/zh-student-eval.md#nu-zh-m-update-v0103)).
 
 **Japanese + English** ([report](reports/ja-student-eval.md); Japanese CER on readings, both sides converted to kana):
 

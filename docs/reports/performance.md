@@ -1,6 +1,6 @@
 # On-chip performance
 
-Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English the v0.9.1 update of the `nu-10` M ([below](#nu-10-m-update-v091)), the v0.10.2 update of the `nu-10` S ([below](#nu-10-s-update-v0102)) and the v0.9.0 English-only models (updated in v0.10.1; `nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
+Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English the v0.9.1 update of the `nu-10` M ([below](#nu-10-m-update-v091)), the v0.10.2 update of the `nu-10` S ([below](#nu-10-s-update-v0102)), the v0.10.3 updates of the `nu-zh` M and the `nu-ko` S ([below](#nu-zh-m-and-nu-ko-s-update-v0103)) and the v0.9.0 English-only models (updated in v0.10.1; `nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
 
 Everything lives in PSRAM: the models, the working arena (about 1.9 MB) and the activations. Internal SRAM stays free for the application and for DMA.
 
@@ -198,6 +198,21 @@ The updated `nu-10` S (longer joint distillation stage, same architecture and si
 - Speed and speech start are those of the v0.4.0 S (same architecture). The `nu-10` M stays the v0.9.1 model ([above](#nu-10-m-update-v091)).
 - Images with the two models and the English lexicon: 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free).
 - **ESP32-P4:** the dumps match `vtts_say` on a PC (same length for all eight clips, correlation ≥ 0.9997, SNR 33–56 dB). The eight new `nu-10` Lite clips of the website are these dumps, 64 kbps MP3, transcribed again (PhoWhisper-large for Vietnamese, Whisper large-v3 for mixed and English): CER 0 for 4 of 8 and at most 0.022 for the others except the Vietnamese intro (0.079: PhoWhisper writes "chip ESP32" as "chiếc estee ba hai", as for the M clip); the others: "Nhơn Trạch" heard as "Nhân Trạch", "Pin" as "Tin", "microcontroller" as "macro controller". None is broken.
+
+## `nu-zh` M and `nu-ko` S update (v0.10.3)
+
+The updated `nu-zh` M and `nu-ko` S (longer joint distillation stage, same architecture and size) on the firmware of this release (no firmware change; only the zh or ko front-end compiled in), two cores, the same method as for v0.10.2: `bench` (four sentences of the main language), then `dump` and playback of the eight website sentences on the ESP32-P4 (`lang zh` / `lang ko`); `bench` only on the ESP32-S3. The images held both re-distilled models of each pair; the S of zh-en and the M of ko-en, which were not released, give the same speed as the v0.5.0 models (P4 `bench` zh S 0.18–0.21, ko M 0.27–0.28).
+
+| Chip | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---|---:|---:|---:|---:|---:|---:|
+| ESP32-P4 | `nu-zh` M (v0.10.3) | 0.27–0.29 (mean 0.27) | 0.26–0.31 | 0.11–0.20 s | 0.17–0.29 s (median 0.26) | 26–29% / 19–22% | 1 in 8 |
+| ESP32-P4 | `nu-ko` S (v0.10.3) | 0.17–0.19 (mean 0.18) | 0.17–0.20 | 0.06–0.10 s | 0.06–0.11 s (median 0.09) | 17–21% / 13–14% | 0 in 8 |
+| ESP32-S3 | `nu-zh` M (v0.10.3) | 0.55–0.58 (mean 0.56) | — | — | — | — | — |
+| ESP32-S3 | `nu-ko` S (v0.10.3) | 0.30–0.33 (mean 0.32) | — | — | — | — | — |
+
+- Speed and speech start are those of the v0.5.0 models (same architecture); the one underrun is again "Hello! I am a text-to-speech voice ...", the short-then-long sentence.
+- Images with the two models and the English lexicon: zh-en (with the 116 KB ZLEX blob) 6.32 MB on the ESP32-P4 (2.07 MB free in the 8 MB app partition) and 6.21 MB on the ESP32-S3 (2.18 MB free); ko-en 6.19 MB on the ESP32-P4 (2.20 MB free) and 6.08 MB on the ESP32-S3 (2.31 MB free).
+- **ESP32-P4:** the dumps match `vtts_say` on a PC (same length for all 16 clips, correlation ≥ 0.9995, SNR 30–40 dB). The 16 new website clips (eight `nu-zh` Quality, eight `nu-ko` Lite) are these dumps, 64 kbps MP3, transcribed again with Whisper large-v3: `nu-zh` M CER 0 on all eight; `nu-ko` S Hangul-only CER 0 on four of the six Korean and mixed clips, 0.029 and 0.023 on the other two (내일 heard as 매일), English 0 and 0.011 ("porch light" heard as "porch lights"). None is broken.
 
 ## English (v0.9.0)
 

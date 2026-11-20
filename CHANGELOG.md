@@ -9,6 +9,59 @@ All notable changes to this project are documented here. Model files for each re
 - User pronunciation dictionary.
 - Model updates with the longer joint stage for the other models (`nam-1` and the other pairs).
 
+## v0.10.3 (2026-11-20) — `nu-zh` M and `nu-ko` S model update
+
+A **model update** of two bilingual voices, **Apache-2.0**: the **Chinese (Mandarin) + English `nu-zh` quality model (M)** and the **Korean + English `nu-ko` lite model (S)**. Both come from re-distillations with the **improved recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teachers (`zh_nuzh`, `ko_nuko`) and the same architecture (presets `M-vocos-p-zh-en`, `S-vocos-p-ko-en`). They replace the v0.5.0 files; size, speed, token sets (`zh-en`, `ko-en`) and text modes (`zh`, `ko`) are unchanged, and they run with any firmware since v0.5.0. Both re-distillations also produced the other size; those were not released because one CER got worse: the `nu-zh` S (mixed set, Han-only CER 0.023 → 0.033) and the `nu-ko` M (Korean CER 0.021 → 0.035). The `nu-zh` S and the `nu-ko` M stay the v0.5.0 models. The other voices are unchanged.
+
+### Models
+
+| File | Voice | Tier | Params | Size | Replaces |
+|---|---|---|---:|---:|---|
+| `vtts-zhen-nuzh-m-v0.10.3.q8.vtts` | `nu-zh` (female, Mandarin + English) | Quality (M) | 1.84M | 2.6 MB | `vtts-zhen-nuzh-m-v0.5.q8.vtts` |
+| `vtts-koen-nuko-s-v0.10.3.q8.vtts` | `nu-ko` (female, Korean + English) | Lite (S) | 0.83M | 1.2 MB | `vtts-koen-nuko-s-v0.5.q8.vtts` |
+
+Use them with the v0.5.0 `vtts-zhen-nuzh-s-v0.5.q8.vtts` and `vtts-koen-nuko-m-v0.5.q8.vtts`. On Hugging Face the new files are in `zh-en-nu-zh/` and `ko-en-nu-ko/` next to the older ones; the card recommends them.
+
+### Quality
+
+The v0.5.0 models and the new ones rendered with the int8 C runtime (`vtts_say --lang zh` / `--lang ko`) and scored with the same pipeline on the three out-of-domain sets of 50 sentences (Whisper large-v3; UTMOS). The mixed sets are also scored on the main-script characters only (Han / Hangul), because Whisper writes many English words in Chinese characters or Hangul. All rows were measured with the current front-end, so the v0.5.0 rows differ slightly from the v0.5.0 reports. Reports: [zh-student-eval.md](docs/reports/zh-student-eval.md#nu-zh-m-update-v0103), [ko-student-eval.md](docs/reports/ko-student-eval.md#nu-ko-s-update-v0103).
+
+| `nu-zh` | Mandarin CER | Mixed CER (Han only) | English CER | UTMOS (zh / mixed / en) |
+|---|---:|---:|---:|---|
+| M v0.5.0 (joint 20k) | 0.023 | 0.047 (0.046) | 0.021 | 3.17 / 3.24 / 3.64 |
+| **M v0.10.3 (joint 80k)** | 0.024 | **0.030 (0.015)** | **0.018** | **3.36 / 3.44 / 3.76** |
+| S v0.5.0 (kept) | 0.042 | 0.032 (0.023) | 0.034 | 2.90 / 2.96 / 3.35 |
+| S joint 80k (not released) | 0.025 | 0.059 (0.033) | 0.021 | 3.11 / 3.25 / 3.56 |
+
+| `nu-ko` | Korean CER | Mixed CER: text / Hangul only | English CER | UTMOS (ko / mixed / en) |
+|---|---:|---:|---:|---|
+| S v0.5.0 (joint 20k) | 0.045 | 0.361 / 0.056 | 0.024 | 2.68 / 2.65 / 3.18 |
+| **S v0.10.3 (joint 80k)** | **0.026** | **0.314 / 0.044** | **0.018** | **3.18 / 3.06 / 3.54** |
+| M v0.5.0 (kept) | 0.021 | 0.314 / 0.026 | 0.023 | 2.75 / 2.76 / 3.39 |
+| M joint 80k (not released) | 0.035 | 0.352 / 0.043 | 0.028 | 3.14 / 3.33 / 3.87 |
+
+- `nu-zh` M: UTMOS +0.12 to +0.20 on all three sets, mixed CER 0.047 → 0.030 (Han only 0.046 → 0.015), English CER lower, Mandarin CER the same within one character.
+- `nu-ko` S: every CER drops (Korean 0.045 → 0.026) and UTMOS rises by 0.36–0.50, above the v0.5.0 M in naturalness.
+
+### Performance
+
+| Board | `nu-zh` M (v0.10.3): RTF / speech starts | `nu-ko` S (v0.10.3): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 | 0.27–0.29 / 0.17–0.29 s | 0.17–0.19 / 0.06–0.11 s |
+| ESP32-S3 | 0.55–0.58 / not measured | 0.30–0.33 / not measured |
+
+RTF from `bench` (four sentences of the main language), speech start from playing the eight website sentences on the ESP32-P4 (one underrun with M on the short-then-long "Hello! I am ..." sentence, as with v0.5.0), firmware of this release with only the zh or ko front-end: zh-en 6.32 MB on the ESP32-P4 (2.07 MB free in the 8 MB app partition) and 6.21 MB on the ESP32-S3; ko-en 6.19 MB and 6.08 MB. The eight `nu-zh` Quality and eight `nu-ko` Lite clips on the website are new ESP32-P4 dumps of these models, 64 kbps MP3, each transcribed again with Whisper large-v3 (`nu-zh` M: CER 0 on all eight; `nu-ko` S: Hangul-only CER 0 on four of six Korean and mixed clips, 0.023–0.029 on two (내일 heard as 매일), English 0 and 0.011; none broken); the dumps match `vtts_say` on a PC (same lengths, correlation ≥ 0.9995). Details: [performance.md](docs/reports/performance.md#nu-zh-m-and-nu-ko-s-update-v0103).
+
+### Changed
+- **`nu-zh` M** (`vtts-zhen-nuzh-m-v0.10.3.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 3.36 / 3.44 / 3.76 (zh / mixed / en) instead of 3.17 / 3.24 / 3.64, mixed CER 0.030 instead of 0.047.
+- **`nu-ko` S** (`vtts-koen-nuko-s-v0.10.3.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 3.18 / 3.06 / 3.54 (ko / mixed / en) instead of 2.68 / 2.65 / 3.18, Korean CER 0.026 instead of 0.045.
+- Website and voices.md: the eight `nu-zh` Quality and eight `nu-ko` Lite samples are ESP32-P4 dumps of the new models. README, voices.md, performance.md, the zh and ko evaluation reports and the Hugging Face card list the new files.
+
+### Known issues
+- The `nu-zh` S and `nu-ko` M stay the v0.5.0 (joint 20k) models: their re-distillations were more natural (UTMOS +0.2–0.6) but one CER was worse (see above). `nam-1` and the other pairs still use the 20k joint stage.
+- ESP32-S3: only `bench` was measured for the new models.
+- As before: numbers inside English sentences are read in Mandarin or Korean by the zh and ko text modes; write them as words in English text. "Bluetooth" inside Korean sentences stays a weak word (v0.5.0 report).
+
 ## v0.10.2 (2026-11-20) — `nu-10` S model update
 
 A **model update** of the Vietnamese + English voice `nu-10` (female), **lite model (S)**, **Apache-2.0**. It comes from a dedicated re-distillation with the **improved recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teacher (`nu10_vien_b32`), the same 20,000-sentence distillation pack and the same architecture (preset `S-vocos-p-bi`, 0.82M parameters, 1.2 MB). It replaces the v0.4.0 `nu-10` S; size, speed, token set (`vi-en`) and text modes (`vi`, `en`, `auto`) are unchanged, and it runs with any firmware since v0.4.0. The `nu-10` M stays the v0.9.1 model: the M of the same re-distillation scored 0.09–0.12 UTMOS lower on Vietnamese and mixed text and was not released. The other voices are unchanged.

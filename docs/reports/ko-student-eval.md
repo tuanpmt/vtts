@@ -26,6 +26,24 @@ A ko-en model has one text mode, `ko`: English sentences are read through the sa
 - **English:** both models are as intelligible in English as the vi-en voices (0.008–0.015), apart from numbers (below). Device prompts and long sentences score 0–0.003.
 - **Mixed:** the plain CER (0.30–0.36) does not measure the voice; the Hangul-only CER does (next section). On it M is within 0.01 of the reference voice and S is 0.04 behind.
 
+## `nu-ko` S update (v0.10.3)
+
+v0.10.3 replaces the lite model S with a re-distillation that uses the improved recipe: the same teacher (`ko_nuko`), the same presets and the same stages except a **longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**). Size (0.83M parameters, 1.2 MB), speed, token set and text mode are unchanged. The released v0.5.0 models and the new ones were rendered again with the current C runtime (`vtts_say --lang ko`) and scored with the same sets and pipeline (Whisper large-v3, UTMOS; mixed set: plain and Hangul-only CER, [below](#how-the-mixed-set-is-scored)).
+
+| Model | Korean CER / WER | English CER / WER | Mixed CER: text / Hangul only | UTMOS (ko / en / mixed) |
+|---|---|---|---|---|
+| S v0.5.0 (joint 20k) | 0.045 / 0.130 | 0.024 / 0.029 | 0.361 / 0.056 | 2.68 / 3.18 / 2.65 |
+| **S v0.10.3 (joint 80k)** | **0.026 / 0.099** | **0.018 / 0.024** | **0.314 / 0.044** | **3.18 / 3.54 / 3.06** |
+| M v0.5.0 (joint 20k, kept) | 0.021 / 0.088 | 0.023 / 0.035 | 0.314 / 0.026 | 2.75 / 3.39 / 2.76 |
+| M joint 80k (not released) | 0.035 / 0.127 | 0.028 / 0.039 | 0.352 / 0.043 | 3.14 / 3.87 / 3.33 |
+
+- **S:** every error rate drops (Korean CER 0.045 → 0.026, Hangul-only mixed 0.056 → 0.044) and UTMOS rises by 0.36–0.50; the new S is more natural than the v0.5.0 M on all three sets, though the M still reads Korean more accurately. Fixed: 지하철역 (was 치아 저력), 조수빈, the phone number; new errors are single syllables (개 → 회, 딸 → 날).
+- **M stays v0.5.0.** The M of the same re-distillation is much more natural (UTMOS +0.39 to +0.57) but reads Korean less accurately (CER 0.021 → 0.035, Hangul-only mixed 0.026 → 0.043: 곧 따뜻해질 → 곱다 뜨뜻해질, 한강은 → 한다는, a dropped digit in the phone number). The release rule is "UTMOS better and no CER worse by more than 0.003", so the M was not released.
+
+On the chip the new S runs at the speed of the v0.5.0 S (ESP32-P4 RTF 0.17–0.19, speech starts after 0.06–0.11 s; ESP32-S3 0.30–0.33). The eight `nu-ko` Lite clips of the website are ESP32-P4 dumps of the new S, 64 kbps MP3; Whisper large-v3: Hangul-only CER 0 on four of the six Korean and mixed clips and 0.023–0.029 on the other two (내일 heard as 매일), English 0 and 0.011 ([performance.md](performance.md#nu-zh-m-and-nu-ko-s-update-v0103)). The Quality clips are still the v0.5.0 M.
+
+Raw results: `ko-{M,S}-{old,new}-{ood_ko,mixed_ko,ood_en}.json` (not in the repository).
+
 ## How the mixed set is scored
 
 Whisper, forced to Korean, writes most English words in Hangul: "Google Drive" becomes 구글 드라이브, "Netflix" 넷플릭스, "iPhone" 아이폰. Against a reference written with Latin letters each such word counts as a wrong word, so a perfect reading of "사진을 Google Drive에 백업했습니다." scores CER 0.52. The plain CER of the mixed set is therefore mostly a measure of how often Whisper transliterates, not of the voice.

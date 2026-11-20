@@ -67,9 +67,9 @@
       "quality": "M (1.84M params, 2.6 MB)",
       "lite": "S (0.83M params, 1.2 MB)",
       "status": "released",
-      "status_text": "Released in v0.5.0 (Apache-2.0)",
+      "status_text": "Released in v0.5.0, S updated in v0.10.3 (Apache-2.0)",
       "pair": "Korean + English",
-      "release": "v0.5.0",
+      "release": "v0.10.3",
       "hf": "ko-en-nu-ko",
       "models": [
         "nuko-m",
@@ -86,9 +86,9 @@
       "quality": "M (1.84M params, 2.6 MB)",
       "lite": "S (0.83M params, 1.2 MB)",
       "status": "released",
-      "status_text": "Released in v0.5.0 (Apache-2.0)",
+      "status_text": "Released in v0.5.0, M updated in v0.10.3 (Apache-2.0)",
       "pair": "Chinese (Mandarin) + English",
-      "release": "v0.5.0",
+      "release": "v0.10.3",
       "hf": "zh-en-nu-zh",
       "models": [
         "nuzh-m",
@@ -552,7 +552,7 @@
         "en"
       ],
       "status": "released",
-      "note": "Released in v0.5.0 (Apache-2.0): a bilingual female voice (about 40, Seoul) that reads Korean, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "note": "Released in v0.5.0, S updated in v0.10.3 (Apache-2.0): a bilingual female voice (about 40, Seoul) that reads Korean, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4 (Lite: the v0.10.3 model).",
       "models": [
         {
           "id": "nuko-m",
@@ -568,11 +568,11 @@
         {
           "id": "nuko-s",
           "name": "nu-ko Lite",
-          "detail": "female · S",
+          "detail": "female · S (v0.10.3)",
           "params": "0.8M",
           "size": "1.2 MB",
           "rtf": {
-            "p4": "0.17",
+            "p4": "0.18",
             "s3": "0.32"
           }
         }
@@ -644,17 +644,17 @@
         "en"
       ],
       "status": "released",
-      "note": "Released in v0.5.0 (Apache-2.0): the bilingual voice nu-zh (female, Beijing Mandarin) reads Mandarin, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "note": "Released in v0.5.0, M updated in v0.10.3 (Apache-2.0): the bilingual voice nu-zh (female, Beijing Mandarin) reads Mandarin, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4 (Quality: the v0.10.3 model).",
       "models": [
         {
           "id": "nuzh-m",
           "name": "nu-zh Quality",
-          "detail": "female · M",
+          "detail": "female · M (v0.10.3)",
           "params": "1.8M",
           "size": "2.6 MB",
           "rtf": {
-            "p4": "0.26",
-            "s3": "0.57"
+            "p4": "0.27",
+            "s3": "0.56"
           }
         },
         {

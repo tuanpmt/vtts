@@ -38,6 +38,24 @@ CER per group (10 sentences each):
 - On the mixed set S scores the lower CER (0.032 vs 0.047). With 50 sentences this is within the noise of a few names: M's mixed errors are almost all in the names and numbers groups (below), and M's UTMOS is higher on every set.
 - Naturalness is above the Vietnamese + English students (UTMOS 2.4–2.7 on Vietnamese; 3.2 here for M on Mandarin), and English is the most natural set for both models, as for the vi-en voices.
 
+## `nu-zh` M update (v0.10.3)
+
+v0.10.3 replaces the quality model M with a re-distillation that uses the improved recipe: the same teacher (`zh_nuzh`), the same presets and the same stages except a **longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**). Size (1.84M parameters, 2.6 MB), speed, token set and text mode are unchanged. The released v0.5.0 models and the new ones were rendered again with the current C runtime (`vtts_say --lang zh`) and scored with the same sets and pipeline (Whisper large-v3, UTMOS); the v0.5.0 numbers below therefore differ slightly from the table above, which was measured with the v0.5.0 front-end. "Han only" is the mixed-set CER over the reference's Han characters (`vtts.eval.cer.main_script_cer`; English words and what Whisper writes for them are skipped).
+
+| Model | Mandarin CER / WER | Mixed CER / WER (Han only) | English CER / WER | UTMOS (zh / mixed / en) |
+|---|---|---|---|---|
+| M v0.5.0 (joint 20k) | 0.023 / 0.023 | 0.047 / 0.057 (0.046) | 0.021 / 0.025 | 3.17 / 3.24 / 3.64 |
+| **M v0.10.3 (joint 80k)** | 0.024 / 0.024 | **0.030 / 0.044 (0.015)** | **0.018 / 0.022** | **3.36 / 3.44 / 3.76** |
+| S v0.5.0 (joint 20k, kept) | 0.042 / 0.042 | 0.032 / 0.042 (0.023) | 0.034 / 0.041 | 2.90 / 2.96 / 3.35 |
+| S joint 80k (not released) | 0.025 / 0.025 | 0.059 / 0.053 (0.033) | 0.021 / 0.029 | 3.11 / 3.25 / 3.56 |
+
+- **M:** UTMOS +0.12 to +0.20 on all three sets; the mixed set improves the most (Han-only CER 0.046 → 0.015: the v0.5.0 errors on names, "第25行" and "一会儿" are gone), English CER drops, and the Mandarin CER is the same within one character (0.023 → 0.024; the new model fixes the names 李明, 刘洋, 孙悦 and gets 卧室 → 博士, "299元" → "1299元" and 坐高铁 → 做糕点 wrong).
+- **S stays v0.5.0.** The S of the same re-distillation is better on Mandarin (CER 0.042 → 0.025) and English, and UTMOS is 0.2–0.3 higher, but its mixed-set Han-only CER is higher (0.023 → 0.033: the order code "A3B7", "GitHub" read so that the following Han characters change, 音箱 → 电像, 经理 → 金驴). The release rule is "UTMOS better and no CER worse by more than 0.003", so the S was not released.
+
+On the chip the new M runs at the speed of the v0.5.0 M (ESP32-P4 RTF 0.27–0.29, speech starts after 0.17–0.29 s; ESP32-S3 0.55–0.58). The eight `nu-zh` Quality clips of the website are ESP32-P4 dumps of the new M, 64 kbps MP3; Whisper large-v3 transcribes all eight with CER 0 ([performance.md](performance.md#nu-zh-m-and-nu-ko-s-update-v0103)). The Lite clips are still the v0.5.0 S.
+
+Raw results: `zh-{M,S}-{old,new}-{ood_zh,mixed_zh,ood_en}.json` (not in the repository).
+
 ## Where the errors are
 
 - **Names of people.** Two-character given names are the largest Mandarin error group for M (0.068): 刘洋 → 有样, 李明 → 移民, 孙悦 → 三越. Without context these are homophone or near-homophone guesses of the ASR as much as tone errors of the model.
