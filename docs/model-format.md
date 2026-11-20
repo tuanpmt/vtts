@@ -37,6 +37,7 @@ Each tensor table entry (80 bytes):
 | `prosody`, `p_depth` | Pitch/energy predictor (prosody models) | 0: no prosody branch |
 | `expr_milli` | Default expressiveness × 1000 | 1000 |
 | `token_set` | Token set the model was trained with (below) | derived from `vocab` |
+| `text_mode` | Device text mode the model starts in: up to 4 ASCII characters packed little-endian (`en` = 0x6e65); used when the token set offers that mode (`vtts_text_model_lang`). The English-only voice `nu-en` (vi-en set) records `en`. Written by `export_student.py --text-mode` or `scripts/student/set_text_mode.py` | the token set's first mode |
 
 Unknown dims are ignored by every runtime, so new optional dims keep the format at version 1: older firmware loads newer files, and newer firmware loads older files.
 

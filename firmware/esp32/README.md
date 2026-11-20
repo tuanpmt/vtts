@@ -70,12 +70,12 @@ Any line that is not a command is spoken, and every command ends with a `DONE` l
 
 ## Languages and text modes
 
-The firmware chooses the text front-end from the token set recorded in each model file (`token_set`, [docs/model-format.md](../../docs/model-format.md#token_set-added-in-format-revision-11)); files exported before the field existed map by vocabulary size (65 → v1, 107 → vi-en, 171 → zh-en, ...). Start-up prints `model S: ..., token set zh-en (header), lang zh` per model. Each model keeps its own mode; `lang <mode>` changes the current model's mode and refuses modes of other token sets.
+The firmware chooses the text front-end from the token set recorded in each model file (`token_set`, [docs/model-format.md](../../docs/model-format.md#token_set-added-in-format-revision-11)); files exported before the field existed map by vocabulary size (65 → v1, 107 → vi-en, 171 → zh-en, ...). Start-up prints `model S: ..., token set zh-en (header), lang zh` per model. A model starts in the first mode of its token set (the Default column), unless its file names another mode in the optional dim `text_mode`: the English-only voice `nu-en` (v0.9.0) uses the vi-en token set and records `en`, so it starts in English (`model S: ..., token set vi-en (header), lang en`). Each model keeps its own mode; `lang <mode>` changes the current model's mode and refuses modes of other token sets.
 
 | Token set | `lang` modes | Default | Text on the device |
 |---|---|---|---|
 | `v1` | `vi` | `vi` | Vietnamese |
-| `vi-en` | `vi`, `en`, `auto` | `vi` | Vietnamese + English (`vi` also reads English words; `auto` decides per sentence) |
+| `vi-en` | `vi`, `en`, `auto` | `vi` (`en` for `nu-en`) | Vietnamese + English (`vi` also reads English words; `auto` decides per sentence). The English-only voice `nu-en` is meant for `en`; `bench` uses four English sentences in `en` (v0.9.0; before, the Vietnamese ones) |
 | `zh-en` | `zh` | `zh` | Mandarin + English: Han characters in Mandarin, Latin words in English, numbers in Mandarin (same as `text_to_ids(text, "zh")` in Python) |
 | `ko-en` | `ko` | `ko` | Korean + English: Hangul in Korean (standard pronunciation rules and the exception table), Latin words in English, numbers in Korean with counters (same as `text_to_ids(text, "ko")` in Python). No extra blob: the Korean tables are compiled into the firmware |
 | `hi-en` | `hi` | `hi` | Hindi + English: Devanagari in Hindi (letter rules, anusvara, schwa deletion and the exception table), Latin words in English, numbers in Hindi with lakh and crore, the danda ends a sentence (same as `text_to_ids(text, "hi")` in Python). No extra blob: the Hindi tables are compiled into the firmware |

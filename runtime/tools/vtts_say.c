@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* vtts_say.c -- host tool: text -> token ids -> WAV, with the front-end chosen from the model's
- * token set the way the firmware does (vtts_token_set, vtts_text_default_lang / vtts_text_lang_for).
+ * token set the way the firmware does (vtts_token_set, vtts_text_model_lang / vtts_text_lang_for).
  * usage: vtts_say MODEL.vtts OUT.wav [--lex VLEX] [--zh ZLEX] [--ja JLEX] [--ru RLEX] [--lang MODE] [--speed X] TEXT
  * Chunks are joined with VTTS_CHUNK_GAP_MS of silence, and samples are rounded to int16 like the
  * firmware does, so a device `dump` of the same text can be compared sample by sample.
@@ -100,7 +100,7 @@ int main(int argc, char **argv) {
     if (rc) { fprintf(stderr, "init failed %d\n", rc); return 1; }
     int ts = vtts_token_set(&m);
     vtts_lang lang;
-    if (mode ? vtts_text_lang_for(ts, mode, &lang) : vtts_text_default_lang(ts, &lang)) {
+    if (mode ? vtts_text_lang_for(ts, mode, &lang) : vtts_text_model_lang(ts, m.text_mode, &lang)) {
         fprintf(stderr, "token set %s: no text mode %s (modes: %s)\n", vtts_token_set_name(ts), mode ? mode : "",
                 vtts_text_modes(ts));
         return 2;

@@ -254,6 +254,10 @@ int vtts_text_to_ids_ex(const char *utf8, vtts_text_ws *ws, const vtts_text_opts
  * vtts_text_default_lang: 0 and *out set, or < 0 when the set has no device front-end. */
 int vtts_text_lang_for(int token_set, const char *mode, vtts_lang *out);
 int vtts_text_default_lang(int token_set, vtts_lang *out);
+/* The text mode a model starts in: the mode named by its text_mode dim (vtts_model.text_mode, e.g.
+ * "en" for the English-only voice nu-en, which uses the vi-en token set) when the set offers it, else
+ * vtts_text_default_lang. Returns 0 and *out set, or < 0 when the set has no device front-end. */
+int vtts_text_model_lang(int token_set, int text_mode, vtts_lang *out);
 const char *vtts_text_modes(int token_set); /* "vi", "vi|en|auto", "zh", "ko", "hi", "ja", "es", "id", "pt", "th",
                                                "fr", "de", "it", "tr", "ru", "pl", "ar", "fi", "el", "ms", "tl", "sw", "nl", "sv", "no" or "" */
 const char *vtts_text_lang_name(vtts_lang lang); /* "vi" (V1 and VI), "en", "auto", "zh", "ko", "hi", "ja", "es",

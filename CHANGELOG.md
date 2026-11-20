@@ -8,6 +8,69 @@ All notable changes to this project are documented here. Model files for each re
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
 
+## v0.9.0 (2026-11-20) — English voice `nu-en`
+
+The first **English-only** voice, as a quality model (M) and a lite model (S), **Apache-2.0**:
+
+- **English (American)**, voice `nu-en` (female, a VoxCPM2 designed voice). It reads English only: prompts, numbers, dates, times, money, units and abbreviations through the on-device English front-end (CMUdict, letter-to-sound rules, normalizer). Use it in the `en` text mode; the files start in it on their own (below). The teacher `en_nuen` was trained for 60k steps on speech synthesized with VoxCPM2 (Apache-2.0) from the voice `nu-en` only, 19,241 English sentences (about 30 h), starting from the `nu-10` teacher (itself trained from random initialization on VoxCPM2 audio). Students distilled with the standard chain (front 10k, decoder 30k, joint 20k steps).
+
+The bilingual voices of v0.4.0 to v0.8.0 are unchanged and stay on their releases. **An improved distillation recipe (a longer joint stage) is being applied; `nu-en` will get an updated model soon**, as a model update of this voice.
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-en-nuen-m-v0.9.q8.vtts` | `nu-en` (female) | Quality (M) | 1.83M | 2.6 MB |
+| `vtts-en-nuen-s-v0.9.q8.vtts` | `nu-en` (female) | Lite (S) | 0.82M | 1.2 MB |
+
+Int8, 22.05 kHz, token set `vi-en` (107 tokens; only the English ARPAbet part is trained), presets `{M,S}-vocos-p-bi`. The files record the text mode `en` in the new optional header dim `text_mode`, so the firmware and `vtts_say` start them in English rather than the vi-en default `vi`. No blob beyond the English lexicon.
+
+### Quality
+
+Two out-of-domain English sets of 50 sentences: `ood_en` (the English set of every pair) and the new `ood_en2` (numbers, dates and times, short commands, units and money, abbreviations), none in the training text. Whisper large-v3, audio from the int8 C runtime, compared with the English of the bilingual `nu-10` voice and with the VoxCPM2 `nu-en` voice the students learned from. Report: [en-student-eval.md](docs/reports/en-student-eval.md).
+
+| Model | `ood_en` CER / WER | `ood_en2` CER / WER | UTMOS (ood_en / ood_en2) |
+|---|---|---|---|
+| `nu-en` M | 0.014 / 0.018 | 0.034 / 0.053 | 2.88 / 3.00 |
+| `nu-en` S | 0.015 / 0.022 | 0.027 / 0.043 | 3.00 / 3.08 |
+| `nu-10` M (vi-en, `lang en`) | 0.008 / 0.010 | 0.033 / 0.043 | 3.44 / 3.59 |
+| `nu-10` S (vi-en, `lang en`) | 0.011 / 0.018 | 0.035 / 0.046 | 3.26 / 3.35 |
+| VoxCPM2 `nu-en` (reference voice) | 0.010 / 0.014 | 0.045 / 0.055 | 4.24 / 4.24 |
+
+Intelligibility is at the level of the reference voice; most of the remaining CER is how Whisper writes times and amounts ("9:30" as "9.30", "64 dollars and 20 cents" as "$64.20"), which costs every system. Naturalness is lower than the English of `nu-10` (see the known issues).
+
+### Performance
+
+| Board | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 | 0.18–0.21 / 0.07–0.14 s | 0.27–0.29 / 0.17–0.35 s |
+| ESP32-S3 | 0.41–0.46 / not measured | 0.69–0.73 / not measured |
+
+RTF from `bench` (four English sentences), speech start from playing the eight website sentences. Firmware with only the always-built front-ends (vi, en): 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free). Every website clip is the ESP32-P4's own output and was transcribed again with Whisper before publishing (16 clips, none broken). Details: [docs/reports/performance.md](docs/reports/performance.md#english-v090).
+
+### Flash a board
+
+```bash
+gh release download v0.9.0 -R tuanpmt/vtts -p 'vtts-en-*' -D models
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-en-nuen-s-v0.9.q8.vtts ../../models/vtts-en-nuen-m-v0.9.q8.vtts -p PORT flash monitor
+```
+
+`BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. The start-up log shows `token set vi-en (header), lang en` for both models. Use a firmware built from this release: older firmware ignores the new header dim and starts these models in `vi` (then type `lang en` once per model).
+
+### Added
+- **English voice `nu-en`** (M and S), first in the website's language picker (🇬🇧) and in the README, with 16 on-chip samples (ESP32-P4 dumps of 8 sentences × 2 models, each checked with Whisper).
+- **Header dim `text_mode`**: the text mode a model starts in, up to 4 ASCII characters packed little-endian ([model format](docs/model-format.md#optional-dims)). C: `vtts_model.text_mode`, `vtts_text_model_lang()` (the firmware and `vtts_say` use it; without the dim, the token set's first mode as before). Python: `pack_text_mode`, `set_dims`, `read_tensors` in `vtts.export.format`, `export_student.py --text-mode`, `scripts/student/set_text_mode.py` for exported files.
+- Firmware `bench` in `lang en` uses four English sentences (before: the Vietnamese ones).
+- Eval set `eval/sets/ood_en2.jsonl` (50 English sentences: numbers, dates and times, commands, units and money, abbreviations; held out from the English training text). Report [en-student-eval.md](docs/reports/en-student-eval.md), a v0.9.0 section in [performance.md](docs/reports/performance.md), Hugging Face folder `en-nu-en/`.
+
+### Known issues
+- **Naturalness below the bilingual voices' English:** UTMOS 2.88–3.08 against 3.26–3.59 for `nu-10`'s English and 4.24 for the reference voice. The updated model with the longer joint stage is meant to close part of this gap.
+- **A short first sentence is quiet:** "Hello!" before a longer sentence is short and soft, and Whisper drops it in the website's intro clip (both models).
+- **All-capital words are spelled:** "NASA" is read N-A-S-A, as are other all-capital words that are not in the lexicon; write them in lower case ("Nasa") to read them as a word.
+- **Vietnamese text is not supported** by these models (the vi-en token set is shared, but only English was trained); `lang vi` and `lang auto` give poor results.
+- **ESP32-S3:** only `bench` was measured for this release (RTF 0.41–0.46 S, 0.69–0.73 M); speech start and two-core determinism were not re-checked. As for the earlier pairs, two cores on the ESP32-S3 can now and then change a dump slightly; `cores 1` gives exact output.
+
 ## v0.8.0 (2026-11-20) — Indonesian + English, Hindi + English and Spanish + English voices
 
 Three new bilingual pairs, each with one designed female voice as a quality model (M) and a lite model (S), **Apache-2.0**:

@@ -27,7 +27,8 @@
  *                         ms-en ms; tl-en tl; sw-en sw; nl-en nl; sv-en sv; no-en no; da-en da;
  *                         lo-en lo; km-en km; my-en my (each
  *                         language only when built in: the models need it, main/vtts_langs.cmake).
- *                         The front-end follows the model's token set (header)
+ *                         The front-end follows the model's token set (header); the start mode is
+ *                         the set's first mode, or the model's text_mode dim (nu-en: en)
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments
  */
 #include <math.h>
@@ -81,7 +82,9 @@ void app_main(void) {
         /* the text front-end follows the token set recorded in the model (old files: by vocab) */
         int ts = rc ? VTTS_TOKSET_UNKNOWN : vtts_token_set(&g.models[k]);
         vtts_lang l;
-        g.lang[k] = vtts_text_default_lang(ts, &l) == 0 ? (int)l : -1;
+        /* start mode: the model's text_mode dim (e.g. "en" for the English-only nu-en, a vi-en set
+         * model), else the set's first mode */
+        g.lang[k] = vtts_text_model_lang(ts, rc ? 0 : g.models[k].text_mode, &l) == 0 ? (int)l : -1;
         printf("model %c: %u bytes, init %d, arena %u, token set %s (%s), lang %s\n", k ? 'M' : 'S', (unsigned)bytes, rc,
                (unsigned)ab, vtts_token_set_name(ts), rc ? "-" : g.models[k].token_set_in_file ? "header" : "vocab",
                synth_lang_name(k));

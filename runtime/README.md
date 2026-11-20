@@ -93,12 +93,12 @@ Japanese: `vtts_jlex_init(&ja, ja_blob, ja_size)` (`static vtts_jlex ja;`, < 0: 
 
 ### Choosing the front-end from the model
 
-A model file records its token set (dim `token_set`, see [docs/model-format.md](../docs/model-format.md#token_set-added-in-format-revision-11); older files map by `vocab`). Pick the mode from it instead of guessing:
+A model file records its token set (dim `token_set`, see [docs/model-format.md](../docs/model-format.md#token_set-added-in-format-revision-11); older files map by `vocab`). Pick the mode from it instead of guessing. `vtts_text_model_lang` starts in the mode the file names in its optional dim `text_mode` (`m.text_mode`; `en` for the English-only voice `nu-en`, which uses the vi-en set) and otherwise in the set's first mode, like `vtts_text_default_lang`:
 
 ```c
 int ts = vtts_token_set(&m);                    /* VTTS_TOKSET_V1, _VI_EN, _ZH_EN, _KO_EN, _JA_EN, _ES_EN, _ID_EN, _PT_EN, _HI_EN, _FI_EN, _EL_EN, _UNKNOWN */
 vtts_lang lang;
-if (vtts_text_default_lang(ts, &lang) < 0) { /* unknown token set: no device front-end, ids only */ }
+if (vtts_text_model_lang(ts, m.text_mode, &lang) < 0) { /* unknown token set: no device front-end, ids only */ }
 if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set */ }
 ```
 

@@ -1,6 +1,6 @@
 # On-chip performance
 
-Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English and the v0.8.0 Indonesian + English, Hindi + English and Spanish + English models (S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
+Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English and the v0.9.0 English-only models (`nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
 
 Everything lives in PSRAM: the models, the working arena (about 1.9 MB) and the activations. Internal SRAM stays free for the application and for DMA.
 
@@ -133,6 +133,24 @@ The pt-en models (v0.7.0) have the same architecture with a token table of 150 (
 - Image with the two pt-en models and the English lexicon (no blob of its own; the Portuguese front-end is compiled in only for a pt-en model): 6.22 MB on the ESP32-P4 (2.17 MB free in the 8 MB app partition) and 6.10 MB on the ESP32-S3 (2.28 MB free).
 - **ESP32-P4:** the dumps match `vtts_say` on a PC (correlation ≥ 0.9993, SNR 28–57 dB) for all 16 clips. All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: CER 0.014 (M) and 0.009 (S) on average over the six Portuguese and mixed clips (the errors: "ESP32", read with Portuguese letter names, heard as "SP32"; "à Netflix" as "a Netflix"; "às 6:30" written "6h30"); the English clips score 0–0.09, the only error being "ESP32" again (spelled the Portuguese way, heard as "SPP-S2"). None is broken.
 - **ESP32-S3 with two cores:** all 16 dumps of the measurement run are identical to the ESP32-P4 dumps of the same text (SNR ≥ 95 dB, the int16 rounding), so the two-core fix holds for pt-en too.
+
+## English (v0.9.0)
+
+The English-only models `nu-en` (v0.9.0) use the vi-en architecture and token set (S 0.82M, M 1.83M parameters). The files record the text mode `en` (dim `text_mode`), and the firmware starts them in English (`model S: ..., token set vi-en (header), lang en`); no optional language is compiled in (`vtts: optional languages compiled in: none`). `bench` uses the four fixed English sentences of the `en` mode, `dump` and playback the eight website sentences (an introduction, smart-home commands, numbers, a date, a time, a question and a longer news-like sentence).
+
+| Chip | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---|---:|---:|---:|---:|---:|---:|
+| ESP32-P4 | S (lite) | 0.18–0.21 (mean 0.19) | 0.18–0.20 | 0.06–0.14 s | 0.07–0.14 s (median 0.10) | 18–20% / 13–14% | 0 in 8 |
+| ESP32-P4 | M (quality) | 0.27–0.29 (mean 0.28) | 0.27–0.31 | 0.11–0.27 s | 0.17–0.35 s (median 0.27) | 26–30% / 20–22% | 1 in 8 |
+| ESP32-S3 | S (lite) | 0.41–0.46 (mean 0.43) | — | — | — | — | — |
+| ESP32-S3 | M (quality) | 0.69–0.73 (mean 0.71) | — | — | — | — | — |
+
+- Speed is that of the vi-en voices within about 0.01–0.02 RTF.
+- The one underrun (M) was on the intro, which starts with the one-word sentence "Hello!" followed by a longer one, as with the other pairs.
+- On the ESP32-S3 only `bench` was run for this release.
+- Images with the two models and the English lexicon: 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition) and 6.01 MB on the ESP32-S3 (2.38 MB free), about 80–90 KB smaller than the v0.8.0 pairs because no optional front-end is compiled in.
+- **ESP32-P4:** The ESP32-P4 output matches `vtts_say` on a PC (same length for all 16 clips, correlation ≥ 0.996, SNR 21–44 dB). All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: CER 0 for 12 of them; the other four are the intro ("Hello!" not transcribed, and "ESP32" heard as "ESP3 to" with M; CER 0.05–0.06) and the date sentence ("9:30" written "9.30", CER 0.16 for both models). None is broken.
+- **ESP32-S3 with two cores:** On the ESP32-S3 only `bench` was run for this release (two cores, the default); its dumps were not compared with the ESP32-P4.
 
 ## Indonesian + English, Hindi + English and Spanish + English (v0.8.0)
 

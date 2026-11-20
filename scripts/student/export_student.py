@@ -9,6 +9,9 @@ else a "token_set" entry of the front checkpoint, else the set the vocab names (
 150 -> pt-en, 162 -> th-en, 157 -> hi-en, 143 -> fr-en, 167 -> de-en, 142 -> it-en, 146 -> tr-en, 154 -> ru-en, 151 -> pl-en, 149 -> ar-en, 145 -> ms-en, 147 -> sw-en, 159 -> nl-en, 155 -> sv-en, 156 -> no-en); fi-en and it-en (142), el-en and tl-en (139) (142) and other vocab
 sizes need
 --token-set.
+--text-mode MODE records the device text mode the model starts in (dim text_mode), e.g. en for the
+English-only voice nu-en, which uses the vi-en token set; without it the device starts in the token
+set's first mode (vi for vi-en). scripts/student/set_text_mode.py sets it on an exported file.
 """
 
 import argparse
@@ -16,7 +19,13 @@ from pathlib import Path
 
 import torch
 
-from vtts.export.format import TOKEN_SET_CODES, resolve_token_set, write_model
+from vtts.export.format import (
+    TOKEN_SET_CODES,
+    pack_text_mode,
+    resolve_token_set,
+    set_dims,
+    write_model,
+)
 from vtts.export.quant import write_model_int8
 from vtts.student.config import StudentConfig
 from vtts.student.model import Student
@@ -51,6 +60,8 @@ def main() -> None:
     ap.add_argument("--int8", action="store_true")
     ap.add_argument("--token-set", choices=sorted(TOKEN_SET_CODES), default=None,
                     help="token set to record (default: from the checkpoint or the vocab)")
+    ap.add_argument("--text-mode", default=None,
+                    help="device text mode to start in (dim text_mode), e.g. en for an English-only vi-en model")
     ap.add_argument("--save-pt", type=Path, default=None,
                     help="also save the assembled float student ({student, config, step, stage}), "
                          "e.g. as INIT_FROM for the warm-decoder experiment E6")
@@ -65,6 +76,8 @@ def main() -> None:
     if ts is None:
         ap.error(f"vocab {m.cfg.vocab} names no token set; pass --token-set")
     (write_model_int8 if a.int8 else write_model)(m, a.out, token_set=ts)
+    if a.text_mode:
+        set_dims(a.out, a.out, {"text_mode": pack_text_mode(a.text_mode)})
     print(f"wrote {a.out} ({a.out.stat().st_size} bytes, token set {ts})")
 
 

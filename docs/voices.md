@@ -1,6 +1,6 @@
 # Voices
 
-Every vtts model is **bilingual: one main language + English**, with code-switching. One voice reads single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods", "스마트폰을 Wi-Fi에 연결했어요" or "このWi-Fiはpasswordが必要ですか？"; the front-end picks the language per word. The English front-end runs on the device too (C, parity-tested against Python), so mixed text is handled on the chip.
+Every vtts model except the English-only voice `nu-en` is **bilingual: one main language + English**, with code-switching. One voice reads single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods", "스마트폰을 Wi-Fi에 연결했어요" or "このWi-Fiはpasswordが必要ですか？"; the front-end picks the language per word. The English front-end runs on the device too (C, parity-tested against Python), so mixed text is handled on the chip.
 
 Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster, with less CPU load and flash). Both run faster than real time on the ESP32-P4 and the ESP32-S3; pick by sound versus headroom, not by chip.
 
@@ -9,6 +9,7 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 <!-- BEGIN:voices -->
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
+| `nu-en` (female) | 🇺🇸 en | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.9.0 (Apache-2.0)** |
 | `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
 | `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
 | `nu-ko` (female) | 🇰🇷 ko + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
@@ -24,10 +25,11 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 | Norwegian + English | 🇳🇴 no + 🇺🇸 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
-Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`):
+Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`):
 
 | Voice | Files (lite S, quality M) | Release | Notes |
 |---|---|---|---|
+| `nu-en` | `vtts-en-nuen-{s,m}-v0.9.q8.vtts` | v0.9.0 | English only. Token set vi-en; the files record the text mode `en` (dim `text_mode`), so the firmware and `vtts_say` start in English; use only `lang en` |
 | `nam-1`, `nu-10` | `vtts-vien-{nam1,nu10}-{s,m}-v0.4.q8.vtts` | v0.4.0 | Text modes `vi`, `en`, `auto` |
 | `nu-ko` | `vtts-koen-nuko-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `ko`; no blob beyond the English lexicon |
 | `nu-zh` | `vtts-zhen-nuzh-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `zh`; embeds the 116 KB `ZLEX` blob (`main/lex_zh.bin`) |
@@ -42,6 +44,18 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 ## Quality
 
 Three out-of-domain sets of 50 sentences per language pair (main language, English, mixed; device prompts, numbers, names, questions, long sentences), none of them in the training text. CER is the character error rate when an ASR model transcribes the audio: PhoWhisper-large for Vietnamese (tones included), Whisper large-v3 for English and the other languages. UTMOS predicts naturalness. Audio comes from the int8 C runtime, which gives the same output as the chip.
+
+**English** (`nu-en`, English only, [report](reports/en-student-eval.md)): `ood_en` and the new `ood_en2` (numbers, dates and times, short commands, units and money, abbreviations), against the English of the bilingual `nu-10` voice and the VoxCPM2 `nu-en` voice it was trained from:
+
+| Model | Params | `ood_en` CER ↓ | `ood_en2` CER ↓ | UTMOS ↑ (ood_en / ood_en2) |
+|---|---:|---:|---:|---|
+| `nu-en` M | 1.83M | 0.014 | 0.034 | 2.88 / 3.00 |
+| `nu-en` S | 0.82M | 0.015 | **0.027** | 3.00 / 3.08 |
+| `nu-10` M (vi-en, `lang en`) | 1.83M | **0.008** | 0.033 | **3.44 / 3.59** |
+| `nu-10` S (vi-en, `lang en`) | 0.82M | 0.011 | 0.035 | 3.26 / 3.35 |
+| VoxCPM2 `nu-en` (reference voice) | — | 0.010 | 0.045 | 4.24 / 4.24 |
+
+Most of the remaining CER is how Whisper writes times ("9:30" as "9.30") and spaced digits; intelligibility is at the level of the reference voice, naturalness is not yet (UTMOS about 1.2 below it and 0.4–0.6 below `nu-10`'s English). An update with a longer joint distillation stage is coming.
 
 **Vietnamese + English** ([report](reports/bilingual-student-eval.md)):
 
@@ -129,7 +143,7 @@ Without the numbers group: reference 0.000 / 0.005, M 0.008 / 0.005, S 0.006 / 0
 | Board | Chip | Lite model RTF | Quality model RTF |
 |---|---|---|---|
 | Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17–0.19 | 0.26–0.28 |
-| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.41–0.42 | 0.68–0.70 |
+| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.41–0.43 | 0.68–0.71 |
 
 Both models run on both chips. RTF below 1 means faster than real time.
 <!-- END:hardware -->
@@ -138,9 +152,22 @@ Both chips use two cores and int8 SIMD kernels; all released pairs run at the sa
 
 ## Listen (generated on an ESP32-P4)
 
-Audio is produced on the chip with the firmware's `dump` command (`lang auto` for vi-en, `lang ko`, `lang zh`, `lang ja`, `lang pt`, `lang id`, `lang hi`, `lang es` for the other pairs), sent to a PC over serial and only compressed to MP3; every clip was checked with ASR before publishing. The same clips are on the [website](https://tuanpmt.github.io/vtts/).
+Audio is produced on the chip with the firmware's `dump` command (`lang en` for `nu-en`, `lang auto` for vi-en, `lang ko`, `lang zh`, `lang ja`, `lang pt`, `lang id`, `lang hi`, `lang es` for the other pairs), sent to a PC over serial and only compressed to MP3; every clip was checked with ASR before publishing. The same clips are on the [website](https://tuanpmt.github.io/vtts/).
 
 <!-- BEGIN:samples -->
+🇺🇸 **English**
+
+| Sentence | nu-en Quality | nu-en Lite |
+|---|---|---|
+| Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller, with no internet connection. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-intro.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-intro.mp3) |
+| Okay, I have turned off the living room lights and locked the front door. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-lights.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-lights.mp3) |
+| The thermostat is now set to 22 degrees, and the fan will run on low speed. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-thermostat.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-thermostat.mp3) |
+| Your battery is at 15 percent, and the total comes to $42.50. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-numbers.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-numbers.mp3) |
+| Your dentist appointment is on Tuesday, November 18, at 9:30 in the morning. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-dates.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-dates.mp3) |
+| It is 6:45 p.m. Dinner will be ready in about 20 minutes. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-time.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-time.mp3) |
+| Would you like me to play some music in the kitchen? | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-question.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-question.mp3) |
+| Heavy rain is expected across the city tonight, so the morning commute may take longer than usual, and several bus routes will start later. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-news.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-news.mp3) |
+
 🇻🇳 🇺🇸 **Việt–English**
 
 | Sentence | nam-1 Quality | nam-1 Lite | nu-10 Quality | nu-10 Lite |

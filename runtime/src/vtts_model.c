@@ -34,6 +34,7 @@ static const dim_spec DIMS[] = {
     D(a_frame_depth, 1), D(a_kernel, 1), D(decoder, 1), D(c0, 0), D(n_up, 0), D(n_res, 0),
     D(res_kernel, 0), D(n_fft, 0), D(istft_hop, 0), D(v_dim, 0), D(v_blocks, 0), D(v_mult, 0),
     D(prosody, 0), D(p_depth, 0), D(expr_milli, 0), D(token_set, 0),
+    D(text_mode, 0),
 };
 
 static int set_indexed(vtts_model *m, const uint8_t *key, int32_t v) {

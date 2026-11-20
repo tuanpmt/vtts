@@ -2,6 +2,24 @@
   "_comment": "Single source for the generated blocks of README.md (released voices), docs/voices.md (catalog, speed, samples), docs/architecture.md (technology), firmware/esp32/README.md (board defaults) and the website (docs/index.html). Edit here, then run: uv run python scripts/docs/sync_docs.py. tests/docs/test_docs_sync.py fails if a generated block is out of date. A released voice names its language pair, release tag, Hugging Face folder and its two models in 'listen' (quality first), which give the size and RTF of the README table. 'listen' drives the website's language dropdown and sample table: one entry per language or language pair, one model per column (with size and RTF per chip), one sentence per row; audio paths are relative to docs/ (docs/audio/p4-<voice>-<model>-<sentence>.mp3) and every clip is the chip's own PCM output, compressed to MP3.",
   "voices": [
     {
+      "name": "`nu-en` (female)",
+      "langs": [
+        "en"
+      ],
+      "code_switching": false,
+      "quality": "M (1.83M params, 2.6 MB)",
+      "lite": "S (0.82M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.9.0 (Apache-2.0)",
+      "pair": "English (American)",
+      "release": "v0.9.0",
+      "hf": "en-nu-en",
+      "models": [
+        "nuen-m",
+        "nuen-s"
+      ]
+    },
+    {
       "name": "`nam-1` (male)",
       "langs": [
         "vi",
@@ -231,8 +249,8 @@
     {
       "boards": "EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8",
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
-      "rtf_lite": "0.41–0.42",
-      "rtf_quality": "0.68–0.70"
+      "rtf_lite": "0.41–0.43",
+      "rtf_quality": "0.68–0.71"
     }
   ],
   "boards": [
@@ -298,6 +316,97 @@
     }
   ],
   "listen": [
+    {
+      "id": "en",
+      "label": "English",
+      "flags": [
+        "en"
+      ],
+      "status": "released",
+      "note": "Released in v0.9.0 (Apache-2.0): the English-only voice nu-en (female, American English), the first voice for English alone. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nuen-m",
+          "name": "nu-en Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.28",
+            "s3": "0.71"
+          }
+        },
+        {
+          "id": "nuen-s",
+          "name": "nu-en Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.19",
+            "s3": "0.43"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller, with no internet connection.",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-intro.mp3",
+            "nuen-s": "audio/p4-nuen-s-intro.mp3"
+          }
+        },
+        {
+          "text": "Okay, I have turned off the living room lights and locked the front door.",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-lights.mp3",
+            "nuen-s": "audio/p4-nuen-s-lights.mp3"
+          }
+        },
+        {
+          "text": "The thermostat is now set to 22 degrees, and the fan will run on low speed.",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-thermostat.mp3",
+            "nuen-s": "audio/p4-nuen-s-thermostat.mp3"
+          }
+        },
+        {
+          "text": "Your battery is at 15 percent, and the total comes to $42.50.",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-numbers.mp3",
+            "nuen-s": "audio/p4-nuen-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "Your dentist appointment is on Tuesday, November 18, at 9:30 in the morning.",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-dates.mp3",
+            "nuen-s": "audio/p4-nuen-s-dates.mp3"
+          }
+        },
+        {
+          "text": "It is 6:45 p.m. Dinner will be ready in about 20 minutes.",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-time.mp3",
+            "nuen-s": "audio/p4-nuen-s-time.mp3"
+          }
+        },
+        {
+          "text": "Would you like me to play some music in the kitchen?",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-question.mp3",
+            "nuen-s": "audio/p4-nuen-s-question.mp3"
+          }
+        },
+        {
+          "text": "Heavy rain is expected across the city tonight, so the morning commute may take longer than usual, and several bus routes will start later.",
+          "audio": {
+            "nuen-m": "audio/p4-nuen-m-news.mp3",
+            "nuen-s": "audio/p4-nuen-s-news.mp3"
+          }
+        }
+      ]
+    },
     {
       "id": "vi-en",
       "label": "Việt–English",

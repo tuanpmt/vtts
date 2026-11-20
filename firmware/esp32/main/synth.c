@@ -43,6 +43,12 @@ static const char *const BENCH_HI[] = {
     "कल सुबह 6:30 बजे का अलार्म लगा दिया गया है।",
     "आज शनिवार है, 14/11/2026।",
 };
+static const char *const BENCH_EN[] = { /* lang en (vi-en models, the English-only nu-en) */
+    "Hello, I am your voice assistant.",
+    "The room temperature is 26 degrees, with 65% humidity.",
+    "The alarm for 6:30 tomorrow morning is set.",
+    "Today is Saturday, 11/14/2026.",
+};
 static const char *const BENCH_ES[] = {
     "Hola, soy tu asistente de voz.",
     "La temperatura de la habitación es de 26 grados, con una humedad del 65%.",
@@ -300,7 +306,7 @@ static const char *const BENCH_AR[] = {
 
 void synth_bench(void) {
     const int l = g.lang[g.cur];
-    const char *const *set = l == VTTS_LANG_ZH ? BENCH_ZH : l == VTTS_LANG_KO ? BENCH_KO : l == VTTS_LANG_HI ? BENCH_HI
+    const char *const *set = l == VTTS_LANG_EN ? BENCH_EN : l == VTTS_LANG_ZH ? BENCH_ZH : l == VTTS_LANG_KO ? BENCH_KO : l == VTTS_LANG_HI ? BENCH_HI
                              : l == VTTS_LANG_JA ? BENCH_JA : l == VTTS_LANG_ES ? BENCH_ES : l == VTTS_LANG_ID ? BENCH_ID
                              : l == VTTS_LANG_PT ? BENCH_PT : l == VTTS_LANG_TH ? BENCH_TH
                              : l == VTTS_LANG_FR ? BENCH_FR : l == VTTS_LANG_DE ? BENCH_DE : l == VTTS_LANG_IT ? BENCH_IT

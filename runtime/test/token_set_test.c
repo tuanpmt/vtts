@@ -121,6 +121,26 @@ int main(int argc, char **argv) {
 #endif
     CHECK(vtts_token_set_size(20) == 0 && strcmp(vtts_token_set_name(20), "unknown") == 0);
 
+    /* text_mode dim: the start mode of a model ("en" for the English-only nu-en on the vi-en set) */
+    {
+        static unsigned char b[2048];
+        size_t n = make_blob(b, 107, VTTS_TOKSET_VI_EN);
+        const int32_t en = 'e' | ('n' << 8), xx = 'x' | ('x' << 8);
+        put_u32(b + 8, (uint32_t)(sizeof REQUIRED / sizeof *REQUIRED + 3));
+        n += put_dim(b + n, "text_mode", en);
+        put_u32(b + 16, (uint32_t)n);
+        CHECK(vtts_init(&m, b, n) == VTTS_OK && m.text_mode == en && vtts_token_set(&m) == VTTS_TOKSET_VI_EN);
+        CHECK(vtts_text_model_lang(vtts_token_set(&m), m.text_mode, &l0) == 0 && l0 == VTTS_LANG_EN);
+        CHECK(load(107, VTTS_TOKSET_VI_EN, &m) == VTTS_OK && m.text_mode == 0);
+        CHECK(vtts_text_model_lang(VTTS_TOKSET_VI_EN, 0, &l0) == 0 && l0 == VTTS_LANG_VI);
+        CHECK(vtts_text_model_lang(VTTS_TOKSET_VI_EN, 'a' | ('u' << 8) | ('t' << 16) | ('o' << 24), &l0) == 0 &&
+              l0 == VTTS_LANG_AUTO);
+        /* a mode the set does not offer falls back to the first mode */
+        CHECK(vtts_text_model_lang(VTTS_TOKSET_VI_EN, xx, &l0) == 0 && l0 == VTTS_LANG_VI);
+        CHECK(vtts_text_model_lang(VTTS_TOKSET_ZH_EN, en, &l0) == 0 && l0 == VTTS_LANG_ZH);
+        CHECK(vtts_text_model_lang(VTTS_TOKSET_UNKNOWN, en, &l0) < 0);
+    }
+
     /* fr-en (11): by the dim only (sets after hi-en are never inferred from the vocab: a file
      * without the dim is vi-en); mode fr when built with VTTS_ENABLE_FR */
     CHECK(load(143, VTTS_TOKSET_FR_EN, &m) == VTTS_OK && vtts_token_set(&m) == VTTS_TOKSET_FR_EN && m.token_set_in_file);

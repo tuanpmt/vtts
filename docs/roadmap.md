@@ -1,10 +1,11 @@
 # Roadmap
 
-vtts ships **bilingual voices: one main language + English**, with code-switching. Every released model covers one pair; each new pair gets one designed voice and its own release. Plan and reasoning: [design/plans/2026-11-18-roadmap-bilingual.md](design/plans/2026-11-18-roadmap-bilingual.md). Release history: [CHANGELOG.md](../CHANGELOG.md).
+vtts ships **bilingual voices: one main language + English**, with code-switching, and an English-only voice (`nu-en`). Every bilingual model covers one pair; each new pair gets one designed voice and its own release. Plan and reasoning: [design/plans/2026-11-18-roadmap-bilingual.md](design/plans/2026-11-18-roadmap-bilingual.md). Release history: [CHANGELOG.md](../CHANGELOG.md).
 
 - [x] English front-end in Python and on the device (C, parity-tested), per-word language tagging
 - [x] Synthesized training data for the bilingual voices `nam-1` and `nu-10`
 - [x] Faster runtime: the quality model runs on the ESP32-S3 too
+- [x] **English (American)** `nu-en` (female), English only, quality and lite, Apache-2.0 (v0.9.0)
 - [x] **Vietnamese + English** `nam-1` (male) and `nu-10` (female), quality and lite, Apache-2.0 (v0.4.0)
 - [x] **Korean + English** `nu-ko` (female), quality and lite, Apache-2.0 (v0.5.0)
 - [x] **Chinese (Mandarin) + English** `nu-zh` (female), quality and lite, Apache-2.0 (v0.5.0)
@@ -13,6 +14,7 @@ vtts ships **bilingual voices: one main language + English**, with code-switchin
 - [x] **Indonesian + English** `nu-id` (female), quality and lite, Apache-2.0 (v0.8.0)
 - [x] **Hindi + English** `nu-hi` (female), quality and lite, Apache-2.0 (v0.8.0)
 - [x] **Spanish + English** `nu-es` (female), quality and lite, Apache-2.0 (v0.8.0)
+- [ ] **Model updates with the longer joint stage** of the distillation, starting with `nu-en`
 - [ ] **Thai + English** (Python front-end done)
 - [ ] **French + English** (Python front-end done)
 - [ ] **German + English** (Python front-end done)

@@ -2715,6 +2715,13 @@ int vtts_text_default_lang(int token_set, vtts_lang *out) { /* the first mode li
     return -1;
 }
 
+int vtts_text_model_lang(int token_set, int text_mode, vtts_lang *out) {
+    char mode[5] = {0};
+    for (int i = 0; i < 4; i++) mode[i] = (char)(((unsigned)text_mode >> (8 * i)) & 0x7f);
+    if (text_mode != 0 && vtts_text_lang_for(token_set, mode, out) == 0) return 0;
+    return vtts_text_default_lang(token_set, out); /* no dim, or a mode this set does not offer */
+}
+
 const char *vtts_text_modes(int token_set) {
     vtts_lang l;
     if (token_set == VTTS_TOKSET_VI_EN) return "vi|en|auto";

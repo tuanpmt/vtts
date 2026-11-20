@@ -90,6 +90,9 @@ typedef struct {
     int prosody, p_depth, expr_milli; /* prosody branch (v2) and its default expressiveness x1000 */
     int token_set;                   /* vtts_token_set_t, resolved by vtts_init (dim or vocab) */
     int token_set_in_file;           /* 1 when the file has the token_set dim */
+    int text_mode;                   /* dim text_mode: the device text mode to start in, up to 4 ASCII
+                                      * chars packed little-endian ("en" = 0x6e65); 0 = the token set's
+                                      * first mode (vtts_text_model_lang in vtts_text.h) */
     float expressiveness;            /* scales the predicted log-F0 deviation; 1 = as trained */
     /* tensors */
     int n_tensors;

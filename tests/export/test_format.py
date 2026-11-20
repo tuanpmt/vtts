@@ -143,3 +143,26 @@ def test_token_set_sizes_match_frontend():
     assert TOKEN_SET_SIZES["v1"] == VOCAB_SIZE
     for name, toks in TOKEN_SETS.items():
         assert TOKEN_SET_SIZES[name] == len(toks)
+
+
+def test_text_mode_dim(tmp_path):
+    """dim text_mode (the device start mode, e.g. en for the English-only nu-en on the vi-en set):
+    set_dims keeps every tensor byte, scales included."""
+    from vtts.export.format import pack_text_mode, read_tensors, set_dims, unpack_text_mode
+    from vtts.export.quant import write_model_int8
+
+    assert pack_text_mode("en") == 0x6E65 and unpack_text_mode(0x6E65) == "en"
+    assert unpack_text_mode(pack_text_mode("auto")) == "auto" and unpack_text_mode(0) == ""
+    with pytest.raises(ValueError):
+        pack_text_mode("toolong")
+    torch.manual_seed(0)
+    src, dst = tmp_path / "a.vtts", tmp_path / "b.vtts"
+    write_model_int8(Student(PRESETS["S-vocos-p-bi"]), src, token_set="vi-en")
+    set_dims(src, dst, {"text_mode": pack_text_mode("en")})
+    d0, t0 = read_tensors(src)
+    d1, t1 = read_tensors(dst)
+    assert d1 == {**d0, "text_mode": 0x6E65} and "text_mode" not in d0
+    assert t0.keys() == t1.keys()
+    for k, (a, s) in t0.items():
+        assert np.array_equal(a, t1[k][0]), k
+        assert (s is None and t1[k][1] is None) or np.array_equal(s, t1[k][1]), k

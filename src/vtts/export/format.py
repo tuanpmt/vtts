@@ -98,6 +98,21 @@ def resolve_token_set(vocab: int, token_set: str | None) -> str | None:
     return token_set
 
 
+
+def pack_text_mode(mode: str) -> int:
+    """Optional dim `text_mode`: the device text mode a model starts in (e.g. "en" for the
+    English-only voice nu-en, which uses the vi-en token set), up to 4 ASCII chars packed
+    little-endian ("en" = 0x6e65). Runtimes without the dim start in the token set's first mode."""
+    b = mode.encode("ascii")
+    if not 1 <= len(b) <= 4 or not all(0x20 < c < 0x7f for c in b):
+        raise ValueError(f"text mode {mode!r}: 1-4 printable ASCII chars")
+    return int.from_bytes(b, "little")
+
+
+def unpack_text_mode(value: int) -> str:
+    return int(value).to_bytes(4, "little").rstrip(b"\0").decode("ascii") if value else ""
+
+
 def config_dims(cfg) -> dict[str, int]:
     d = {
         "vocab": cfg.vocab, "latent": cfg.latent, "hop": cfg.hop, "sample_rate": cfg.sample_rate,
@@ -205,3 +220,23 @@ def read_model(path: Path) -> tuple[dict[str, int], dict[str, np.ndarray]]:
         arr = np.frombuffer(data, dt, row["nbytes"] // np.dtype(dt).itemsize, row["offset"])
         tensors[row["name"]] = arr.reshape(row["shape"])
     return dims, tensors
+
+
+def read_tensors(path: Path) -> tuple[dict[str, int], dict[str, tuple[np.ndarray, np.ndarray | None]]]:
+    """dims and tensors (with the per-channel scales of int8 tensors), as write_tensors takes them."""
+    data = Path(path).read_bytes()
+    dims, arrays = read_model(path)
+    tensors = {}
+    for row in read_table(path):
+        scale = None
+        if row["dtype"] == 1:
+            scale = np.frombuffer(data, np.float32, row["shape"][0], row["scale_offset"]).copy()
+        tensors[row["name"]] = (arrays[row["name"]], scale)
+    return dims, tensors
+
+
+def set_dims(src: Path, dst: Path, updates: dict[str, int]) -> None:
+    """Rewrite a model file with dims added or changed (tensor bytes unchanged; offsets move)."""
+    dims, tensors = read_tensors(src)
+    dims.update({k: int(v) for k, v in updates.items()})
+    write_tensors(Path(dst), dims, tensors)
