@@ -191,16 +191,23 @@
       ]
     },
     {
-      "name": "Thai + English",
+      "name": "`nu-th` (female)",
       "langs": [
         "th",
         "en"
       ],
       "code_switching": true,
-      "quality": "M",
-      "lite": "S",
-      "status": "planned",
-      "status_text": "Planned"
+      "quality": "M (1.84M params, 2.6 MB)",
+      "lite": "S (0.83M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.10.0 (Apache-2.0)",
+      "pair": "Thai + English",
+      "release": "v0.10.0",
+      "hf": "th-en-nu-th",
+      "models": [
+        "nuth-m",
+        "nuth-s"
+      ]
     },
     {
       "name": "Dutch + English",
@@ -304,11 +311,11 @@
     },
     {
       "title": "Front-ends",
-      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. Japanese: kana and kanji readings by longest match over a word table, numbers with counters. Brazilian Portuguese: spelling rules with stress, nasal vowels and the two r sounds, plus per-word Portuguese or English tagging. Spanish: spelling rules with stress, dialect-neutral. Indonesian: spelling rules with the two e's and stress. Hindi: Devanagari letters with schwa deletion and nasals. Latin-script pairs read a whole English sentence in English. English: CMUdict plus letter-to-sound rules learned from it."
+      "text": "One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. Japanese: kana and kanji readings by longest match over a word table, numbers with counters. Brazilian Portuguese: spelling rules with stress, nasal vowels and the two r sounds, plus per-word Portuguese or English tagging. Spanish: spelling rules with stress, dialect-neutral. Indonesian: spelling rules with the two e's and stress. Hindi: Devanagari letters with schwa deletion and nasals. Thai: word segmentation over a word list, syllables by the spelling rules, tones from consonant class, tone mark and syllable type. Latin-script pairs read a whole English sentence in English. English: CMUdict plus letter-to-sound rules learned from it."
     },
     {
       "title": "Data",
-      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 for the Chinese + English voice, 49,591 for the Japanese + English voice, 45,191 for the Portuguese + English voice, 45,857 for the Indonesian + English voice, 48,296 for the Hindi + English voice, 48,336 for the Spanish + English voice), with sentences chosen to cover rare syllables, numbers and code-switching."
+      "text": "Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 for the Chinese + English voice, 49,591 for the Japanese + English voice, 45,191 for the Portuguese + English voice, 45,857 for the Indonesian + English voice, 48,296 for the Hindi + English voice, 48,336 for the Spanish + English voice, 55,555 for the Thai + English voice), with sentences chosen to cover rare syllables, numbers and code-switching."
     },
     {
       "title": "Tooling",
@@ -1177,6 +1184,98 @@
           "audio": {
             "nues-m": "audio/p4-nues-m-question.mp3",
             "nues-s": "audio/p4-nues-s-question.mp3"
+          }
+        }
+      ]
+    },
+    {
+      "id": "th-en",
+      "label": "ไทย–English",
+      "flags": [
+        "th",
+        "en"
+      ],
+      "status": "released",
+      "note": "Released in v0.10.0 (Apache-2.0): the bilingual voice nu-th (female, Thai) reads Thai, English and Thai sentences with English words in one voice. Every clip was generated on an ESP32-P4.",
+      "models": [
+        {
+          "id": "nuth-m",
+          "name": "nu-th Quality",
+          "detail": "female · M",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.27",
+            "s3": "0.56"
+          }
+        },
+        {
+          "id": "nuth-s",
+          "name": "nu-th Lite",
+          "detail": "female · S",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.18",
+            "s3": "0.32"
+          }
+        }
+      ],
+      "samples": [
+        {
+          "text": "สวัสดีค่ะ ฉันเป็นเสียงพูดที่ทำงานบนชิป ESP32 ทั้งหมด และพูดได้ทั้งภาษาไทยและภาษาอังกฤษ",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-intro.mp3",
+            "nuth-s": "audio/p4-nuth-s-intro.mp3"
+          }
+        },
+        {
+          "text": "ประชุมผ่าน Zoom จะเริ่มตอนบ่ายสามโมง กรุณาส่งไฟล์ PowerPoint มาก่อนนะคะ",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-zoom.mp3",
+            "nuth-s": "audio/p4-nuth-s-zoom.mp3"
+          }
+        },
+        {
+          "text": "โทรศัพท์เชื่อมต่อ Wi-Fi แล้ว ตอนนี้เราดู Netflix ได้เลย",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-wifi.mp3",
+            "nuth-s": "audio/p4-nuth-s-wifi.mp3"
+          }
+        },
+        {
+          "text": "Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller.",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-en-intro.mp3",
+            "nuth-s": "audio/p4-nuth-s-en-intro.mp3"
+          }
+        },
+        {
+          "text": "Your package has arrived at the front door. Would you like me to turn on the porch light?",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-en-package.mp3",
+            "nuth-s": "audio/p4-nuth-s-en-package.mp3"
+          }
+        },
+        {
+          "text": "กรุงเทพฯ มีโอกาสฝนตกตั้งแต่เย็นวันนี้ และพรุ่งนี้เช้าอุณหภูมิจะลดลงเหลือ 18 องศา",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-news.mp3",
+            "nuth-s": "audio/p4-nuth-s-news.mp3"
+          }
+        },
+        {
+          "text": "แบตเตอรี่เหลือ 15% และอุณหภูมิในห้องคือ 28 องศา ตั้งนาฬิกาปลุกไว้ตอน 6.30 น.",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-numbers.mp3",
+            "nuth-s": "audio/p4-nuth-s-numbers.mp3"
+          }
+        },
+        {
+          "text": "ให้เปิดไฟในห้องนอนไหมคะ",
+          "audio": {
+            "nuth-m": "audio/p4-nuth-m-question.mp3",
+            "nuth-s": "audio/p4-nuth-s-question.mp3"
           }
         }
       ]

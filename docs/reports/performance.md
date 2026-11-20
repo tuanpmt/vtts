@@ -213,6 +213,21 @@ The id-en, hi-en and es-en models (v0.8.0) have the same architecture with token
 - **ESP32-P4:** the dumps match `vtts_say` on a PC for all 48 clips (id-en correlation ≥ 0.9997, SNR 32–78 dB; hi-en ≥ 0.9995, SNR 30–42 dB; es-en ≥ 0.998, SNR 24–67 dB). All 48 published clips, decoded from MP3 and transcribed with Whisper large-v3: id-en CER 0 for 15 of 16 (M intro: "ESP32" heard as "ISP32"); hi-en Devanagari CER 0.11 (M) and 0.12 (S) on average over the six Hindi and mixed clips (first consonants and Whisper's spelling, see the [hi-en report](hi-student-eval.md#on-the-chip)), English clips 0–0.08; es-en CER 0 for 12 of 16, the others 0.010–0.021 ("ESP32" heard as "SP32"). None is broken.
 - **ESP32-S3 with two cores: not always deterministic again.** In the measurement run 15 of the 16 id-en dumps were identical to the ESP32-P4 (the 16th, S news, differs for 0.25 s, up to 0.15 full scale) but only 10 of the 16 hi-en dumps (S and M, three with a different length: a token duration changed) and 12 of the 16 es-en dumps (three with a different length). A second hi-en run on the ESP32-S3, four sentences three times each with `cores 2` and once with `cores 1`: 7 of the 24 two-core dumps differ from the ESP32-P4 (3 with another length, up to 0.45 full scale), every one-core dump is identical. So the [two-core fix](#esp32-s3-two-core-fix) lowers the rate of the PSRAM errors but does not remove them; `cores 1` gives exact output, at the cost of speed. The website samples come from the ESP32-P4.
 
+## Thai + English (v0.10.0)
+
+The th-en models (v0.10.0) have the same architecture with a token table of 162 (S 0.83M, M 1.84M parameters). One firmware with only the Thai front-end compiled in, measured with `lang th`: `bench` uses four Thai sentences, `dump` and playback the eight website sentences (Thai, Thai with English words, English). The ESP32-S3 was measured with `bench` only, on the current firmware (dot-product kernels without `loopnez`, see [above](#esp32-s3-wrong-dot-products-with-loopnez)).
+
+| Chip | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---|---:|---:|---:|---:|---:|---:|
+| ESP32-P4 | S (lite) | 0.18–0.19 (mean 0.18) | 0.17–0.20 | 0.06–0.13 s | 0.07–0.13 s (median 0.10) | 17–20% / 13–14% | 0 in 8 |
+| ESP32-P4 | M (quality) | 0.26–0.28 (mean 0.27) | 0.26–0.31 | 0.11–0.24 s | 0.18–0.33 s (median 0.26) | 25–29% / 19–21% | 1 in 8 |
+| ESP32-S3 | S (lite) | 0.31–0.33 (mean 0.32) | — | — | — | — | — |
+| ESP32-S3 | M (quality) | 0.55–0.57 (mean 0.56) | — | — | — | — | — |
+
+- Speed is the same as the other pairs within 0.01 RTF. The one underrun was on "Hello! I am a text-to-speech voice ...", a one-word sentence followed by a longer one, as with the other pairs.
+- Images with the two models and the English lexicon (no blob of their own; the Thai tables and the 16,377-word list, about 80 KB, are compiled in): 6.28 MB on the ESP32-P4 (2.10 MB free in the 8 MB app partition) and 6.17 MB on the ESP32-S3 (2.22 MB free).
+- **ESP32-P4:** the dumps match `vtts_say` on a PC for all 16 clips (same length, correlation ≥ 0.9997, SNR 32–48 dB). All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: Thai CER 0–0.22 on the Thai and mixed clips (the question particle's tone and "กรุณา", see the [th-en report](th-student-eval.md#on-the-chip)), English clips 0 except S intro (0.17, "Hello!" dropped by Whisper). None is broken.
+
 ## Where the time goes
 
 `prof` on the ESP32-S3 with M, share of synthesis time: vocoder MLP 37% (pw1 15%, pw2 12%, GELU + quantization 7%, residual 3%), iSTFT 15%, acoustic model 15%, depthwise conv + LayerNorm 10%, head 7%, vocoder input conv 6%, tokens 6%, durations 3%.

@@ -19,6 +19,7 @@
 | 🇮🇩 🇬🇧 Indonesian + English | `nu-id` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id) |
 | 🇮🇳 🇬🇧 Hindi + English | `nu-hi` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.19 | 0.58 / 0.32 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi) |
 | 🇪🇸 🇬🇧 Spanish + English | `nu-es` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.58 / 0.32 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es) |
+| 🇹🇭 🇬🇧 Thai + English | `nu-th` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.10.0](https://github.com/tuanpmt/vtts/releases/tag/v0.10.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th) |
 <!-- END:released -->
 
 Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
@@ -56,7 +57,7 @@ Each word is read by the front-end of its language (main language or English), i
 |---|---|
 | Voices, quality per pair, audio samples, planned pairs | [docs/voices.md](docs/voices.md) |
 | On-chip speed, latency, memory | [docs/reports/performance.md](docs/reports/performance.md) |
-| Evaluation reports | [en](docs/reports/en-student-eval.md), [vi-en](docs/reports/bilingual-student-eval.md), [ko-en](docs/reports/ko-student-eval.md), [zh-en](docs/reports/zh-student-eval.md), [ja-en](docs/reports/ja-student-eval.md), [pt-en](docs/reports/pt-student-eval.md), [id-en](docs/reports/id-student-eval.md), [hi-en](docs/reports/hi-student-eval.md), [es-en](docs/reports/es-student-eval.md) |
+| Evaluation reports | [en](docs/reports/en-student-eval.md), [vi-en](docs/reports/bilingual-student-eval.md), [ko-en](docs/reports/ko-student-eval.md), [zh-en](docs/reports/zh-student-eval.md), [ja-en](docs/reports/ja-student-eval.md), [pt-en](docs/reports/pt-student-eval.md), [id-en](docs/reports/id-student-eval.md), [hi-en](docs/reports/hi-student-eval.md), [es-en](docs/reports/es-student-eval.md), [th-en](docs/reports/th-student-eval.md) |
 | Firmware, boards, serial console | [firmware/esp32/README.md](firmware/esp32/README.md) |
 | C runtime API | [runtime/README.md](runtime/README.md) |
 | Model file format | [docs/model-format.md](docs/model-format.md) |

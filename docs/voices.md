@@ -19,13 +19,13 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 | `nu-id` (female) | 🇮🇩 id + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
 | `nu-hi` (female) | 🇮🇳 hi + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
 | `nu-es` (female) | 🇪🇸 es + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
-| Thai + English | 🇹🇭 th + 🇬🇧 en, code-switching | M | S | Planned |
+| `nu-th` (female) | 🇹🇭 th + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.10.0 (Apache-2.0)** |
 | Dutch + English | 🇳🇱 nl + 🇬🇧 en, code-switching | M | S | Planned |
 | Swedish + English | 🇸🇪 sv + 🇬🇧 en, code-switching | M | S | Planned |
 | Norwegian + English | 🇳🇴 no + 🇬🇧 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
-Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`):
+Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`, `th-en-nu-th/`):
 
 | Voice | Files (lite S, quality M) | Release | Notes |
 |---|---|---|---|
@@ -39,8 +39,9 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 | `nu-id` | `vtts-iden-nuid-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `id`; no blob beyond the English lexicon |
 | `nu-hi` | `vtts-hien-nuhi-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `hi` (Devanagari, English in Latin letters); no blob beyond the English lexicon |
 | `nu-es` | `vtts-esen-nues-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `es`; no blob beyond the English lexicon |
+| `nu-th` | `vtts-then-nuth-{s,m}-v0.10.q8.vtts` | v0.10.0 | Text mode `th` (Thai script, English in Latin letters); no blob beyond the English lexicon (the Thai tables are compiled in) |
 
-`build.sh` builds and embeds the blobs a model needs. In the single-mode pairs (ko, zh, ja, pt, id, hi, es) English words and English sentences go through the English front-end. In the Latin-script pairs (pt, id, es) a whole English sentence is read in English, numbers included; otherwise digits are read in the main language.
+`build.sh` builds and embeds the blobs a model needs. In the single-mode pairs (ko, zh, ja, pt, id, hi, es, th) English words and English sentences go through the English front-end. In the Latin-script pairs (pt, id, es) a whole English sentence is read in English, numbers included; otherwise digits are read in the main language.
 
 ## Quality
 
@@ -139,6 +140,16 @@ Whisper's Hindi spelling (nukta, chandrabindu, ये/ए) costs every system; m
 
 Without the numbers group: reference 0.000 / 0.005, M 0.008 / 0.005, S 0.006 / 0.010 (Spanish / mixed). English sentences are read in English by the sentence-level decision (word tags alone: 0.056 M, 0.064 S).
 
+**Thai + English** ([report](reports/th-student-eval.md)):
+
+| Model | Params | Thai CER ↓ | English CER ↓ | Mixed CER (Thai only) ↓ | UTMOS ↑ (th / en / mixed) |
+|---|---:|---:|---:|---:|---|
+| `nu-th` M | 1.84M | **0.044** | **0.018** | **0.043** | **2.88 / 3.51 / 2.95** |
+| `nu-th` S | 0.83M | 0.053 | 0.030 | 0.044 | 2.55 / 3.06 / 2.58 |
+| VoxCPM2 `nu-th` (reference voice) | — | 0.076 | — | 0.022 | 3.97 / — / 4.00 |
+
+Thai is written without spaces between words, so the CER counts Thai characters with spaces removed. Without the numbers group (the reference voice misreads raw digits and sometimes adds words at the end): reference 0.039, M 0.054, S 0.050. Whisper writes most English words of a Thai sentence in Thai script (Liverpool → ลิเวอร์พูล), so the mixed CER counts only the Thai characters of the text (plain CER 0.100 M, 0.116 S, 0.086 reference).
+
 ## Speed
 
 <!-- BEGIN:hardware -->
@@ -154,7 +165,7 @@ Both chips use two cores and int8 SIMD kernels; all released pairs run at the sa
 
 ## Listen (generated on an ESP32-P4)
 
-Audio is produced on the chip with the firmware's `dump` command (`lang en` for `nu-en`, `lang auto` for vi-en, `lang ko`, `lang zh`, `lang ja`, `lang pt`, `lang id`, `lang hi`, `lang es` for the other pairs), sent to a PC over serial and only compressed to MP3; every clip was checked with ASR before publishing. The same clips are on the [website](https://tuanpmt.github.io/vtts/).
+Audio is produced on the chip with the firmware's `dump` command (`lang en` for `nu-en`, `lang auto` for vi-en, `lang ko`, `lang zh`, `lang ja`, `lang pt`, `lang id`, `lang hi`, `lang es`, `lang th` for the other pairs), sent to a PC over serial and only compressed to MP3; every clip was checked with ASR before publishing. The same clips are on the [website](https://tuanpmt.github.io/vtts/).
 
 <!-- BEGIN:samples -->
 🇬🇧 **English**
@@ -273,4 +284,17 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | En Madrid va a llover a partir de esta tarde, y mañana temprano la temperatura bajará a 8 grados. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-news.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-news.mp3) |
 | La batería está al 15% y la temperatura de la habitación es de 28 grados. La alarma está puesta a las 6:30 de la mañana. | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-numbers.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-numbers.mp3) |
 | ¿Quieres que encienda la luz del dormitorio? | [▶ nu-es Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-m-question.mp3) | [▶ nu-es Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nues-s-question.mp3) |
+
+🇹🇭 🇬🇧 **ไทย–English**
+
+| Sentence | nu-th Quality | nu-th Lite |
+|---|---|---|
+| สวัสดีค่ะ ฉันเป็นเสียงพูดที่ทำงานบนชิป ESP32 ทั้งหมด และพูดได้ทั้งภาษาไทยและภาษาอังกฤษ | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-intro.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-intro.mp3) |
+| ประชุมผ่าน Zoom จะเริ่มตอนบ่ายสามโมง กรุณาส่งไฟล์ PowerPoint มาก่อนนะคะ | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-zoom.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-zoom.mp3) |
+| โทรศัพท์เชื่อมต่อ Wi-Fi แล้ว ตอนนี้เราดู Netflix ได้เลย | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-wifi.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-wifi.mp3) |
+| Hello! I am a text-to-speech voice running entirely on the ESP32 microcontroller. | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-en-intro.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-en-intro.mp3) |
+| Your package has arrived at the front door. Would you like me to turn on the porch light? | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-en-package.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-en-package.mp3) |
+| กรุงเทพฯ มีโอกาสฝนตกตั้งแต่เย็นวันนี้ และพรุ่งนี้เช้าอุณหภูมิจะลดลงเหลือ 18 องศา | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-news.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-news.mp3) |
+| แบตเตอรี่เหลือ 15% และอุณหภูมิในห้องคือ 28 องศา ตั้งนาฬิกาปลุกไว้ตอน 6.30 น. | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-numbers.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-numbers.mp3) |
+| ให้เปิดไฟในห้องนอนไหมคะ | [▶ nu-th Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-m-question.mp3) | [▶ nu-th Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuth-s-question.mp3) |
 <!-- END:samples -->

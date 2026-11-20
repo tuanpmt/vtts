@@ -9,6 +9,66 @@ All notable changes to this project are documented here. Model files for each re
 - User pronunciation dictionary.
 - Model updates with the longer joint stage for the other models (`nu-10` S next).
 
+## v0.10.0 (2026-11-20) — Thai + English voice `nu-th`
+
+A new bilingual pair with one designed female voice as a quality model (M) and a lite model (S), **Apache-2.0**:
+
+- **Thai + English**, voice `nu-th` (Thai): reads Thai, English and Thai sentences with English words in Latin letters ("สัญญาณ Wi-Fi อ่อนมาก ลองย้าย router มาใกล้ ๆ"). Teacher `th_nuth` trained from random initialization for 120k steps on 55,555 sentences (about 97 h: 27,635 Thai, 8,679 Thai with English words, 19,241 English), all synthesized with VoxCPM2 (Apache-2.0) from the voice `nu-th` only; no recorded corpus and no warm start. Students distilled with the standard chain (front 10k, decoder 30k, joint 20k steps, 20,000-sentence pack).
+
+The earlier voices are unchanged and stay on their releases. **An updated `nu-th` model with the longer joint distillation stage will follow** as a model update of this voice.
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-then-nuth-m-v0.10.q8.vtts` | `nu-th` (female) | Quality (M) | 1.84M | 2.6 MB |
+| `vtts-then-nuth-s-v0.10.q8.vtts` | `nu-th` (female) | Lite (S) | 0.83M | 1.2 MB |
+
+Int8, 22.05 kHz, token set `th-en` recorded in the file (162 tokens: the v2 set plus 55 Thai initials, vowels, finals and tones); presets `{M,S}-vocos-p-th-en`. No blob beyond the English lexicon: the Thai tables and word list (about 80 KB) are compiled into the firmware.
+
+### Quality
+
+Three out-of-domain sets of 50 sentences (`ood_th`, `mixed_th`, `ood_en`; none in the training text), Whisper large-v3, audio from the int8 C runtime, and the same Thai and mixed sentences synthesized by the VoxCPM2 `nu-th` voice as a reference. Thai has no spaces between words, so the CER counts Thai characters with spaces removed; the mixed CER counts only the Thai characters, because Whisper writes most English words of a Thai sentence in Thai script. Report: [th-student-eval.md](docs/reports/th-student-eval.md).
+
+| Model | Thai CER | English CER | Mixed CER (Thai only) | UTMOS (th / en / mixed) |
+|---|---:|---:|---:|---|
+| `nu-th` M | 0.044 | 0.018 | 0.043 | 2.88 / 3.51 / 2.95 |
+| `nu-th` S | 0.053 | 0.030 | 0.044 | 2.55 / 3.06 / 2.58 |
+| VoxCPM2 `nu-th` (reference voice) | 0.076 | — | 0.022 | 3.97 / — / 4.00 |
+
+The reference voice misreads raw digits and dates and sometimes adds words after a sentence; without the numbers group it scores 0.039 against 0.054 (M) and 0.050 (S). Plain mixed CER against the text: 0.100 (M), 0.116 (S), 0.086 (reference).
+
+### Performance
+
+| Board | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 | 0.18–0.19 / 0.07–0.13 s | 0.26–0.28 / 0.18–0.33 s |
+| ESP32-S3 | 0.31–0.33 / not measured | 0.55–0.57 / not measured |
+
+RTF from `bench` (four Thai sentences; on the ESP32-S3 with the current firmware, whose dot-product kernels no longer use `loopnez`), speech start from playing the eight website sentences on the ESP32-P4. Firmware with only the Thai front-end compiled in: 6.28 MB on the ESP32-P4 (2.10 MB free in the 8 MB app partition), 6.17 MB on the ESP32-S3 (2.22 MB free). Every website clip is the ESP32-P4's own output, matches `vtts_say` on a PC and was transcribed again with Whisper before publishing (16 clips, none broken). Details: [performance.md](docs/reports/performance.md#thai--english-v0100).
+
+### Flash a board
+
+```bash
+gh release download v0.10.0 -R tuanpmt/vtts -p 'vtts-then-*' -D models
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-then-nuth-s-v0.10.q8.vtts ../../models/vtts-then-nuth-m-v0.10.q8.vtts -p PORT flash monitor
+```
+
+`BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. The pair has one text mode, `th` (the default for its models), which also reads English.
+
+### Added
+- **Thai + English voice `nu-th`** (M and S), with 16 on-chip samples (ESP32-P4 dumps of 8 sentences × 2 models, each checked with Whisper) on the website and a Thai entry in the language picker.
+- Report [th-student-eval.md](docs/reports/th-student-eval.md), a v0.10.0 section in [performance.md](docs/reports/performance.md), Hugging Face folder `th-en-nu-th/`.
+- Eval set `ood_th`: one sentence that shared an eight-word run with the training text replaced by a new one.
+
+### Known issues
+- **Tone of the question particle ไหม:** heard as ใหม่ ("new") in 4 of the 6 test sentences with it (both models; never for the reference voice). Questions stay clear from context.
+- **กรุณา is read kru-naa** instead of ka-ru-naa (the front-end reads กร as a cluster here); Whisper writes "กลูนา". It will be fixed with an exception-table entry in a front-end update.
+- **Numbers and acronyms in English sentences are read in Thai** ("15 percent" with a Thai number), as in the other single-mode pairs; write them as words.
+- **Short English names inside Thai sentences** (Bangkok, Tokyo, Toyota) are less clear than with the reference voice, more so with S.
+- A very short first sentence followed by a longer one ("Hello! I am ...") can cause one playback underrun (a short gap) with M, as with the other pairs.
+
 ## v0.9.1 (2026-11-20) — `nu-10` M model update and ESP32-S3 SIMD fix
 
 A **model update** of the Vietnamese + English voice `nu-10` (female), quality model (M) only, **Apache-2.0**. It is trained with the **improved distillation recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teacher (`nu10_vien_b32`), the same 20,000-sentence distillation pack and the same architecture (preset `M-vocos-p-bi`, 1.83M parameters, 2.6 MB). It replaces the v0.4.0 `nu-10` M; size, speed, token set (`vi-en`) and text modes (`vi`, `en`, `auto`) are unchanged, and it runs with any firmware since v0.4.0. The `nu-10` S stays the v0.4.0 model for now (its update follows); the other voices are unchanged.
