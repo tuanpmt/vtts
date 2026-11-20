@@ -1,6 +1,6 @@
 # On-chip performance
 
-Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English the v0.9.1 update of the `nu-10` M ([below](#nu-10-m-update-v091)) and the v0.9.0 English-only models (updated in v0.10.1; `nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
+Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English the v0.9.1 update of the `nu-10` M ([below](#nu-10-m-update-v091)), the v0.10.2 update of the `nu-10` S ([below](#nu-10-s-update-v0102)) and the v0.9.0 English-only models (updated in v0.10.1; `nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
 
 Everything lives in PSRAM: the models, the working arena (about 1.9 MB) and the activations. Internal SRAM stays free for the application and for DMA.
 
@@ -185,6 +185,19 @@ The updated `nu-en` M and S (longer joint distillation stage, same architecture,
 - The one underrun (M) was again on the intro, which starts with the one-word sentence "Hello!".
 - Images with the two models and the English lexicon: 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free).
 - **ESP32-P4:** the dumps match `vtts_say` on a PC (same length for all 16 clips, correlation ≥ 0.998, SNR 25–37 dB). All 16 published clips (new dumps of the v0.10.1 models, 64 kbps MP3), decoded from MP3 and transcribed with Whisper large-v3: CER 0 for 12 of them; the other four are the intro ("ESP32" heard as "ESP3 to" with M, CER 0.01; "Hello!" not transcribed with S, CER 0.05) and the date sentence ("9:30" written "9.30", CER 0.16 for both models). None is broken.
+
+## `nu-10` S update (v0.10.2)
+
+The updated `nu-10` S (longer joint distillation stage, same architecture and size) on the firmware of v0.10.2 (no firmware change since v0.9.1; vi and en front-ends only), `lang auto`, two cores, the same method as for v0.9.1: `bench` (four Vietnamese sentences), then `dump` and playback of the eight website sentences on the ESP32-P4; `bench` only on the ESP32-S3.
+
+| Chip | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---|---:|---:|---:|---:|---:|---:|
+| ESP32-P4 | S (lite, v0.10.2) | 0.17–0.19 (mean 0.18) | 0.17–0.20 | 0.06–0.14 s | 0.07–0.14 s (median 0.11) | 17–20% / 13–14% | 0 in 8 |
+| ESP32-S3 | S (lite, v0.10.2) | 0.30–0.33 (mean 0.31) | — | — | — | — | — |
+
+- Speed and speech start are those of the v0.4.0 S (same architecture). The `nu-10` M stays the v0.9.1 model ([above](#nu-10-m-update-v091)).
+- Images with the two models and the English lexicon: 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free).
+- **ESP32-P4:** the dumps match `vtts_say` on a PC (same length for all eight clips, correlation ≥ 0.9997, SNR 33–56 dB). The eight new `nu-10` Lite clips of the website are these dumps, 64 kbps MP3, transcribed again (PhoWhisper-large for Vietnamese, Whisper large-v3 for mixed and English): CER 0 for 4 of 8 and at most 0.022 for the others except the Vietnamese intro (0.079: PhoWhisper writes "chip ESP32" as "chiếc estee ba hai", as for the M clip); the others: "Nhơn Trạch" heard as "Nhân Trạch", "Pin" as "Tin", "microcontroller" as "macro controller". None is broken.
 
 ## English (v0.9.0)
 

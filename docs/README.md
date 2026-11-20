@@ -21,7 +21,7 @@ Start with the [project README](../README.md) for the released voices and the qu
 | Report | Contents |
 |---|---|
 | [On-chip performance](reports/performance.md) | RTF, latency, CPU load and memory on ESP32-P4 and ESP32-S3, and how the runtime got there |
-| [Bilingual student evaluation](reports/bilingual-student-eval.md) | CER/WER and UTMOS of the released Vietnamese + English models (v0.4.0), quality and lite, against their teachers |
+| [Bilingual student evaluation](reports/bilingual-student-eval.md) | CER/WER and UTMOS of the released Vietnamese + English models (v0.4.0, and the `nu-10` updates of v0.9.1 (M) and v0.10.2 (S), before and after), quality and lite, against their teachers |
 | [Korean + English student evaluation](reports/ko-student-eval.md) | CER/WER and UTMOS of the released Korean + English models (v0.5.0), a fair CER for mixed Korean sentences (Hangul only) and the VoxCPM2 reference voice |
 | [Chinese + English student evaluation](reports/zh-student-eval.md) | CER/WER and UTMOS of the released Chinese + English models (`nu-zh`, v0.5.0), with the errors per group and ASR effects on mixed sentences |
 | [Japanese + English student evaluation](reports/ja-student-eval.md) | CER and UTMOS of the released Japanese + English models (`nu-ja`, v0.6.0), a reading-based CER for Japanese, the kana-only CER for mixed sentences and the VoxCPM2 reference voice |

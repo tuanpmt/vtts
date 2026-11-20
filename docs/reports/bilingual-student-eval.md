@@ -45,6 +45,27 @@ The improved distillation recipe keeps the v0.4.0 chain (preset `M-vocos-p-bi`, 
 - The re-run of v0.4.0 matches the published numbers above within 0.01 UTMOS and 0.002 WER (different run of the same scoring).
 - The `nu-10` S stays the v0.4.0 model for now.
 
+## `nu-10` S update (v0.10.2)
+
+A dedicated re-distillation of `nu-10` with the improved recipe: the same teacher (`nu10_vien_b32`) and 20,000-sentence pack, front 10k, decoder 30k and **joint 80k steps** (instead of 20k), trained for both sizes. The S (preset `S-vocos-p-bi`, 0.82M parameters, 1.2 MB) replaces the v0.4.0 `nu-10` S (`vtts-vien-nu10-s-v0.10.2.q8.vtts`); same size, architecture, speed and text modes. All models were rendered with the int8 C runtime (`vtts_say --lang auto`) and scored again with the same pipeline (`scripts/eval/student_quality.py`: PhoWhisper-large for `ood`, Whisper large-v3 for `ood_en` and `mixed`, UTMOS, and the 5–10 kHz noise metrics):
+
+| Model | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
+|---|---|---|---|---|
+| `nu-10` S v0.4.0 (joint 20k) | 0.015 / 0.027 | 0.011 / 0.018 | 0.026 / 0.059 | 2.52 / 3.26 / 2.50 |
+| `nu-10` S v0.10.2 (joint 80k) | **0.010 / 0.015** | **0.008 / 0.010** | **0.016 / 0.039** | **2.90 / 3.73 / 2.92** |
+| `nu-10` M v0.9.1 (released, for reference) | 0.014 / 0.024 | 0.008 / 0.010 | 0.015 / 0.032 | 3.11 / 3.87 / 3.12 |
+| `nu-10` M of the same re-distillation (not released) | 0.011 / 0.018 | 0.010 / 0.012 | 0.018 / 0.039 | 3.02 / 3.90 / 3.00 |
+
+| Model | Spectral flatness 5–10 kHz (vi / en / mixed) | HF energy ratio, dB (vi / en / mixed) |
+|---|---|---|
+| `nu-10` S v0.4.0 | 0.286 / 0.295 / 0.285 | −30.8 / −27.3 / −30.5 |
+| `nu-10` S v0.10.2 | 0.289 / 0.301 / 0.287 | −30.9 / −27.8 / −30.4 |
+
+- Naturalness rises by 0.38–0.47 UTMOS on all three sets, and intelligibility improves too: the mixed CER drops from 0.026 to 0.016 (the level of the M), the Vietnamese CER from 0.015 to 0.010. The S is now 0.14–0.21 UTMOS below the v0.9.1 M (the v0.4.0 S was 0.18–0.20 below the v0.4.0 M).
+- The high band is unchanged (flatness within 0.006, HF ratio within 0.5 dB): the longer joint stage does not add hiss. The whistle score rises to the level of the v0.9.1 M (vi 21 vs 9, mixed 14 vs 7), as for every 80k-joint model so far; the published clips were transcribed again with Whisper (none broken).
+- The re-run of the v0.4.0 S matches the published numbers above within 0.002 CER (Vietnamese, mixed) and 0.01 UTMOS; the English CER of this run is 0.011 instead of 0.013.
+- The M trained in the same re-distillation is not released: against the v0.9.1 M it reads Vietnamese better (CER 0.011 vs 0.014) but scores 0.09–0.12 UTMOS lower on Vietnamese and mixed and 0.002–0.003 higher CER on English and mixed. The v0.9.1 M stays the `nu-10` quality model.
+
 ## Where the errors are
 
 - **Numbers as Whisper writes them.** "9:30" transcribed as "9.30" and "0912 345 678" read as digit groups ("ba trăm bốn mươi lăm") give most of the English number-group CER (0.049 for every model) and the largest Vietnamese errors. Device prompts and long English sentences score 0.

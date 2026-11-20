@@ -48,9 +48,9 @@
       "quality": "M (1.83M params, 2.6 MB)",
       "lite": "S (0.82M params, 1.2 MB)",
       "status": "released",
-      "status_text": "Released in v0.4.0, M updated in v0.9.1 (Apache-2.0)",
+      "status_text": "Released in v0.4.0, M updated in v0.9.1, S in v0.10.2 (Apache-2.0)",
       "pair": "Vietnamese + English",
-      "release": "v0.9.1",
+      "release": "v0.10.2",
       "hf": "vi-en-nu-10",
       "models": [
         "nu10-m",
@@ -460,12 +460,12 @@
         {
           "id": "nu10-s",
           "name": "nu-10 Lite",
-          "detail": "female · S",
+          "detail": "female · S (v0.10.2)",
           "params": "0.8M",
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.18",
-            "s3": "0.32"
+            "s3": "0.31"
           }
         }
       ],

@@ -7,7 +7,50 @@ All notable changes to this project are documented here. Model files for each re
 ### In progress
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
-- Model updates with the longer joint stage for the other models (`nu-10` S and the other pairs).
+- Model updates with the longer joint stage for the other models (`nam-1` and the other pairs).
+
+## v0.10.2 (2026-11-20) — `nu-10` S model update
+
+A **model update** of the Vietnamese + English voice `nu-10` (female), **lite model (S)**, **Apache-2.0**. It comes from a dedicated re-distillation with the **improved recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teacher (`nu10_vien_b32`), the same 20,000-sentence distillation pack and the same architecture (preset `S-vocos-p-bi`, 0.82M parameters, 1.2 MB). It replaces the v0.4.0 `nu-10` S; size, speed, token set (`vi-en`) and text modes (`vi`, `en`, `auto`) are unchanged, and it runs with any firmware since v0.4.0. The `nu-10` M stays the v0.9.1 model: the M of the same re-distillation scored 0.09–0.12 UTMOS lower on Vietnamese and mixed text and was not released. The other voices are unchanged.
+
+### Models
+
+| File | Voice | Tier | Params | Size | Replaces |
+|---|---|---|---:|---:|---|
+| `vtts-vien-nu10-s-v0.10.2.q8.vtts` | `nu-10` (female) | Lite (S) | 0.82M | 1.2 MB | `vtts-vien-nu10-s-v0.4.q8.vtts` |
+
+Use it with the v0.9.1 quality model `vtts-vien-nu10-m-v0.9.1.q8.vtts`. On Hugging Face the new file is in `vi-en-nu-10/` next to the older ones; the card recommends it.
+
+### Quality
+
+The v0.4.0 S and the new S rendered with the int8 C runtime (`vtts_say --lang auto`) and scored with the same pipeline on the three out-of-domain sets of 50 sentences (PhoWhisper-large for Vietnamese, Whisper large-v3 for English and mixed; UTMOS). Report: [bilingual-student-eval.md](docs/reports/bilingual-student-eval.md#nu-10-s-update-v0102).
+
+| `nu-10` | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
+|---|---|---|---|---|
+| S v0.4.0 (joint 20k) | 0.015 / 0.027 | 0.011 / 0.018 | 0.026 / 0.059 | 2.52 / 3.26 / 2.50 |
+| **S v0.10.2 (joint 80k)** | **0.010 / 0.015** | **0.008 / 0.010** | **0.016 / 0.039** | **2.90 / 3.73 / 2.92** |
+| M v0.9.1 (unchanged) | 0.014 / 0.024 | 0.008 / 0.010 | 0.015 / 0.032 | 3.11 / 3.87 / 3.12 |
+
+Naturalness rises by 0.38–0.47 UTMOS on all three sets and every CER drops (mixed 0.026 → 0.016, the level of the M); the 5–10 kHz noise metrics are unchanged.
+
+### Performance
+
+| Board | Lite model (S, v0.10.2): RTF / speech starts | Quality model (M, v0.9.1): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 | 0.17–0.19 / 0.07–0.14 s | 0.26–0.28 / 0.19–0.35 s |
+| ESP32-S3 | 0.30–0.33 / not measured | 0.54–0.57 / 0.35–0.62 s |
+
+S: RTF from `bench` (four Vietnamese sentences), speech start from playing the eight website sentences on the ESP32-P4 (`lang auto`), firmware of this release (vi and en front-ends only): 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free). M: the v0.9.1 measurement. The eight `nu-10` Lite clips on the website are new ESP32-P4 dumps of this model, 64 kbps MP3, each transcribed again with Whisper (CER 0 for 4 of 8, at most 0.022 for three others; the Vietnamese intro 0.079 from PhoWhisper's reading of "chip ESP32"; none broken); the dumps match `vtts_say` on a PC (same lengths, correlation ≥ 0.9997). Details: [performance.md](docs/reports/performance.md#nu-10-s-update-v0102).
+
+### Changed
+- **`nu-10` S** (`vtts-vien-nu10-s-v0.10.2.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 2.90 / 3.73 / 2.92 (vi / en / mixed) instead of 2.52 / 3.26 / 2.50, CER 0.010 / 0.008 / 0.016 instead of 0.015 / 0.011 / 0.026.
+- Website and voices.md: the eight `nu-10` Lite samples are ESP32-P4 dumps of the new model. README, voices.md, performance.md, the bilingual evaluation report and the Hugging Face card list the new S.
+
+### Known issues
+- `nam-1` and the other pairs still use the 20k joint stage (updates follow).
+- The English comparison rows of the `nu-en` report (`ood_en2`) are for the v0.4.0 `nu-10` models; the new S was not scored on `ood_en2`.
+- ESP32-S3: only `bench` was measured for the new S.
+- As before: brand names inside Vietnamese sentences are the hardest cases; PhoWhisper writes "ESP32" in Vietnamese letters.
 
 ## v0.10.1 (2026-11-20) — `nu-en` M and S model update
 

@@ -11,7 +11,7 @@
 |---|---|---|---|---|---|
 | 🇬🇧 English (American) | `nu-en` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.10.1](https://github.com/tuanpmt/vtts/releases/tag/v0.10.1) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en) |
 | 🇻🇳 🇬🇧 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
-| 🇻🇳 🇬🇧 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.55 / 0.32 | [v0.9.1](https://github.com/tuanpmt/vtts/releases/tag/v0.9.1) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
+| 🇻🇳 🇬🇧 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.55 / 0.31 | [v0.10.2](https://github.com/tuanpmt/vtts/releases/tag/v0.10.2) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
 | 🇰🇷 🇬🇧 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.57 / 0.32 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
 | 🇨🇳 🇬🇧 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
 | 🇯🇵 🇬🇧 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.55 / 0.31 | [v0.6.0](https://github.com/tuanpmt/vtts/releases/tag/v0.6.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
