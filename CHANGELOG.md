@@ -9,6 +9,63 @@ All notable changes to this project are documented here. Model files for each re
 - User pronunciation dictionary.
 - Model updates with the longer joint stage for the other models (`nam-1` and the other pairs).
 
+## v0.10.4 (2026-11-20) — `nu-ja` M and `nu-es` M and S model update
+
+A **model update** of two bilingual voices, **Apache-2.0**: the **Japanese + English `nu-ja` quality model (M)** and both models of the **Spanish + English `nu-es`, quality (M) and lite (S)**. All three come from re-distillations with the **improved recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teachers (`ja_nuja`, `es_nues`) and the same architecture (presets `M-vocos-p-ja-en`, `M-vocos-p-es-en`, `S-vocos-p-es-en`). They replace the v0.6.0 `nu-ja` M and the v0.8.0 `nu-es` M and S; size, speed, token sets (`ja-en`, `es-en`) and text modes (`ja`, `es`) are unchanged, and they run with any firmware since v0.6.0 (ja-en) and v0.8.0 (es-en). The `nu-ja` S of the same re-distillation was not released because its English CER got worse (0.019 → 0.034); the `nu-ja` S stays the v0.6.0 model. The other voices are unchanged.
+
+### Models
+
+| File | Voice | Tier | Params | Size | Replaces |
+|---|---|---|---:|---:|---|
+| `vtts-jaen-nuja-m-v0.10.4.q8.vtts` | `nu-ja` (female, Japanese + English) | Quality (M) | 1.84M | 2.6 MB | `vtts-jaen-nuja-m-v0.6.q8.vtts` |
+| `vtts-esen-nues-m-v0.10.4.q8.vtts` | `nu-es` (female, Spanish + English) | Quality (M) | 1.84M | 2.6 MB | `vtts-esen-nues-m-v0.8.q8.vtts` |
+| `vtts-esen-nues-s-v0.10.4.q8.vtts` | `nu-es` (female, Spanish + English) | Lite (S) | 0.83M | 1.2 MB | `vtts-esen-nues-s-v0.8.q8.vtts` |
+
+Use the new `nu-ja` M with the v0.6.0 `vtts-jaen-nuja-s-v0.6.q8.vtts`. On Hugging Face the new files are in `ja-en-nu-ja/` and `es-en-nu-es/` next to the older ones; the card recommends them.
+
+### Quality
+
+The released models and the new ones rendered with the int8 C runtime (`vtts_say --lang ja` / `--lang es`) and scored with the same pipeline on the three out-of-domain sets of 50 sentences (Whisper large-v3; UTMOS). Japanese is scored on readings (both sides converted to kana) and the mixed Japanese set also on the kana and kanji only, because Whisper writes most English words in katakana. All rows were measured with the current front-end, so the old rows differ slightly from the v0.6.0 and v0.8.0 reports. Reports: [ja-student-eval.md](docs/reports/ja-student-eval.md#nu-ja-m-update-v0104), [es-student-eval.md](docs/reports/es-student-eval.md#nu-es-m-and-s-update-v0104).
+
+| `nu-ja` | Japanese CER (reading) | Mixed CER: text / kana and kanji only | English CER | UTMOS (ja / mixed / en) |
+|---|---:|---|---:|---|
+| M v0.6.0 (joint 20k) | 0.049 | 0.202 / 0.053 | 0.023 | 2.58 / 2.61 / 3.23 |
+| **M v0.10.4 (joint 80k)** | **0.035** | 0.220 / 0.054 | **0.018** | **2.75 / 2.77 / 3.45** |
+| S v0.6.0 (kept) | 0.050 | 0.236 / 0.049 | 0.019 | 2.30 / 2.27 / 2.75 |
+| S joint 80k (not released) | 0.039 | 0.227 / 0.053 | 0.034 | 2.54 / 2.60 / 3.38 |
+
+| `nu-es` | Spanish CER | Mixed CER | English CER | UTMOS (es / mixed / en) |
+|---|---:|---:|---:|---|
+| M v0.8.0 (joint 20k) | 0.019 | 0.006 | 0.020 | 2.83 / 2.87 / 3.07 |
+| **M v0.10.4 (joint 80k)** | **0.001** | **0.005** | **0.014** | **3.09 / 3.04 / 3.41** |
+| S v0.8.0 (joint 20k) | 0.017 | 0.009 | 0.019 | 2.54 / 2.50 / 2.81 |
+| **S v0.10.4 (joint 80k)** | **0.015** | 0.011 | 0.021 | **2.93 / 2.94 / 3.29** |
+
+- `nu-ja` M: UTMOS +0.15 to +0.23, Japanese reading CER 0.049 → 0.035, English CER lower; on the mixed set the kana-and-kanji CER is the same within 0.001 (the plain CER is higher, mostly English words that Whisper writes in katakana).
+- `nu-es` M: UTMOS +0.17 to +0.34 and every CER lower (Spanish 0.019 → 0.001: "noche", "coche" and the phone number now right).
+- `nu-es` S: UTMOS +0.39 to +0.48, above the v0.8.0 M on all three sets; Spanish CER lower, mixed and English CER within 0.002 of the v0.8.0 S (one and two words).
+
+### Performance
+
+| Board | `nu-ja` M (v0.10.4) | `nu-es` M (v0.10.4) | `nu-es` S (v0.10.4) |
+|---|---|---|---|
+| ESP32-P4: RTF / speech starts | 0.26–0.27 / 0.17–0.26 s | 0.27–0.30 / 0.16–0.28 s | 0.18–0.21 / 0.06–0.12 s |
+| ESP32-S3: RTF | 0.54–0.55 | 0.56–0.60 | 0.31–0.36 |
+
+RTF from `bench` (four sentences of the main language), speech start from playing the eight website sentences on the ESP32-P4 (underruns only with M on a short first sentence followed by a long one, "Hello! I am ..." and "¡Hola! Soy ...", as before), firmware of this release with only the ja or es front-end: ja-en 6.91 MB on the ESP32-P4 (1.47 MB free in the 8 MB app partition, with the 721 KB JLEX blob) and 6.80 MB on the ESP32-S3; es-en 6.21 MB and 6.10 MB. The eight `nu-ja` Quality clips and the sixteen `nu-es` clips on the website are new ESP32-P4 dumps of these models, 64 kbps MP3, each transcribed again with Whisper large-v3 (`nu-es`: CER 0 on 13 of 16, the others 0.010–0.046; `nu-ja` M: kana-and-kanji CER 0 on three of the six Japanese and mixed clips, 0.09–0.12 on the other three, English 0 and 0; none broken); the dumps match `vtts_say` on a PC (same lengths, correlation ≥ 0.9995). Details: [performance.md](docs/reports/performance.md#nu-ja-m-and-nu-es-m-and-s-update-v0104).
+
+### Changed
+- **`nu-ja` M** (`vtts-jaen-nuja-m-v0.10.4.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 2.75 / 2.77 / 3.45 (ja / mixed / en) instead of 2.58 / 2.61 / 3.23, Japanese reading CER 0.035 instead of 0.049.
+- **`nu-es` M** (`vtts-esen-nues-m-v0.10.4.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 3.09 / 3.04 / 3.41 (es / mixed / en) instead of 2.83 / 2.87 / 3.07, Spanish CER 0.001 instead of 0.019.
+- **`nu-es` S** (`vtts-esen-nues-s-v0.10.4.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 2.93 / 2.94 / 3.29 instead of 2.54 / 2.50 / 2.81.
+- Website and voices.md: the eight `nu-ja` Quality and sixteen `nu-es` samples are ESP32-P4 dumps of the new models. README, voices.md, performance.md, the ja and es evaluation reports and the Hugging Face card list the new files.
+
+### Known issues
+- The `nu-ja` S stays the v0.6.0 (joint 20k) model: its re-distillation was more natural (UTMOS +0.24 to +0.63) and better on Japanese, but its English CER rose from 0.019 to 0.034 (mostly numbers and short questions) and the mixed kana-and-kanji CER from 0.049 to 0.053. `nam-1` and the other pairs still use the 20k joint stage.
+- `nu-ja` M: word-initial vowels and *f* are still weak in some sentences (website clips: 朝の気温 heard as ハサノキ温, ファイル as 配慮), as is the word-initial *r* of v0.6.0.
+- ESP32-S3: only `bench` was measured for the new models.
+- As before: numbers inside English sentences are read in Japanese by the ja text mode; write them as words in English text.
+
 ## v0.10.3 (2026-11-20) — `nu-zh` M and `nu-ko` S model update
 
 A **model update** of two bilingual voices, **Apache-2.0**: the **Chinese (Mandarin) + English `nu-zh` quality model (M)** and the **Korean + English `nu-ko` lite model (S)**. Both come from re-distillations with the **improved recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teachers (`zh_nuzh`, `ko_nuko`) and the same architecture (presets `M-vocos-p-zh-en`, `S-vocos-p-ko-en`). They replace the v0.5.0 files; size, speed, token sets (`zh-en`, `ko-en`) and text modes (`zh`, `ko`) are unchanged, and they run with any firmware since v0.5.0. Both re-distillations also produced the other size; those were not released because one CER got worse: the `nu-zh` S (mixed set, Han-only CER 0.023 → 0.033) and the `nu-ko` M (Korean CER 0.021 → 0.035). The `nu-zh` S and the `nu-ko` M stay the v0.5.0 models. The other voices are unchanged.

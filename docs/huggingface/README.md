@@ -46,7 +46,7 @@ tags:
 
 Tiny int8 voices for [vtts](https://github.com/tuanpmt/vtts), a text-to-speech engine that runs entirely on ESP32 chips: text normalization, grapheme-to-phoneme, the acoustic model and the iSTFT vocoder all run on the microcontroller, with no network. Listen to samples generated on the chip on the [website](https://tuanpmt.github.io/vtts/).
 
-vtts has an **English-only voice**, `nu-en` (American English, v0.9.0; M and S updated in v0.10.1), and **bilingual voices: one main language + English**. A bilingual voice reads the main language, English, and sentences that mix both ("Đã kết nối Bluetooth với AirPods", "스마트폰을 Wi-Fi에 연결했어요", "已经通过Bluetooth连接到AirPods", "このWi-Fiはpasswordが必要ですか？", "O sinal do Wi-Fi está fraco", "Sinyal Wi-Fi lemah sekali", "Wi-Fi का signal बहुत कमज़ोर है", "El deadline del proyecto", "สัญญาณ Wi-Fi อ่อนมาก"); the on-device front-end picks the language per word. Released: English (v0.9.0; `nu-en` M and S updated in v0.10.1), Vietnamese + English (v0.4.0; `nu-10` M updated in v0.9.1, S in v0.10.2), Korean + English and Chinese (Mandarin) + English (v0.5.0; `nu-ko` S and `nu-zh` M updated in v0.10.3), Japanese + English (v0.6.0), Portuguese (Brazil) + English (v0.7.0), Indonesian + English, Hindi + English and Spanish + English (v0.8.0), Thai + English (v0.10.0).
+vtts has an **English-only voice**, `nu-en` (American English, v0.9.0; M and S updated in v0.10.1), and **bilingual voices: one main language + English**. A bilingual voice reads the main language, English, and sentences that mix both ("Đã kết nối Bluetooth với AirPods", "스마트폰을 Wi-Fi에 연결했어요", "已经通过Bluetooth连接到AirPods", "このWi-Fiはpasswordが必要ですか？", "O sinal do Wi-Fi está fraco", "Sinyal Wi-Fi lemah sekali", "Wi-Fi का signal बहुत कमज़ोर है", "El deadline del proyecto", "สัญญาณ Wi-Fi อ่อนมาก"); the on-device front-end picks the language per word. Released: English (v0.9.0; `nu-en` M and S updated in v0.10.1), Vietnamese + English (v0.4.0; `nu-10` M updated in v0.9.1, S in v0.10.2), Korean + English and Chinese (Mandarin) + English (v0.5.0; `nu-ko` S and `nu-zh` M updated in v0.10.3), Japanese + English (v0.6.0; `nu-ja` M updated in v0.10.4), Portuguese (Brazil) + English (v0.7.0), Indonesian + English, Hindi + English and Spanish + English (v0.8.0; `nu-es` M and S updated in v0.10.4), Thai + English (v0.10.0).
 
 > These files are not PyTorch or Transformers checkpoints. They are `.vtts` files for the vtts C runtime ([format](https://github.com/tuanpmt/vtts/blob/main/docs/model-format.md)), meant to be flashed with the [ESP32 firmware](https://github.com/tuanpmt/vtts/tree/main/firmware/esp32) or run with the host tools.
 
@@ -61,11 +61,11 @@ One folder per voice. Each voice comes in two sizes, and both run on the ESP32-P
 | `vi-en-nu-10/` | `nu-10` (female) | Vietnamese + English, code-switching | **`vtts-vien-nu10-m-v0.9.1.q8.vtts`** (recommended M), **`vtts-vien-nu10-s-v0.10.2.q8.vtts`** (recommended S); the older `vtts-vien-nu10-m-v0.4.q8.vtts` and `vtts-vien-nu10-s-v0.4.q8.vtts` stay in the folder | v0.4.0, M updated in v0.9.1, S in v0.10.2 |
 | `ko-en-nu-ko/` | `nu-ko` (female, about 40, Seoul) | Korean + English, code-switching | `vtts-koen-nuko-m-v0.5.q8.vtts`, **`vtts-koen-nuko-s-v0.10.3.q8.vtts`** (recommended S); the older `vtts-koen-nuko-s-v0.5.q8.vtts` stays in the folder | v0.5.0, S updated in v0.10.3 |
 | `zh-en-nu-zh/` | `nu-zh` (female, about 40, Beijing Mandarin) | Chinese (Mandarin) + English, code-switching | **`vtts-zhen-nuzh-m-v0.10.3.q8.vtts`** (recommended M), `vtts-zhen-nuzh-s-v0.5.q8.vtts`; the older `vtts-zhen-nuzh-m-v0.5.q8.vtts` stays in the folder | v0.5.0, M updated in v0.10.3 |
-| `ja-en-nu-ja/` | `nu-ja` (female, about 40, Tokyo) | Japanese + English, code-switching | `vtts-jaen-nuja-m-v0.6.q8.vtts`, `vtts-jaen-nuja-s-v0.6.q8.vtts` | v0.6.0 |
+| `ja-en-nu-ja/` | `nu-ja` (female, about 40, Tokyo) | Japanese + English, code-switching | **`vtts-jaen-nuja-m-v0.10.4.q8.vtts`** (recommended M), `vtts-jaen-nuja-s-v0.6.q8.vtts`; the older `vtts-jaen-nuja-m-v0.6.q8.vtts` stays in the folder | v0.6.0, M updated in v0.10.4 |
 | `pt-en-nu-pt/` | `nu-pt` (female, about 40, Brazilian Portuguese) | Portuguese (Brazil) + English, code-switching | `vtts-pten-nupt-m-v0.7.q8.vtts`, `vtts-pten-nupt-s-v0.7.q8.vtts` | v0.7.0 |
 | `id-en-nu-id/` | `nu-id` (female, about 40, Indonesian) | Indonesian + English, code-switching | `vtts-iden-nuid-m-v0.8.q8.vtts`, `vtts-iden-nuid-s-v0.8.q8.vtts` | v0.8.0 |
 | `hi-en-nu-hi/` | `nu-hi` (female, about 40, Hindi) | Hindi + English, code-switching (Devanagari and Latin) | `vtts-hien-nuhi-m-v0.8.q8.vtts`, `vtts-hien-nuhi-s-v0.8.q8.vtts` | v0.8.0 |
-| `es-en-nu-es/` | `nu-es` (female, about 40, Spanish) | Spanish + English, code-switching | `vtts-esen-nues-m-v0.8.q8.vtts`, `vtts-esen-nues-s-v0.8.q8.vtts` | v0.8.0 |
+| `es-en-nu-es/` | `nu-es` (female, about 40, Spanish) | Spanish + English, code-switching | **`vtts-esen-nues-m-v0.10.4.q8.vtts`**, **`vtts-esen-nues-s-v0.10.4.q8.vtts`** (recommended); the older `vtts-esen-nues-m-v0.8.q8.vtts` and `vtts-esen-nues-s-v0.8.q8.vtts` stay in the folder | v0.8.0, M and S updated in v0.10.4 |
 | `th-en-nu-th/` | `nu-th` (female, Thai) | Thai + English, code-switching | `vtts-then-nuth-m-v0.10.q8.vtts`, `vtts-then-nuth-s-v0.10.q8.vtts` | v0.10.0 |
 
 Each folder has a `SHA256SUMS` file. More pairs (French, German and others, each + English) will follow in their own folders.
@@ -90,7 +90,8 @@ Each folder has a `SHA256SUMS` file. More pairs (French, German and others, each
 | **`vtts-zhen-nuzh-m-v0.10.3.q8.vtts`** (recommended) | Quality (M) | 1.84M | 2.6 MB | 0.27 | 0.56 |
 | `vtts-zhen-nuzh-m-v0.5.q8.vtts` (superseded) | Quality (M) | 1.84M | 2.6 MB | 0.26 | 0.57 |
 | `vtts-zhen-nuzh-s-v0.5.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.18 | 0.32 |
-| `vtts-jaen-nuja-m-v0.6.q8.vtts` | Quality (M) | 1.84M | 2.6 MB | 0.26 | 0.55 |
+| **`vtts-jaen-nuja-m-v0.10.4.q8.vtts`** (recommended) | Quality (M) | 1.84M | 2.6 MB | 0.26 | 0.54 |
+| `vtts-jaen-nuja-m-v0.6.q8.vtts` (superseded) | Quality (M) | 1.84M | 2.6 MB | 0.26 | 0.55 |
 | `vtts-jaen-nuja-s-v0.6.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.17 | 0.31 |
 | `vtts-pten-nupt-m-v0.7.q8.vtts` | Quality (M) | 1.84M | 2.6 MB | 0.28 | 0.57 |
 | `vtts-pten-nupt-s-v0.7.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.19 | 0.32 |
@@ -98,8 +99,10 @@ Each folder has a `SHA256SUMS` file. More pairs (French, German and others, each
 | `vtts-iden-nuid-s-v0.8.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.18 | 0.32 |
 | `vtts-hien-nuhi-m-v0.8.q8.vtts` | Quality (M) | 1.84M | 2.6 MB | 0.27 | 0.58 |
 | `vtts-hien-nuhi-s-v0.8.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.19 | 0.32 |
-| `vtts-esen-nues-m-v0.8.q8.vtts` | Quality (M) | 1.84M | 2.6 MB | 0.28 | 0.58 |
-| `vtts-esen-nues-s-v0.8.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.19 | 0.32 |
+| **`vtts-esen-nues-m-v0.10.4.q8.vtts`** (recommended) | Quality (M) | 1.84M | 2.6 MB | 0.28 | 0.57 |
+| `vtts-esen-nues-m-v0.8.q8.vtts` (superseded) | Quality (M) | 1.84M | 2.6 MB | 0.28 | 0.58 |
+| **`vtts-esen-nues-s-v0.10.4.q8.vtts`** (recommended) | Lite (S) | 0.83M | 1.2 MB | 0.19 | 0.33 |
+| `vtts-esen-nues-s-v0.8.q8.vtts` (superseded) | Lite (S) | 0.83M | 1.2 MB | 0.19 | 0.32 |
 | `vtts-then-nuth-m-v0.10.q8.vtts` | Quality (M) | 1.84M | 2.6 MB | 0.27 | 0.56 |
 | `vtts-then-nuth-s-v0.10.q8.vtts` | Lite (S) | 0.83M | 1.2 MB | 0.18 | 0.32 |
 
@@ -152,7 +155,8 @@ Japanese + English (`nu-ja`). Japanese CER on readings: reference and transcript
 
 | Model | Japanese CER (reading) | English CER | Mixed CER (kana and kanji only) | UTMOS (ja / en / mixed) |
 |---|---:|---:|---:|---|
-| `nu-ja` M | 0.050 | 0.023 | 0.054 | 2.57 / 3.22 / 2.61 |
+| `nu-ja` M (v0.10.4, recommended) | 0.035 | 0.018 | 0.054 | 2.75 / 3.45 / 2.77 |
+| `nu-ja` M (v0.6.0) | 0.050 | 0.023 | 0.054 | 2.57 / 3.22 / 2.61 |
 | `nu-ja` S | 0.053 | 0.019 | 0.049 | 2.30 / 2.76 / 2.28 |
 | VoxCPM2 `nu-ja` (reference voice) | 0.023 | — | 0.049 | 3.45 / — / 3.43 |
 
@@ -173,8 +177,10 @@ Indonesian + English (`nu-id`), Spanish + English (`nu-es`) and Hindi + English 
 | `nu-id` M | 0.011 | 0.022 | 0.018 | 2.42 / 3.05 / 2.57 |
 | `nu-id` S | 0.011 | 0.059 | 0.015 | 2.14 / 2.63 / 2.25 |
 | VoxCPM2 `nu-id` (reference voice) | 0.023 | — | 0.042 | 3.07 / — / 3.22 |
-| `nu-es` M | 0.019 | 0.020 | 0.006 | 2.83 / 3.07 / 2.87 |
-| `nu-es` S | 0.017 | 0.019 | 0.009 | 2.54 / 2.81 / 2.50 |
+| `nu-es` M (v0.10.4, recommended) | 0.001 | 0.014 | 0.005 | 3.09 / 3.41 / 3.04 |
+| `nu-es` S (v0.10.4, recommended) | 0.015 | 0.021 | 0.011 | 2.93 / 3.29 / 2.94 |
+| `nu-es` M (v0.8.0) | 0.019 | 0.020 | 0.006 | 2.83 / 3.07 / 2.87 |
+| `nu-es` S (v0.8.0) | 0.017 | 0.019 | 0.009 | 2.54 / 2.81 / 2.50 |
 | VoxCPM2 `nu-es` (reference voice) | 0.020 | — | 0.037 | 3.50 / — / 3.57 |
 | `nu-hi` M | 0.094 | 0.053 | 0.054 (Devanagari only) | 2.84 / 3.09 / 2.91 |
 | `nu-hi` S | 0.092 | 0.028 | 0.056 (Devanagari only) | 2.84 / 3.03 / 2.88 |
@@ -206,15 +212,15 @@ BOARD=esp32-p4-nano ./build.sh ../../../models/vi-en-nu-10/vtts-vien-nu10-s-v0.1
   ../../../models/vi-en-nu-10/vtts-vien-nu10-m-v0.9.1.q8.vtts -p PORT flash monitor
 ```
 
-For the English-only voice download `en-nu-en/*` and pass `vtts-en-nuen-s-v0.10.1.q8.vtts` and `vtts-en-nuen-m-v0.10.1.q8.vtts` (no blob beyond the English lexicon; the firmware starts these models in English). For the Korean + English voice download `ko-en-nu-ko/*` and pass `vtts-koen-nuko-s-v0.10.3.q8.vtts` and `vtts-koen-nuko-m-v0.5.q8.vtts` instead; for Chinese + English download `zh-en-nu-zh/*` and pass `vtts-zhen-nuzh-s-v0.5.q8.vtts` and `vtts-zhen-nuzh-m-v0.10.3.q8.vtts` (`build.sh` embeds the 116 KB Mandarin reading table they need); for Japanese + English download `ja-en-nu-ja/*` and pass `vtts-jaen-nuja-s-v0.6.q8.vtts` and `vtts-jaen-nuja-m-v0.6.q8.vtts` (`build.sh` embeds the 721 KB Japanese reading table they need); for Portuguese (Brazil) + English download `pt-en-nu-pt/*` and pass `vtts-pten-nupt-s-v0.7.q8.vtts` and `vtts-pten-nupt-m-v0.7.q8.vtts` (no blob beyond the English lexicon); likewise `id-en-nu-id/*`, `hi-en-nu-hi/*` and `es-en-nu-es/*` with their `-s-` and `-m-` files (v0.8.0, no blob beyond the English lexicon) and `th-en-nu-th/*` (v0.10.0, no blob beyond the English lexicon).
+For the English-only voice download `en-nu-en/*` and pass `vtts-en-nuen-s-v0.10.1.q8.vtts` and `vtts-en-nuen-m-v0.10.1.q8.vtts` (no blob beyond the English lexicon; the firmware starts these models in English). For the Korean + English voice download `ko-en-nu-ko/*` and pass `vtts-koen-nuko-s-v0.10.3.q8.vtts` and `vtts-koen-nuko-m-v0.5.q8.vtts` instead; for Chinese + English download `zh-en-nu-zh/*` and pass `vtts-zhen-nuzh-s-v0.5.q8.vtts` and `vtts-zhen-nuzh-m-v0.10.3.q8.vtts` (`build.sh` embeds the 116 KB Mandarin reading table they need); for Japanese + English download `ja-en-nu-ja/*` and pass `vtts-jaen-nuja-s-v0.6.q8.vtts` and `vtts-jaen-nuja-m-v0.10.4.q8.vtts` (`build.sh` embeds the 721 KB Japanese reading table they need); for Portuguese (Brazil) + English download `pt-en-nu-pt/*` and pass `vtts-pten-nupt-s-v0.7.q8.vtts` and `vtts-pten-nupt-m-v0.7.q8.vtts` (no blob beyond the English lexicon); likewise `id-en-nu-id/*`, `hi-en-nu-hi/*` and `es-en-nu-es/*` with their `-s-` and `-m-` files (v0.8.0; for `nu-es` the v0.10.4 files; no blob beyond the English lexicon) and `th-en-nu-th/*` (v0.10.0, no blob beyond the English lexicon).
 
-Type a sentence on the serial console (main language, English or mixed; English for `nu-en`) and the board speaks it; `model s` / `model m` switch between the two sizes and `lang vi|en|auto` sets the text mode of vi-en models (ko-en, zh-en, ja-en, pt-en, id-en, hi-en, es-en and th-en models have one mode each, `ko`, `zh`, `ja`, `pt`, `id`, `hi`, `es` and `th`, which also read English). The same files are attached to the GitHub releases [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) (vi-en), [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) (ko-en and zh-en), [v0.6.0](https://github.com/tuanpmt/vtts/releases/tag/v0.6.0) (ja-en) [v0.7.0](https://github.com/tuanpmt/vtts/releases/tag/v0.7.0) (pt-en) [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) (id-en, hi-en and es-en), [v0.9.0](https://github.com/tuanpmt/vtts/releases/tag/v0.9.0) (en), [v0.9.1](https://github.com/tuanpmt/vtts/releases/tag/v0.9.1) (the updated `nu-10` M), [v0.10.0](https://github.com/tuanpmt/vtts/releases/tag/v0.10.0) (th-en), [v0.10.1](https://github.com/tuanpmt/vtts/releases/tag/v0.10.1) (the updated `nu-en` M and S), [v0.10.2](https://github.com/tuanpmt/vtts/releases/tag/v0.10.2) (the updated `nu-10` S) and [v0.10.3](https://github.com/tuanpmt/vtts/releases/tag/v0.10.3) (the updated `nu-ko` S and `nu-zh` M).
+Type a sentence on the serial console (main language, English or mixed; English for `nu-en`) and the board speaks it; `model s` / `model m` switch between the two sizes and `lang vi|en|auto` sets the text mode of vi-en models (ko-en, zh-en, ja-en, pt-en, id-en, hi-en, es-en and th-en models have one mode each, `ko`, `zh`, `ja`, `pt`, `id`, `hi`, `es` and `th`, which also read English). The same files are attached to the GitHub releases [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) (vi-en), [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) (ko-en and zh-en), [v0.6.0](https://github.com/tuanpmt/vtts/releases/tag/v0.6.0) (ja-en) [v0.7.0](https://github.com/tuanpmt/vtts/releases/tag/v0.7.0) (pt-en) [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) (id-en, hi-en and es-en), [v0.9.0](https://github.com/tuanpmt/vtts/releases/tag/v0.9.0) (en), [v0.9.1](https://github.com/tuanpmt/vtts/releases/tag/v0.9.1) (the updated `nu-10` M), [v0.10.0](https://github.com/tuanpmt/vtts/releases/tag/v0.10.0) (th-en), [v0.10.1](https://github.com/tuanpmt/vtts/releases/tag/v0.10.1) (the updated `nu-en` M and S), [v0.10.2](https://github.com/tuanpmt/vtts/releases/tag/v0.10.2) (the updated `nu-10` S), [v0.10.3](https://github.com/tuanpmt/vtts/releases/tag/v0.10.3) (the updated `nu-ko` S and `nu-zh` M) and [v0.10.4](https://github.com/tuanpmt/vtts/releases/tag/v0.10.4) (the updated `nu-ja` M and `nu-es` M and S).
 
 ## How the models are made
 
 - **Training data:** speech synthesized with [VoxCPM2](https://github.com/OpenBMB/VoxCPM) (Apache-2.0) from designed voices (not cloned from real people): about 98 h per Vietnamese + English voice, with sentences chosen to cover rare Vietnamese syllables, numbers, English and code-switched text; about 43,600 sentences (Korean, Korean with English words, English) for `nu-ko`; 54,636 sentences (Mandarin, Mandarin with English terms, English) for `nu-zh`; 49,591 sentences (Japanese, Japanese with English words, English) for `nu-ja`; 45,191 sentences (Brazilian Portuguese, Portuguese with English words, English) for `nu-pt`; 45,857 for `nu-id`, 48,296 for `nu-hi`, 48,336 for `nu-es` and 55,555 for `nu-th` (main language, main language with English words, English); 19,241 English sentences (about 30 h) for `nu-en`. No recorded corpus is used.
 - **Teacher:** a VITS model (~24M parameters) per voice, trained from random initialization on that synthetic audio only (`nu-en`: 60k steps starting from the `nu-10` teacher, which was itself trained from random initialization on VoxCPM2 audio).
-- **Distillation:** the teacher produces durations, latents and audio; a small student (duration + acoustic model with a pitch/energy predictor + Vocos-style ConvNeXt/iSTFT decoder) learns from it in three stages (front 10k, decoder 30k, joint 20k steps; the updated `nu-10` M of v0.9.1, `nu-en` M and S of v0.10.1, `nu-10` S of v0.10.2 and `nu-ko` S and `nu-zh` M of v0.10.3 use a joint stage of 80k steps, which raises UTMOS at the same CER) and is quantized to int8.
+- **Distillation:** the teacher produces durations, latents and audio; a small student (duration + acoustic model with a pitch/energy predictor + Vocos-style ConvNeXt/iSTFT decoder) learns from it in three stages (front 10k, decoder 30k, joint 20k steps; the updated `nu-10` M of v0.9.1, `nu-en` M and S of v0.10.1, `nu-10` S of v0.10.2, `nu-ko` S and `nu-zh` M of v0.10.3 and `nu-ja` M and `nu-es` M and S of v0.10.4 use a joint stage of 80k steps, which raises UTMOS at the same CER) and is quantized to int8.
 - **Front-end:** rule-based, in Python (training) and C (device) with identical output: a spelling-based Vietnamese G2P, a Korean G2P (Hangul decomposition, the standard pronunciation rules, Sino-Korean and native numbers), a Mandarin front-end (pinyin readings with a polyphone phrase table, tones, Chinese number reading), a Japanese front-end (kana and kanji readings by longest match over a word table, numbers with counters), a Brazilian Portuguese front-end (spelling rules with stress, nasal vowels and the two r sounds; Latin words tagged Portuguese or English per word), Indonesian and Spanish spelling-rule front-ends, a Hindi front-end (Devanagari letters, schwa deletion, nasals, Hindi number reading), a Thai front-end (word segmentation over a word list, syllables by the spelling rules, tones from consonant class, tone mark and syllable type, Thai number reading), a sentence-level English decision for the Latin-script pairs, an English front-end (CMU Pronouncing Dictionary, learned letter-to-sound rules, normalizer) and per-word language tagging. The English lexicon (1.9 MB) is embedded in the firmware, for zh-en also the Mandarin reading table (116 KB), for ja-en the Japanese reading table (721 KB).
 
 ## License and limitations

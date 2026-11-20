@@ -105,9 +105,9 @@
       "quality": "M (1.84M params, 2.6 MB)",
       "lite": "S (0.83M params, 1.2 MB)",
       "status": "released",
-      "status_text": "Released in v0.6.0 (Apache-2.0)",
+      "status_text": "Released in v0.6.0, M updated in v0.10.4 (Apache-2.0)",
       "pair": "Japanese + English",
-      "release": "v0.6.0",
+      "release": "v0.10.4",
       "hf": "ja-en-nu-ja",
       "models": [
         "nuja-m",
@@ -181,9 +181,9 @@
       "quality": "M (1.84M params, 2.6 MB)",
       "lite": "S (0.83M params, 1.2 MB)",
       "status": "released",
-      "status_text": "Released in v0.8.0 (Apache-2.0)",
+      "status_text": "Released in v0.8.0, M and S updated in v0.10.4 (Apache-2.0)",
       "pair": "Spanish + English",
-      "release": "v0.8.0",
+      "release": "v0.10.4",
       "hf": "es-en-nu-es",
       "models": [
         "nues-m",
@@ -736,17 +736,17 @@
         "en"
       ],
       "status": "released",
-      "note": "Released in v0.6.0 (Apache-2.0): the bilingual voice nu-ja (female, about 40, Tokyo standard speech) reads Japanese, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "note": "Released in v0.6.0, M updated in v0.10.4 (Apache-2.0): the bilingual voice nu-ja (female, about 40, Tokyo standard speech) reads Japanese, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4 (Quality: the v0.10.4 model).",
       "models": [
         {
           "id": "nuja-m",
           "name": "nu-ja Quality",
-          "detail": "female · M",
+          "detail": "female · M (v0.10.4)",
           "params": "1.8M",
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.26",
-            "s3": "0.55"
+            "s3": "0.54"
           }
         },
         {
@@ -1104,28 +1104,28 @@
         "en"
       ],
       "status": "released",
-      "note": "Released in v0.8.0 (Apache-2.0): the bilingual voice nu-es (female, about 40, Spanish) reads Spanish, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "note": "Released in v0.8.0, M and S updated in v0.10.4 (Apache-2.0): the bilingual voice nu-es (female, about 40, Spanish) reads Spanish, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4 (the v0.10.4 models).",
       "models": [
         {
           "id": "nues-m",
           "name": "nu-es Quality",
-          "detail": "female · M",
+          "detail": "female · M (v0.10.4)",
           "params": "1.8M",
           "size": "2.6 MB",
           "rtf": {
             "p4": "0.28",
-            "s3": "0.58"
+            "s3": "0.57"
           }
         },
         {
           "id": "nues-s",
           "name": "nu-es Lite",
-          "detail": "female · S",
+          "detail": "female · S (v0.10.4)",
           "params": "0.8M",
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.19",
-            "s3": "0.32"
+            "s3": "0.33"
           }
         }
       ],

@@ -14,11 +14,11 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 | `nu-10` (female) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0, M updated in v0.9.1, S in v0.10.2 (Apache-2.0)** |
 | `nu-ko` (female) | 🇰🇷 ko + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, S updated in v0.10.3 (Apache-2.0)** |
 | `nu-zh` (female) | 🇨🇳 zh + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, M updated in v0.10.3 (Apache-2.0)** |
-| `nu-ja` (female) | 🇯🇵 ja + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0 (Apache-2.0)** |
+| `nu-ja` (female) | 🇯🇵 ja + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0, M updated in v0.10.4 (Apache-2.0)** |
 | `nu-pt` (female) | 🇧🇷 pt + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.7.0 (Apache-2.0)** |
 | `nu-id` (female) | 🇮🇩 id + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
 | `nu-hi` (female) | 🇮🇳 hi + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
-| `nu-es` (female) | 🇪🇸 es + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
+| `nu-es` (female) | 🇪🇸 es + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0, M and S updated in v0.10.4 (Apache-2.0)** |
 | `nu-th` (female) | 🇹🇭 th + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.10.0 (Apache-2.0)** |
 | Dutch + English | 🇳🇱 nl + 🇬🇧 en, code-switching | M | S | Planned |
 | Swedish + English | 🇸🇪 sv + 🇬🇧 en, code-switching | M | S | Planned |
@@ -42,6 +42,7 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 | `nu-id` | `vtts-iden-nuid-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `id`; no blob beyond the English lexicon |
 | `nu-hi` | `vtts-hien-nuhi-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `hi` (Devanagari, English in Latin letters); no blob beyond the English lexicon |
 | `nu-es` | `vtts-esen-nues-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `es`; no blob beyond the English lexicon |
+| `nu-ja` M update, `nu-es` M and S update | `vtts-jaen-nuja-m-v0.10.4.q8.vtts`, `vtts-esen-nues-{s,m}-v0.10.4.q8.vtts` | v0.10.4 | Replace the v0.6.0 `nu-ja` M and the v0.8.0 `nu-es` M and S (longer joint distillation stage; `nu-ja` M: UTMOS +0.15–0.23, lower Japanese and English CER; `nu-es`: UTMOS +0.2–0.5, M lower CER on all sets); same size, speed and text modes; use the `nu-ja` M with the v0.6.0 `nu-ja` S |
 | `nu-th` | `vtts-then-nuth-{s,m}-v0.10.q8.vtts` | v0.10.0 | Text mode `th` (Thai script, English in Latin letters); no blob beyond the English lexicon (the Thai tables are compiled in) |
 
 `build.sh` builds and embeds the blobs a model needs. In the single-mode pairs (ko, zh, ja, pt, id, hi, es, th) English words and English sentences go through the English front-end. In the Latin-script pairs (pt, id, es) a whole English sentence is read in English, numbers included; otherwise digits are read in the main language.
@@ -102,11 +103,12 @@ Whisper sometimes writes an English word of a mixed sentence in Chinese characte
 
 | Model | Params | Japanese CER ↓ (reading) | English CER ↓ | Mixed CER ↓ (kana and kanji only) | UTMOS ↑ (ja / en / mixed) |
 |---|---:|---:|---:|---:|---|
-| `nu-ja` M | 1.84M | **0.050** | 0.023 | 0.054 | **2.57 / 3.22 / 2.61** |
-| `nu-ja` S | 0.83M | 0.053 | **0.019** | **0.049** | 2.30 / 2.76 / 2.28 |
+| `nu-ja` M (v0.10.4) | 1.84M | **0.035** | **0.018** | 0.054 | **2.75 / 3.45 / 2.77** |
+| `nu-ja` M (v0.6.0) | 1.84M | 0.050 | 0.023 | 0.054 | 2.57 / 3.22 / 2.61 |
+| `nu-ja` S | 0.83M | 0.053 | 0.019 | **0.049** | 2.30 / 2.76 / 2.28 |
 | VoxCPM2 `nu-ja` (reference voice) | — | 0.023 | — | 0.049 | 3.45 / — / 3.43 |
 
-The Japanese references write some numbers in kanji (十五分) and Whisper writes digits, so the orthographic CER (0.097 M, 0.110 S, 0.064 for the reference voice) counts spelling, not speech; the reading CER compares kana readings and is counted in kana. On the mixed set Whisper writes most English words in katakana (password → パスワード), so the plain CER is 0.20–0.24 for every system. The main remaining error is a weak word-initial *r* (リビング heard as イビング).
+The Japanese references write some numbers in kanji (十五分) and Whisper writes digits, so the orthographic CER (0.097 M, 0.110 S, 0.064 for the reference voice) counts spelling, not speech; the reading CER compares kana readings and is counted in kana. On the mixed set Whisper writes most English words in katakana (password → パスワード), so the plain CER is 0.20–0.24 for every system. The main remaining error is a weak word-initial *r* (リビング heard as イビング). The `nu-ja` M of v0.10.4 comes from the improved distillation recipe (joint stage 80k steps instead of 20k): UTMOS +0.15–0.23 on all three sets, Japanese reading CER 0.049 → 0.035 and English 0.023 → 0.018 measured with the current front-end, the same mixed kana-and-kanji CER (0.053 → 0.054); the S of the same re-distillation had a higher English CER (0.019 → 0.034) and was not released ([report](reports/ja-student-eval.md#nu-ja-m-update-v0104)).
 
 **Portuguese (Brazil) + English** ([report](reports/pt-student-eval.md)):
 
@@ -142,11 +144,13 @@ Whisper's Hindi spelling (nukta, chandrabindu, ये/ए) costs every system; m
 
 | Model | Params | Spanish CER ↓ | English CER ↓ | Mixed CER ↓ | UTMOS ↑ (es / en / mixed) |
 |---|---:|---:|---:|---:|---|
-| `nu-es` M | 1.84M | 0.019 | 0.020 | **0.006** | **2.83 / 3.07 / 2.87** |
-| `nu-es` S | 0.83M | **0.017** | **0.019** | 0.009 | 2.54 / 2.81 / 2.50 |
+| `nu-es` M (v0.10.4) | 1.84M | **0.001** | **0.014** | **0.005** | **3.09 / 3.41 / 3.04** |
+| `nu-es` S (v0.10.4) | 0.83M | 0.015 | 0.021 | 0.011 | 2.93 / 3.29 / 2.94 |
+| `nu-es` M (v0.8.0) | 1.84M | 0.019 | 0.020 | 0.006 | 2.83 / 3.07 / 2.87 |
+| `nu-es` S (v0.8.0) | 0.83M | 0.017 | 0.019 | 0.009 | 2.54 / 2.81 / 2.50 |
 | VoxCPM2 `nu-es` (reference voice) | — | 0.020 | — | 0.037 | 3.50 / — / 3.57 |
 
-Without the numbers group: reference 0.000 / 0.005, M 0.008 / 0.005, S 0.006 / 0.010 (Spanish / mixed). English sentences are read in English by the sentence-level decision (word tags alone: 0.056 M, 0.064 S).
+Without the numbers group: reference 0.000 / 0.005, M 0.008 / 0.005, S 0.006 / 0.010 (Spanish / mixed). English sentences are read in English by the sentence-level decision (word tags alone: 0.056 M, 0.064 S). The `nu-es` M and S of v0.10.4 come from the improved distillation recipe (joint stage 80k steps instead of 20k): M UTMOS +0.17–0.34 and every CER lower (Spanish 0.019 → 0.001), S UTMOS +0.39–0.48 (above the v0.8.0 M) with the Spanish CER lower and the mixed and English CER within 0.002 of the v0.8.0 S ([report](reports/es-student-eval.md#nu-es-m-and-s-update-v0104)).
 
 **Thai + English** ([report](reports/th-student-eval.md)):
 

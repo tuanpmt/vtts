@@ -26,6 +26,24 @@ The same 50 Japanese and 50 mixed sentences were also synthesized by VoxCPM2 wit
 - **English:** both models are as intelligible in English as the other pairs (0.019–0.023), apart from numbers (below). Device prompts, questions and long sentences score 0–0.013.
 - **Mixed:** on the Japanese characters both models are at the level of the reference voice (0.054 M, 0.049 S against 0.049). The plain CER (0.20–0.24) mostly counts English words that Whisper writes in katakana.
 
+## `nu-ja` M update (v0.10.4)
+
+v0.10.4 replaces the quality model M with a re-distillation that uses the improved recipe: the same teacher (`ja_nuja`), the same presets and the same stages except a **longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**). Size (1.84M parameters, 2.6 MB), speed, token set and text mode are unchanged. The released v0.6.0 models and the new ones were rendered again with the current C runtime (`vtts_say --lang ja`) and scored with the same sets and pipeline (Whisper large-v3, UTMOS; Japanese CER on readings and the mixed set on the kana and kanji only, [below](#how-japanese-is-scored)); the v0.6.0 numbers therefore differ slightly from the table above.
+
+| Model | Japanese CER: text / reading | English CER / WER | Mixed CER: text / kana and kanji only / reading, kana only | UTMOS (ja / en / mixed) |
+|---|---|---|---|---|
+| M v0.6.0 (joint 20k) | 0.099 / 0.049 | 0.023 / 0.029 | 0.202 / 0.053 / 0.032 | 2.58 / 3.23 / 2.61 |
+| **M v0.10.4 (joint 80k)** | **0.091 / 0.035** | **0.018 / 0.022** | 0.220 / 0.054 / **0.031** | **2.75 / 3.45 / 2.77** |
+| S v0.6.0 (joint 20k, kept) | 0.109 / 0.050 | 0.019 / 0.025 | 0.236 / 0.049 / 0.032 | 2.30 / 2.75 / 2.27 |
+| S joint 80k (not released) | 0.080 / 0.039 | 0.034 / 0.047 | 0.227 / 0.053 / 0.033 | 2.54 / 3.38 / 2.60 |
+
+- **M:** UTMOS +0.15 to +0.23 on all three sets, Japanese reading CER 0.049 → 0.035, English CER 0.023 → 0.018. On the mixed set the kana-and-kanji CER is the same within one character (0.053 → 0.054; fixed: バックアップ, 資料, 明日, 流行っている; new: 100万 heard as 昨満, このアプリ as 炎ハプリ, a dropped か); the plain CER rises because Whisper writes more of the English words in katakana or garbles them (ChatGPT, email, Android).
+- **S stays v0.6.0.** The S of the same re-distillation is more natural (UTMOS +0.24 to +0.63) and better on Japanese (reading CER 0.050 → 0.039), but its English CER rose from 0.019 to 0.034 (numbers: "November 18" → 28, "3 p.m." → "some TN", "1,250" → "say 250"; short questions get a word added: "music for you", "wake up for") and the mixed kana-and-kanji CER from 0.049 to 0.053. The release rule is "UTMOS better and no CER worse by more than 0.003", so the S was not released.
+
+On the chip the new M runs at the speed of the v0.6.0 M (ESP32-P4 RTF 0.26–0.27, speech starts after 0.17–0.26 s; ESP32-S3 0.54–0.55). The eight `nu-ja` Quality clips of the website are ESP32-P4 dumps of the new M, 64 kbps MP3; Whisper large-v3: kana-and-kanji CER 0 on three of the six Japanese and mixed clips (numbers, Wi-Fi, question), 0.09–0.12 on the other three (明日の朝の気温 heard as 明日のハサノキ温, ファイル as 配慮, and "ESP32チップ" as "ESP3 to CHIP", a transliteration), English 0 on both ([performance.md](performance.md#nu-ja-m-and-nu-es-m-and-s-update-v0104)). The Lite clips are still the v0.6.0 S.
+
+Raw results: `ja-{M,S}-{old,new}-{ood_ja,mixed_ja,ood_en}.json` (not in the repository).
+
 ## How Japanese is scored
 
 Japanese CER in `vtts.eval.cer` is orthographic: reference and transcript go through the ja front-end's normalizer (numbers written with digits are read in Japanese, katakana is turned into hiragana) and are compared character by character. Two habits of the ASR then count as errors although the audio is right:
@@ -63,7 +81,7 @@ The kana-only CER does not judge the English words themselves. The transcripts s
 
 ## On the chip
 
-Every clip on the website and in [voices.md](../voices.md#listen-generated-on-an-esp32-p4) is the ESP32-P4's own PCM (firmware `dump` command, `lang ja`), compressed to 64 kbps MP3. All 16 published MP3s (8 sentences × 2 models: Japanese, mixed and English) were decoded again and transcribed with Whisper large-v3 before publishing. On the kana and kanji of the 12 Japanese and mixed clips the CER is 0.001 on average (one error: アラーム heard as カラーム in the M numbers clip, 0.017); the Latin parts lose a little with S ("ESP32" heard as "EST3", "Zoom" as ジュン; plain CER 0.10 and 0.09). Of the four English clips, S scores 0 on both; M gets 0.044 ("Hello" heard as "Holol", "ESP32" as "ESP3 to") and 0.011 ("porch lights"). None is broken. The ESP32-P4 output matches `vtts_say` on a PC (SNR 37–56 dB on the single-sentence clips; the clips with two sentences differ only in the pause between them).
+Every clip on the website and in [voices.md](../voices.md#listen-generated-on-an-esp32-p4) is the ESP32-P4's own PCM (firmware `dump` command, `lang ja`), compressed to 64 kbps MP3. Since v0.10.4 the Quality clips are dumps of the updated M ([above](#nu-ja-m-update-v0104)); this paragraph describes the v0.6.0 clips. All 16 v0.6.0 MP3s (8 sentences × 2 models: Japanese, mixed and English) were decoded again and transcribed with Whisper large-v3 before publishing. On the kana and kanji of the 12 Japanese and mixed clips the CER is 0.001 on average (one error: アラーム heard as カラーム in the M numbers clip, 0.017); the Latin parts lose a little with S ("ESP32" heard as "EST3", "Zoom" as ジュン; plain CER 0.10 and 0.09). Of the four English clips, S scores 0 on both; M gets 0.044 ("Hello" heard as "Holol", "ESP32" as "ESP3 to") and 0.011 ("porch lights"). None is broken. The ESP32-P4 output matches `vtts_say` on a PC (SNR 37–56 dB on the single-sentence clips; the clips with two sentences differ only in the pause between them).
 
 The sample sentences avoid "Bluetooth" and word-initial *r* (リビング); they show Zoom, PowerPoint, Wi-Fi and Netflix inside Japanese sentences.
 
