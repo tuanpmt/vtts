@@ -9,20 +9,20 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 <!-- BEGIN:voices -->
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
-| `nu-en` (female) | 🇺🇸 en | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.9.0 (Apache-2.0)** |
-| `nam-1` (male) | 🇻🇳 vi + 🇺🇸 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
-| `nu-10` (female) | 🇻🇳 vi + 🇺🇸 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
-| `nu-ko` (female) | 🇰🇷 ko + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
-| `nu-zh` (female) | 🇨🇳 zh + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
-| `nu-ja` (female) | 🇯🇵 ja + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0 (Apache-2.0)** |
-| `nu-pt` (female) | 🇧🇷 pt + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.7.0 (Apache-2.0)** |
-| `nu-id` (female) | 🇮🇩 id + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
-| `nu-hi` (female) | 🇮🇳 hi + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
-| `nu-es` (female) | 🇪🇸 es + 🇺🇸 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
-| Thai + English | 🇹🇭 th + 🇺🇸 en, code-switching | M | S | Planned |
-| Dutch + English | 🇳🇱 nl + 🇺🇸 en, code-switching | M | S | Planned |
-| Swedish + English | 🇸🇪 sv + 🇺🇸 en, code-switching | M | S | Planned |
-| Norwegian + English | 🇳🇴 no + 🇺🇸 en, code-switching | M | S | Planned |
+| `nu-en` (female) | 🇬🇧 en | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.9.0 (Apache-2.0)** |
+| `nam-1` (male) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
+| `nu-10` (female) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
+| `nu-ko` (female) | 🇰🇷 ko + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
+| `nu-zh` (female) | 🇨🇳 zh + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
+| `nu-ja` (female) | 🇯🇵 ja + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0 (Apache-2.0)** |
+| `nu-pt` (female) | 🇧🇷 pt + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.7.0 (Apache-2.0)** |
+| `nu-id` (female) | 🇮🇩 id + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
+| `nu-hi` (female) | 🇮🇳 hi + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
+| `nu-es` (female) | 🇪🇸 es + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
+| Thai + English | 🇹🇭 th + 🇬🇧 en, code-switching | M | S | Planned |
+| Dutch + English | 🇳🇱 nl + 🇬🇧 en, code-switching | M | S | Planned |
+| Swedish + English | 🇸🇪 sv + 🇬🇧 en, code-switching | M | S | Planned |
+| Norwegian + English | 🇳🇴 no + 🇬🇧 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
 Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`):
@@ -155,7 +155,7 @@ Both chips use two cores and int8 SIMD kernels; all released pairs run at the sa
 Audio is produced on the chip with the firmware's `dump` command (`lang en` for `nu-en`, `lang auto` for vi-en, `lang ko`, `lang zh`, `lang ja`, `lang pt`, `lang id`, `lang hi`, `lang es` for the other pairs), sent to a PC over serial and only compressed to MP3; every clip was checked with ASR before publishing. The same clips are on the [website](https://tuanpmt.github.io/vtts/).
 
 <!-- BEGIN:samples -->
-🇺🇸 **English**
+🇬🇧 **English**
 
 | Sentence | nu-en Quality | nu-en Lite |
 |---|---|---|
@@ -168,7 +168,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | Would you like me to play some music in the kitchen? | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-question.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-question.mp3) |
 | Heavy rain is expected across the city tonight, so the morning commute may take longer than usual, and several bus routes will start later. | [▶ nu-en Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-m-news.mp3) | [▶ nu-en Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuen-s-news.mp3) |
 
-🇻🇳 🇺🇸 **Việt–English**
+🇻🇳 🇬🇧 **Việt–English**
 
 | Sentence | nam-1 Quality | nam-1 Lite | nu-10 Quality | nu-10 Lite |
 |---|---|---|---|---|
@@ -181,7 +181,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | Pin còn 15%, nhiệt độ phòng là 28°C. Báo thức đã được đặt lúc 6 giờ 30 sáng mai. | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-numbers.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-numbers.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-numbers.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-numbers.mp3) |
 | Bạn có muốn bật đèn phòng khách không? | [▶ nam-1 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-m-question.mp3) | [▶ nam-1 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nam1-s-question.mp3) | [▶ nu-10 Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-m-question.mp3) | [▶ nu-10 Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nu10-s-question.mp3) |
 
-🇰🇷 🇺🇸 **한국어–English**
+🇰🇷 🇬🇧 **한국어–English**
 
 | Sentence | nu-ko Quality | nu-ko Lite |
 |---|---|---|
@@ -194,7 +194,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | 배터리가 15% 남았고, 실내 온도는 28도입니다. 알람은 내일 아침 6시 30분에 맞춰져 있어요. | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-numbers.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-numbers.mp3) |
 | 거실 불을 켜 드릴까요? | [▶ nu-ko Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-m-question.mp3) | [▶ nu-ko Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuko-s-question.mp3) |
 
-🇨🇳 🇺🇸 **中文–English**
+🇨🇳 🇬🇧 **中文–English**
 
 | Sentence | nu-zh Quality | nu-zh Lite |
 |---|---|---|
@@ -207,7 +207,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | 电池还剩15%，室内温度是28度。闹钟已经设在明天早上6点30分。 | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-numbers.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-numbers.mp3) |
 | 要帮你打开客厅的灯吗？ | [▶ nu-zh Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-m-question.mp3) | [▶ nu-zh Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuzh-s-question.mp3) |
 
-🇯🇵 🇺🇸 **日本語–English**
+🇯🇵 🇬🇧 **日本語–English**
 
 | Sentence | nu-ja Quality | nu-ja Lite |
 |---|---|---|
@@ -220,7 +220,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | バッテリーの残りは15%で、室温は28度です。アラームは明日の朝6時30分にセットされています。 | [▶ nu-ja Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuja-m-numbers.mp3) | [▶ nu-ja Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuja-s-numbers.mp3) |
 | 部屋の電気をつけましょうか？ | [▶ nu-ja Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuja-m-question.mp3) | [▶ nu-ja Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuja-s-question.mp3) |
 
-🇧🇷 🇺🇸 **Português (Brasil)–English**
+🇧🇷 🇬🇧 **Português (Brasil)–English**
 
 | Sentence | nu-pt Quality | nu-pt Lite |
 |---|---|---|
@@ -233,7 +233,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | A bateria está em 15% e a temperatura da sala é de 28 graus. O alarme está marcado para as 6:30 da manhã. | [▶ nu-pt Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-m-numbers.mp3) | [▶ nu-pt Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-s-numbers.mp3) |
 | Quer que eu acenda a luz do quarto? | [▶ nu-pt Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-m-question.mp3) | [▶ nu-pt Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nupt-s-question.mp3) |
 
-🇮🇩 🇺🇸 **Indonesia–English**
+🇮🇩 🇬🇧 **Indonesia–English**
 
 | Sentence | nu-id Quality | nu-id Lite |
 |---|---|---|
@@ -246,7 +246,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | Baterai tinggal 15% dan suhu ruangan 28 derajat. Alarm sudah diatur pukul 06.30 pagi. | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-numbers.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-numbers.mp3) |
 | Mau saya nyalakan lampu kamar? | [▶ nu-id Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-m-question.mp3) | [▶ nu-id Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuid-s-question.mp3) |
 
-🇮🇳 🇺🇸 **हिन्दी–English**
+🇮🇳 🇬🇧 **हिन्दी–English**
 
 | Sentence | nu-hi Quality | nu-hi Lite |
 |---|---|---|
@@ -259,7 +259,7 @@ Audio is produced on the chip with the firmware's `dump` command (`lang en` for 
 | बैटरी 15% बची है और कमरे का तापमान 28 डिग्री है। अलार्म सुबह 6:30 बजे का लगा है। | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-numbers.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-numbers.mp3) |
 | क्या मैं कमरे की बत्ती जला दूँ? | [▶ nu-hi Quality](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-m-question.mp3) | [▶ nu-hi Lite](https://raw.githubusercontent.com/tuanpmt/vtts/main/docs/audio/p4-nuhi-s-question.mp3) |
 
-🇪🇸 🇺🇸 **Español–English**
+🇪🇸 🇬🇧 **Español–English**
 
 | Sentence | nu-es Quality | nu-es Lite |
 |---|---|---|
