@@ -1,6 +1,6 @@
 # On-chip performance
 
-Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English and the v0.9.0 English-only models (`nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
+Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English the v0.9.1 update of the `nu-10` M ([below](#nu-10-m-update-v091)) and the v0.9.0 English-only models (`nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
 
 Everything lives in PSRAM: the models, the working arena (about 1.9 MB) and the activations. Internal SRAM stays free for the application and for DMA.
 
@@ -19,12 +19,12 @@ Chip rev 1.3, 360 MHz, 32 MB PSRAM. Measured on a Waveshare ESP32-P4-86-Panel-ET
 
 Waveshare ESP32-S3-Touch-LCD-2.8 (ESP32-S3R8): 240 MHz, 8 MB octal PSRAM, 16 MB flash. The EchoEar 2.0 uses the same chip and firmware.
 
-Current firmware (with the [two-core fix](#esp32-s3-two-core-fix), `nu-10`, same method):
+Current firmware (branch-loop SIMD kernels, see [ESP32-S3: wrong dot products with `loopnez`](#esp32-s3-wrong-dot-products-with-loopnez); es-en `nu-es`, eight website sentences, two cores):
 
 | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
 |---|---:|---:|---:|---:|---:|---:|
-| S (lite) | 0.41–0.43 | 0.41–0.45 | 0.14–0.37 s | 0.25–0.48 s (median 0.38) | 39–41% / 9–10% | 1 in 8 sentences |
-| M (quality) | 0.68–0.72 | 0.68–0.76 | 0.28–0.75 s | 0.43–0.93 s (median 0.70) | 60–65% / 18–21% | 1 in 8 sentences |
+| S (lite) | 0.31–0.36 | 0.31–0.34 | 0.09–0.18 s | 0.16–0.27 s (median 0.24) | 30–33% / 21–22% | 2 in 8 sentences |
+| M (quality) | 0.55–0.59 | 0.55–0.60 | 0.17–0.35 s | 0.26–0.50 s (median 0.43) | 49–53% / 36–39% | 0 |
 
 Before the fix (v0.4.0 firmware, the numbers the v0.4.0–v0.6.0 releases were published with):
 
@@ -42,9 +42,29 @@ Playback starts as soon as every later chunk is sure to be ready in time: the fi
 - Every underrun so far was on the same sentence, "Hello! I am a text-to-speech voice ...": a very short first sentence followed by a long one.
 - Pick the model by sound versus headroom: M sounds best; S starts speaking sooner and leaves more CPU for the application.
 
+## ESP32-S3: wrong dot products with `loopnez`
+
+The cause of the ESP32-S3 output differences described below (bursts or a changed phoneme duration, from v0.4.0 on, still present with the two-core fix of v0.7.0) is the S3 SIMD dot-product kernel: its inner loop was the Xtensa zero-overhead loop (`loopnez`) around the 128-bit loads (`ee.vld.128.ip`) and the multiply-accumulate, and that loop now and then returned a wrong sum. In one firmware build, same session, es-en sentences dumped on two cores and compared with the ESP32-P4: kernels with `loopnez` 11 of 112 differed, the same instructions in an ordinary branch loop 0 of 32, a plain C dot product 0 of 48. It was not state carried over between sentences (input ids and durations hashed identical in good and bad runs; junk written over the arena, scratch and stage before every chunk changed nothing), not a PSRAM read error (both cores checksumming 2.5 MB of PSRAM for minutes: 0 errors in 19 GB), and not a race in the runtime (ThreadSanitizer on a PC, memory barriers on the chip). ECC on the PSRAM did not help. A standalone ESP-IDF program reproduces it without vtts; the issue has been reported to Espressif.
+
+The S3 kernels now use branch loops (two 16-byte blocks per iteration). With them the output staging of v0.7.0 is no longer needed and was removed: over id-en, hi-en and es-en (8 sentences each, both models, three times with two cores and once with one core) 144 of 144 two-core and 48 of 48 one-core dumps were identical to the ESP32-P4, with the staging and again without it. Speed (`bench`, two cores, mean of four sentences):
+
+| Pair | M | S |
+|---|---:|---:|
+| vi-en (`nu-10`, `nam-1`) | 0.57 | 0.32 |
+| ko-en (`nu-ko`) | 0.57 | 0.32 |
+| zh-en (`nu-zh`) | 0.57 | 0.32 |
+| ja-en (`nu-ja`) | 0.55 | 0.31 |
+| pt-en (`nu-pt`) | 0.57 | 0.32 |
+| id-en (`nu-id`) | 0.56 | 0.32 |
+| hi-en (`nu-hi`) | 0.58 | 0.32 |
+| es-en (`nu-es`) | 0.58 | 0.32 |
+| en (`nu-en`) | 0.57 | 0.32 |
+
+That is about 12% slower than the `loopnez` kernels of v0.6.0 (M 0.50, S 0.29) and much faster than the staged two-core mode of v0.7.0–v0.9.0 (M 0.68–0.71, S 0.41–0.43). The fast scratch (40 KB of internal RAM) stays; the ESP32-P4 is not affected (other instruction set, unchanged).
+
 ## ESP32-S3 two-core fix
 
-Up to v0.6.0 the ESP32-S3 output with two cores (the default) was not deterministic: single values of the int8 layers came out wrong now and then (about one in 10^6), heard as short bursts that changed from run to run, mostly with M (the sections below describe it per pair). It is not a race in the runtime: it stays with interrupts masked, with the cores spinning instead of blocking on semaphores, with a larger worker stack, and with the weights copied before the SIMD loads; it rises with more PSRAM traffic (about 3x with 32-byte cache lines, 5x with PSRAM at 40 MHz) and never happens on one core or on the ESP32-P4. The firmware command `memtest` reproduces it without a model: both cores run an int8 layer with weights over 1.8 MB of PSRAM and store the outputs to PSRAM.
+(Superseded: see [above](#esp32-s3-wrong-dot-products-with-loopnez) for the cause and the current firmware.) Up to v0.6.0 the ESP32-S3 output with two cores (the default) was not deterministic: single values of the int8 layers came out wrong now and then (about one in 10^6), heard as short bursts that changed from run to run, mostly with M (the sections below describe it per pair). It is not a race in the runtime: it stays with interrupts masked, with the cores spinning instead of blocking on semaphores, with a larger worker stack, and with the weights copied before the SIMD loads; it rises with more PSRAM traffic (about 3x with 32-byte cache lines, 5x with PSRAM at 40 MHz) and never happens on one core or on the ESP32-P4. The firmware command `memtest` reproduces it without a model: both cores run an int8 layer with weights over 1.8 MB of PSRAM and store the outputs to PSRAM.
 
 The S3 build now keeps the two-core work away from PSRAM stores: the int8 layers write their outputs to 32 KB of internal RAM and one core copies them to the arena (`vtts_set_out_stage`), their int8 activations sit in 40 KB of internal RAM (fast scratch), and the lighter passes (LayerNorm, quantization, depthwise conv, iSTFT) run on one core. The audio is unchanged (bit for bit on the PC). Measured with `nu-10`: 22 of 23 two-core dumps were bit-identical to `cores 1` (before: nearly every M sentence had bursts), and all eight website sentences dumped with two cores match `vtts_say` (correlation ≥ 0.9998, S and M). The cost is speed, about 1.4x the v0.6.0 time:
 
@@ -133,6 +153,22 @@ The pt-en models (v0.7.0) have the same architecture with a token table of 150 (
 - Image with the two pt-en models and the English lexicon (no blob of its own; the Portuguese front-end is compiled in only for a pt-en model): 6.22 MB on the ESP32-P4 (2.17 MB free in the 8 MB app partition) and 6.10 MB on the ESP32-S3 (2.28 MB free).
 - **ESP32-P4:** the dumps match `vtts_say` on a PC (correlation ≥ 0.9993, SNR 28–57 dB) for all 16 clips. All 16 published clips, decoded from MP3 and transcribed with Whisper large-v3: CER 0.014 (M) and 0.009 (S) on average over the six Portuguese and mixed clips (the errors: "ESP32", read with Portuguese letter names, heard as "SP32"; "à Netflix" as "a Netflix"; "às 6:30" written "6h30"); the English clips score 0–0.09, the only error being "ESP32" again (spelled the Portuguese way, heard as "SPP-S2"). None is broken.
 - **ESP32-S3 with two cores:** all 16 dumps of the measurement run are identical to the ESP32-P4 dumps of the same text (SNR ≥ 95 dB, the int16 rounding), so the two-core fix holds for pt-en too.
+
+## `nu-10` M update (v0.9.1)
+
+The updated `nu-10` M (longer joint distillation stage, same architecture and size) with the v0.4.0 `nu-10` S, firmware of v0.9.1 with the [ESP32-S3 fix](#esp32-s3-wrong-dot-products-with-loopnez) (vi and en front-ends only), `lang auto`, two cores, same method as the v0.4.0 measurement: `bench` (four Vietnamese sentences), then `dump` and playback of the eight website sentences.
+
+| Chip | Model | RTF (`bench`) | RTF (`dump`, 8 sentences) | First audio chunk | Playback starts | CPU core 0 / core 1 while speaking | Underruns |
+|---|---|---:|---:|---:|---:|---:|---:|
+| ESP32-P4 | S (lite, v0.4.0) | 0.18–0.19 (mean 0.18) | 0.17–0.19 | 0.06–0.14 s | 0.07–0.14 s (median 0.11) | 17–20% / 13–14% | 0 in 8 |
+| ESP32-P4 | M (quality, v0.9.1) | 0.26–0.28 (mean 0.27) | 0.25–0.30 | 0.11–0.27 s | 0.19–0.35 s (median 0.28) | 25–28% / 19–21% | 0 in 8 |
+| ESP32-S3 | S (lite, v0.4.0) | 0.31–0.33 (mean 0.32) | 0.31–0.34 | 0.11–0.23 s | 0.20–0.33 s (median 0.27) | 30–32% / 21% | 0 in 8 |
+| ESP32-S3 | M (quality, v0.9.1) | 0.54–0.57 (mean 0.55) | 0.55–0.60 | 0.20–0.47 s | 0.35–0.62 s (median 0.49) | 50–53% / 36–39% | 0 in 8 |
+
+- Speed is that of the v0.4.0 M within 0.01–0.02 RTF, as expected for the same architecture.
+- Images with the two models and the English lexicon: 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free).
+- **ESP32-P4:** the eight new `nu-10` Quality clips of the website are the ESP32-P4's dumps of this model, 64 kbps MP3, transcribed again (PhoWhisper-large for Vietnamese, Whisper large-v3 for mixed and English): CER 0 for 7 of 8; the Vietnamese intro scores 0.07 because PhoWhisper writes "chip ESP32" as "chiếc est d ba hai" (the v0.4.0 clip: "chiếc est pê ba hai", 0.06). None is broken. The `nu-10` Lite clips are unchanged (same S model).
+- **ESP32-S3 against the ESP32-P4:** all 16 ESP32-S3 dumps (two cores) have the same length as the ESP32-P4's and differ by at most 1 LSB (correlation 1.0000); no burst, no changed duration. The ESP32-P4 dumps with this firmware are bit-identical to those made before the S3 fix was merged.
 
 ## English (v0.9.0)
 

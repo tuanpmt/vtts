@@ -3,7 +3,13 @@
  *
  * The S3's 128-bit extension multiplies 16 signed bytes per instruction and accumulates into
  * the 40-bit ACCX register (ee.vmulas.s8.accx); ee.srs.accx with a zero shift reads it back.
- * Loops use the Xtensa zero-overhead loop (loopnez).
+ *
+ * The block loops are plain branch loops, not the Xtensa zero-overhead loop (loopnez): with
+ * loopnez around the 128-bit loads the dot products were now and then wrong during synthesis
+ * (one value in about 10^6, more with two cores and with more cache misses; heard as short
+ * bursts or a changed token duration that differed from run to run), while the same loads in a
+ * branch loop and the plain C dot gave the ESP32-P4's output in every test. The P4 port avoids
+ * its hardware loop for a similar silicon reason.
  *
  * The fused multiply-accumulate-and-load form (ee.vmulas.s8.accx.ld.ip) used by the P4 port is
  * deliberately avoided: on the S3 it returned wrong sums when both cores ran it at the same time
@@ -19,20 +25,21 @@ static int32_t dot_scalar(const int8_t *a, const int8_t *b, int n) {
     return s;
 }
 
-/* blocks of 16 bytes, both pointers 16-byte aligned */
+/* blocks of 16 bytes (>= 1), both pointers 16-byte aligned */
 static inline int32_t dot_simd(const int8_t *a, const int8_t *b, int32_t blocks) {
     int32_t res;
     asm volatile(
         "ee.zero.accx\n\t"
-        "loopnez %[k], 1f\n\t"
+        "1:\n\t"
         "ee.vld.128.ip q0, %[a], 16\n\t"
         "ee.vld.128.ip q1, %[b], 16\n\t"
+        "addi %[k], %[k], -1\n\t"
         "ee.vmulas.s8.accx q0, q1\n\t"
-        "1:\n\t"
+        "bnez %[k], 1b\n\t"
         "movi a8, 0\n\t"
         "ee.srs.accx %[res], a8, 0\n\t"
-        : [res] "=&r"(res), [a] "+r"(a), [b] "+r"(b)
-        : [k] "r"(blocks)
+        : [res] "=&r"(res), [a] "+r"(a), [b] "+r"(b), [k] "+r"(blocks)
+        :
         : "a8", "memory");
     return res;
 }
@@ -76,19 +83,33 @@ int32_t vtts_dot_s8s8(const int8_t *a, const int8_t *b, int n) {
 }
 
 /* n dots of one weight row against n frames (x, x + stride, ...), with the frame loop in assembly:
- * per frame only the ACCX reset, the block loop, the read-back and the store remain. */
+ * per frame the ACCX reset, an odd first block, then two blocks per branch-loop iteration, the
+ * read-back and the store. */
 static void dots_frames(const int8_t *w, const int8_t *x, int stride, int n, int32_t blocks, int32_t *out) {
     asm volatile(
         "movi a11, 0\n\t"
         "1:\n\t"
         "mov a9, %[w]\n\t"
         "mov a10, %[x]\n\t"
+        "mov a13, %[k]\n\t"
         "ee.zero.accx\n\t"
-        "loopnez %[k], 2f\n\t"
+        "bbci a13, 0, 3f\n\t"
         "ee.vld.128.ip q0, a9, 16\n\t"
         "ee.vld.128.ip q1, a10, 16\n\t"
         "ee.vmulas.s8.accx q0, q1\n\t"
+        "3:\n\t"
+        "srli a13, a13, 1\n\t"
+        "beqz a13, 4f\n\t"
         "2:\n\t"
+        "ee.vld.128.ip q0, a9, 16\n\t"
+        "ee.vld.128.ip q1, a10, 16\n\t"
+        "ee.vld.128.ip q2, a9, 16\n\t"
+        "ee.vld.128.ip q3, a10, 16\n\t"
+        "ee.vmulas.s8.accx q0, q1\n\t"
+        "addi a13, a13, -1\n\t"
+        "ee.vmulas.s8.accx q2, q3\n\t"
+        "bnez a13, 2b\n\t"
+        "4:\n\t"
         "ee.srs.accx a12, a11, 0\n\t"
         "s32i a12, %[o], 0\n\t"
         "addi %[o], %[o], 4\n\t"
@@ -97,7 +118,7 @@ static void dots_frames(const int8_t *w, const int8_t *x, int stride, int n, int
         "bnez %[n], 1b\n\t"
         : [x] "+r"(x), [o] "+r"(out), [n] "+r"(n)
         : [w] "r"(w), [k] "r"(blocks), [s] "r"(stride)
-        : "a9", "a10", "a11", "a12", "memory");
+        : "a9", "a10", "a11", "a12", "a13", "memory");
 }
 
 void vtts_dots_s8s8(const int8_t *w, const int8_t *x, int stride, int n, int len, int32_t *out) {

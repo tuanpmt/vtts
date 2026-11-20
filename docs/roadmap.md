@@ -14,7 +14,8 @@ vtts ships **bilingual voices: one main language + English**, with code-switchin
 - [x] **Indonesian + English** `nu-id` (female), quality and lite, Apache-2.0 (v0.8.0)
 - [x] **Hindi + English** `nu-hi` (female), quality and lite, Apache-2.0 (v0.8.0)
 - [x] **Spanish + English** `nu-es` (female), quality and lite, Apache-2.0 (v0.8.0)
-- [ ] **Model updates with the longer joint stage** of the distillation, starting with `nu-en`
+- [x] **`nu-10` M updated** with the longer joint stage of the distillation (joint 80k steps, UTMOS +0.4), Apache-2.0 (v0.9.1)
+- [ ] **Model updates with the longer joint stage** for the other models (`nu-10` S next, then `nu-en` and the other pairs)
 - [ ] **Thai + English** (Python front-end done)
 - [ ] **French + English** (Python front-end done)
 - [ ] **German + English** (Python front-end done)

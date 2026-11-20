@@ -7,6 +7,63 @@ All notable changes to this project are documented here. Model files for each re
 ### In progress
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
+- Model updates with the longer joint stage for the other models (`nu-10` S next).
+
+## v0.9.1 (2026-11-20) — `nu-10` M model update and ESP32-S3 SIMD fix
+
+A **model update** of the Vietnamese + English voice `nu-10` (female), quality model (M) only, **Apache-2.0**. It is trained with the **improved distillation recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teacher (`nu10_vien_b32`), the same 20,000-sentence distillation pack and the same architecture (preset `M-vocos-p-bi`, 1.83M parameters, 2.6 MB). It replaces the v0.4.0 `nu-10` M; size, speed, token set (`vi-en`) and text modes (`vi`, `en`, `auto`) are unchanged, and it runs with any firmware since v0.4.0. The `nu-10` S stays the v0.4.0 model for now (its update follows); the other voices are unchanged.
+
+The release also ships the **ESP32-S3 SIMD fix**: the ESP32-S3 output is identical to the ESP32-P4 again and about 20% faster for every voice (below; rebuild the firmware from this release).
+
+### Models
+
+| File | Voice | Tier | Params | Size | Replaces |
+|---|---|---|---:|---:|---|
+| `vtts-vien-nu10-m-v0.9.1.q8.vtts` | `nu-10` (female) | Quality (M) | 1.83M | 2.6 MB | `vtts-vien-nu10-m-v0.4.q8.vtts` |
+
+Use it with the v0.4.0 lite model `vtts-vien-nu10-s-v0.4.q8.vtts`. On Hugging Face both M files are in `vi-en-nu-10/`; the card recommends the new one.
+
+### Quality
+
+The v0.4.0 M and the new M rendered with the int8 C runtime and scored with the same pipeline on the three out-of-domain sets of 50 sentences (PhoWhisper-large for Vietnamese, Whisper large-v3 for English and mixed; UTMOS for naturalness). Report: [bilingual-student-eval.md](docs/reports/bilingual-student-eval.md#nu-10-m-update-v091).
+
+| `nu-10` M | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
+|---|---|---|---|---|
+| v0.4.0 (joint 20k) | 0.014 / 0.027 | 0.008 / 0.010 | 0.015 / 0.041 | 2.73 / 3.44 / 2.70 |
+| **v0.9.1 (joint 80k)** | 0.014 / 0.024 | 0.008 / 0.010 | 0.015 / 0.032 | **3.11 / 3.87 / 3.12** |
+
+Naturalness rises by about 0.4 UTMOS on all three sets at the same intelligibility.
+
+### Performance
+
+| Board | Quality model (M): RTF / speech starts | Lite model (S, v0.4.0): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 | 0.26–0.28 / 0.19–0.35 s | 0.18–0.19 / 0.07–0.14 s |
+| ESP32-S3 | 0.54–0.57 / 0.35–0.62 s | 0.31–0.33 / 0.20–0.33 s |
+
+RTF from `bench` (four Vietnamese sentences), speech start from playing the eight website sentences (`lang auto`), firmware of this release with the ESP32-S3 fix (the vi and en front-ends only): 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free). The eight `nu-10` Quality clips on the website are new ESP32-P4 dumps of this model, 64 kbps MP3, each transcribed again with Whisper (CER 0 for 7 of 8; the Vietnamese intro 0.07, PhoWhisper writing "chip ESP32" as "chiếc est d ba hai", as with the v0.4.0 clip; none broken; no underrun in 32 playbacks on the two chips). The ESP32-S3 dumps of the same 16 sentences have the same length as the ESP32-P4's and differ by at most 1 LSB. Details: [docs/reports/performance.md](docs/reports/performance.md#nu-10-m-update-v091).
+
+### Flash a board
+
+```bash
+gh release download v0.9.1 -R tuanpmt/vtts -p 'vtts-vien-*' -D models
+gh release download v0.4.0 -R tuanpmt/vtts -p 'vtts-vien-nu10-s-*' -D models
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.4.q8.vtts ../../models/vtts-vien-nu10-m-v0.9.1.q8.vtts -p PORT flash monitor
+```
+
+### Firmware (ESP32-S3 fix)
+- **ESP32-S3: output identical to the ESP32-P4 again, and faster.** The bursts and changed phoneme durations on the ESP32-S3 (from v0.4.0 on; lowered but not removed by the two-core fix of v0.7.0) came from the S3 SIMD dot-product kernel: its zero-overhead loop (`loopnez`) around the 128-bit loads now and then returned a wrong sum. The kernels now use branch loops. Over id-en, hi-en and es-en, 144 of 144 two-core and 48 of 48 one-core test dumps were identical to the ESP32-P4. The output staging of v0.7.0 is removed, so the S3 is faster: RTF (`bench`, two cores) M 0.55–0.58, S 0.31–0.32 (was 0.68–0.71 and 0.41–0.43). The issue has been reported to Espressif.
+- `say_parity --poison/--fast` and `make ws_state`: checks that stale memory never changes the output.
+
+### Changed
+- **`nu-10` M** (`vtts-vien-nu10-m-v0.9.1.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 3.11 / 3.87 / 3.12 (vi / en / mixed) instead of 2.73 / 3.44 / 2.70, CER unchanged.
+- Website and voices.md: the eight `nu-10` Quality samples are ESP32-P4 dumps of the new model. README, voices.md, performance.md, the Hugging Face card and the bilingual evaluation report list the new M.
+
+### Known issues
+- Only the `nu-10` M is updated; `nu-10` S, `nam-1` and the other pairs still use the 20k joint stage (updates follow).
+- The English comparison rows of the `nu-en` report (`ood_en2`) are for the v0.4.0 `nu-10` M; the new M was not scored on `ood_en2`.
+- As before: brand names inside Vietnamese sentences are the hardest cases, and a very short first sentence ("Hello!") before a long one can cause one playback underrun with M.
 
 ## v0.9.0 (2026-11-20) — English voice `nu-en`
 

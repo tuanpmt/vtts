@@ -160,9 +160,8 @@ int fusetest_run(void) {
 /* memtest: an int8 linear layer split over output channels on both cores, as in synthesis: SIMD
  * dots with weights over ~1.8 MB of PSRAM (cache misses on both cores) and the results stored
  * time-major (y[t][o]) by both cores at once, into PSRAM and then into internal RAM; every value
- * is checked. On the ESP32-S3 the PSRAM case now and then loses a value (about one in 10^6), which
- * is why synthesis stages these outputs in internal RAM there (vtts_set_out_stage); only the
- * internal-RAM case counts as a failure. */
+ * is checked. (On the ESP32-S3 the kernels with a zero-overhead loop now and then gave a wrong dot
+ * product under such load; the port uses branch loops, see vtts_port_s3.c.) */
 #define MX_L 8
 #define MX_C 480
 #define MX_T 16
@@ -210,7 +209,7 @@ int memtest_run(void) {
             }
         printf("MEMTEST weights=psram y=%s cores=2 wrong=%d of %d (%.1f s)\n", mem ? "sram" : "psram", bad,
                MX_PASSES * MX_L * MX_T * MX_C, (esp_timer_get_time() - t0) / 1e6);
-        if (mem) total += bad;
+        total += bad;
     }
 done:
     free(w); free(x); free(ref); free(yp); free(ys);

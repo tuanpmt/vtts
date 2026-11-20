@@ -32,6 +32,19 @@ For comparison (same sets and scoring):
 - The lite models lose 0.1–0.2 UTMOS against M and up to 0.012 mixed CER; English stays as intelligible (`nam-1` S scores lower English CER than M, within the noise of 50 sentences).
 - As for every student so far, naturalness is about one UTMOS point below the teacher: the limit is the model size, not the data.
 
+## `nu-10` M update (v0.9.1)
+
+The improved distillation recipe keeps the v0.4.0 chain (preset `M-vocos-p-bi`, the same teacher `nu10_vien_b32`, a 20,000-sentence distillation pack; front 10k and decoder 30k steps) and runs the joint stage for 80k steps instead of 20k. The file has the same size (2.6 MB), architecture and speed; it replaces the v0.4.0 `nu-10` M (`vtts-vien-nu10-m-v0.9.1.q8.vtts`). Both models were rendered and scored again with the same pipeline on the same three sets (PhoWhisper-large for `ood`, Whisper large-v3 for `ood_en` and `mixed`, UTMOS):
+
+| Model | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
+|---|---|---|---|---|
+| `nu-10` M v0.4.0 (joint 20k) | 0.014 / 0.027 | 0.008 / 0.010 | 0.015 / 0.041 | 2.73 / 3.44 / 2.70 |
+| `nu-10` M v0.9.1 (joint 80k) | 0.014 / 0.024 | 0.008 / 0.010 | 0.015 / 0.032 | **3.11 / 3.87 / 3.12** |
+
+- Naturalness rises by 0.38–0.43 UTMOS on all three sets, closing about 40% of the gap to the teacher (3.67 / 4.38 / 3.83); intelligibility is unchanged (mixed WER slightly lower).
+- The re-run of v0.4.0 matches the published numbers above within 0.01 UTMOS and 0.002 WER (different run of the same scoring).
+- The `nu-10` S stays the v0.4.0 model for now.
+
 ## Where the errors are
 
 - **Numbers as Whisper writes them.** "9:30" transcribed as "9.30" and "0912 345 678" read as digit groups ("ba trăm bốn mươi lăm") give most of the English number-group CER (0.049 for every model) and the largest Vietnamese errors. Device prompts and long English sentences score 0.

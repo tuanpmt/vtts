@@ -11,7 +11,7 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 |---|---|---|---|---|
 | `nu-en` (female) | 🇬🇧 en | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.9.0 (Apache-2.0)** |
 | `nam-1` (male) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
-| `nu-10` (female) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
+| `nu-10` (female) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0, M updated in v0.9.1 (Apache-2.0)** |
 | `nu-ko` (female) | 🇰🇷 ko + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
 | `nu-zh` (female) | 🇨🇳 zh + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0 (Apache-2.0)** |
 | `nu-ja` (female) | 🇯🇵 ja + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0 (Apache-2.0)** |
@@ -31,6 +31,7 @@ Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/re
 |---|---|---|---|
 | `nu-en` | `vtts-en-nuen-{s,m}-v0.9.q8.vtts` | v0.9.0 | English only. Token set vi-en; the files record the text mode `en` (dim `text_mode`), so the firmware and `vtts_say` start in English; use only `lang en` |
 | `nam-1`, `nu-10` | `vtts-vien-{nam1,nu10}-{s,m}-v0.4.q8.vtts` | v0.4.0 | Text modes `vi`, `en`, `auto` |
+| `nu-10` M update | `vtts-vien-nu10-m-v0.9.1.q8.vtts` | v0.9.1 | Replaces the v0.4.0 `nu-10` M (longer joint distillation stage, UTMOS +0.4); same size, speed and text modes; use it with the v0.4.0 S |
 | `nu-ko` | `vtts-koen-nuko-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `ko`; no blob beyond the English lexicon |
 | `nu-zh` | `vtts-zhen-nuzh-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `zh`; embeds the 116 KB `ZLEX` blob (`main/lex_zh.bin`) |
 | `nu-ja` | `vtts-jaen-nuja-{s,m}-v0.6.q8.vtts` | v0.6.0 | Text mode `ja`; embeds the 721 KB `JLEX` blob (`main/lex_ja.bin`) |
@@ -51,8 +52,8 @@ Three out-of-domain sets of 50 sentences per language pair (main language, Engli
 |---|---:|---:|---:|---|
 | `nu-en` M | 1.83M | 0.014 | 0.034 | 2.88 / 3.00 |
 | `nu-en` S | 0.82M | 0.015 | **0.027** | 3.00 / 3.08 |
-| `nu-10` M (vi-en, `lang en`) | 1.83M | **0.008** | 0.033 | **3.44 / 3.59** |
-| `nu-10` S (vi-en, `lang en`) | 0.82M | 0.011 | 0.035 | 3.26 / 3.35 |
+| `nu-10` M v0.4.0 (vi-en, `lang en`) | 1.83M | **0.008** | 0.033 | **3.44 / 3.59** |
+| `nu-10` S v0.4.0 (vi-en, `lang en`) | 0.82M | 0.011 | 0.035 | 3.26 / 3.35 |
 | VoxCPM2 `nu-en` (reference voice) | — | 0.010 | 0.045 | 4.24 / 4.24 |
 
 Most of the remaining CER is how Whisper writes times ("9:30" as "9.30") and spaced digits; intelligibility is at the level of the reference voice, naturalness is not yet (UTMOS about 1.2 below it and 0.4–0.6 below `nu-10`'s English). An update with a longer joint distillation stage is coming.
@@ -63,10 +64,11 @@ Most of the remaining CER is how Whisper writes times ("9:30" as "9.30") and spa
 |---|---:|---:|---:|---:|---|
 | `nam-1` M | 1.83M | 0.021 | 0.015 | 0.030 | 2.59 / 3.25 / 2.63 |
 | `nam-1` S | 0.82M | 0.024 | 0.009 | 0.036 | 2.38 / 3.05 / 2.45 |
-| `nu-10` M | 1.83M | **0.014** | **0.008** | **0.015** | **2.72 / 3.44 / 2.70** |
+| `nu-10` M (v0.9.1) | 1.83M | **0.014** | **0.008** | **0.015** | **3.11 / 3.87 / 3.12** |
+| `nu-10` M (v0.4.0) | 1.83M | **0.014** | **0.008** | **0.015** | 2.72 / 3.44 / 2.70 |
 | `nu-10` S | 0.82M | 0.015 | 0.013 | 0.027 | 2.52 / 3.26 / 2.50 |
 
-Most remaining errors are numbers written differently by the ASR ("9:30" as "9.30") and brand names inside Vietnamese sentences.
+Most remaining errors are numbers written differently by the ASR ("9:30" as "9.30") and brand names inside Vietnamese sentences. The `nu-10` M of v0.9.1 comes from the improved distillation recipe (joint stage 80k steps instead of 20k): same intelligibility, UTMOS +0.4 on all three sets ([report](reports/bilingual-student-eval.md#nu-10-m-update-v091)).
 
 **Korean + English** ([report](reports/ko-student-eval.md); Korean CER counts Hangul syllables):
 
@@ -143,7 +145,7 @@ Without the numbers group: reference 0.000 / 0.005, M 0.008 / 0.005, S 0.006 / 0
 | Board | Chip | Lite model RTF | Quality model RTF |
 |---|---|---|---|
 | Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17–0.19 | 0.26–0.28 |
-| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.41–0.43 | 0.68–0.71 |
+| EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.31–0.32 | 0.55–0.58 |
 
 Both models run on both chips. RTF below 1 means faster than real time.
 <!-- END:hardware -->

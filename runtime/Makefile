@@ -297,3 +297,13 @@ build/say_parity: $(SRC) $(TEXT_SRC) test/say_parity.c include/vtts.h $(TEXT_HDR
 say_parity: build/say_parity build/lex_en.bin
 	./build/say_parity $(MODEL) build/lex_en.bin test/say_parity.txt $(PARITY_ARGS)
 .PHONY: say_parity
+
+# The text front-end's ids must not depend on what its workspace held before (the firmware reuses one).
+# usage: make ws_state MODEL=path/to/model.vtts TEXTS=path/to/texts.txt
+build/ws_state_test: $(SRC) $(TEXT_SRC) test/ws_state_test.c include/vtts.h $(TEXT_HDR)
+	mkdir -p build
+	$(CC) $(CFLAGS) $(SAN) -Isrc $(SRC) $(TEXT_SRC) test/ws_state_test.c -lm -o $@
+
+ws_state: build/ws_state_test build/lex_en.bin
+	./build/ws_state_test $(MODEL) build/lex_en.bin $(TEXTS)
+.PHONY: ws_state

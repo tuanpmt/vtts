@@ -11,6 +11,7 @@
  * usage: say_parity MODEL.vtts LEX.bin TEXTS.txt [--first N] [--chunk N] [--old] [--max-diff N] [--stage BYTES]
  *   TEXTS.txt: one text per line ('#' lines skipped). --old emulates the v0.4.0 firmware (a gap
  *   after every chunk, the last one included) against the v0.4.0 vtts_say (no gap at all).
+ *   --poison fills both arenas with junk (different on each side) before every synthesis.
  *   --stage runs the firmware path with the int8 output staging of the ESP32-S3 (vtts_set_out_stage).
  *   Exit 1 when a text's max |diff| exceeds --max-diff (int16 LSB, default 0). */
 #include <math.h>
@@ -24,6 +25,9 @@
 typedef struct { int16_t *x; long n, cap; } buf_t;
 static void *g_stage; /* --stage: only the firmware path stages, so the two paths differ in it */
 static size_t g_stage_n;
+static int g_poison;
+static void *g_fast; /* --fast: the ESP32's internal-RAM scratch (vtts_set_fast_scratch) on the firmware path */
+static size_t g_fast_n; /* --poison: fill the arenas with junk before every synthesis */
 
 static void push(buf_t *b, const float *pcm, long n) {
     if (b->n + n > b->cap) {
@@ -63,9 +67,11 @@ static int on_ids(const int32_t *ids, int n, void *user) {
     long max_frames = (long)n * m->max_duration;
     size_t ab = vtts_arena_bytes(m, n, max_frames);
     void *arena = malloc(ab);
+    if (g_poison && arena) memset(arena, 0x5a, ab); /* --poison: stale arena contents must not matter */
     float *pcm = malloc(sizeof(float) * (size_t)(max_frames * m->hop));
     if (!c->old && c->n_chunks) push_zeros(&c->host, gap);
     vtts_set_out_stage(NULL, 0);
+    vtts_set_fast_scratch(NULL, 0);
     long s = vtts_synthesize(m, ids, n, 1.0f, pcm, max_frames * m->hop, arena, ab);
     if (s < 0) { c->err = (int)s; free(arena); free(pcm); return 1; }
     push(&c->host, pcm, s);
@@ -75,6 +81,11 @@ static int on_ids(const int32_t *ids, int n, void *user) {
     int first = c->fw.n == 0 && c->first < c->chunk ? c->first : c->chunk;
     if (!c->old && c->n_chunks) push_zeros(&c->fw, gap);
     vtts_set_out_stage(g_stage, g_stage_n);
+    if (g_poison) {
+        for (size_t i = 0; i < c->sab; i++) ((uint8_t *)c->sa)[i] = (uint8_t)(rand() & 0xff);
+        for (size_t i = 0; i < g_fast_n; i++) ((uint8_t *)g_fast)[i] = (uint8_t)(rand() & 0xff);
+    }
+    vtts_set_fast_scratch(g_fast, g_fast_n);
     long t = vtts_synthesize_stream_ex(m, ids, n, 1.0f, first, c->chunk, on_pcm, c, c->sa, c->sab);
     if (t < 0) { c->err = (int)t; return 1; }
     if (c->old) push_zeros(&c->fw, gap);
@@ -103,6 +114,11 @@ int main(int argc, char **argv) {
         else if (!strcmp(argv[i], "--chunk") && i + 1 < argc) chunk = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--max-diff") && i + 1 < argc) max_ok = atoi(argv[++i]);
         else if (!strcmp(argv[i], "--old")) old = 1;
+        else if (!strcmp(argv[i], "--poison")) g_poison = 1;
+        else if (!strcmp(argv[i], "--fast") && i + 1 < argc) {
+            g_fast_n = (size_t)atol(argv[++i]);
+            g_fast = malloc(g_fast_n);
+        }
         else if (!strcmp(argv[i], "--stage") && i + 1 < argc) { /* stage int8 outputs in a buffer of N bytes */
             g_stage_n = (size_t)atol(argv[++i]);
             g_stage = malloc(g_stage_n);
