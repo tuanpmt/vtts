@@ -10,9 +10,9 @@
       "quality": "M (1.83M params, 2.6 MB)",
       "lite": "S (0.82M params, 1.2 MB)",
       "status": "released",
-      "status_text": "Released in v0.9.0 (Apache-2.0)",
+      "status_text": "Released in v0.9.0, M and S updated in v0.10.1 (Apache-2.0)",
       "pair": "English (American)",
-      "release": "v0.9.0",
+      "release": "v0.10.1",
       "hf": "en-nu-en",
       "models": [
         "nuen-m",
@@ -330,12 +330,12 @@
         "en"
       ],
       "status": "released",
-      "note": "Released in v0.9.0 (Apache-2.0): the English-only voice nu-en (female, American English), the first voice for English alone. Every clip was generated on an ESP32-P4.",
+      "note": "Released in v0.9.0, M and S updated in v0.10.1 (Apache-2.0): the English-only voice nu-en (female, American English), the first voice for English alone. Every clip was generated on an ESP32-P4 with the v0.10.1 models.",
       "models": [
         {
           "id": "nuen-m",
           "name": "nu-en Quality",
-          "detail": "female · M",
+          "detail": "female · M (v0.10.1)",
           "params": "1.8M",
           "size": "2.6 MB",
           "rtf": {
@@ -346,12 +346,12 @@
         {
           "id": "nuen-s",
           "name": "nu-en Lite",
-          "detail": "female · S",
+          "detail": "female · S (v0.10.1)",
           "params": "0.8M",
           "size": "1.2 MB",
           "rtf": {
             "p4": "0.19",
-            "s3": "0.32"
+            "s3": "0.33"
           }
         }
       ],

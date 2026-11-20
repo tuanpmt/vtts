@@ -7,7 +7,51 @@ All notable changes to this project are documented here. Model files for each re
 ### In progress
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
-- Model updates with the longer joint stage for the other models (`nu-10` S next).
+- Model updates with the longer joint stage for the other models (`nu-10` S and the other pairs).
+
+## v0.10.1 (2026-11-20) — `nu-en` M and S model update
+
+A **model update** of the English-only voice `nu-en` (female, American English), **quality (M) and lite (S)**, **Apache-2.0**. Both are trained with the **improved distillation recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teacher (`en_nuen`), the same distillation data, the same front and decoder stages and the same architecture (presets `{M,S}-vocos-p-bi`, 1.83M / 0.82M parameters, 2.6 / 1.2 MB). They replace the v0.9.0 `nu-en` models; size, speed, token set (`vi-en`) and start mode (`en`, header dim `text_mode`) are unchanged, and they run with any firmware since v0.9.0. The other voices are unchanged.
+
+### Models
+
+| File | Voice | Tier | Params | Size | Replaces |
+|---|---|---|---:|---:|---|
+| `vtts-en-nuen-m-v0.10.1.q8.vtts` | `nu-en` (female) | Quality (M) | 1.83M | 2.6 MB | `vtts-en-nuen-m-v0.9.q8.vtts` |
+| `vtts-en-nuen-s-v0.10.1.q8.vtts` | `nu-en` (female) | Lite (S) | 0.82M | 1.2 MB | `vtts-en-nuen-s-v0.9.q8.vtts` |
+
+On Hugging Face the new files are in `en-nu-en/` next to the v0.9 ones; the card recommends the new ones.
+
+### Quality
+
+The v0.9.0 and v0.10.1 models rendered with the int8 C runtime (`vtts_say --lang en`) and scored with the same pipeline on the two English sets of 50 sentences (`ood_en`, `ood_en2`; Whisper large-v3, UTMOS). Report: [en-student-eval.md](docs/reports/en-student-eval.md#nu-en-update-v0101).
+
+| `nu-en` | `ood_en` CER / WER | `ood_en2` CER / WER | UTMOS (ood_en / ood_en2) |
+|---|---|---|---|
+| M v0.9.0 (joint 20k) | 0.014 / 0.018 | 0.034 / 0.053 | 2.88 / 3.00 |
+| **M v0.10.1 (joint 80k)** | 0.012 / 0.018 | 0.024 / 0.034 | **3.56 / 3.56** |
+| S v0.9.0 (joint 20k) | 0.015 / 0.022 | 0.027 / 0.043 | 3.00 / 3.08 |
+| **S v0.10.1 (joint 80k)** | 0.015 / 0.023 | 0.021 / 0.036 | **3.68 / 3.67** |
+| VoxCPM2 `nu-en` (reference voice) | 0.010 / 0.014 | 0.045 / 0.055 | 4.24 / 4.24 |
+
+Naturalness rises by 0.56–0.68 UTMOS for both models on both sets, now above the English of the v0.4.0 `nu-10` M (3.44 / 3.59) and about 0.6 below the reference voice; intelligibility is the same or better (`ood_en2` CER 0.034 → 0.024 for M).
+
+### Performance
+
+| Board | Lite model (S): RTF / speech starts | Quality model (M): RTF / speech starts |
+|---|---|---|
+| ESP32-P4 | 0.18–0.21 / 0.07–0.15 s | 0.27–0.29 / 0.17–0.35 s |
+| ESP32-S3 | 0.31–0.36 / not measured | 0.56–0.58 / not measured |
+
+RTF from `bench` (four English sentences), speech start from playing the eight website sentences on the ESP32-P4, firmware of this release (vi and en front-ends only): 6.12 MB on the ESP32-P4 (2.27 MB free in the 8 MB app partition), 6.01 MB on the ESP32-S3 (2.38 MB free). The ESP32-S3 numbers are lower than in the v0.9.0 notes (0.41–0.46 / 0.69–0.73) because of the ESP32-S3 SIMD fix of v0.9.1, not because of the models. The 16 `nu-en` clips on the website are new ESP32-P4 dumps of these models, 64 kbps MP3, each transcribed again with Whisper large-v3 (CER 0 for 12 of 16; intro 0.01–0.05, date sentence 0.16 from "9:30" written "9.30"; none broken); the dumps match `vtts_say` on a PC (same lengths, correlation ≥ 0.998). Details: [performance.md](docs/reports/performance.md#nu-en-update-v0101).
+
+### Changed
+- **`nu-en` M and S** (`vtts-en-nuen-{m,s}-v0.10.1.q8.vtts`): joint distillation stage 80k steps instead of 20k; UTMOS 3.56 / 3.56 (M) and 3.68 / 3.67 (S) instead of 2.88 / 3.00 and 3.00 / 3.08, CER the same or lower.
+- Website and voices.md: the 16 `nu-en` samples are ESP32-P4 dumps of the new models. README, voices.md, performance.md, the English evaluation report and the Hugging Face card list the new models.
+
+### Known issues
+- As before: "Hello!" before a longer sentence is short and quiet (one playback underrun with M on the ESP32-P4), all-capital words not in the lexicon are spelled ("NASA"), Vietnamese text is not supported by these models.
+- ESP32-S3: only `bench` was measured for this release.
 
 ## v0.10.0 (2026-11-20) — Thai + English voice `nu-th`
 

@@ -1,6 +1,6 @@
-# English student evaluation (v0.9.0)
+# English student evaluation (v0.9.0, models updated in v0.10.1)
 
-The two models released in v0.9.0 for the first English-only voice, `nu-en` (female, American English, a VoxCPM2 designed voice): a quality model M (preset `M-vocos-p-bi`, 1.83M parameters, 2.6 MB int8) and a lite model S (preset `S-vocos-p-bi`, 0.82M parameters, 1.2 MB int8). They use the existing token set `vi-en` (107 tokens; only the English ARPAbet part is trained), so no new front-end was needed. The teacher `en_nuen` was trained for 60k steps on speech synthesized with VoxCPM2 from the voice `nu-en` only (19,241 English sentences, about 30 h), starting from the `nu-10` teacher (itself trained from random initialization on VoxCPM2 audio), so the models are Apache-2.0. The students were distilled with the standard chain (front 10k, decoder 30k, joint 20k steps).
+The two models released in v0.9.0 (updated in v0.10.1, [below](#nu-en-update-v0101)) for the first English-only voice, `nu-en` (female, American English, a VoxCPM2 designed voice): a quality model M (preset `M-vocos-p-bi`, 1.83M parameters, 2.6 MB int8) and a lite model S (preset `S-vocos-p-bi`, 0.82M parameters, 1.2 MB int8). They use the existing token set `vi-en` (107 tokens; only the English ARPAbet part is trained), so no new front-end was needed. The teacher `en_nuen` was trained for 60k steps on speech synthesized with VoxCPM2 from the voice `nu-en` only (19,241 English sentences, about 30 h), starting from the `nu-10` teacher (itself trained from random initialization on VoxCPM2 audio), so the models are Apache-2.0. The students were distilled with the standard chain (front 10k, decoder 30k, joint 20k steps).
 
 The files record the text mode `en` in the optional dim `text_mode` ([model format](../model-format.md#optional-dims)), so the firmware and `runtime/build/vtts_say` start them in English instead of the vi-en default `vi`. Use them in `lang en` only: Vietnamese text was not in the training data.
 
@@ -48,3 +48,27 @@ Every clip on the website and in [voices.md](../voices.md#listen-generated-on-an
 On the ESP32-S3 only `bench` was run for this release (two cores, the default); its dumps were not compared with the ESP32-P4. See [performance.md](performance.md#english-v090).
 
 Raw results: `reports/eval/nuen-{M,S}-{ood_en,ood_en2}.json`, `reports/eval/nu10-{M,S}-{ood_en,ood_en2}.json` and `reports/eval/voxcpm2-nu-en-{ood_en,ood_en2}.json` (not in the repository).
+
+## `nu-en` update (v0.10.1)
+
+v0.10.1 replaces both `nu-en` models with students trained by the **improved distillation recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teacher (`en_nuen`), the same distillation data, the same front and decoder stages and the same architecture (presets `{M,S}-vocos-p-bi`, 1.83M / 0.82M parameters, 2.6 / 1.2 MB). The files again record the text mode `en`. Same sets, same method (int8 C runtime on a PC, `vtts_say --lang en`, Whisper large-v3, UTMOS):
+
+| Model | `ood_en` CER / WER | `ood_en2` CER / WER | UTMOS (ood_en / ood_en2) |
+|---|---|---|---|
+| `nu-en` M v0.9.0 (joint 20k) | 0.014 / 0.018 | 0.034 / 0.053 | 2.88 / 3.00 |
+| **`nu-en` M v0.10.1 (joint 80k)** | **0.012 / 0.018** | **0.024 / 0.034** | **3.56 / 3.56** |
+| `nu-en` S v0.9.0 (joint 20k) | 0.015 / 0.022 | 0.027 / 0.043 | 3.00 / 3.08 |
+| **`nu-en` S v0.10.1 (joint 80k)** | 0.015 / 0.023 | **0.021 / 0.036** | **3.68 / 3.67** |
+| `nu-10` M v0.4.0 (vi-en, `lang en`) | 0.008 / 0.010 | 0.033 / 0.043 | 3.44 / 3.59 |
+| VoxCPM2 `nu-en` (reference voice) | 0.010 / 0.014 | 0.045 / 0.055 | 4.24 / 4.24 |
+
+CER per group of `ood_en2` (10 sentences each):
+
+| System | numbers | dates and times | commands | units and money | abbreviations |
+|---|---:|---:|---:|---:|---:|
+| `nu-en` M v0.10.1 | 0.020 | 0.065 | 0.000 | 0.008 | 0.008 |
+| `nu-en` S v0.10.1 | 0.020 | 0.046 | 0.000 | 0.008 | 0.019 |
+
+- **Naturalness** rises by 0.56–0.68 UTMOS for both models and both sets; the gap to the English of the bilingual `nu-10` voice (v0.4.0 M) is closed, and about 0.6 remains to the reference voice. S again scores slightly above M.
+- **Intelligibility** is the same or better: `ood_en2` CER 0.034 → 0.024 (M) and 0.027 → 0.021 (S). The remaining errors are the same kinds as before: Whisper's way of writing times and amounts ("6:20" as "6.20", "5:48" as "548", "$64.20"), "4 7 1 9" heard as "for 719", "Nguyen", and "NASA", which the front-end spells as letters.
+- Raw results: `nuen101-{m,s}-{ood_en,ood_en2}.json` (not in the repository).

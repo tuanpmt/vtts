@@ -9,7 +9,7 @@
 <!-- BEGIN:released -->
 | Language pair | Voice | Size M / S | RTF ESP32-P4 M / S | RTF ESP32-S3 M / S | Download |
 |---|---|---|---|---|---|
-| 🇬🇧 English (American) | `nu-en` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.32 | [v0.9.0](https://github.com/tuanpmt/vtts/releases/tag/v0.9.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en) |
+| 🇬🇧 English (American) | `nu-en` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.10.1](https://github.com/tuanpmt/vtts/releases/tag/v0.10.1) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en) |
 | 🇻🇳 🇬🇧 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
 | 🇻🇳 🇬🇧 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.55 / 0.32 | [v0.9.1](https://github.com/tuanpmt/vtts/releases/tag/v0.9.1) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
 | 🇰🇷 🇬🇧 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.57 / 0.32 | [v0.5.0](https://github.com/tuanpmt/vtts/releases/tag/v0.5.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
@@ -29,12 +29,12 @@ Each voice has a quality model (M) and a lite model (S, faster, less CPU and fla
 1. Install [ESP-IDF v6.1](https://docs.espressif.com/projects/esp-idf/) and clone this repository.
 2. Download the two model files of one voice from its release (or the Hugging Face folder in the table):
    ```bash
-   gh release download v0.9.0 -R tuanpmt/vtts -p 'vtts-en-*' -D models   # English (nu-en)
+   gh release download v0.10.1 -R tuanpmt/vtts -p 'vtts-en-*' -D models   # English (nu-en)
    ```
 3. Build and flash, lite model first:
    ```bash
    cd firmware/esp32
-   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-en-nuen-s-v0.9.q8.vtts ../../models/vtts-en-nuen-m-v0.9.q8.vtts -p PORT flash monitor
+   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-en-nuen-s-v0.10.1.q8.vtts ../../models/vtts-en-nuen-m-v0.10.1.q8.vtts -p PORT flash monitor
    ```
    `BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. `build.sh` picks the text front-end from the models and embeds the lexicons they need.
 4. Type a sentence on the serial console and press Enter: the board speaks it. `model s` / `model m` switches the model; the other commands are in the [firmware README](firmware/esp32/README.md#serial-console).
