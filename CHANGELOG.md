@@ -9,6 +9,37 @@ All notable changes to this project are documented here. Model files for each re
 - User pronunciation dictionary.
 - Model updates with the longer joint stage for the other models (`nam-1` and the other pairs).
 
+## v0.11.0 (2026-11-20) — consolidated release of all voices
+
+A **consolidated release**, **Apache-2.0**: the current quality (M) and lite (S) model of **every released voice in one release**, so one download is enough instead of picking files from v0.4.0 to v0.10.4. **No new training and no new models**: each v0.11 file is byte-identical to the recommended file of an earlier release (same SHA256), only renamed to `-v0.11.q8.vtts`. The `.vtts` header carries no release version, so the files run with the same firmware and runtimes as before. The earlier releases stay available with their original file names, and the Hugging Face folders keep the older files next to the v0.11 ones.
+
+### Models
+
+22 files (11 voices × S and M, about 42 MB) and one `SHA256SUMS`. "From" is the release whose file has the same bytes. CER and UTMOS on the main-language out-of-domain set, as in [voices.md](docs/voices.md#quality) (English, mixed and the reference voices there):
+
+| Voice | Language | Lite (S) file | S from | Quality (M) file | M from | Params S / M | Main-language CER and UTMOS, S / M |
+|---|---|---|---|---|---|---|---|
+| `nu-en` | English (American) | `vtts-en-nuen-s-v0.11.q8.vtts` | v0.10.1 | `vtts-en-nuen-m-v0.11.q8.vtts` | v0.10.1 | 0.82M / 1.83M | `ood_en` CER 0.015 / 0.012, UTMOS 3.68 / 3.56 |
+| `nam-1` | Vietnamese + English | `vtts-vien-nam1-s-v0.11.q8.vtts` | v0.4.0 | `vtts-vien-nam1-m-v0.11.q8.vtts` | v0.4.0 | 0.82M / 1.83M | vi CER 0.024 / 0.021, UTMOS vi 2.38 / 2.59 |
+| `nu-10` | Vietnamese + English | `vtts-vien-nu10-s-v0.11.q8.vtts` | v0.10.2 | `vtts-vien-nu10-m-v0.11.q8.vtts` | v0.9.1 | 0.82M / 1.83M | vi CER 0.010 / 0.014, UTMOS vi 2.90 / 3.11 |
+| `nu-ko` | Korean + English | `vtts-koen-nuko-s-v0.11.q8.vtts` | v0.10.3 | `vtts-koen-nuko-m-v0.11.q8.vtts` | v0.5.0 | 0.83M / 1.84M | ko CER 0.026 / 0.021, UTMOS ko 3.18 / 2.75 |
+| `nu-zh` | Chinese (Mandarin) + English | `vtts-zhen-nuzh-s-v0.11.q8.vtts` | v0.5.0 | `vtts-zhen-nuzh-m-v0.11.q8.vtts` | v0.10.3 | 0.83M / 1.84M | zh CER 0.042 / 0.024, UTMOS zh 2.89 / 3.36 |
+| `nu-ja` | Japanese + English | `vtts-jaen-nuja-s-v0.11.q8.vtts` | v0.6.0 | `vtts-jaen-nuja-m-v0.11.q8.vtts` | v0.10.4 | 0.83M / 1.84M | ja reading CER 0.053 / 0.035, UTMOS ja 2.30 / 2.75 |
+| `nu-pt` | Portuguese (Brazil) + English | `vtts-pten-nupt-s-v0.11.q8.vtts` | v0.7.0 | `vtts-pten-nupt-m-v0.11.q8.vtts` | v0.7.0 | 0.83M / 1.84M | pt CER 0.019 / 0.008, UTMOS pt 2.63 / 2.36 |
+| `nu-id` | Indonesian + English | `vtts-iden-nuid-s-v0.11.q8.vtts` | v0.8.0 | `vtts-iden-nuid-m-v0.11.q8.vtts` | v0.8.0 | 0.83M / 1.84M | id CER 0.011 / 0.011, UTMOS id 2.14 / 2.42 |
+| `nu-hi` | Hindi + English | `vtts-hien-nuhi-s-v0.11.q8.vtts` | v0.8.0 | `vtts-hien-nuhi-m-v0.11.q8.vtts` | v0.8.0 | 0.83M / 1.84M | hi CER 0.092 / 0.094, UTMOS hi 2.84 / 2.84 |
+| `nu-es` | Spanish + English | `vtts-esen-nues-s-v0.11.q8.vtts` | v0.10.4 | `vtts-esen-nues-m-v0.11.q8.vtts` | v0.10.4 | 0.83M / 1.84M | es CER 0.015 / 0.001, UTMOS es 2.93 / 3.09 |
+| `nu-th` | Thai + English | `vtts-then-nuth-s-v0.11.q8.vtts` | v0.10.0 | `vtts-then-nuth-m-v0.11.q8.vtts` | v0.10.0 | 0.83M / 1.84M | th CER 0.053 / 0.044, UTMOS th 2.55 / 2.88 |
+
+```bash
+gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-*' -D models        # every voice
+gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-jaen-*' -D models   # one voice
+```
+
+### Changed
+- README, voices.md, the website, the roadmap and the Hugging Face card point to v0.11.0 and the `-v0.11.q8.vtts` file names; voices.md lists which release each file comes from.
+- Hugging Face: the v0.11 files are added to the per-voice folders (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`, `th-en-nu-th/`); the older files stay.
+
 ## v0.10.4 (2026-11-20) — `nu-ja` M and `nu-es` M and S model update
 
 A **model update** of two bilingual voices, **Apache-2.0**: the **Japanese + English `nu-ja` quality model (M)** and both models of the **Spanish + English `nu-es`, quality (M) and lite (S)**. All three come from re-distillations with the **improved recipe: a longer joint stage** (front 10k, decoder 30k, **joint 80k steps instead of 20k**), with the same teachers (`ja_nuja`, `es_nues`) and the same architecture (presets `M-vocos-p-ja-en`, `M-vocos-p-es-en`, `S-vocos-p-es-en`). They replace the v0.6.0 `nu-ja` M and the v0.8.0 `nu-es` M and S; size, speed, token sets (`ja-en`, `es-en`) and text modes (`ja`, `es`) are unchanged, and they run with any firmware since v0.6.0 (ja-en) and v0.8.0 (es-en). The `nu-ja` S of the same re-distillation was not released because its English CER got worse (0.019 → 0.034); the `nu-ja` S stays the v0.6.0 model. The other voices are unchanged.

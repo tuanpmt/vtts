@@ -19,6 +19,7 @@ vtts ships **bilingual voices: one main language + English**, with code-switchin
 - [x] **`nu-10` S updated** with the longer joint stage (joint 80k steps, UTMOS +0.4–0.5, lower CER), Apache-2.0 (v0.10.2)
 - [x] **`nu-zh` M and `nu-ko` S updated** with the longer joint stage (joint 80k steps; `nu-zh` M UTMOS +0.1–0.2 and lower mixed CER, `nu-ko` S UTMOS +0.4–0.5 and lower CER), Apache-2.0 (v0.10.3); the `nu-zh` S and `nu-ko` M of the same re-distillation had a higher CER on one set and were not released
 - [x] **`nu-ja` M and `nu-es` M and S updated** with the longer joint stage (joint 80k steps; `nu-ja` M UTMOS +0.15–0.23 and lower Japanese CER, `nu-es` UTMOS +0.2–0.5), Apache-2.0 (v0.10.4); the `nu-ja` S of the same re-distillation had a higher English CER and was not released
+- [x] **Consolidated release**: the current M and S of every voice in one release, so one download is enough (v0.11.0; no new training)
 - [ ] **Model updates with the longer joint stage** for the other models (`nam-1` and the other pairs)
 - [x] **Thai + English** `nu-th` (female), quality and lite, Apache-2.0 (v0.10.0)
 - [ ] **French + English** (Python front-end done)

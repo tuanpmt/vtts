@@ -225,15 +225,10 @@ first chunk 195 ms, playback started 275 ms, underruns 0</div>
 
   <section id="start">
     <h2>Get started</h2>
-    <pre class="code">gh release download v0.9.0 -R tuanpmt/vtts -p '*.vtts' -D models   # English (nu-en)
-gh release download v0.4.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Vietnamese + English
-gh release download v0.5.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Korean + English, Chinese + English
-gh release download v0.6.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Japanese + English
-gh release download v0.7.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Portuguese (Brazil) + English
-gh release download v0.8.0 -R tuanpmt/vtts -p '*.vtts' -D models   # Indonesian + English, Hindi + English, Spanish + English
+    <pre class="code">gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-*' -D models   # current models of every voice
 cd firmware/esp32
-BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.4.q8.vtts \
-  ../../models/vtts-vien-nu10-m-v0.4.q8.vtts -p PORT flash monitor</pre>
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.11.q8.vtts \
+  ../../models/vtts-vien-nu10-m-v0.11.q8.vtts -p PORT flash monitor</pre>
 <!-- BEGIN:boards -->
 <div class="tablewrap">
   <table>

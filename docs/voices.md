@@ -9,41 +9,44 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 <!-- BEGIN:voices -->
 | Voice | Languages | Quality model (M) | Lite model (S) | Status |
 |---|---|---|---|---|
-| `nu-en` (female) | 🇬🇧 en | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.9.0, M and S updated in v0.10.1 (Apache-2.0)** |
-| `nam-1` (male) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0 (Apache-2.0)** |
-| `nu-10` (female) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0, M updated in v0.9.1, S in v0.10.2 (Apache-2.0)** |
-| `nu-ko` (female) | 🇰🇷 ko + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, S updated in v0.10.3 (Apache-2.0)** |
-| `nu-zh` (female) | 🇨🇳 zh + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, M updated in v0.10.3 (Apache-2.0)** |
-| `nu-ja` (female) | 🇯🇵 ja + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0, M updated in v0.10.4 (Apache-2.0)** |
-| `nu-pt` (female) | 🇧🇷 pt + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.7.0 (Apache-2.0)** |
-| `nu-id` (female) | 🇮🇩 id + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
-| `nu-hi` (female) | 🇮🇳 hi + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0 (Apache-2.0)** |
-| `nu-es` (female) | 🇪🇸 es + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0, M and S updated in v0.10.4 (Apache-2.0)** |
-| `nu-th` (female) | 🇹🇭 th + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.10.0 (Apache-2.0)** |
+| `nu-en` (female) | 🇬🇧 en | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.9.0, M and S updated in v0.10.1; all current files in v0.11.0 (Apache-2.0)** |
+| `nam-1` (male) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-10` (female) | 🇻🇳 vi + 🇬🇧 en, code-switching | M (1.83M params, 2.6 MB) | S (0.82M params, 1.2 MB) | **Released in v0.4.0, M updated in v0.9.1, S in v0.10.2; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-ko` (female) | 🇰🇷 ko + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, S updated in v0.10.3; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-zh` (female) | 🇨🇳 zh + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.5.0, M updated in v0.10.3; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-ja` (female) | 🇯🇵 ja + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.6.0, M updated in v0.10.4; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-pt` (female) | 🇧🇷 pt + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.7.0; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-id` (female) | 🇮🇩 id + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-hi` (female) | 🇮🇳 hi + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-es` (female) | 🇪🇸 es + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.8.0, M and S updated in v0.10.4; all current files in v0.11.0 (Apache-2.0)** |
+| `nu-th` (female) | 🇹🇭 th + 🇬🇧 en, code-switching | M (1.84M params, 2.6 MB) | S (0.83M params, 1.2 MB) | **Released in v0.10.0; all current files in v0.11.0 (Apache-2.0)** |
 | Dutch + English | 🇳🇱 nl + 🇬🇧 en, code-switching | M | S | Planned |
 | Swedish + English | 🇸🇪 sv + 🇬🇧 en, code-switching | M | S | Planned |
 | Norwegian + English | 🇳🇴 no + 🇬🇧 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
-Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`, `th-en-nu-th/`):
+Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`, `th-en-nu-th/`). **[v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) has the current M and S model of every voice in one release**, so one download is enough:
 
-| Voice | Files (lite S, quality M) | Release | Notes |
+```bash
+gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-*' -D models          # every voice (22 files, about 42 MB)
+gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-jaen-*' -D models     # one voice
+```
+
+| Voice | Files in v0.11.0 (lite S, quality M) | Same model as | Notes |
 |---|---|---|---|
-| `nu-en` | `vtts-en-nuen-{s,m}-v0.9.q8.vtts` | v0.9.0 | English only. Token set vi-en; the files record the text mode `en` (dim `text_mode`), so the firmware and `vtts_say` start in English; use only `lang en` |
-| `nu-en` update | `vtts-en-nuen-{s,m}-v0.10.1.q8.vtts` | v0.10.1 | Replace the v0.9.0 `nu-en` M and S (longer joint distillation stage, UTMOS +0.6–0.7); same size, speed and start mode `en` |
-| `nam-1`, `nu-10` | `vtts-vien-{nam1,nu10}-{s,m}-v0.4.q8.vtts` | v0.4.0 | Text modes `vi`, `en`, `auto` |
-| `nu-10` M update | `vtts-vien-nu10-m-v0.9.1.q8.vtts` | v0.9.1 | Replaces the v0.4.0 `nu-10` M (longer joint distillation stage, UTMOS +0.4); same size, speed and text modes |
-| `nu-10` S update | `vtts-vien-nu10-s-v0.10.2.q8.vtts` | v0.10.2 | Replaces the v0.4.0 `nu-10` S (longer joint distillation stage, UTMOS +0.4–0.5, lower CER); same size, speed and text modes; use it with the v0.9.1 M |
-| `nu-ko` | `vtts-koen-nuko-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `ko`; no blob beyond the English lexicon |
-| `nu-zh` | `vtts-zhen-nuzh-{s,m}-v0.5.q8.vtts` | v0.5.0 | Text mode `zh`; embeds the 116 KB `ZLEX` blob (`main/lex_zh.bin`) |
-| `nu-ko` S update, `nu-zh` M update | `vtts-koen-nuko-s-v0.10.3.q8.vtts`, `vtts-zhen-nuzh-m-v0.10.3.q8.vtts` | v0.10.3 | Replace the v0.5.0 `nu-ko` S and `nu-zh` M (longer joint distillation stage; `nu-ko` S: UTMOS +0.4–0.5 and lower CER, `nu-zh` M: UTMOS +0.1–0.2, lower mixed and English CER); same size, speed and text mode; use them with the v0.5.0 `nu-ko` M and `nu-zh` S |
-| `nu-ja` | `vtts-jaen-nuja-{s,m}-v0.6.q8.vtts` | v0.6.0 | Text mode `ja`; embeds the 721 KB `JLEX` blob (`main/lex_ja.bin`) |
-| `nu-pt` | `vtts-pten-nupt-{s,m}-v0.7.q8.vtts` | v0.7.0 | Text mode `pt`; no blob beyond the English lexicon |
-| `nu-id` | `vtts-iden-nuid-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `id`; no blob beyond the English lexicon |
-| `nu-hi` | `vtts-hien-nuhi-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `hi` (Devanagari, English in Latin letters); no blob beyond the English lexicon |
-| `nu-es` | `vtts-esen-nues-{s,m}-v0.8.q8.vtts` | v0.8.0 | Text mode `es`; no blob beyond the English lexicon |
-| `nu-ja` M update, `nu-es` M and S update | `vtts-jaen-nuja-m-v0.10.4.q8.vtts`, `vtts-esen-nues-{s,m}-v0.10.4.q8.vtts` | v0.10.4 | Replace the v0.6.0 `nu-ja` M and the v0.8.0 `nu-es` M and S (longer joint distillation stage; `nu-ja` M: UTMOS +0.15–0.23, lower Japanese and English CER; `nu-es`: UTMOS +0.2–0.5, M lower CER on all sets); same size, speed and text modes; use the `nu-ja` M with the v0.6.0 `nu-ja` S |
-| `nu-th` | `vtts-then-nuth-{s,m}-v0.10.q8.vtts` | v0.10.0 | Text mode `th` (Thai script, English in Latin letters); no blob beyond the English lexicon (the Thai tables are compiled in) |
+| `nu-en` | `vtts-en-nuen-{s,m}-v0.11.q8.vtts` | S and M of v0.10.1 | English only. Token set vi-en; the files record the text mode `en` (dim `text_mode`), so the firmware and `vtts_say` start in English; use only `lang en` |
+| `nam-1` | `vtts-vien-nam1-{s,m}-v0.11.q8.vtts` | S and M of v0.4.0 | Text modes `vi`, `en`, `auto` |
+| `nu-10` | `vtts-vien-nu10-{s,m}-v0.11.q8.vtts` | S of v0.10.2, M of v0.9.1 | Text modes `vi`, `en`, `auto` |
+| `nu-ko` | `vtts-koen-nuko-{s,m}-v0.11.q8.vtts` | S of v0.10.3, M of v0.5.0 | Text mode `ko`; no blob beyond the English lexicon |
+| `nu-zh` | `vtts-zhen-nuzh-{s,m}-v0.11.q8.vtts` | S of v0.5.0, M of v0.10.3 | Text mode `zh`; embeds the 116 KB `ZLEX` blob (`main/lex_zh.bin`) |
+| `nu-ja` | `vtts-jaen-nuja-{s,m}-v0.11.q8.vtts` | S of v0.6.0, M of v0.10.4 | Text mode `ja`; embeds the 721 KB `JLEX` blob (`main/lex_ja.bin`) |
+| `nu-pt` | `vtts-pten-nupt-{s,m}-v0.11.q8.vtts` | S and M of v0.7.0 | Text mode `pt`; no blob beyond the English lexicon |
+| `nu-id` | `vtts-iden-nuid-{s,m}-v0.11.q8.vtts` | S and M of v0.8.0 | Text mode `id`; no blob beyond the English lexicon |
+| `nu-hi` | `vtts-hien-nuhi-{s,m}-v0.11.q8.vtts` | S and M of v0.8.0 | Text mode `hi` (Devanagari, English in Latin letters); no blob beyond the English lexicon |
+| `nu-es` | `vtts-esen-nues-{s,m}-v0.11.q8.vtts` | S and M of v0.10.4 | Text mode `es`; no blob beyond the English lexicon |
+| `nu-th` | `vtts-then-nuth-{s,m}-v0.11.q8.vtts` | S and M of v0.10.0 | Text mode `th` (Thai script, English in Latin letters); no blob beyond the English lexicon (the Thai tables are compiled in) |
+
+The v0.11 files are byte-identical to the files of the release in the third column (same SHA256), only renamed; v0.11.0 has no new training. The earlier releases (v0.4.0 to v0.10.4) stay available with their original file names, and the Hugging Face folders keep the older files next to the v0.11 ones. Which model each update replaced and why: [CHANGELOG.md](../CHANGELOG.md).
 
 `build.sh` builds and embeds the blobs a model needs. In the single-mode pairs (ko, zh, ja, pt, id, hi, es, th) English words and English sentences go through the English front-end. In the Latin-script pairs (pt, id, es) a whole English sentence is read in English, numbers included; otherwise digits are read in the main language.
 

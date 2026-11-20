@@ -1,5 +1,7 @@
 # vtts
 
+[🇻🇳](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10 "Vietnamese") [🇬🇧](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en "English") [🇨🇳](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh "Chinese") [🇰🇷](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko "Korean") [🇯🇵](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja "Japanese") [🇪🇸](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es "Spanish") [🇧🇷](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt "Portuguese (Brazil)") [🇮🇩](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id "Indonesian") [🇮🇳](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi "Hindi") [🇹🇭](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th "Thai")
+
 **Tiny bilingual text-to-speech that runs entirely on ESP32 microcontrollers.** Text in, speech out of the speaker: no cloud, no network, no Linux. Text normalization, pronunciation, an int8 neural voice and the vocoder all run on the chip, in 1.2–2.6 MB of flash, faster than real time on the ESP32-P4 and the ESP32-S3. Voices read English alone (`nu-en`) or one main language + English, including sentences that mix both ("このWi-Fiはpasswordが必要ですか？"). Code and models are Apache-2.0.
 
 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/) · 🤗 [Models on Hugging Face](https://huggingface.co/tuanpm/vtts) · 📚 [Documentation](docs/README.md)
@@ -9,32 +11,32 @@
 <!-- BEGIN:released -->
 | Language pair | Voice | Size M / S | RTF ESP32-P4 M / S | RTF ESP32-S3 M / S | Download |
 |---|---|---|---|---|---|
-| 🇬🇧 English (American) | `nu-en` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.10.1](https://github.com/tuanpmt/vtts/releases/tag/v0.10.1) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en) |
-| 🇻🇳 🇬🇧 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.4.0](https://github.com/tuanpmt/vtts/releases/tag/v0.4.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
-| 🇻🇳 🇬🇧 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.55 / 0.31 | [v0.10.2](https://github.com/tuanpmt/vtts/releases/tag/v0.10.2) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
-| 🇰🇷 🇬🇧 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.10.3](https://github.com/tuanpmt/vtts/releases/tag/v0.10.3) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
-| 🇨🇳 🇬🇧 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.10.3](https://github.com/tuanpmt/vtts/releases/tag/v0.10.3) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
-| 🇯🇵 🇬🇧 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.54 / 0.31 | [v0.10.4](https://github.com/tuanpmt/vtts/releases/tag/v0.10.4) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
-| 🇧🇷 🇬🇧 Portuguese (Brazil) + English | `nu-pt` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.32 | [v0.7.0](https://github.com/tuanpmt/vtts/releases/tag/v0.7.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt) |
-| 🇮🇩 🇬🇧 Indonesian + English | `nu-id` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id) |
-| 🇮🇳 🇬🇧 Hindi + English | `nu-hi` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.19 | 0.58 / 0.32 | [v0.8.0](https://github.com/tuanpmt/vtts/releases/tag/v0.8.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi) |
-| 🇪🇸 🇬🇧 Spanish + English | `nu-es` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.10.4](https://github.com/tuanpmt/vtts/releases/tag/v0.10.4) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es) |
-| 🇹🇭 🇬🇧 Thai + English | `nu-th` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.10.0](https://github.com/tuanpmt/vtts/releases/tag/v0.10.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th) |
+| 🇬🇧 English (American) | `nu-en` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en) |
+| 🇻🇳 🇬🇧 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
+| 🇻🇳 🇬🇧 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.55 / 0.31 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
+| 🇰🇷 🇬🇧 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
+| 🇨🇳 🇬🇧 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
+| 🇯🇵 🇬🇧 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.54 / 0.31 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
+| 🇧🇷 🇬🇧 Portuguese (Brazil) + English | `nu-pt` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt) |
+| 🇮🇩 🇬🇧 Indonesian + English | `nu-id` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id) |
+| 🇮🇳 🇬🇧 Hindi + English | `nu-hi` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.19 | 0.58 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi) |
+| 🇪🇸 🇬🇧 Spanish + English | `nu-es` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es) |
+| 🇹🇭 🇬🇧 Thai + English | `nu-th` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th) |
 <!-- END:released -->
 
-Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
+Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. Release v0.11.0 collects the current M and S of every voice (no new training; the earlier releases stay available). RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
 
 ## Quick start
 
 1. Install [ESP-IDF v6.1](https://docs.espressif.com/projects/esp-idf/) and clone this repository.
-2. Download the two model files of one voice from its release (or the Hugging Face folder in the table):
+2. Download the two model files of one voice from [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0), which has the current models of every voice (or from the Hugging Face folder in the table):
    ```bash
-   gh release download v0.10.1 -R tuanpmt/vtts -p 'vtts-en-*' -D models   # English (nu-en)
+   gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-en-*' -D models   # English (nu-en)
    ```
 3. Build and flash, lite model first:
    ```bash
    cd firmware/esp32
-   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-en-nuen-s-v0.10.1.q8.vtts ../../models/vtts-en-nuen-m-v0.10.1.q8.vtts -p PORT flash monitor
+   BOARD=esp32-p4-nano ./build.sh ../../models/vtts-en-nuen-s-v0.11.q8.vtts ../../models/vtts-en-nuen-m-v0.11.q8.vtts -p PORT flash monitor
    ```
    `BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. `build.sh` picks the text front-end from the models and embeds the lexicons they need.
 4. Type a sentence on the serial console and press Enter: the board speaks it. `model s` / `model m` switches the model; the other commands are in the [firmware README](firmware/esp32/README.md#serial-console).
