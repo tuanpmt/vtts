@@ -1,8 +1,11 @@
 # Changelog
 
-All notable changes to this project are documented here. Model files for each release are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts).
+All notable changes to this project are documented here. Model files are attached to the GitHub release [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0), which has the current M and S of every voice, and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts). The releases before v0.11.0 and their model files were removed after v0.11.0; the entries below keep their notes, and their git tags stay (`https://github.com/tuanpmt/vtts/tree/v0.x.y`). File names in those entries refer to files that are no longer published; use the `-v0.11.q8.vtts` file of the same voice (table under v0.11.0).
 
 ## Unreleased
+
+### Changed
+- The GitHub releases v0.1.0 to v0.10.4 and the older model files on Hugging Face were removed; v0.11.0 has the current M and S of every voice, and each Hugging Face folder now holds only its two `-v0.11.q8.vtts` files and `SHA256SUMS`. The git tags of the earlier releases stay. The Vietnamese-only prototype folder `vi/` (v0.1–v0.2, non-commercial) was removed from Hugging Face.
 
 ### In progress
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.

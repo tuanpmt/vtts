@@ -25,7 +25,7 @@ Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster,
 | Norwegian + English | 🇳🇴 no + 🇬🇧 en, code-switching | M | S | Planned |
 <!-- END:voices -->
 
-Model files are attached to [GitHub Releases](https://github.com/tuanpmt/vtts/releases) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`, `th-en-nu-th/`). **[v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) has the current M and S model of every voice in one release**, so one download is enough:
+Model files are attached to the GitHub release [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts), one folder per voice (`en-nu-en/`, `vi-en-nam-1/`, `vi-en-nu-10/`, `ko-en-nu-ko/`, `zh-en-nu-zh/`, `ja-en-nu-ja/`, `pt-en-nu-pt/`, `id-en-nu-id/`, `hi-en-nu-hi/`, `es-en-nu-es/`, `th-en-nu-th/`). **[v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) has the current M and S model of every voice in one release**, so one download is enough:
 
 ```bash
 gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-*' -D models          # every voice (22 files, about 42 MB)
@@ -46,7 +46,7 @@ gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-jaen-*' -D models     # one
 | `nu-es` | `vtts-esen-nues-{s,m}-v0.11.q8.vtts` | S and M of v0.10.4 | Text mode `es`; no blob beyond the English lexicon |
 | `nu-th` | `vtts-then-nuth-{s,m}-v0.11.q8.vtts` | S and M of v0.10.0 | Text mode `th` (Thai script, English in Latin letters); no blob beyond the English lexicon (the Thai tables are compiled in) |
 
-The v0.11 files are byte-identical to the files of the release in the third column (same SHA256), only renamed; v0.11.0 has no new training. The earlier releases (v0.4.0 to v0.10.4) stay available with their original file names, and the Hugging Face folders keep the older files next to the v0.11 ones. Which model each update replaced and why: [CHANGELOG.md](../CHANGELOG.md).
+The v0.11 files are byte-identical to the files of the release in the third column (same SHA256), only renamed; v0.11.0 has no new training. The earlier releases (v0.1.0 to v0.10.4) and their model files were removed from GitHub Releases and Hugging Face; their git tags stay (for example [v0.10.4](https://github.com/tuanpmt/vtts/tree/v0.10.4)), and v0.11.0 is the only place to download models. Which model each update replaced and why: [CHANGELOG.md](../CHANGELOG.md).
 
 `build.sh` builds and embeds the blobs a model needs. In the single-mode pairs (ko, zh, ja, pt, id, hi, es, th) English words and English sentences go through the English front-end. In the Latin-script pairs (pt, id, es) a whole English sentence is read in English, numbers included; otherwise digits are read in the main language.
 

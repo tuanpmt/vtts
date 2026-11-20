@@ -24,7 +24,7 @@
 | 🇹🇭 🇬🇧 Thai + English | `nu-th` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th) |
 <!-- END:released -->
 
-Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. Release v0.11.0 collects the current M and S of every voice (no new training; the earlier releases stay available). RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
+Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. Release v0.11.0 collects the current M and S of every voice (no new training; it replaces the earlier releases, whose model files were removed). RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
 
 ## Quick start
 
