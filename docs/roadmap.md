@@ -21,6 +21,7 @@ vtts ships **bilingual voices: one main language + English**, with code-switchin
 - [x] **`nu-ja` M and `nu-es` M and S updated** with the longer joint stage (joint 80k steps; `nu-ja` M UTMOS +0.15–0.23 and lower Japanese CER, `nu-es` UTMOS +0.2–0.5), Apache-2.0 (v0.10.4); the `nu-ja` S of the same re-distillation had a higher English CER and was not released
 - [x] **Consolidated release**: the current M and S of every voice in one release, so one download is enough (v0.11.0; no new training)
 - [x] **ESP32-S31** target and the Metalio E-INK4-Plus board, two cores, streaming resampler for fixed-rate speakers (v0.12.0; RTF M 0.40 / S 0.26 with `nu-10`)
+- [x] **Vietnamese + English `nu-en`** (female, native English): a second female vi-en voice whose English sounds native, quality and lite, Apache-2.0 (v0.13.0)
 - [ ] **Model updates with the longer joint stage** for the other models (`nam-1` and the other pairs)
 - [x] **Thai + English** `nu-th` (female), quality and lite, Apache-2.0 (v0.10.0)
 - [ ] **French + English** (Python front-end done)

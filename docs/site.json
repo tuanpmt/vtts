@@ -12,7 +12,7 @@
       "status": "released",
       "status_text": "Released in v0.9.0, M and S updated in v0.10.1; all current files in v0.11.0 (Apache-2.0)",
       "pair": "English (American)",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "en-nu-en",
       "models": [
         "nuen-m",
@@ -31,7 +31,7 @@
       "status": "released",
       "status_text": "Released in v0.4.0; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Vietnamese + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "vi-en-nam-1",
       "models": [
         "nam1-m",
@@ -50,11 +50,30 @@
       "status": "released",
       "status_text": "Released in v0.4.0, M updated in v0.9.1, S in v0.10.2; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Vietnamese + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "vi-en-nu-10",
       "models": [
         "nu10-m",
         "nu10-s"
+      ]
+    },
+    {
+      "name": "`nu-en` (Vietnamese + English, native English)",
+      "langs": [
+        "vi",
+        "en"
+      ],
+      "code_switching": true,
+      "quality": "M (1.83M params, 2.6 MB)",
+      "lite": "S (0.82M params, 1.2 MB)",
+      "status": "released",
+      "status_text": "Released in v0.13.0 (Apache-2.0)",
+      "pair": "Vietnamese + English",
+      "release": "v0.13.0",
+      "hf": "vi-en-nu-en",
+      "models": [
+        "nuenvien-m",
+        "nuenvien-s"
       ]
     },
     {
@@ -69,7 +88,7 @@
       "status": "released",
       "status_text": "Released in v0.5.0, S updated in v0.10.3; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Korean + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "ko-en-nu-ko",
       "models": [
         "nuko-m",
@@ -88,7 +107,7 @@
       "status": "released",
       "status_text": "Released in v0.5.0, M updated in v0.10.3; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Chinese (Mandarin) + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "zh-en-nu-zh",
       "models": [
         "nuzh-m",
@@ -107,7 +126,7 @@
       "status": "released",
       "status_text": "Released in v0.6.0, M updated in v0.10.4; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Japanese + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "ja-en-nu-ja",
       "models": [
         "nuja-m",
@@ -126,7 +145,7 @@
       "status": "released",
       "status_text": "Released in v0.7.0; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Portuguese (Brazil) + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "pt-en-nu-pt",
       "models": [
         "nupt-m",
@@ -145,7 +164,7 @@
       "status": "released",
       "status_text": "Released in v0.8.0; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Indonesian + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "id-en-nu-id",
       "models": [
         "nuid-m",
@@ -164,7 +183,7 @@
       "status": "released",
       "status_text": "Released in v0.8.0; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Hindi + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "hi-en-nu-hi",
       "models": [
         "nuhi-m",
@@ -183,7 +202,7 @@
       "status": "released",
       "status_text": "Released in v0.8.0, M and S updated in v0.10.4; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Spanish + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "es-en-nu-es",
       "models": [
         "nues-m",
@@ -202,7 +221,7 @@
       "status": "released",
       "status_text": "Released in v0.10.0; all current files in v0.11.0 (Apache-2.0)",
       "pair": "Thai + English",
-      "release": "v0.11.0",
+      "release": "v0.13.0",
       "hf": "th-en-nu-th",
       "models": [
         "nuth-m",
@@ -434,7 +453,7 @@
         "en"
       ],
       "status": "released",
-      "note": "Released in v0.4.0 (Apache-2.0): two bilingual voices that read Vietnamese, English and mixed sentences in one voice. Every clip was generated on an ESP32-P4.",
+      "note": "Released in v0.4.0 (Apache-2.0): bilingual voices that read Vietnamese, English and mixed sentences in one voice; nu-en (native English) added in v0.13.0. Every clip was generated on an ESP32-P4.",
       "models": [
         {
           "id": "nam1-m",
@@ -479,6 +498,28 @@
             "p4": "0.18",
             "s3": "0.31"
           }
+        },
+        {
+          "id": "nuenvien-m",
+          "name": "nu-en Quality",
+          "detail": "female, native English · M (v0.13)",
+          "params": "1.8M",
+          "size": "2.6 MB",
+          "rtf": {
+            "p4": "0.28",
+            "s3": "0.57"
+          }
+        },
+        {
+          "id": "nuenvien-s",
+          "name": "nu-en Lite",
+          "detail": "female, native English · S (v0.13)",
+          "params": "0.8M",
+          "size": "1.2 MB",
+          "rtf": {
+            "p4": "0.19",
+            "s3": "0.32"
+          }
         }
       ],
       "samples": [
@@ -488,7 +529,9 @@
             "nam1-m": "audio/p4-nam1-m-intro.mp3",
             "nam1-s": "audio/p4-nam1-s-intro.mp3",
             "nu10-m": "audio/p4-nu10-m-intro.mp3",
-            "nu10-s": "audio/p4-nu10-s-intro.mp3"
+            "nu10-s": "audio/p4-nu10-s-intro.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-intro.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-intro.mp3"
           }
         },
         {
@@ -497,7 +540,9 @@
             "nam1-m": "audio/p4-nam1-m-bluetooth.mp3",
             "nam1-s": "audio/p4-nam1-s-bluetooth.mp3",
             "nu10-m": "audio/p4-nu10-m-bluetooth.mp3",
-            "nu10-s": "audio/p4-nu10-s-bluetooth.mp3"
+            "nu10-s": "audio/p4-nu10-s-bluetooth.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-bluetooth.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-bluetooth.mp3"
           }
         },
         {
@@ -506,7 +551,9 @@
             "nam1-m": "audio/p4-nam1-m-meeting.mp3",
             "nam1-s": "audio/p4-nam1-s-meeting.mp3",
             "nu10-m": "audio/p4-nu10-m-meeting.mp3",
-            "nu10-s": "audio/p4-nu10-s-meeting.mp3"
+            "nu10-s": "audio/p4-nu10-s-meeting.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-meeting.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-meeting.mp3"
           }
         },
         {
@@ -515,7 +562,9 @@
             "nam1-m": "audio/p4-nam1-m-en-intro.mp3",
             "nam1-s": "audio/p4-nam1-s-en-intro.mp3",
             "nu10-m": "audio/p4-nu10-m-en-intro.mp3",
-            "nu10-s": "audio/p4-nu10-s-en-intro.mp3"
+            "nu10-s": "audio/p4-nu10-s-en-intro.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-en-intro.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-en-intro.mp3"
           }
         },
         {
@@ -524,7 +573,9 @@
             "nam1-m": "audio/p4-nam1-m-en-package.mp3",
             "nam1-s": "audio/p4-nam1-s-en-package.mp3",
             "nu10-m": "audio/p4-nu10-m-en-package.mp3",
-            "nu10-s": "audio/p4-nu10-s-en-package.mp3"
+            "nu10-s": "audio/p4-nu10-s-en-package.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-en-package.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-en-package.mp3"
           }
         },
         {
@@ -533,7 +584,9 @@
             "nam1-m": "audio/p4-nam1-m-news.mp3",
             "nam1-s": "audio/p4-nam1-s-news.mp3",
             "nu10-m": "audio/p4-nu10-m-news.mp3",
-            "nu10-s": "audio/p4-nu10-s-news.mp3"
+            "nu10-s": "audio/p4-nu10-s-news.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-news.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-news.mp3"
           }
         },
         {
@@ -542,7 +595,9 @@
             "nam1-m": "audio/p4-nam1-m-numbers.mp3",
             "nam1-s": "audio/p4-nam1-s-numbers.mp3",
             "nu10-m": "audio/p4-nu10-m-numbers.mp3",
-            "nu10-s": "audio/p4-nu10-s-numbers.mp3"
+            "nu10-s": "audio/p4-nu10-s-numbers.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-numbers.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-numbers.mp3"
           }
         },
         {
@@ -551,7 +606,9 @@
             "nam1-m": "audio/p4-nam1-m-question.mp3",
             "nam1-s": "audio/p4-nam1-s-question.mp3",
             "nu10-m": "audio/p4-nu10-m-question.mp3",
-            "nu10-s": "audio/p4-nu10-s-question.mp3"
+            "nu10-s": "audio/p4-nu10-s-question.mp3",
+            "nuenvien-m": "audio/p4-nuenvien-m-question.mp3",
+            "nuenvien-s": "audio/p4-nuenvien-s-question.mp3"
           }
         }
       ]

@@ -1,6 +1,6 @@
 # Changelog
 
-All notable changes to this project are documented here. Model files are attached to the GitHub release [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0), which has the current M and S of every voice (v0.12.0 carries the same files), and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts). The releases before v0.11.0 and their model files were removed after v0.11.0; the entries below keep their notes, and their git tags stay (`https://github.com/tuanpmt/vtts/tree/v0.x.y`). File names in those entries refer to files that are no longer published; use the `-v0.11.q8.vtts` file of the same voice (table under v0.11.0).
+All notable changes to this project are documented here. Model files are attached to the GitHub release [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0), which has the current M and S of every voice (the 22 files of v0.11.0, also carried by v0.12.0, plus the vi-en `nu-en` of v0.13.0), and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts). The releases before v0.11.0 and their model files were removed after v0.11.0; the entries below keep their notes, and their git tags stay (`https://github.com/tuanpmt/vtts/tree/v0.x.y`). File names in those entries refer to files that are no longer published; use the `-v0.11.q8.vtts` file of the same voice (table under v0.11.0).
 
 ## Unreleased
 
@@ -8,6 +8,57 @@ All notable changes to this project are documented here. Model files are attache
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
 - Model updates with the longer joint stage for the other models (`nam-1` and the other pairs).
+
+## v0.13.0 (2026-11-23) — Vietnamese + English voice `nu-en` (native English)
+
+A **new voice**, **Apache-2.0**: **`nu-en` (Vietnamese + English, native English)**, a second female Vietnamese + English voice whose English sounds native. It reads Vietnamese, English and mixed sentences like `nu-10` (token set `vi-en`, text modes `vi`, `en`, `auto`, same architecture and size) and runs with any firmware since v0.4.0. **The other voices are unchanged**: the release carries the 22 files of v0.11.0 (same names and bytes) plus the two new files, with one `SHA256SUMS`, so the latest release has every model. No firmware or runtime change since v0.12.0.
+
+### Models
+
+| File | Voice | Tier | Params | Size |
+|---|---|---|---:|---:|
+| `vtts-vien-nuen-m-v0.13.q8.vtts` | `nu-en` (Vietnamese + English, native English) | Quality (M) | 1.83M | 2.6 MB |
+| `vtts-vien-nuen-s-v0.13.q8.vtts` | `nu-en` (Vietnamese + English, native English) | Lite (S) | 0.82M | 1.2 MB |
+
+These are not the English-only `nu-en` files (`vtts-en-nuen-{m,s}-v0.11.q8.vtts`), which stay the English-only voice. On Hugging Face the new files are in `vi-en-nu-en/`.
+
+```bash
+gh release download v0.13.0 -R tuanpmt/vtts -p 'vtts-vien-nuen-*' -D models
+cd firmware/esp32
+BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nuen-s-v0.13.q8.vtts \
+  ../../models/vtts-vien-nuen-m-v0.13.q8.vtts -p PORT flash monitor
+```
+
+### How it was made
+
+The VoxCPM2 voice `nu-en` (the source of the English-only voice) was updated to speak native English and Vietnamese and re-synthesized the whole vi-en text set (32,522 Vietnamese, 19,241 English and 6,120 mixed sentences); VoxCPM2 audio only. The teacher was warm-started from the clean `nu-10` vi-en teacher (150k steps) and trained for 60k steps; the students use the improved recipe (front 10k, decoder 30k, joint 80k steps) with the presets `M-vocos-p-bi` and `S-vocos-p-bi`.
+
+### Quality
+
+Rendered with the int8 C runtime (`vtts_say --lang auto`) and scored with the same pipeline as `nu-10` on the three out-of-domain sets of 50 sentences (PhoWhisper-large for Vietnamese, Whisper large-v3 for English and mixed; UTMOS). Report: [bilingual-student-eval.md](docs/reports/bilingual-student-eval.md#nu-en-vi-en-voice-v0130).
+
+| Model | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
+|---|---|---|---|---|
+| **`nu-en` M v0.13.0** | 0.011 / 0.020 | 0.017 / 0.025 | 0.026 / 0.056 | 2.77 / 3.60 / 2.91 |
+| **`nu-en` S v0.13.0** | 0.014 / 0.028 | 0.015 / 0.022 | 0.038 / 0.068 | 2.72 / 3.59 / 2.87 |
+| `nu-10` M (unchanged) | 0.014 / 0.024 | 0.008 / 0.010 | 0.015 / 0.032 | 3.11 / 3.87 / 3.12 |
+| `nu-10` S (unchanged) | 0.010 / 0.015 | 0.008 / 0.010 | 0.016 / 0.039 | 2.90 / 3.73 / 2.92 |
+
+- English sounds native: Whisper large-v3 identifies English sentences of the M as English with probability 0.986–0.998 (in `en` and in `vi` text mode), the same as the English-only `nu-en`.
+- Vietnamese is as intelligible as `nu-10`; English and mixed text have a higher CER (numbers and names; brand names and English words inside Vietnamese sentences), and UTMOS is lower than `nu-10` (M by 0.21–0.34, S by 0.05–0.18). `nu-10` stays the reference vi-en voice for mixed text; `nu-en` is the choice when native-sounding English matters.
+
+### Performance
+
+| Board | M: RTF / speech starts | S: RTF / speech starts |
+|---|---|---|
+| ESP32-P4 | 0.27–0.29 / 0.19–0.35 s | 0.18–0.20 / 0.06–0.14 s |
+| ESP32-S3 | 0.56–0.59 / not measured | 0.31–0.34 / not measured |
+| ESP32-S31 (Metalio E-INK4-Plus) | 0.40–0.41 / — | 0.27 / — |
+
+RTF from `bench` (four Vietnamese sentences), speech start from playing the eight website sentences on the ESP32-P4 (`lang auto`, no underruns; also none on the ESP32-S31). Firmware with the two models and the English lexicon: 6.13 MB on the ESP32-P4 (2.26 MB free in the 8 MB app partition), 6.02 MB on the ESP32-S3. The Metalio board's speaker path runs at a fixed 16 kHz (external audio chip), so it plays nothing above 8 kHz. The 16 `nu-en` clips in the website's Vietnamese + English section are ESP32-P4 dumps of the new models, 64 kbps MP3, each transcribed again (M: CER 0 on six of eight; S: 0 on three, at most 0.037 for the others; the Vietnamese intro 0.090 for both because the ASR writes "chip ESP32" in Vietnamese letters; none broken); the dumps match `vtts_say` on a PC (same lengths, correlation ≥ 0.9995). Details: [performance.md](docs/reports/performance.md#vietnamese--english-nu-en-v0130).
+
+### Changed
+- README, voices.md, the website (new `nu-en` columns in the Vietnamese + English listening table), the roadmap, the bilingual evaluation and performance reports and the Hugging Face card list the new voice; download links point to v0.13.0, which carries every model.
 
 ## v0.12.0 (2026-11-23) — ESP32-S31 support and the Metalio E-INK4-Plus board
 

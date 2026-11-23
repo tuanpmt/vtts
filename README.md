@@ -11,29 +11,30 @@
 <!-- BEGIN:released -->
 | Language pair | Voice | Size M / S | RTF ESP32-P4 M / S | RTF ESP32-S3 M / S | Download |
 |---|---|---|---|---|---|
-| 🇬🇧 English (American) | `nu-en` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en) |
-| 🇻🇳 🇬🇧 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
-| 🇻🇳 🇬🇧 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.55 / 0.31 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
-| 🇰🇷 🇬🇧 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
-| 🇨🇳 🇬🇧 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
-| 🇯🇵 🇬🇧 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.54 / 0.31 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
-| 🇧🇷 🇬🇧 Portuguese (Brazil) + English | `nu-pt` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt) |
-| 🇮🇩 🇬🇧 Indonesian + English | `nu-id` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id) |
-| 🇮🇳 🇬🇧 Hindi + English | `nu-hi` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.19 | 0.58 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi) |
-| 🇪🇸 🇬🇧 Spanish + English | `nu-es` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es) |
-| 🇹🇭 🇬🇧 Thai + English | `nu-th` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th) |
+| 🇬🇧 English (American) | `nu-en` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en) |
+| 🇻🇳 🇬🇧 Vietnamese + English | `nam-1` (male) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nam-1) |
+| 🇻🇳 🇬🇧 Vietnamese + English | `nu-10` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.55 / 0.31 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10) |
+| 🇻🇳 🇬🇧 Vietnamese + English | `nu-en` (Vietnamese + English, native English) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-en) |
+| 🇰🇷 🇬🇧 Korean + English | `nu-ko` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.18 | 0.57 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko) |
+| 🇨🇳 🇬🇧 Chinese (Mandarin) + English | `nu-zh` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh) |
+| 🇯🇵 🇬🇧 Japanese + English | `nu-ja` (female) | 2.6 MB / 1.2 MB | 0.26 / 0.17 | 0.54 / 0.31 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja) |
+| 🇧🇷 🇬🇧 Portuguese (Brazil) + English | `nu-pt` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt) |
+| 🇮🇩 🇬🇧 Indonesian + English | `nu-id` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id) |
+| 🇮🇳 🇬🇧 Hindi + English | `nu-hi` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.19 | 0.58 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi) |
+| 🇪🇸 🇬🇧 Spanish + English | `nu-es` (female) | 2.6 MB / 1.2 MB | 0.28 / 0.19 | 0.57 / 0.33 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es) |
+| 🇹🇭 🇬🇧 Thai + English | `nu-th` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th) |
 <!-- END:released -->
 
-**ESP32-S31** (Metalio E-INK4-Plus, rev v0.0 chip, two cores, since v0.12.0): RTF M 0.40 / S 0.26, measured with `nu-10`; the other voices have the same size and are expected to run alike.
+**ESP32-S31** (Metalio E-INK4-Plus, rev v0.0 chip, two cores, since v0.12.0): RTF M 0.40 / S 0.26, measured with `nu-10` (the vi-en `nu-en`: M 0.40–0.41 / S 0.27); the other voices have the same size and are expected to run alike.
 
-Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on every chip. Release v0.11.0 collects the current M and S of every voice (no new training; it replaces the earlier releases, whose model files were removed); v0.12.0 (ESP32-S31 support) carries the same files. RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
+Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on every chip. Release v0.11.0 collects the current M and S of every voice (no new training; it replaces the earlier releases, whose model files were removed); v0.12.0 (ESP32-S31 support) carries the same files, and **v0.13.0** adds the Vietnamese + English voice `nu-en` (native English; `vtts-vien-nuen-{m,s}-v0.13.q8.vtts`) to those 22 files, so the latest release has every model. RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
 
 ## Quick start
 
 1. Install [ESP-IDF v6.1.1](https://docs.espressif.com/projects/esp-idf/) and clone this repository.
-2. Download the two model files of one voice from [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0), which has the current models of every voice (or from the Hugging Face folder in the table):
+2. Download the two model files of one voice from [v0.13.0](https://github.com/tuanpmt/vtts/releases/tag/v0.13.0), which has the current models of every voice (or from the Hugging Face folder in the table):
    ```bash
-   gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-en-*' -D models   # English (nu-en)
+   gh release download v0.13.0 -R tuanpmt/vtts -p 'vtts-en-*' -D models   # English (nu-en)
    ```
 3. Build and flash, lite model first:
    ```bash

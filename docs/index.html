@@ -225,7 +225,7 @@ first chunk 195 ms, playback started 275 ms, underruns 0</div>
 
   <section id="start">
     <h2>Get started</h2>
-    <pre class="code">gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-*' -D models   # current models of every voice
+    <pre class="code">gh release download v0.13.0 -R tuanpmt/vtts -p 'vtts-*' -D models   # current models of every voice
 cd firmware/esp32
 BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.11.q8.vtts \
   ../../models/vtts-vien-nu10-m-v0.11.q8.vtts -p PORT flash monitor</pre>
@@ -243,7 +243,7 @@ BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.11.q8.vtts \
   </table>
 </div>
 <!-- END:boards -->
-    <p class="muted">Use the <code>vtts-en-nuen-*</code> files for the English-only voice (the firmware starts it in English), the <code>nam1</code> and <code>nu10</code> files for Vietnamese + English, <code>vtts-koen-nuko-*</code> for Korean + English, <code>vtts-zhen-nuzh-*</code> for Chinese + English, <code>vtts-jaen-nuja-*</code> for Japanese + English, <code>vtts-pten-nupt-*</code> for Portuguese (Brazil) + English, <code>vtts-iden-nuid-*</code> for Indonesian + English, <code>vtts-hien-nuhi-*</code> for Hindi + English, <code>vtts-esen-nues-*</code> for Spanish + English and <code>vtts-then-nuth-*</code> for Thai + English, all in release v0.11.0. Type a sentence on the serial console (main language, English or mixed) and the board speaks it. Full instructions are in the <a href="https://github.com/tuanpmt/vtts#readme">README</a>.</p>
+    <p class="muted">Use the <code>vtts-en-nuen-*</code> files for the English-only voice (the firmware starts it in English), the <code>nam1</code>, <code>nu10</code> and <code>vtts-vien-nuen-*</code> (nu-en, native English) files for Vietnamese + English, <code>vtts-koen-nuko-*</code> for Korean + English, <code>vtts-zhen-nuzh-*</code> for Chinese + English, <code>vtts-jaen-nuja-*</code> for Japanese + English, <code>vtts-pten-nupt-*</code> for Portuguese (Brazil) + English, <code>vtts-iden-nuid-*</code> for Indonesian + English, <code>vtts-hien-nuhi-*</code> for Hindi + English, <code>vtts-esen-nues-*</code> for Spanish + English and <code>vtts-then-nuth-*</code> for Thai + English, all in release v0.13.0. Type a sentence on the serial console (main language, English or mixed) and the board speaks it. Full instructions are in the <a href="https://github.com/tuanpmt/vtts#readme">README</a>.</p>
   </section>
 
   <footer>

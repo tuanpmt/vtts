@@ -66,6 +66,26 @@ A dedicated re-distillation of `nu-10` with the improved recipe: the same teache
 - The re-run of the v0.4.0 S matches the published numbers above within 0.002 CER (Vietnamese, mixed) and 0.01 UTMOS; the English CER of this run is 0.011 instead of 0.013.
 - The M trained in the same re-distillation is not released: against the v0.9.1 M it reads Vietnamese better (CER 0.011 vs 0.014) but scores 0.09–0.12 UTMOS lower on Vietnamese and mixed and 0.002–0.003 higher CER on English and mixed. The v0.9.1 M stays the `nu-10` quality model.
 
+## `nu-en` vi-en voice (v0.13.0)
+
+A new Vietnamese + English voice, `nu-en` (female, native English), for users who want English that sounds native next to Vietnamese. The VoxCPM2 voice `nu-en` was updated to speak both languages and re-synthesized the whole vi-en text set (32,522 Vietnamese, 19,241 English and 6,120 mixed sentences; VoxCPM2 audio only, so the models are Apache-2.0). The teacher was warm-started from the `nu-10` vi-en teacher (`nu10_vien_b32`, 150k steps, itself trained from random initialization on VoxCPM2 audio) and trained for 60k steps; the students use the improved recipe (front 10k, decoder 30k, joint 80k steps) with the `nu-10` presets `M-vocos-p-bi` and `S-vocos-p-bi` (token set `vi-en`, text modes `vi`, `en`, `auto`). Files: `vtts-vien-nuen-m-v0.13.q8.vtts` (1.83M parameters, 2.6 MB) and `vtts-vien-nuen-s-v0.13.q8.vtts` (0.82M, 1.2 MB). They are not the English-only `nu-en` files (`vtts-en-nuen-*`), which stay unchanged.
+
+Both models and the current `nu-10` files (v0.11) were rendered with the int8 C runtime (`vtts_say --lang auto`) and scored with the same pipeline (`scripts/eval/student_quality.py`: PhoWhisper-large for `ood`, Whisper large-v3 for `ood_en` and `mixed`, UTMOS):
+
+| Model | Vietnamese CER / WER | English CER / WER | Mixed CER / WER | UTMOS (vi / en / mixed) |
+|---|---|---|---|---|
+| `nu-en` M v0.13.0 | 0.011 / 0.020 | 0.017 / 0.025 | 0.026 / 0.056 | 2.77 / 3.60 / 2.91 |
+| `nu-en` S v0.13.0 | 0.014 / 0.028 | 0.015 / 0.022 | 0.038 / 0.068 | 2.72 / 3.59 / 2.87 |
+| `nu-10` M (v0.9.1, file v0.11) | 0.014 / 0.024 | 0.008 / 0.010 | 0.015 / 0.032 | 3.11 / 3.87 / 3.12 |
+| `nu-10` S (v0.10.2, file v0.11) | 0.010 / 0.015 | 0.008 / 0.010 | 0.016 / 0.039 | 2.90 / 3.73 / 2.92 |
+
+- **English sounds native.** Whisper large-v3 language identification on English sentences rendered by the M (in both `en` and `vi` text mode) gives P(en) 0.986–0.998 with correct transcripts, the same as the English-only `nu-en`; the English CER (0.017 / 0.015) is higher than that of `nu-10` (0.008), mostly in the `numbers` group ("9:30" written as "9.30", as for every voice) and names; device prompts score 0 (M).
+- **Vietnamese** is as intelligible as `nu-10` (CER 0.011 M, 0.014 S).
+- **Mixed text** has a higher CER than `nu-10` (0.026 / 0.038 against 0.015 / 0.016): brand names and English words inside Vietnamese sentences ("Grab Food hay Baemin" heard as "crab food hay bài minh", "backup" as "gác góc", "Zoom" as "Dương", "dock" as "đó"), and for S "boarding" in "Flight VN254 sẽ boarding" (0.45, the worst clip).
+- **Naturalness** is below `nu-10`: the M by 0.21–0.34 UTMOS (vi 2.77 vs 3.11), the S by 0.05–0.18. S and M are close (within 0.05 UTMOS), unlike `nu-10` where the M is ahead.
+- The re-run of the `nu-10` files matches the published numbers above exactly (same CER and UTMOS to two decimals).
+- The voice was approved by listening; it is released next to `nu-10`, which stays the reference vi-en voice for numbers and mixed text.
+
 ## Where the errors are
 
 - **Numbers as Whisper writes them.** "9:30" transcribed as "9.30" and "0912 345 678" read as digit groups ("ba trăm bốn mươi lăm") give most of the English number-group CER (0.049 for every model) and the largest Vietnamese errors. Device prompts and long English sentences score 0.
