@@ -258,6 +258,12 @@
       "chip": "ESP32-S3, 240 MHz, 8 MB PSRAM",
       "rtf_lite": "0.31–0.32",
       "rtf_quality": "0.55–0.58"
+    },
+    {
+      "boards": "Metalio E-INK4-Plus (rev v0.0 chip, measured with `nu-10`)",
+      "chip": "ESP32-S31, 320 MHz, PIE SIMD on core 1, octal PSRAM 200 MHz",
+      "rtf_lite": "0.26–0.27",
+      "rtf_quality": "0.39–0.42"
     }
   ],
   "boards": [
@@ -285,6 +291,12 @@
       "name": "EchoEar 2.0 (ESP32-S3)",
       "speaker": "ES8311",
       "volume": "`vol 75`, `gain 6`"
+    },
+    {
+      "id": "metalio-eink4-plus",
+      "name": "Metalio E-INK4-Plus (ESP32-S31)",
+      "speaker": "Bluetooth audio chip (I2S 16 kHz) + NS4150",
+      "volume": "`vol 90`, `gain 0`"
     }
   ],
   "pipeline": [
@@ -303,7 +315,7 @@
     },
     {
       "title": "On the chip",
-      "text": "Int8 SIMD kernels for the ESP32-P4 (PIE) and the ESP32-S3 (128-bit SIMD), work split over both cores with FreeRTOS. Chip audio matches the reference C runtime on a PC."
+      "text": "Int8 SIMD kernels for the ESP32-P4 (PIE), the ESP32-S3 (128-bit SIMD) and the ESP32-S31 (PIE on core 1, plain C int8 on core 0), work split over both cores with FreeRTOS. Chip audio matches the reference C runtime on a PC."
     },
     {
       "title": "Models",
@@ -319,7 +331,7 @@
     },
     {
       "title": "Tooling",
-      "text": "PyTorch for training, ESP-IDF v6.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness."
+      "text": "PyTorch for training, ESP-IDF v6.1.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness."
     }
   ],
   "listen": [

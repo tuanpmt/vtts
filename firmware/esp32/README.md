@@ -1,4 +1,4 @@
-# ESP32-P4 and ESP32-S3 firmware
+# ESP32-P4, ESP32-S3 and ESP32-S31 firmware
 
 Runs the whole chain on the chip: text → token ids (C front-end) → streaming synthesis (C int8 runtime) → speaker. Type a sentence on the serial console and the board speaks it; `bench` prints RTF, RMS and memory use.
 
@@ -9,6 +9,15 @@ Supported boards:
 | Waveshare ESP32-P4-86-Panel-ETH-2RO | ESP32-P4 | 32 MB / 32 MB | ES8311 | `esp32-p4-86-panel-eth-2ro` (default) |
 | Waveshare ESP32-P4-NANO | ESP32-P4 | 16 MB / 32 MB | ES8311 | `esp32-p4-nano` |
 | Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3R8 | 16 MB / 8 MB (octal) | PCM5101 | `esp32-s3-touch-lcd-2.8` |
+| Metalio E-INK4-Plus (rev v0.0 chip, see below) | ESP32-S31 | 16 MB / octal, 200 MHz | Bluetooth audio chip (I2S 16 kHz) + NS4150 | `metalio-eink4-plus` |
+
+**ESP32-S31.** The ESP32-S31 support and the Metalio E-INK4-Plus board (CloudZao) build with ESP-IDF v6.1.1 (the first release where the S31 is a supported target, not a preview one) and run on a board with a rev v0.0 chip (320 MHz, octal PSRAM 200 MHz). The S31 has the PIE vector unit of the ESP32-P4 and uses its kernels (`runtime/ports/esp32p4/vtts_port_p4.c`), but **only core 1 has the PIE**: FreeRTOS moves a task that runs a PIE instruction on core 0 to core 1 for good. Synthesis therefore runs on core 1 and the two-core worker on core 0 (`runtime/ports/freertos/vtts_par_freertos.c`), where the int8 kernels take a plain C path with the same int32 sums; the two cores share each pass by claiming items from both ends, so the float passes split evenly and the int8 layers mostly stay on core 1. Output is identical with one or two cores. Measured with vi-en nu-10 v0.11 (`bench`, four Vietnamese sentences, rev v0.0 silicon):
+
+| | S, 1 core | S, 2 cores | M, 1 core | M, 2 cores |
+|---|---|---|---|---|
+| RTF | 0.34–0.36 | 0.26–0.27 | 0.51–0.54 | 0.39–0.42 |
+
+Before this split both tasks ended up on core 1 and two cores gave no speedup (S 0.35, M 0.54). With M, speech starts after about 0.36 s (first chunk 0.25 s), without underruns. Octal PSRAM at 250 MHz also passed `selftest` and `memtest` on this board and was about 3% faster; 200 MHz stays the default; `selftest` and `memtest` report 0 mismatches at 200 MHz. The board's speaker is behind an external Bluetooth audio chip that clocks I2S at a fixed 16 kHz, so the 22.05 kHz model output is resampled on the way to the speaker (`runtime/src/vtts_resample.c`, windowed-sinc, streaming; see `components/bsp/drivers/speaker_bt_audio.c` for the bring-up); speech through this path was checked by ear. Flashing by hand: the S31 bootloader goes at 0x2000 (the P4 also uses 0x2000, the S3 0x0); `build.sh ... flash` sets the offsets itself.
 
 ## Source layout
 
@@ -16,7 +25,7 @@ Supported boards:
 |---|---|
 | `main/main.c` | Start-up: models, memory (PSRAM first, internal RAM left for DMA), tasks |
 | `main/synth.c` | Text or token ids to PCM, `SAID` / `DUMPED` / `REPORT` lines |
-| `main/speaker.c` | Playback: soft limiter, stream buffer, prebuffer and chunk size from the measured RTF |
+| `main/speaker.c` | Playback: soft limiter, stream buffer, prebuffer and chunk size from the measured RTF, resampling when the speaker cannot run at the model rate |
 | `main/console.c` | Serial input and commands (`esp_console`; `help` lists them) |
 | `main/selftest.c` | SIMD kernel checks (`selftest`, `fusetest`, `memtest`) |
 | `components/bsp/` | Board support: speaker drivers and one folder per board ([README](components/bsp/README.md)) |
@@ -24,10 +33,11 @@ Supported boards:
 ## Build and flash
 
 ```bash
-# needs ESP-IDF v6.1; build.sh sources the IDF environment and copies both models into main/
+# needs ESP-IDF v6.1.1 (6.1.0 still builds the P4 and S3 boards); build.sh sources the IDF environment and copies both models into main/
 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor             # 86-Panel
 BOARD=esp32-p4-nano ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor  # NANO
 BOARD=esp32-s3-touch-lcd-2.8 ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor    # S3-Touch-LCD-2.8
+BOARD=metalio-eink4-plus ./build.sh S_MODEL.vtts M_MODEL.vtts -p PORT flash monitor        # E-INK4-Plus (ESP32-S31)
 ```
 
 The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/releases) or [Hugging Face](https://huggingface.co/tuanpm/vtts) (one folder per voice; the released voices are listed in the [README](../../README.md#released-voices)). The serial console commands are [below](#serial-console).
@@ -36,7 +46,7 @@ The model files come from the [GitHub releases](https://github.com/tuanpmt/vtts/
 
 **Languages compiled in.** Vietnamese and English are always built. Every other language (zh, ko, ja, hi, th, es, id, pt, fr, de, it, tr, ru, pl, ar, fi, el, ms, tl, sw, nl, sv, no, da, lo, km, my) is compiled in only when one of the two models needs it: `main/vtts_langs.cmake` reads the `token_set` dim of `main/model_s.vtts` and `main/model_m.vtts` at configure time (files without the dim: by vocabulary size, only for the sets that existed before it) and sets `VTTS_ENABLE_<L>` (`runtime/include/vtts_langs.h`); the configure step prints the list. So a vi-en image carries no Japanese tables and no `lex_ja.bin`. `VTTS_LANGS=all ./build.sh ...` builds every language, `VTTS_LANGS=zh,ja ./build.sh ...` exactly those. On the ESP32-P4 (86-Panel, ESP-IDF 6.1, two int8 models of about 1.2 + 2.6 MB) the image is 5.82 MB (27% of the 8 MB app partition free) for vi-en, 6.58 MB (18% free) for ja-en with `lex_ja.bin`, 6.29 MB (21% free) for ru-en with `lex_ru.bin`, 5.98 MB (25% free) for ar-en, and 7.91 MB (1% free) with `VTTS_LANGS=all`.
 
-Each board has its own build directory and `sdkconfig`. Shared configuration lives in `sdkconfig.defaults`; chip-specific settings live in `sdkconfig.defaults.esp32p4` and `sdkconfig.defaults.esp32s3`.
+Each board has its own build directory and `sdkconfig`. Shared configuration lives in `sdkconfig.defaults`; chip-specific settings live in `sdkconfig.defaults.esp32p4`, `sdkconfig.defaults.esp32s3` and `sdkconfig.defaults.esp32s31`.
 
 Default speaker settings per board (change them at run time with `vol` and `gain`):
 
@@ -47,6 +57,7 @@ Default speaker settings per board (change them at run time with `vol` and `gain
 | `esp32-p4-nano` | ESP32-P4-NANO | ES8311 | `vol 90`, `gain 12` |
 | `esp32-s3-touch-lcd-2.8` | ESP32-S3-Touch-LCD-2.8 | PCM5101 | `vol 80`, `gain 6` |
 | `echoear` | EchoEar 2.0 (ESP32-S3) | ES8311 | `vol 75`, `gain 6` |
+| `metalio-eink4-plus` | Metalio E-INK4-Plus (ESP32-S31) | Bluetooth audio chip (I2S 16 kHz) + NS4150 | `vol 90`, `gain 0` |
 <!-- END:boards -->
 
 ## Serial console
@@ -104,7 +115,7 @@ The firmware chooses the text front-end from the token set recorded in each mode
 
 ## Flash budget
 
-The app partition (`partitions.csv`, `factory`, 8 MB) holds the code, both models, `lex_en.bin`, `lex_zh.bin` and `lex_ja.bin`. With the largest models (zh-en M 2.62 MB + S 1.23 MB, int8) the image is 6.30 MB on the ESP32-P4 (2.09 MB, 25%, free) and 6.18 MB on the ESP32-S3 (2.21 MB, 26%, free); with two ko-en models (2.61 + 1.22 MB) the images are 6.29 MB (P4, 2.10 MB, 25%, free) and 6.18 MB (S3, 2.21 MB, 26%, free). The Korean front-end adds about 15 KB of code and tables and no blob, the Hindi front-end about 25 KB and no blob; the Spanish, Indonesian and Portuguese front-ends together add about 62 KB (35 KB code, 27 KB tables) and no blob: with two es-en models (2.60 + 1.22 MB) the ESP32-P4 image is 6.35 MB (2.04 MB, 24%, free). The Japanese front-end adds `lex_ja.bin` (721 KB) and about 29 KB of code and tables: with two ja-en models (2.60 + 1.22 MB, int8) the ESP32-P4 image (86-Panel) is 7.03 MB (1.36 MB, 16%, free); every image that embeds `lex_ja.bin` grows by about 0.75 MB. The Thai front-end adds about 100 KB (code and tables, mostly the word list) and no blob. The French front-end adds about 70 KB, no blob; the German front-end about 91 KB (41 KB code, 50 KB tables), the Italian and Turkish front-ends about 51 KB and 44 KB (host `-Os` build), no blob. Each front-end is built only into images whose models need it, so an image carries only its own languages. With every front-end built in (vi, en, zh, ko, hi, ja, es, id, pt, th) and two ja-en models, the ESP32-P4 image (86-Panel) is 7.23 MB (1.15 MB, 14%, free). The Lao front-end adds about 72 KB (18 KB code, 55 KB tables), the Danish front-end about 280 KB (27 KB code, 253 KB tables, mostly the 20,000 words with their NST readings), no blob: with two random lo-en models (2.62 + 1.23 MB) the ESP32-P4 image is 7.33 MB (1.06 MB, 13%, free), with two da-en models (2.61 + 1.23 MB) 7.53 MB (0.81 MB, 10%, free), each still with `lex_ja.bin` embedded (measured before the per-language build). The build prints the exact numbers.
+The app partition (`partitions.csv`, `factory`, 8 MB) holds the code, both models, `lex_en.bin`, `lex_zh.bin` and `lex_ja.bin`. With the largest models (zh-en M 2.62 MB + S 1.23 MB, int8) the image is 6.30 MB on the ESP32-P4 (2.09 MB, 25%, free) and 6.18 MB on the ESP32-S3 (2.21 MB, 26%, free); with two ko-en models (2.61 + 1.22 MB) the images are 6.29 MB (P4, 2.10 MB, 25%, free) and 6.18 MB (S3, 2.21 MB, 26%, free). The Korean front-end adds about 15 KB of code and tables and no blob, the Hindi front-end about 25 KB and no blob; the Spanish, Indonesian and Portuguese front-ends together add about 62 KB (35 KB code, 27 KB tables) and no blob: with two es-en models (2.60 + 1.22 MB) the ESP32-P4 image is 6.35 MB (2.04 MB, 24%, free). The Japanese front-end adds `lex_ja.bin` (721 KB) and about 29 KB of code and tables: with two ja-en models (2.60 + 1.22 MB, int8) the ESP32-P4 image (86-Panel) is 7.03 MB (1.36 MB, 16%, free); every image that embeds `lex_ja.bin` grows by about 0.75 MB. The Thai front-end adds about 100 KB (code and tables, mostly the word list) and no blob. The French front-end adds about 70 KB, no blob; the German front-end about 91 KB (41 KB code, 50 KB tables), the Italian and Turkish front-ends about 51 KB and 44 KB (host `-Os` build), no blob. Each front-end is built only into images whose models need it, so an image carries only its own languages. On the ESP32-S31 (Metalio E-INK4-Plus) two zh-en models (2.62 + 1.23 MB) with `lex_zh.bin` give a 6,294,016-byte image (6.00 MB, 25% of the app partition free, ESP-IDF 6.1.0); with two ko-en models (2.61 + 1.22 MB, ESP-IDF 6.1.1) the images are 6,162,464 bytes on the S31 (27% free), 0x5e8250 bytes on the P4 86-Panel (26% free) and 0x5cc6d0 bytes on the S3-Touch-LCD-2.8 (28% free). With every front-end built in (vi, en, zh, ko, hi, ja, es, id, pt, th) and two ja-en models, the ESP32-P4 image (86-Panel) is 7.23 MB (1.15 MB, 14%, free). The Lao front-end adds about 72 KB (18 KB code, 55 KB tables), the Danish front-end about 280 KB (27 KB code, 253 KB tables, mostly the 20,000 words with their NST readings), no blob: with two random lo-en models (2.62 + 1.23 MB) the ESP32-P4 image is 7.33 MB (1.06 MB, 13%, free), with two da-en models (2.61 + 1.23 MB) 7.53 MB (0.81 MB, 10%, free), each still with `lex_ja.bin` embedded (measured before the per-language build). The build prints the exact numbers.
 
 ## Output
 

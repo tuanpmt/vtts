@@ -54,7 +54,7 @@ vtts has an **English-only voice**, `nu-en` (American English, v0.9.0; M and S u
 
 ## Repository layout
 
-One folder per voice. Each voice comes in two sizes, and both run on the ESP32-P4 and the ESP32-S3: a **quality** model (M) for the best sound and a **lite** model (S) that is faster and uses less CPU and flash.
+One folder per voice. Each voice comes in two sizes, and both run on the ESP32-P4, the ESP32-S3 and the ESP32-S31: a **quality** model (M) for the best sound and a **lite** model (S) that is faster and uses less CPU and flash.
 
 | Folder | Voice | Languages | Files | Release |
 |---|---|---|---|---|
@@ -103,7 +103,7 @@ The recommended files are the `-v0.11.q8.vtts` files of release [v0.11.0](https:
 
 The files of the earlier releases (the copies in the last column and the superseded models: `nu-en` M and S of v0.9.0, `nu-10` M and S of v0.4.0, `nu-ko` S and `nu-zh` M of v0.5.0, `nu-ja` M of v0.6.0, `nu-es` M and S of v0.8.0) were removed after v0.11.0; the evaluation tables below still list the superseded models for comparison, as does the [CHANGELOG](https://github.com/tuanpmt/vtts/blob/main/CHANGELOG.md).
 
-Token set `vi-en` (107 tokens: Vietnamese spelling-based phonemes with 6 tones, English ARPAbet with stress; also used by the English-only `nu-en`, whose files record the start mode `en`), `ko-en` (153 tokens: the same 107 plus 46 Korean onset, vowel and coda tokens) `zh-en` (171 tokens: the vi-en set plus Mandarin initials, finals and tones) `ja-en` (144 tokens: the v2 set plus 37 Japanese phonemes), `pt-en` (150 tokens: the v2 set plus 43 Brazilian Portuguese phonemes), `id-en` (141: plus 34 Indonesian tokens), `hi-en` (157: plus 50 Hindi phonemes), `es-en` (138: plus 31 Spanish tokens) or `th-en` (162: plus 55 Thai initials, vowels, finals and tones), 22.05 kHz output. RTF (`bench`) below 1 is faster than real time; with streaming, speech starts after 0.06–0.15 s (S) / 0.13–0.34 s (M) on the ESP32-P4 and 0.16–0.27 s (S) / 0.26–0.50 s (M) on the ESP32-S3, for all pairs. Measured on a Waveshare ESP32-P4-86-Panel-ETH-2RO and an ESP32-S3-Touch-LCD-2.8 (8 MB PSRAM required on the S3). Details: [performance report](https://github.com/tuanpmt/vtts/blob/main/docs/reports/performance.md).
+Token set `vi-en` (107 tokens: Vietnamese spelling-based phonemes with 6 tones, English ARPAbet with stress; also used by the English-only `nu-en`, whose files record the start mode `en`), `ko-en` (153 tokens: the same 107 plus 46 Korean onset, vowel and coda tokens) `zh-en` (171 tokens: the vi-en set plus Mandarin initials, finals and tones) `ja-en` (144 tokens: the v2 set plus 37 Japanese phonemes), `pt-en` (150 tokens: the v2 set plus 43 Brazilian Portuguese phonemes), `id-en` (141: plus 34 Indonesian tokens), `hi-en` (157: plus 50 Hindi phonemes), `es-en` (138: plus 31 Spanish tokens) or `th-en` (162: plus 55 Thai initials, vowels, finals and tones), 22.05 kHz output. RTF (`bench`) below 1 is faster than real time; with streaming, speech starts after 0.06–0.15 s (S) / 0.13–0.34 s (M) on the ESP32-P4 and 0.16–0.27 s (S) / 0.26–0.50 s (M) on the ESP32-S3, for all pairs. Measured on a Waveshare ESP32-P4-86-Panel-ETH-2RO and an ESP32-S3-Touch-LCD-2.8 (8 MB PSRAM required on the S3). **ESP32-S31** (Metalio E-INK4-Plus, rev v0.0 chip, two cores, firmware v0.12.0): RTF M 0.39–0.42 / S 0.26–0.27 with `nu-10`, first chunk of M about 0.25 s; the other voices have the same size and are expected to run alike. Details: [performance report](https://github.com/tuanpmt/vtts/blob/main/docs/reports/performance.md).
 
 Quality on three out-of-domain sets of 50 sentences per pair (not in the training text), audio from the int8 C runtime. CER is the character error rate of an ASR transcript (PhoWhisper-large for Vietnamese, tones included; Whisper large-v3 for English, Korean, Mandarin, Japanese, Portuguese, Indonesian, Hindi, Spanish, Thai and mixed sentences); UTMOS predicts naturalness. The rows marked recommended, and the single row of each model without an update, are the models in the v0.11 files.
 
@@ -203,7 +203,7 @@ Reports: [en-student-eval.md](https://github.com/tuanpmt/vtts/blob/main/docs/rep
 # download one voice (here nu-10)
 huggingface-cli download tuanpm/vtts --include "vi-en-nu-10/*v0.11*" --local-dir models
 
-# flash a board (ESP-IDF v6.1); BOARD is esp32-p4-86-panel-eth-2ro, esp32-p4-nano, esp32-s3-touch-lcd-2.8 or echoear
+# flash a board (ESP-IDF v6.1.1); BOARD is esp32-p4-86-panel-eth-2ro, esp32-p4-nano, esp32-s3-touch-lcd-2.8, echoear or metalio-eink4-plus (ESP32-S31)
 git clone https://github.com/tuanpmt/vtts && cd vtts/firmware/esp32
 BOARD=esp32-p4-nano ./build.sh ../../../models/vi-en-nu-10/vtts-vien-nu10-s-v0.11.q8.vtts \
   ../../../models/vi-en-nu-10/vtts-vien-nu10-m-v0.11.q8.vtts -p PORT flash monitor

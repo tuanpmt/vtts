@@ -2,7 +2,7 @@
 
 Every vtts model except the English-only voice `nu-en` is **bilingual: one main language + English**, with code-switching. One voice reads single-language sentences and mixed sentences such as "Đã kết nối Bluetooth với AirPods", "스마트폰을 Wi-Fi에 연결했어요" or "このWi-Fiはpasswordが必要ですか？"; the front-end picks the language per word. The English front-end runs on the device too (C, parity-tested against Python), so mixed text is handled on the chip.
 
-Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster, with less CPU load and flash). Both run faster than real time on the ESP32-P4 and the ESP32-S3; pick by sound versus headroom, not by chip.
+Each voice comes as a quality model (M) and a lite model (S, about 1.5× faster, with less CPU load and flash). Both run faster than real time on the ESP32-P4, the ESP32-S3 and the ESP32-S31; pick by sound versus headroom, not by chip.
 
 ## Catalog
 
@@ -172,11 +172,12 @@ Thai is written without spaces between words, so the CER counts Thai characters 
 |---|---|---|---|
 | Waveshare ESP32-P4-86-Panel-ETH-2RO, ESP32-P4-NANO | ESP32-P4, 360 MHz, PIE SIMD | 0.17–0.19 | 0.26–0.28 |
 | EchoEar 2.0, Waveshare ESP32-S3-Touch-LCD-2.8 | ESP32-S3, 240 MHz, 8 MB PSRAM | 0.31–0.32 | 0.55–0.58 |
+| Metalio E-INK4-Plus (rev v0.0 chip, measured with `nu-10`) | ESP32-S31, 320 MHz, PIE SIMD on core 1, octal PSRAM 200 MHz | 0.26–0.27 | 0.39–0.42 |
 
-Both models run on both chips. RTF below 1 means faster than real time.
+Both models run on every chip. The ESP32-S31 row was measured with `nu-10` (two cores); the other voices have the same size and are expected to run alike. RTF below 1 means faster than real time.
 <!-- END:hardware -->
 
-Both chips use two cores and int8 SIMD kernels; all released pairs run at the same speed within about 0.02 RTF. Audio generated on the ESP32-P4 matches the C runtime on a PC. The ESP32-S3 needs at least 8 MB of PSRAM. Details, speech start, CPU load and memory: [reports/performance.md](reports/performance.md).
+All chips use two cores and int8 SIMD kernels (on the ESP32-S31 only core 1 has SIMD; core 0 runs plain C int8 kernels); all released pairs run at the same speed within about 0.02 RTF. Audio generated on the ESP32-P4 matches the C runtime on a PC. The ESP32-S3 needs at least 8 MB of PSRAM. Details, speech start, CPU load and memory: [reports/performance.md](reports/performance.md).
 
 ## Listen (generated on an ESP32-P4)
 

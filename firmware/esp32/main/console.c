@@ -15,6 +15,7 @@
 #include "driver/usb_serial_jtag.h"
 #include "driver/usb_serial_jtag_vfs.h"
 #include "esp_console.h"
+#include "esp_heap_caps.h"
 #include "freertos/task.h"
 #include "vtts_port.h"
 
@@ -22,6 +23,8 @@ extern int64_t vtts_prof_us[];
 extern const int vtts_prof_n;
 extern const char *const vtts_prof_names[];
 void vtts_par_enable(int on);
+void vtts_par_stats(int reset);
+void vtts_par_simd_enable(int on);
 
 static float arg_f(int argc, char **argv, float dflt) { return argc > 1 ? (float)atof(argv[1]) : dflt; }
 
@@ -87,6 +90,15 @@ static int cmd_first(int argc, char **argv) {
     return 0;
 }
 
+static int cmd_parstat(int argc, char **argv) {
+    if (argc > 1) vtts_par_simd_enable(atoi(argv[1]));
+    vtts_par_stats(1);
+    printf("arena %u in %s, fast scratch %u; free internal %u (largest %u)\n", (unsigned)g.arena_bytes, g.arena_where,
+           (unsigned)g.fast_bytes, (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+           (unsigned)heap_caps_get_largest_free_block(MALLOC_CAP_INTERNAL));
+    return 0;
+}
+
 static int cmd_cores(int argc, char **argv) {
     int two = argc > 1 && atoi(argv[1]) >= 2;
     vtts_par_enable(two);
@@ -133,6 +145,8 @@ static const esp_console_cmd_t CMDS[] = {
     {.command = "expr", .help = "intonation range (models with a pitch predictor)", .hint = "0.5-2.5", .func = cmd_expr},
     {.command = "chunk", .help = "largest streaming chunk in frames (the firmware may pick smaller)", .hint = "1-256", .func = cmd_chunk},
     {.command = "first", .help = "frames in the first chunk", .hint = "N", .func = cmd_first},
+    {.command = "parstat", .help = "two-core split calls and time per core since the last parstat; S31: 0|1 int8 layers on core 0 too",
+     .hint = "[0|1]", .func = cmd_parstat},
     {.command = "cores", .help = "synthesis on one or two cores", .hint = "1|2", .func = cmd_cores},
     {.command = "selftest", .help = "SIMD kernels against plain C, including two cores at once", .func = cmd_selftest},
     {.command = "memtest", .help = "SIMD kernel on both cores with weights over ~2 MB of PSRAM, results stored to PSRAM", .func = cmd_memtest},
@@ -163,7 +177,7 @@ static void handle(char *line) {
     printf("DONE\n");
 }
 
-/* console input: UART (P4 boards, USB bridge) or the S3's own USB-Serial-JTAG */
+/* console input: UART (P4 boards, USB bridge) or the chip's own USB-Serial-JTAG (S3, S31) */
 #if CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG
 static void input_init(void) {
     usb_serial_jtag_driver_config_t cfg = {.rx_buffer_size = 4096, .tx_buffer_size = 4096};
@@ -201,4 +215,11 @@ static void console_task(void *arg) {
     }
 }
 
-void console_start(void) { xTaskCreatePinnedToCore(console_task, "console", 16384, NULL, 5, NULL, 0); }
+/* The console task runs synthesis. On the ESP32-S31 only core 1 has the PIE vector unit (FreeRTOS
+ * would move the task there at its first PIE instruction anyway); the two-core worker runs on core 0. */
+#if CONFIG_IDF_TARGET_ESP32S31
+#define CONSOLE_CORE 1
+#else
+#define CONSOLE_CORE 0
+#endif
+void console_start(void) { xTaskCreatePinnedToCore(console_task, "console", 16384, NULL, 5, NULL, CONSOLE_CORE); }

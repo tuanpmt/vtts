@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build/flash with ESP-IDF v6.1 (installed by EIM). Copies the int8 models into main/ and builds the
+# Build/flash with ESP-IDF v6.1.1 (installed by EIM; the ESP32-S31 needs 6.1.1, P4 and S3 also build with 6.1.0). Copies the int8 models into main/ and builds the
 # front-end blobs (main/lex_en.bin, main/lex_zh.bin) once.
 # usage: [BOARD=<id>] [VTTS_LANGS=all|zh,ja,...] ./build.sh S_MODEL.vtts M_MODEL.vtts [idf.py args...]   (default: build)
 #   Only the optional languages of the two models are compiled in (main/vtts_langs.cmake reads their

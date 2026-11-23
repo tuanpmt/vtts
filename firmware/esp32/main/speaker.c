@@ -1,6 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
 /* speaker.c -- playback: gain with a soft limiter, the stream buffer between synthesis and the
- * speaker task, and the prebuffer / chunk size derived from the measured RTF. */
+ * speaker task, the prebuffer / chunk size derived from the measured RTF, and a streaming resampler
+ * (runtime/src/vtts_resample.c) for boards whose speaker cannot run at the model rate (e.g. an I2S
+ * link fixed at 16 kHz). */
 #include <math.h>
 
 #include "app.h"
@@ -8,6 +10,7 @@
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/task.h"
+#include "vtts_resample.h"
 
 #define OUT_RATE_TRY 22050
 #define OUT_RATE_FALLBACK 16000
@@ -54,6 +57,46 @@ static inline float debuzz(float x) {
     return y;
 }
 
+/* Model rate -> speaker rate converter, used only when the two differ. s_rs_rate is the model rate it
+ * is set up for (0: none). The speaker task (streaming) and speaker_play_buffer (whole utterance) use
+ * it one at a time: synthesis waits for the end of playback before the next utterance. */
+static vtts_resampler s_rs;
+static int s_rs_rate;
+
+static int resampler_for(int model_rate) {
+    if (s_rs_rate != model_rate) {
+        s_rs_rate = vtts_resample_init(&s_rs, model_rate, g.out_rate) == 0 ? model_rate : 0;
+        if (s_rs_rate) printf("speaker: resampling %d -> %d Hz\n", model_rate, g.out_rate);
+        else printf("speaker: no resampler for %d -> %d Hz, linear interpolation\n", model_rate, g.out_rate);
+    }
+    return s_rs_rate == model_rate;
+}
+
+int speaker_can_stream(void) {
+    const int sr = g.models[g.cur].sample_rate;
+    if (!g.sb || !g.spk) return 0;
+    return g.out_rate == sr || resampler_for(sr);
+}
+
+/* Write model-rate PCM to the speaker, through the resampler when the rates differ (rs). */
+static int16_t s_rs_out[512];
+
+static void speaker_out(int16_t *pcm, int n, int rs) {
+    if (!rs) { bsp_speaker_write(pcm, n); return; }
+    int piece = 256; /* input per call, so that the output fits s_rs_out (any ratio up to 4) */
+    while (piece > 16 && vtts_resample_max_out(&s_rs, piece) > (int)(sizeof s_rs_out / sizeof s_rs_out[0])) piece /= 2;
+    for (int i = 0; i < n; i += piece) {
+        int m = vtts_resample_process(&s_rs, pcm + i, n - i < piece ? n - i : piece, s_rs_out);
+        if (m) bsp_speaker_write(s_rs_out, m);
+    }
+}
+
+/* End of an utterance: the last output samples (half a filter length) */
+static void speaker_out_flush(void) {
+    int m = vtts_resample_flush(&s_rs, s_rs_out); /* at most vtts_resample_max_out(0) < 128 samples */
+    if (m) bsp_speaker_write(s_rs_out, m);
+}
+
 void speaker_init(void) {
     const int rates[2] = {OUT_RATE_TRY, OUT_RATE_FALLBACK};
     g.out_rate = bsp_speaker_open(rates, 2);
@@ -83,6 +126,20 @@ void speaker_play_buffer(void) {
     if (!g.spk || !g.pcm || n == 0) return;
     const int sr = g.models[g.cur].sample_rate;
     static int16_t block[512];
+    if (g.out_rate != sr && resampler_for(sr)) { /* band-limited resampling, then the limiter at the model rate */
+        if (g.debuzz) speaker_filter_reset();
+        vtts_resample_reset(&s_rs);
+        for (long i = 0; i < n;) {
+            int k = 0;
+            for (; k < 256 && i < n; k++, i++) {
+                float v = g.pcm[i] / 32767.0f;
+                block[k] = (int16_t)lrintf(shape(g.debuzz ? debuzz(v) : v) * 32767.0f);
+            }
+            speaker_out(block, k, 1);
+        }
+        speaker_out_flush();
+        return;
+    }
     if (g.debuzz) { /* filter the kept copy at the model rate, then resample */
         speaker_filter_reset();
         for (long i = 0; i < n; i++) {
@@ -140,22 +197,28 @@ size_t speaker_prebuffer_bytes(void) {
     return (size_t)(prebuffer_sec(speaker_chunk_cap()) * (float)g.models[g.cur].sample_rate) * sizeof(int16_t);
 }
 
-/* plays whatever the synthesizer streams (requires the model rate) */
+/* plays whatever the synthesizer streams (model rate; resampled when the speaker runs at another rate) */
 static void speaker_task(void *arg) {
     (void)arg;
     static int16_t block[512];
     for (;;) {
         xSemaphoreTake(g.utt_start, portMAX_DELAY);
+        /* synth_say checked speaker_can_stream(), which set up the resampler for this model */
+        const int rs = g.out_rate != g.models[g.cur].sample_rate;
+        if (rs) vtts_resample_reset(&s_rs);
         /* buffer enough of the new utterance (or all of it) before starting */
         while (xStreamBufferBytesAvailable(g.sb) < speaker_prebuffer_bytes() && !g.synth_done) vTaskDelay(pdMS_TO_TICKS(5));
         g.t_play = esp_timer_get_time();
         for (;;) {
             size_t got = xStreamBufferReceive(g.sb, block, sizeof block, pdMS_TO_TICKS(2));
             if (got) {
-                if (g.spk) bsp_speaker_write(block, (int)(got / sizeof(int16_t)));
+                if (g.spk) speaker_out(block, (int)(got / sizeof(int16_t)), rs);
                 continue;
             }
-            if (g.synth_done) break; /* utterance finished */
+            if (g.synth_done) { /* utterance finished */
+                if (rs && g.spk) speaker_out_flush();
+                break;
+            }
             g.underruns++;          /* synthesis fell behind playback */
             while (!xStreamBufferBytesAvailable(g.sb) && !g.synth_done) vTaskDelay(pdMS_TO_TICKS(1));
         }

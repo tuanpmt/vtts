@@ -1,6 +1,6 @@
 # On-chip performance
 
-Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English the v0.9.1 update of the `nu-10` M ([below](#nu-10-m-update-v091)), the v0.10.2 update of the `nu-10` S ([below](#nu-10-s-update-v0102)), the v0.10.3 updates of the `nu-zh` M and the `nu-ko` S ([below](#nu-zh-m-and-nu-ko-s-update-v0103)), the v0.10.4 updates of the `nu-ja` M and the `nu-es` M and S ([below](#nu-ja-m-and-nu-es-m-and-s-update-v0104)) and the v0.9.0 English-only models (updated in v0.10.1; `nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips. The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
+Measurements of the int8 runtime on the ESP32-P4 and ESP32-S3 with the v0.4.0 Vietnamese + English models, lite S (0.82M parameters, 1.2 MB) and quality M (1.83M parameters, 2.6 MB), the v0.5.0 Korean + English and Chinese + English models, the v0.6.0 Japanese + English, the v0.7.0 Portuguese (Brazil) + English the v0.8.0 Indonesian + English, Hindi + English and Spanish + English the v0.9.1 update of the `nu-10` M ([below](#nu-10-m-update-v091)), the v0.10.2 update of the `nu-10` S ([below](#nu-10-s-update-v0102)), the v0.10.3 updates of the `nu-zh` M and the `nu-ko` S ([below](#nu-zh-m-and-nu-ko-s-update-v0103)), the v0.10.4 updates of the `nu-ja` M and the `nu-es` M and S ([below](#nu-ja-m-and-nu-es-m-and-s-update-v0104)) and the v0.9.0 English-only models (updated in v0.10.1; `nu-en`: S 0.82M, M 1.83M, the vi-en architecture; the others S 0.83M, M 1.84M; the same architecture with a larger token table). Both vi-en voices (`nam-1`, `nu-10`) give the same numbers within 0.005 RTF; the ko-en voice `nu-ko` is within 0.02 of them, M on the ESP32-S3 slightly faster ([Korean + English](#korean--english-v050)). Both models run on both chips; the ESP32-S31 (v0.12.0) is measured with `nu-10` only ([below](#esp32-s31)). The README lists the RTF per voice and [voices.md](../voices.md#speed) the summary table.
 
 Everything lives in PSRAM: the models, the working arena (about 1.9 MB) and the activations. Internal SRAM stays free for the application and for DMA.
 
@@ -41,6 +41,19 @@ Playback starts as soon as every later chunk is sure to be ready in time: the fi
 - Image size with two vi-en models and the English lexicon only: 6.35 MB on the ESP32-P4 (2.03 MB free in the 8 MB app partition) and 6.24 MB on the ESP32-S3 (2.15 MB free). `build.sh` also embeds the Chinese and Japanese blobs (about 0.85 MB more).
 - Every underrun so far was on the same sentence, "Hello! I am a text-to-speech voice ...": a very short first sentence followed by a long one.
 - Pick the model by sound versus headroom: M sounds best; S starts speaking sooner and leaves more CPU for the application.
+
+## ESP32-S31
+
+Metalio E-INK4-Plus, ESP32-S31 rev v0.0: 320 MHz, octal PSRAM at 200 MHz, 16 MB flash, ESP-IDF v6.1.1. Only core 1 has the PIE vector unit, so synthesis runs on core 1 with the ESP32-P4 kernels and the two-core worker on core 0 with plain C int8 kernels (same int32 sums, identical output with one or two cores). vi-en `nu-10` v0.11 files, `bench` (four Vietnamese sentences):
+
+| Model | RTF, 1 core | RTF, 2 cores (default) | First audio chunk (M) | Underruns |
+|---|---:|---:|---:|---:|
+| S (lite) | 0.34–0.36 | 0.26–0.27 | — | 0 |
+| M (quality) | 0.51–0.54 | 0.39–0.42 | about 0.25 s (speech starts after about 0.36 s) | 0 |
+
+- The other voices have the same size and architecture and are expected to run alike; they were not measured on the S31.
+- The board's speaker is behind an external Bluetooth audio chip that clocks I2S at a fixed 16 kHz, so the 22.05 kHz output goes through the streaming resampler (`runtime/src/vtts_resample.c`, windowed-sinc) on its way to the speaker; checked by ear.
+- `selftest` and `memtest` report 0 mismatches. Octal PSRAM at 250 MHz also passed both and was about 3% faster; 200 MHz stays the default.
 
 ## ESP32-S3: wrong dot products with `loopnez`
 

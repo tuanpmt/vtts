@@ -28,7 +28,7 @@ T = {
     "voices_head": ["Voice", "Languages", "Quality model (M)", "Lite model (S)", "Status"],
     "cs": "code-switching",
     "hw_head": ["Board", "Chip", "Lite model RTF", "Quality model RTF"],
-    "hw_note": "Both models run on both chips. RTF below 1 means faster than real time.",
+    "hw_note": "Both models run on every chip. The ESP32-S31 row was measured with `nu-10` (two cores); the other voices have the same size and are expected to run alike. RTF below 1 means faster than real time.",
     "boards_head": ["`BOARD=`", "Board", "Speaker path", "Default volume"],
     "default": " (default)",
     "sentence": "Sentence",

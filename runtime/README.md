@@ -39,6 +39,7 @@ make -C runtime build/vtts_cli        # host synthesizer: token ids on stdin -> 
 make -C runtime build/vtts_say        # text -> WAV, front-end chosen from the model's token set (like the firmware)
 make -C runtime test                  # token set + text front-end tests (no model needed)
 make -C runtime build/golden_test     # built with ASan/UBSan
+make -C runtime resample_test         # streaming resampler of the firmware speaker path (ASan/UBSan)
 uv run pytest -q tests/export         # runs the golden, streaming and text parity tests
 ```
 
@@ -133,4 +134,4 @@ if (vtts_text_lang_for(ts, "auto", &lang) < 0) { /* not a mode of this token set
 
 ## Porting
 
-A new chip needs an implementation of the kernels in `vtts_port.h` (the reference C versions in `src/vtts_kernels_ref.c` are the fallback) and, for multi-core speedups, a `vtts_par_run`. The firmware `selftest` command compares SIMD kernels with the reference C results.
+A new chip needs an implementation of the kernels in `vtts_port.h` (the reference C versions in `src/vtts_kernels_ref.c` are the fallback) and, for multi-core speedups, a `vtts_par_run`. The ESP32-S31 has the ESP32-P4's PIE vector unit and builds `ports/esp32p4/vtts_port_p4.c`, but only its core 1 has the PIE: there the kernels use plain C on core 0, and `ports/freertos/` runs the caller on core 1 and shares each pass with core 0 from both ends (`vtts_par_run_simd` marks the int8 layers); a target without a port runs the reference kernels. The firmware `selftest` command compares SIMD kernels with the reference C results.

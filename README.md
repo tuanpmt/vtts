@@ -2,7 +2,7 @@
 
 [🇻🇳](https://huggingface.co/tuanpm/vtts/tree/main/vi-en-nu-10 "Vietnamese") [🇬🇧](https://huggingface.co/tuanpm/vtts/tree/main/en-nu-en "English") [🇨🇳](https://huggingface.co/tuanpm/vtts/tree/main/zh-en-nu-zh "Chinese") [🇰🇷](https://huggingface.co/tuanpm/vtts/tree/main/ko-en-nu-ko "Korean") [🇯🇵](https://huggingface.co/tuanpm/vtts/tree/main/ja-en-nu-ja "Japanese") [🇪🇸](https://huggingface.co/tuanpm/vtts/tree/main/es-en-nu-es "Spanish") [🇧🇷](https://huggingface.co/tuanpm/vtts/tree/main/pt-en-nu-pt "Portuguese (Brazil)") [🇮🇩](https://huggingface.co/tuanpm/vtts/tree/main/id-en-nu-id "Indonesian") [🇮🇳](https://huggingface.co/tuanpm/vtts/tree/main/hi-en-nu-hi "Hindi") [🇹🇭](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th "Thai")
 
-**Tiny bilingual text-to-speech that runs entirely on ESP32 microcontrollers.** Text in, speech out of the speaker: no cloud, no network, no Linux. Text normalization, pronunciation, an int8 neural voice and the vocoder all run on the chip, in 1.2–2.6 MB of flash, faster than real time on the ESP32-P4 and the ESP32-S3. Voices read English alone (`nu-en`) or one main language + English, including sentences that mix both ("このWi-Fiはpasswordが必要ですか？"). Code and models are Apache-2.0.
+**Tiny bilingual text-to-speech that runs entirely on ESP32 microcontrollers.** Text in, speech out of the speaker: no cloud, no network, no Linux. Text normalization, pronunciation, an int8 neural voice and the vocoder all run on the chip, in 1.2–2.6 MB of flash, faster than real time on the ESP32-P4, the ESP32-S3 and the ESP32-S31. Voices read English alone (`nu-en`) or one main language + English, including sentences that mix both ("このWi-Fiはpasswordが必要ですか？"). Code and models are Apache-2.0.
 
 🌐 [Website with audio samples](https://tuanpmt.github.io/vtts/) · 🤗 [Models on Hugging Face](https://huggingface.co/tuanpm/vtts) · 📚 [Documentation](docs/README.md)
 
@@ -24,11 +24,13 @@
 | 🇹🇭 🇬🇧 Thai + English | `nu-th` (female) | 2.6 MB / 1.2 MB | 0.27 / 0.18 | 0.56 / 0.32 | [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0) · [HF](https://huggingface.co/tuanpm/vtts/tree/main/th-en-nu-th) |
 <!-- END:released -->
 
-Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on both chips. Release v0.11.0 collects the current M and S of every voice (no new training; it replaces the earlier releases, whose model files were removed). RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
+**ESP32-S31** (Metalio E-INK4-Plus, rev v0.0 chip, two cores, since v0.12.0): RTF M 0.40 / S 0.26, measured with `nu-10`; the other voices have the same size and are expected to run alike.
+
+Each voice has a quality model (M) and a lite model (S, faster, less CPU and flash); both run on every chip. Release v0.11.0 collects the current M and S of every voice (no new training; it replaces the earlier releases, whose model files were removed); v0.12.0 (ESP32-S31 support) carries the same files. RTF is synthesis time over audio time (below 1 is faster than real time). Quality, samples and the planned pairs: [docs/voices.md](docs/voices.md).
 
 ## Quick start
 
-1. Install [ESP-IDF v6.1](https://docs.espressif.com/projects/esp-idf/) and clone this repository.
+1. Install [ESP-IDF v6.1.1](https://docs.espressif.com/projects/esp-idf/) and clone this repository.
 2. Download the two model files of one voice from [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0), which has the current models of every voice (or from the Hugging Face folder in the table):
    ```bash
    gh release download v0.11.0 -R tuanpmt/vtts -p 'vtts-en-*' -D models   # English (nu-en)
@@ -38,7 +40,7 @@ Each voice has a quality model (M) and a lite model (S, faster, less CPU and fla
    cd firmware/esp32
    BOARD=esp32-p4-nano ./build.sh ../../models/vtts-en-nuen-s-v0.11.q8.vtts ../../models/vtts-en-nuen-m-v0.11.q8.vtts -p PORT flash monitor
    ```
-   `BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8` or `echoear`. `build.sh` picks the text front-end from the models and embeds the lexicons they need.
+   `BOARD` is `esp32-p4-86-panel-eth-2ro` (default), `esp32-p4-nano`, `esp32-s3-touch-lcd-2.8`, `echoear` or `metalio-eink4-plus` (ESP32-S31, needs ESP-IDF v6.1.1). `build.sh` picks the text front-end from the models and embeds the lexicons they need.
 4. Type a sentence on the serial console and press Enter: the board speaks it. `model s` / `model m` switches the model; the other commands are in the [firmware README](firmware/esp32/README.md#serial-console).
 
 ## How it works

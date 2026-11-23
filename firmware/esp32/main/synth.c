@@ -342,8 +342,9 @@ static void cpu_report(const cpu_snap_t *a) {
 
 void synth_say(const char *text) {
     int64_t us;
-    int direct = g.sb && g.out_rate == g.models[g.cur].sample_rate; /* stream to the speaker task */
-    if (!direct && !pcm_keep()) return; /* the speaker runs at another rate: resample a kept copy */
+    /* stream to the speaker task (at the model rate, or through its resampler) */
+    int direct = g.sb && (g.out_rate == g.models[g.cur].sample_rate || speaker_can_stream());
+    if (!direct && !pcm_keep()) return; /* no streaming: play a kept copy afterwards */
     g.streaming = direct;
     g.t_first = g.t_play = 0;
     g.blocked_us = 0;

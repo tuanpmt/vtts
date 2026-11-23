@@ -356,7 +356,7 @@ void vtts_set_out_stage(void *p, size_t n) {
 static void lconv_par(const qjob_t *j, int co) {
     int nf = s_stage_n ? (int)(s_stage_n / (size_t)co) : 0; /* frames per staged block */
     if (nf < 1 || (j->out_tm && j->ldy != co)) {
-        vtts_par_run(lconv_rows, co, (void *)j);
+        vtts_par_run_simd(lconv_rows, co, (void *)j);
     } else {
         for (int f0 = 0; f0 < j->t_n; f0 += nf) {
             int n = j->t_n - f0 < nf ? j->t_n - f0 : nf;
@@ -364,7 +364,7 @@ static void lconv_par(const qjob_t *j, int co) {
             k.t_lo = j->t_lo + f0;
             k.t_n = n;
             k.y = s_stage;
-            vtts_par_run(lconv_rows, co, &k);
+            vtts_par_run_simd(lconv_rows, co, &k);
             if (j->out_tm) memcpy(j->y + (size_t)f0 * co, s_stage, sizeof(float) * (size_t)n * co);
             else
                 for (int o = 0; o < co; o++)

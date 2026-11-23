@@ -1,0 +1,14 @@
+# ESP32-S31 boards (chip settings; board settings are in boards/<id>/sdkconfig.defaults).
+# Preliminary silicon: tested on a Metalio E-INK4-Plus board (chip rev v0.0) with ESP-IDF v6.1.1.
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+# Boot on every revision from v0.0 (the first boards report "ESP32-S31 (revision v0.0)"); v0.0 is
+# the only minimum ESP-IDF v6.1.1 offers, set here so that a later default cannot refuse those chips.
+CONFIG_ESP32S31_REV_MIN_0=y
+# ESP-IDF v6.1.1 offers 240 or 320 MHz (no 300 MHz setting). esptool lists rev v0.0 chips as
+# "300MHz"; the board's own firmware runs them at 320 MHz, so 320 is kept. If a board is unstable,
+# CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_240=y is the fallback (about 25% slower).
+CONFIG_ESP_DEFAULT_CPU_FREQ_MHZ_320=y
+# octal PSRAM at 200 MHz. 250 MHz also passed timing tuning, selftest and memtest on a rev v0.0 board
+# and was about 3% faster (M RTF 0.39 vs 0.40); 200 MHz is kept as the safer default on early silicon.
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_SPEED_200M=y

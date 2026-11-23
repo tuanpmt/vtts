@@ -26,6 +26,7 @@ typedef struct {
     void *arena;
     size_t arena_bytes;
     const char *arena_where;
+    size_t fast_bytes; /* fast scratch in internal RAM */
     int16_t *pcm;    /* NULL, or KEEP_SECONDS of audio while `dump` or resampled playback needs it */
     long pcm_cap, n; /* samples kept, samples synthesized */
     int chunks_done; /* text chunks synthesized in the current utterance */
@@ -89,9 +90,10 @@ void synth_bench(void);
 
 /* speaker.c */
 void speaker_init(void);
-void speaker_start(void);                     /* playback task, when the speaker runs at the model rate */
+void speaker_start(void);                     /* playback task (resamples when the speaker runs at another rate) */
+int speaker_can_stream(void);                 /* the playback task can play the current model (rate or resampler) */
 void speaker_stream(const float *pcm, long n); /* queue model-rate PCM for playback */
-void speaker_play_buffer(void);               /* play g.pcm resampled (speaker at another rate) */
+void speaker_play_buffer(void);               /* play g.pcm resampled (no stream buffer, or no resampler) */
 int pcm_keep(void);                           /* allocate g.pcm (PSRAM) for the next utterance */
 void pcm_release(void);
 int speaker_chunk_cap(void);

@@ -1,8 +1,8 @@
 /* SPDX-License-Identifier: Apache-2.0 */
-/* main.c -- vtts firmware for ESP32-P4 and ESP32-S3 boards: type a sentence on the serial console
- * and the board speaks it. Everything runs on the chip: text -> token ids (runtime/src/vtts_text.c)
- * -> int8 student model (vtts runtime, SIMD kernels in runtime/ports/) -> speaker (board support
- * in bsp/ and boards/<id>/).
+/* main.c -- vtts firmware for ESP32-P4, ESP32-S3 and ESP32-S31 boards: type a sentence on the serial
+ * console and the board speaks it. Everything runs on the chip: text -> token ids
+ * (runtime/src/vtts_text.c) -> int8 student model (vtts runtime, SIMD kernels in runtime/ports/) ->
+ * speaker (board support in bsp/ and boards/<id>/).
  *
  * Modules: main.c (start-up), synth.c (synthesis and report lines), speaker.c (playback and
  * prebuffer), console.c (commands), selftest.c (kernel checks); see app.h.
@@ -30,6 +30,7 @@
  *                         The front-end follows the model's token set (header); the start mode is
  *                         the set's first mode, or the model's text_mode dim (nu-en: en)
  *   chunk N, first N, cores 1|2   streaming and scheduling knobs for experiments
+ *   parstat [0|1]         two-core split statistics (S31: 0|1 int8 layers on core 0 too)
  */
 #include <math.h>
 #include <stdio.h>
@@ -43,9 +44,12 @@
 #ifndef FAST_SCRATCH_MAX
 /* bytes of internal SRAM for hot synthesis buffers; 0 keeps everything in PSRAM so internal RAM
  * stays free for DMA (about 2% faster with 96 KB on the P4). On the S3, 40 KB holds the int8
- * activations of the int8 layers. */
+ * activations of the int8 layers. The S31 (no L2 cache) gets what internal RAM allows, up to
+ * 256 KB (about 150 KB on the E-INK4-Plus, 3% faster). */
 #if CONFIG_IDF_TARGET_ESP32S3
 #define FAST_SCRATCH_MAX 40960
+#elif CONFIG_IDF_TARGET_ESP32S31
+#define FAST_SCRATCH_MAX 262144
 #else
 #define FAST_SCRATCH_MAX 0
 #endif
@@ -54,6 +58,10 @@
 #if CONFIG_IDF_TARGET_ESP32S3
 #define RTF_INIT_S 0.30f
 #define RTF_INIT_M 0.53f
+#elif CONFIG_IDF_TARGET_ESP32S31
+/* measured on a rev v0.0 chip at 320 MHz, octal PSRAM 200 MHz, two cores (vi-en nu-10 v0.11) */
+#define RTF_INIT_S 0.27f
+#define RTF_INIT_M 0.41f
 #else
 #define RTF_INIT_S 0.18f
 #define RTF_INIT_M 0.29f
@@ -124,6 +132,7 @@ void app_main(void) {
         size_t fast_n = room > FAST_SCRATCH_MAX ? FAST_SCRATCH_MAX : room > 16384 ? (size_t)room : 0;
         void *fast = fast_n ? heap_caps_aligned_alloc(16, fast_n, MALLOC_CAP_INTERNAL | MALLOC_CAP_8BIT) : NULL;
         vtts_set_fast_scratch(fast, fast ? fast_n : 0);
+        g.fast_bytes = fast ? fast_n : 0;
         printf("fast scratch %u bytes in sram\n", fast ? (unsigned)fast_n : 0u);
     }
     g.sb = xStreamBufferCreateWithCaps(4 * 22050 * sizeof(int16_t), 1024, MALLOC_CAP_SPIRAM);

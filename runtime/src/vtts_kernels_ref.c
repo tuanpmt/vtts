@@ -14,3 +14,5 @@ __attribute__((weak)) void vtts_dots_s8s8(const int8_t *w, const int8_t *x, int 
 }
 
 __attribute__((weak)) void vtts_par_run(vtts_par_fn fn, int n, void *ctx) { fn(0, n, ctx); }
+
+__attribute__((weak)) void vtts_par_run_simd(vtts_par_fn fn, int n, void *ctx) { vtts_par_run(fn, n, ctx); }

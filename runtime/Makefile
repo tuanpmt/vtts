@@ -23,6 +23,15 @@ build/vtts_cli: $(SRC) tools/vtts_cli.c include/vtts.h
 	mkdir -p build
 	$(CC) $(CFLAGS) -O3 $(SRC) tools/vtts_cli.c -lm -o $@
 
+# Streaming sample-rate converter of the firmware speaker path (boards whose I2S rate is not the model's)
+build/resample_test: src/vtts_resample.c include/vtts_resample.h test/resample_test.c
+	mkdir -p build
+	$(CC) $(CFLAGS) $(SAN) src/vtts_resample.c test/resample_test.c -lm -o $@
+
+resample_test: build/resample_test
+	./build/resample_test
+.PHONY: resample_test
+
 build/stream_test: $(SRC) test/stream_test.c include/vtts.h
 	mkdir -p build
 	$(CC) $(CFLAGS) $(SAN) $(SRC) test/stream_test.c -lm -o $@
@@ -167,6 +176,7 @@ test: build/token_set_test build/text_test build/lex_test build/en_norm_test bui
 	$(MAKE) km_test
 	$(MAKE) my_test
 	$(MAKE) langs_test
+	$(MAKE) resample_test
 .PHONY: zh_test ko_test hi_test ja_test ja_bench lt_test th_test it_tr_test ru_test pl_test ar_test fi_test el_test test
 
 # Thai (VTTS_LANG_TH) parity with text_to_ids(text, "th"); tables are compiled in (no blob).

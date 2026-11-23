@@ -23,7 +23,8 @@
 /* Board name, for the boot log. */
 const char *bsp_name(void);
 
-/* Setup that must run first in app_main: e.g. latch the power (BSP_POWER_HOLD_GPIO). */
+/* Setup that must run first in app_main: e.g. latch the power (BSP_POWER_HOLD_GPIO), point a USB
+ * switch at the console (BSP_USB_SWITCH_GPIO, BSP_USB_SWITCH_LEVEL). */
 void bsp_early_init(void);
 
 /* Bring up the speaker path at one of the given rates (tried in order). Returns the rate in use,

@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>vtts — speech on a microcontroller</title>
-<meta name="description" content="Tiny multilingual text-to-speech that runs entirely on ESP32-P4 and ESP32-S3. Listen to audio generated on the chip.">
+<meta name="description" content="Tiny multilingual text-to-speech that runs entirely on ESP32-P4, ESP32-S3 and ESP32-S31. Listen to audio generated on the chip.">
 <link rel="stylesheet" href="fonts/fonts.css">
 <style>
 /* Neobrutalism (after neobrutalism.dev): 2px black borders, hard 4px offset shadows, flat colors,
@@ -186,7 +186,7 @@ first chunk 195 ms, playback started 275 ms, underruns 0</div>
 
   <section id="listen">
     <h2>Listen</h2>
-    <p class="muted">Each column is a model with its size and real-time factor (RTF) per chip; below 1 is faster than real time. Both models run on both chips. Every clip is the chip's own output, only compressed to MP3.</p>
+    <p class="muted">Each column is a model with its size and real-time factor (RTF) per chip; below 1 is faster than real time. Both models run on every chip (ESP32-S31: M 0.40 / S 0.26 with nu-10, two cores). Every clip is the chip's own output, only compressed to MP3.</p>
     <div class="picker">
       <label id="langlabel" for="langbtn">Language <svg class="flag" role="img" aria-label="English"><use href="#flag-gb"/></svg>:</label>
       <button class="select" id="langbtn" type="button" aria-haspopup="listbox" aria-expanded="false" aria-labelledby="langlabel langbtn">
@@ -214,11 +214,11 @@ first chunk 195 ms, playback started 275 ms, underruns 0</div>
 </ol>
 <div class="cards">
   <div class="card"><h3>Runtime</h3><p>C99, no malloc: the caller passes one arena whose size is known up front. Int8 weights with per-channel scales, int8 activations with one scale per frame. Streaming keeps per-layer state, so every frame is computed once.</p></div>
-  <div class="card"><h3>On the chip</h3><p>Int8 SIMD kernels for the ESP32-P4 (PIE) and the ESP32-S3 (128-bit SIMD), work split over both cores with FreeRTOS. Chip audio matches the reference C runtime on a PC.</p></div>
+  <div class="card"><h3>On the chip</h3><p>Int8 SIMD kernels for the ESP32-P4 (PIE), the ESP32-S3 (128-bit SIMD) and the ESP32-S31 (PIE on core 1, plain C int8 on core 0), work split over both cores with FreeRTOS. Chip audio matches the reference C runtime on a PC.</p></div>
   <div class="card"><h3>Models</h3><p>A VITS teacher (~24M params) per voice, trained from scratch, is distilled into 0.8–1.8M-param students: duration predictor, acoustic model with pitch and energy, Vocos-style ConvNeXt decoder with an iSTFT head.</p></div>
   <div class="card"><h3>Front-ends</h3><p>One per language, in Python for training and in C for the device, tested to give identical token ids. Vietnamese: spelling-based G2P with 6 tones. Korean: Hangul decomposition and the standard pronunciation rules. Mandarin: pinyin readings with a polyphone phrase table and tones. Japanese: kana and kanji readings by longest match over a word table, numbers with counters. Brazilian Portuguese: spelling rules with stress, nasal vowels and the two r sounds, plus per-word Portuguese or English tagging. Spanish: spelling rules with stress, dialect-neutral. Indonesian: spelling rules with the two e's and stress. Hindi: Devanagari letters with schwa deletion and nasals. Thai: word segmentation over a word list, syllables by the spelling rules, tones from consonant class, tone mark and syllable type. Latin-script pairs read a whole English sentence in English. English: CMUdict plus letter-to-sound rules learned from it.</p></div>
   <div class="card"><h3>Data</h3><p>Every voice is trained only on speech synthesized with VoxCPM2 (Apache-2.0) from a designed voice (about 98 h per Vietnamese + English voice, about 43,600 sentences for the Korean + English voice, 54,636 for the Chinese + English voice, 49,591 for the Japanese + English voice, 45,191 for the Portuguese + English voice, 45,857 for the Indonesian + English voice, 48,296 for the Hindi + English voice, 48,336 for the Spanish + English voice, 55,555 for the Thai + English voice), with sentences chosen to cover rare syllables, numbers and code-switching.</p></div>
-  <div class="card"><h3>Tooling</h3><p>PyTorch for training, ESP-IDF v6.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness.</p></div>
+  <div class="card"><h3>Tooling</h3><p>PyTorch for training, ESP-IDF v6.1.1 for the firmware, PhoWhisper and Whisper for intelligibility, UTMOS and DNSMOS for naturalness and cleanliness.</p></div>
 </div>
 <!-- END:tech -->
   </section>
@@ -238,6 +238,7 @@ BOARD=esp32-p4-nano ./build.sh ../../models/vtts-vien-nu10-s-v0.11.q8.vtts \
       <tr><td><code>esp32-p4-nano</code></td><td>ESP32-P4-NANO</td><td>ES8311</td><td><code>vol 90</code>, <code>gain 12</code></td></tr>
       <tr><td><code>esp32-s3-touch-lcd-2.8</code></td><td>ESP32-S3-Touch-LCD-2.8</td><td>PCM5101</td><td><code>vol 80</code>, <code>gain 6</code></td></tr>
       <tr><td><code>echoear</code></td><td>EchoEar 2.0 (ESP32-S3)</td><td>ES8311</td><td><code>vol 75</code>, <code>gain 6</code></td></tr>
+      <tr><td><code>metalio-eink4-plus</code></td><td>Metalio E-INK4-Plus (ESP32-S31)</td><td>Bluetooth audio chip (I2S 16 kHz) + NS4150</td><td><code>vol 90</code>, <code>gain 0</code></td></tr>
     </tbody>
   </table>
 </div>

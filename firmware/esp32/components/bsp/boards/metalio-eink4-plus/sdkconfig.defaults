@@ -1,0 +1,6 @@
+# Metalio E-INK4-Plus: ESP32-S31, 16 MB flash, octal PSRAM at 200 MHz (the chip defaults in
+# sdkconfig.defaults.esp32s31 apply). The board's own firmware runs the flash in DIO mode.
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_DIO=y
+# console on the USB-C port (USB-Serial-JTAG, /dev/ttyACM*), as the board is flashed
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y

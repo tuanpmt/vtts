@@ -4,10 +4,15 @@ if(CMAKE_BUILD_EARLY_EXPANSION) # requirement scan: no board selection yet
     idf_component_register(PRIV_REQUIRES ${REQS})
     return()
 endif()
+# SIMD kernels per chip (runtime/ports/): the ESP32-S31 has the same PIE vector unit as the ESP32-P4 and
+# shares its kernels; any other target runs the portable C kernels (weak, runtime/src/vtts_kernels_ref.c).
 if(IDF_TARGET STREQUAL "esp32s3")
     set(PORT "${RT}/ports/esp32s3/vtts_port_s3.c")
-else()
+elseif(IDF_TARGET STREQUAL "esp32p4" OR IDF_TARGET STREQUAL "esp32s31")
     set(PORT "${RT}/ports/esp32p4/vtts_port_p4.c")
+else()
+    set(PORT "")
+    message(WARNING "vtts: no SIMD kernels for ${IDF_TARGET}; using the portable C kernels")
 endif()
 # LANGS: the optional languages of the embedded models (or VTTS_LANGS), LANG_DEFS: -DVTTS_ENABLE_<L>=0|1
 include(${CMAKE_CURRENT_LIST_DIR}/vtts_langs.cmake)
@@ -30,7 +35,7 @@ foreach(l zh ja ru)
 endforeach()
 # Every language module is listed; one that is not enabled compiles to an empty unit (vtts_langs.h)
 idf_component_register(
-    SRCS "main.c" "synth.c" "speaker.c" "console.c" "selftest.c" "${PORT}"
+    SRCS "main.c" "synth.c" "speaker.c" "console.c" "selftest.c" ${PORT}
          "${RT}/ports/freertos/vtts_par_freertos.c"
          "${RT}/src/vtts_model.c" "${RT}/src/vtts_synth.c" "${RT}/src/vtts_kernels_ref.c"
          "${RT}/src/vtts_text.c" "${RT}/src/vtts_text_en.c" "${RT}/src/vtts_text_zh.c" "${RT}/src/vtts_text_ko.c"
@@ -42,7 +47,7 @@ idf_component_register(
          "${RT}/src/vtts_text_nx.c" "${RT}/src/vtts_text_nx_nl.c" "${RT}/src/vtts_text_nx_sc.c"
          "${RT}/src/vtts_text_da.c" "${RT}/src/vtts_text_lo.c"
          "${RT}/src/vtts_text_nsp.c" "${RT}/src/vtts_text_km.c" "${RT}/src/vtts_text_my.c"
-         "${RT}/src/vtts_lex.c"
+         "${RT}/src/vtts_lex.c" "${RT}/src/vtts_resample.c"
     INCLUDE_DIRS "." "${RT}/include" "${RT}/src"
     PRIV_REQUIRES ${REQS}
     EMBED_FILES ${EMBED})

@@ -23,6 +23,10 @@ void vtts_dots_s8s8(const int8_t *w, const int8_t *x, int stride, int n, int len
 typedef void (*vtts_par_fn)(int lo, int hi, void *ctx);
 void vtts_par_run(vtts_par_fn fn, int n, void *ctx);
 
+/* vtts_par_run for the int8 layers, whose speed depends on SIMD kernels that not every core may
+ * have (ESP32-S31: only core 1 has the PIE). The default is vtts_par_run. */
+void vtts_par_run_simd(vtts_par_fn fn, int n, void *ctx);
+
 #ifdef __cplusplus
 }
 #endif

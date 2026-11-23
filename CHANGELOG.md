@@ -1,16 +1,51 @@
 # Changelog
 
-All notable changes to this project are documented here. Model files are attached to the GitHub release [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0), which has the current M and S of every voice, and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts). The releases before v0.11.0 and their model files were removed after v0.11.0; the entries below keep their notes, and their git tags stay (`https://github.com/tuanpmt/vtts/tree/v0.x.y`). File names in those entries refer to files that are no longer published; use the `-v0.11.q8.vtts` file of the same voice (table under v0.11.0).
+All notable changes to this project are documented here. Model files are attached to the GitHub release [v0.11.0](https://github.com/tuanpmt/vtts/releases/tag/v0.11.0), which has the current M and S of every voice (v0.12.0 carries the same files), and mirrored on [Hugging Face](https://huggingface.co/tuanpm/vtts). The releases before v0.11.0 and their model files were removed after v0.11.0; the entries below keep their notes, and their git tags stay (`https://github.com/tuanpmt/vtts/tree/v0.x.y`). File names in those entries refer to files that are no longer published; use the `-v0.11.q8.vtts` file of the same voice (table under v0.11.0).
 
 ## Unreleased
-
-### Changed
-- The GitHub releases v0.1.0 to v0.10.4 and the older model files on Hugging Face were removed; v0.11.0 has the current M and S of every voice, and each Hugging Face folder now holds only its two `-v0.11.q8.vtts` files and `SHA256SUMS`. The git tags of the earlier releases stay. The Vietnamese-only prototype folder `vi/` (v0.1–v0.2, non-commercial) was removed from Hugging Face.
 
 ### In progress
 - The other pairs: one designed VoxCPM2 voice per language, then data, teachers and students.
 - User pronunciation dictionary.
 - Model updates with the longer joint stage for the other models (`nam-1` and the other pairs).
+
+## v0.12.0 (2026-11-23) — ESP32-S31 support and the Metalio E-INK4-Plus board
+
+A **firmware and runtime release**, **Apache-2.0**: the **ESP32-S31** becomes a supported chip, with the **Metalio E-INK4-Plus** board (CloudZao). **Models unchanged**: the release carries the same 22 files and `SHA256SUMS` as v0.11.0 (same names `-v0.11.q8.vtts`, same bytes), so the latest release has everything needed.
+
+### Speed on the ESP32-S31
+
+Metalio E-INK4-Plus, ESP32-S31 rev v0.0 at 320 MHz, octal PSRAM at 200 MHz, vi-en `nu-10` v0.11 files, `bench` (four Vietnamese sentences):
+
+| Model | RTF, 1 core | RTF, 2 cores (default) |
+|---|---:|---:|
+| S (lite) | 0.34–0.36 | 0.26–0.27 |
+| M (quality) | 0.51–0.54 | 0.39–0.42 |
+
+With M, the first chunk is ready after about 0.25 s and speech starts after about 0.36 s, without underruns; `selftest` and `memtest` report 0 mismatches. Only `nu-10` was measured; the other voices have the same size and are expected to run alike.
+
+### Added
+- **ESP32-S31 target.** The S31 has the PIE vector unit of the ESP32-P4 and uses its int8 kernels (`runtime/ports/esp32p4/vtts_port_p4.c`, branch loops). `sdkconfig.defaults.esp32s31`: 320 MHz, octal PSRAM at 200 MHz, minimum chip revision v0.0, the shared partition table.
+- **ESP-IDF v6.1.1 required for the S31** (the first release where it is a supported target, not a preview one); the P4 and S3 boards still build with 6.1.0. `build.sh` and the docs name v6.1.1.
+- **Metalio E-INK4-Plus board** (`BOARD=metalio-eink4-plus`): the speaker sits behind an external Bluetooth audio chip that is the I2S master at a fixed 16 kHz, with an NS4150 amplifier. New speaker driver `bt_audio` (TCA9555 expander outputs, AT commands on UART1, I2S slave TX, amplifier enable; writes time out instead of hanging without a clock), a minimal TCA9555 driver, `BSP_EXTRA_SRCS` in `board.cmake`, `BSP_USB_SWITCH_GPIO` to keep the USB-C port on the console. Speech through this path was checked by ear.
+- **Streaming resampler for fixed-rate speakers** (`runtime/src/vtts_resample.c`, `vtts_resample.h`): Kaiser-windowed sinc, 20 zero crossings, exact rational output times, about 4.7 KB of state, no allocation. 22050 -> 16000 Hz: flat to 6.8 kHz within 0.06 dB, aliases of 8.6 kHz and above about 79 dB down. `make -C runtime test` includes `resample_test`. The firmware streams through it when the speaker cannot run at the model rate (previously the whole utterance was buffered and interpolated linearly).
+- `parstat` console command: two-core split calls, items and time per core.
+
+### Changed
+- **ESP32-S31: two cores.** Only core 1 of the S31 has the PIE, and FreeRTOS moves a task that runs a PIE instruction on core 0 to core 1 for good, so at first both the synthesis task and the worker ended up on core 1 and `cores 2` gave no speedup. Synthesis now runs on core 1, the worker on core 0 with plain C int8 kernels (same int32 sums), and the cores share each pass from both ends; the S31 also gets up to 256 KB of internal RAM for the hot buffers. S RTF 0.35 -> 0.26–0.27, M 0.54 -> 0.39–0.42, output identical. The ESP32-P4 and ESP32-S3 keep their split and speed.
+- The GitHub releases v0.1.0 to v0.10.4 and the older model files on Hugging Face were removed; v0.11.0 has the current M and S of every voice, and each Hugging Face folder now holds only its two `-v0.11.q8.vtts` files and `SHA256SUMS`. The git tags of the earlier releases stay. The Vietnamese-only prototype folder `vi/` (v0.1–v0.2, non-commercial) was removed from Hugging Face.
+- README, voices.md, the performance report, the website, the roadmap and the Hugging Face card list the ESP32-S31.
+
+### Flashing the Metalio E-INK4-Plus
+
+```bash
+gh release download v0.12.0 -R tuanpmt/vtts -p 'vtts-vien-nu10-*' -D models
+cd firmware/esp32
+BOARD=metalio-eink4-plus ./build.sh ../../models/vtts-vien-nu10-s-v0.11.q8.vtts \
+  ../../models/vtts-vien-nu10-m-v0.11.q8.vtts -p PORT flash monitor
+```
+
+On the S31 the bootloader is at 0x2000 (as on the P4); `build.sh ... flash` sets the offsets.
 
 ## v0.11.0 (2026-11-20) — consolidated release of all voices
 
